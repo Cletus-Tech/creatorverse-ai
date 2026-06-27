@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorVerse AI — Learn AI. Create Without Limits. Build Your Future.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06040c;
+    --bg-2:#0b0717;
+    --deep-purple:#5b2bd6;
+    --electric-purple:#8b3bff;
+    --dark-blue:#1c2a6b;
+    --white:#f5f3fb;
+    --soft-gray:#a6a0bd;
+    --line:rgba(255,255,255,0.10);
+    --glass:rgba(255,255,255,0.035);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+
+  h1,h2,.brand-name,.eyebrow,.card-title{font-family:'Space Grotesk',sans-serif;}
+
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit;}
+
+  /* ---------- NAV ---------- */
+  .nav{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 48px;
+    transition:background .4s ease, backdrop-filter .4s ease, border-color .4s ease, padding .4s ease;
+    border-bottom:1px solid transparent;
+  }
+  .nav.scrolled{
+    background:rgba(8,6,16,0.62);
+    backdrop-filter:blur(18px) saturate(140%);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);
+    border-bottom:1px solid var(--line);
+    padding:14px 48px;
+  }
+  .nav-left{display:flex; align-items:center; gap:12px;}
+  .logo-mark{
+    width:40px; height:40px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .brand-text{display:flex; flex-direction:column; line-height:1.15;}
+  .brand-name{font-size:18px; font-weight:700; letter-spacing:0.2px;}
+  .brand-name span{color:var(--electric-purple);}
+  .brand-sub{font-size:11.5px; color:var(--soft-gray); font-family:'Inter',sans-serif; letter-spacing:0.2px;}
+
+  .nav-center{
+    display:flex; gap:36px; font-size:14.5px; font-weight:500; color:#d7d3e6;
+    position:absolute; left:50%; transform:translateX(-50%);
+  }
+  .nav-center a{position:relative; padding-bottom:4px; transition:color .25s ease;}
+  .nav-center a:hover{color:#fff;}
+  .nav-center a.active{color:#fff;}
+  .nav-center a.active::after{
+    content:""; position:absolute; left:0; right:0; bottom:-6px; height:2px;
+    background:linear-gradient(90deg,var(--electric-purple),transparent);
+    border-radius:2px;
+  }
+
+  .nav-right{display:flex; align-items:center; gap:14px;}
+  .btn{
+    font-size:14px; font-weight:600; border-radius:10px; cursor:pointer;
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease;
+    border:none; white-space:nowrap;
+  }
+  .btn-ghost{
+    padding:10px 20px; background:transparent; color:#fff;
+    border:1px solid rgba(255,255,255,0.18);
+  }
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.4); background:rgba(255,255,255,0.04);}
+  .btn-primary{
+    padding:11px 22px;
+    background:linear-gradient(135deg,var(--electric-purple),var(--deep-purple));
+    color:#fff;
+    box-shadow:0 0 0 0 rgba(139,59,255,0.0);
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 30px -6px rgba(139,59,255,0.55);
+  }
+  .btn-outline{
+    padding:11px 22px; background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.18); color:#fff;
+    display:inline-flex; align-items:center; gap:10px;
+  }
+  .btn-outline:hover{border-color:rgba(255,255,255,0.4); transform:translateY(-2px);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    padding:150px 48px 80px;
+    display:flex; align-items:center;
+    overflow:hidden;
+  }
+  .hero-bg{
+    position:absolute; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 1000px 500px at 15% 100%, rgba(255,150,140,0.10), transparent 55%),
+      radial-gradient(ellipse 900px 600px at 18% 92%, rgba(139,59,255,0.22), transparent 60%),
+      linear-gradient(180deg, #07050f 0%, #0a0716 45%, #0d0a1c 100%);
+  }
+  .planet{
+    position:absolute;
+    left:-12%;
+    top:8%;
+    width:62vw; height:62vw;
+    max-width:980px; max-height:980px;
+    border-radius:50%;
+    background:radial-gradient(circle at 65% 35%, #2a2440 0%, #14101f 45%, #07060d 75%);
+    box-shadow:
+      0 0 140px 40px rgba(139,59,255,0.10),
+      inset -40px -30px 120px rgba(0,0,0,0.6),
+      inset 20px 10px 80px rgba(180,140,255,0.12);
+    z-index:1;
+  }
+  .planet::before{
+    content:"";
+    position:absolute; inset:-1px;
+    border-radius:50%;
+    background:conic-gradient(from 200deg at 50% 50%,
+      transparent 0deg,
+      transparent 80deg,
+      rgba(170,130,255,0.55) 108deg,
+      rgba(220,190,255,0.95) 118deg,
+      rgba(170,130,255,0.55) 128deg,
+      transparent 156deg,
+      transparent 360deg);
+    mask:radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+    -webkit-mask:radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+    filter:blur(2.5px);
+  }
+  .planet::after{
+    content:"";
+    position:absolute; inset:-30px;
+    border-radius:50%;
+    background:conic-gradient(from 200deg at 50% 50%,
+      transparent 0deg,
+      transparent 84deg,
+      rgba(180,140,255,0.0) 100deg,
+      rgba(200,160,255,0.5) 118deg,
+      rgba(180,140,255,0.0) 136deg,
+      transparent 360deg);
+    filter:blur(28px);
+  }
+  .stars{position:absolute; inset:0; z-index:1; pointer-events:none;}
+  .star{
+    position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;
+    opacity:.7; animation:twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.9;}}
+
+  .mountains{
+    position:absolute; left:0; right:0; bottom:-2px; z-index:2;
+    width:100%; height:260px; display:block; line-height:0;
+  }
+  .network-lines{
+    position:absolute; inset:0; z-index:1; opacity:0.5; pointer-events:none;
+  }
+
+  .hero-grid{
+    position:relative; z-index:3;
+    width:100%; max-width:1320px; margin:0 auto;
+    display:grid; grid-template-columns:1.15fr 0.85fr;
+    gap:60px; align-items:center;
+  }
+
+  .eyebrow{
+    display:flex; align-items:center; gap:12px;
+    font-size:13px; font-weight:600; letter-spacing:1.6px; color:var(--electric-purple);
+    text-transform:uppercase; margin-bottom:22px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.1s;
+  }
+  .eyebrow .rule{width:22px; height:1.5px; background:var(--electric-purple); opacity:0.7;}
+
+  .headline{
+    font-size:clamp(34px,5vw,58px);
+    font-weight:700; line-height:1.12; letter-spacing:-0.5px;
+    margin-bottom:22px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.22s;
+  }
+  .headline .accent{color:var(--electric-purple);}
+
+  .sub{
+    font-size:16.5px; line-height:1.65; color:var(--soft-gray);
+    max-width:480px; margin-bottom:34px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.34s;
+  }
+
+  .hero-buttons{
+    display:flex; gap:16px; margin-bottom:36px; flex-wrap:wrap;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.46s;
+  }
+  .play-circle{
+    width:18px; height:18px; border-radius:50%; border:1.4px solid currentColor;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+
+  .follow-row{
+    display:flex; align-items:center; gap:16px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.58s;
+  }
+  .follow-label{font-size:14px; color:var(--soft-gray);}
+  .social-icons{display:flex; gap:12px;}
+  .social-icons a{
+    width:38px; height:38px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+  }
+  .social-icons svg{width:18px; height:18px;}
+  .social-icons a:hover{
+    transform:translateY(-4px);
+    border-color:rgba(139,59,255,0.5);
+    box-shadow:0 8px 20px -6px rgba(139,59,255,0.45);
+    background:rgba(255,255,255,0.07);
+  }
+
+  /* Founder Card */
+  .founder-wrap{
+    display:flex; justify-content:center;
+    opacity:0; animation:fadeUp 1s ease forwards; animation-delay:.4s;
+  }
+  .founder-card{
+    position:relative;
+    width:100%; max-width:380px;
+    aspect-ratio:0.78;
+    border-radius:28px;
+    background:linear-gradient(160deg, rgba(139,59,255,0.14), rgba(20,14,36,0.5) 60%);
+    border:1px solid rgba(180,140,255,0.28);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.02) inset,
+      0 30px 90px -16px rgba(80,30,180,0.55),
+      0 0 140px -10px rgba(139,59,255,0.4);
+    backdrop-filter:blur(14px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    animation:floatCard 6s ease-in-out infinite;
+  }
+  @keyframes floatCard{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+  .founder-icon{
+    width:96px; height:96px; border-radius:50%;
+    border:1.6px solid rgba(180,140,255,0.6);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 40px -6px rgba(139,59,255,0.5);
+  }
+  .founder-icon svg{width:46px; height:46px; stroke:#c9b3ff;}
+  .founder-text{text-align:center; font-weight:600; font-size:18px; color:#d8c8ff; line-height:1.45;}
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* ---------- MASTER SECTION ---------- */
+  .master{
+    position:relative; z-index:3;
+    padding:120px 48px 140px;
+    max-width:1320px; margin:0 auto;
+  }
+  .master-head{text-align:center; margin-bottom:60px;}
+  .master-head .eyebrow{justify-content:center; margin-bottom:14px; animation:none; opacity:1;}
+  .master-head .eyebrow .rule{display:none;}
+  .master-head h2{font-size:clamp(28px,3.4vw,38px); font-weight:700;}
+
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:22px;
+  }
+  .skill-card{
+    position:relative;
+    padding:32px 28px 28px;
+    border-radius:18px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+    border:1px solid var(--line);
+    transition:transform .35s ease, border-color .35s ease, box-shadow .35s ease, background .35s ease;
+  }
+  .skill-card:hover{
+    transform:translateY(-6px);
+    border-color:rgba(139,59,255,0.55);
+    box-shadow:0 24px 50px -22px rgba(139,59,255,0.4);
+    background:linear-gradient(160deg, rgba(139,59,255,0.06), rgba(255,255,255,0.01));
+  }
+  .skill-icon{
+    width:44px; height:44px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:20px;
+  }
+  .skill-icon svg{width:38px; height:38px;}
+  .card-title{font-size:18px; font-weight:600; margin-bottom:10px;}
+  .card-desc{font-size:14.5px; color:var(--soft-gray); line-height:1.6; max-width:90%;}
+  .arrow-btn{
+    position:absolute; right:24px; bottom:24px;
+    width:38px; height:38px; border-radius:50%;
+    border:1px solid rgba(139,59,255,0.4);
+    display:flex; align-items:center; justify-content:center;
+    color:#c9b3ff;
+    transition:background .3s ease, transform .3s ease, border-color .3s ease;
+  }
+  .skill-card:hover .arrow-btn{
+    background:var(--electric-purple); color:#fff; border-color:var(--electric-purple);
+    transform:rotate(45deg);
+  }
+  .arrow-btn svg{width:16px; height:16px;}
+
+  /* ---------- RESPONSIVE ---------- */
+  .card-grid .skill-card:nth-child(7){
+    grid-column:2 / span 1;
+    max-width:100%;
+  }
+
+  @media (max-width:1024px){
+    .nav-center{display:none;}
+    .hero-grid{grid-template-columns:1fr; text-align:left;}
+    .founder-wrap{order:-1; margin-bottom:20px;}
+    .founder-card{max-width:300px;}
+    .card-grid{grid-template-columns:repeat(2,1fr);}
+    .card-grid .skill-card:nth-child(7){
+      grid-column:1 / -1;
+      max-width:380px;
+      justify-self:center;
+    }
+  }
+  @media (max-width:640px){
+    .nav{padding:16px 20px;}
+    .nav-right .btn-ghost{display:none;}
+    .hero{padding:130px 20px 60px;}
+    .mountains{height:160px;}
+    .master{padding:90px 20px 100px;}
+    .card-grid{grid-template-columns:1fr;}
+    .hero-buttons{flex-direction:column; width:100%;}
+    .hero-buttons .btn{width:100%; justify-content:center;}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-left">
+    <div class="logo-mark">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2 L36 11 V29 L20 38 L4 29 V11 Z" stroke="#a87bff" stroke-width="1.6" fill="rgba(139,59,255,0.08)"/>
+        <circle cx="20" cy="20" r="6.5" stroke="#c9b3ff" stroke-width="1.6" fill="rgba(139,59,255,0.15)"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">CREATORVERSE <span>AI</span></span>
+      <span class="brand-sub">Powered by Cletus Tech</span>
+    </div>
+  </div>
+
+  <div class="nav-center">
+    <a href="#" class="active">Home</a>
+    <a href="#master">Courses</a>
+    <a href="#">Community</a>
+    <a href="#">Resources</a>
+    <a href="#">About</a>
+  </div>
+
+  <div class="nav-right">
+    <a class="btn btn-ghost" href="#">Login</a>
+    <a class="btn btn-primary" href="#">Get Started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="planet"></div>
+  <svg class="network-lines" viewBox="0 0 1400 800" preserveAspectRatio="none">
+    <g stroke="rgba(180,150,255,0.18)" stroke-width="1">
+      <line x1="60" y1="120" x2="220" y2="60"/>
+      <line x1="220" y1="60" x2="380" y2="140"/>
+      <line x1="60" y1="120" x2="120" y2="260"/>
+      <line x1="120" y1="260" x2="60" y2="400"/>
+      <line x1="380" y1="140" x2="320" y2="280"/>
+    </g>
+    <g fill="rgba(200,170,255,0.5)">
+      <circle cx="60" cy="120" r="2.5"/>
+      <circle cx="220" cy="60" r="2"/>
+      <circle cx="380" cy="140" r="2.5"/>
+      <circle cx="120" cy="260" r="2"/>
+      <circle cx="60" cy="400" r="2"/>
+      <circle cx="320" cy="280" r="2"/>
+    </g>
+  </svg>
+  <div class="stars" id="stars"></div>
+
+  <svg class="mountains" viewBox="0 0 1440 260" preserveAspectRatio="none">
+    <path d="M0,260 L0,180 L120,110 L230,170 L320,90 L430,150 L520,40 L640,140 L740,75 L860,160 L960,55 L1080,150 L1180,95 L1300,170 L1440,120 L1440,260 Z" fill="#0a0815"/>
+    <path d="M0,260 L0,210 L180,160 L340,220 L500,150 L680,225 L860,165 L1040,230 L1220,170 L1440,210 L1440,260 Z" fill="#06040c"/>
+  </svg>
+
+  <div class="hero-grid">
+    <div class="hero-left">
+      <div class="eyebrow">AI EDUCATION PLATFORM<span class="rule"></span></div>
+      <h1 class="headline">Learn AI.<br>Create Without Limits.<br>Build <span class="accent">Your Future.</span></h1>
+      <p class="sub">CreatorVerse AI helps you master AI, content creation, and digital skills to build, grow, and monetize your ideas in the modern world.</p>
+
+      <div class="hero-buttons">
+        <a class="btn btn-primary" href="#">Get Started →</a>
+        <a class="btn btn-outline" href="#"><span class="play-circle">▶</span> Watch Introduction</a>
+      </div>
+
+      <div class="follow-row">
+        <span class="follow-label">Follow us</span>
+        <div class="social-icons">
+          <a href="#" aria-label="YouTube" style="background:rgba(255,0,0,0.12); border-color:rgba(255,0,0,0.25);">
+            <svg viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2s-.23-1.64-.94-2.36c-.9-.94-1.9-.95-2.36-1C16.94 2.6 12 2.6 12 2.6h-.01s-4.94 0-8.2.24c-.46.05-1.46.06-2.36 1-.71.72-.94 2.36-.94 2.36S0 8.1 0 10v1.8c0 1.9.24 3.8.24 3.8s.23 1.64.94 2.36c.9.94 2.08.91 2.6 1.01 1.9.18 8.2.24 8.2.24s4.94-.01 8.2-.25c.46-.05 1.46-.06 2.36-1 .71-.72.94-2.36.94-2.36s.24-1.9.24-3.8V10c0-1.9-.24-3.8-.24-3.8zM9.6 14.6V7.8l6.4 3.4-6.4 3.4z"/></svg>
+          </a>
+          <a href="#" aria-label="TikTok" style="background:rgba(255,255,255,0.08);">
+            <svg viewBox="0 0 24 24" fill="#ffffff"><path d="M16.6 5.82s.51.5 0 0A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-1.83-2.47V9.66a5.42 5.42 0 1 0 4.94 5.4V9.05a7.32 7.32 0 0 0 4.27 1.37V7.4a4.31 4.31 0 0 1-3.23-1.58z"/></svg>
+          </a>
+          <a href="#" aria-label="Facebook" style="background:rgba(24,119,242,0.14); border-color:rgba(24,119,242,0.3);">
+            <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12.07C22 6.5 17.52 2 11.94 2S2 6.5 2 12.07c0 5 3.66 9.13 8.44 9.88v-6.99H7.9v-2.89h2.54V9.85c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.89h-2.33V21.95C18.34 21.2 22 17.07 22 12.07z"/></svg>
+          </a>
+          <a href="#" aria-label="Instagram" style="background:rgba(225,48,108,0.14); border-color:rgba(225,48,108,0.3);">
+            <svg viewBox="0 0 24 24"><defs><radialGradient id="ig" cx="0.3" cy="1" r="1"><stop offset="0%" stop-color="#FED576"/><stop offset="35%" stop-color="#F47133"/><stop offset="65%" stop-color="#BC3081"/><stop offset="100%" stop-color="#4F5BD5"/></radialGradient></defs><path fill="url(#ig)" d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.74 3.74 0 0 1-1.38-.9 3.74 3.74 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07c-1.28.06-2.15.27-2.92.57a5.9 5.9 0 0 0-2.13 1.39A5.9 5.9 0 0 0 .61 4.16c-.3.77-.5 1.64-.57 2.92C-.01 8.36-.02 8.77-.02 12s.01 3.64.07 4.92c.06 1.28.27 2.15.57 2.92a5.9 5.9 0 0 0 1.39 2.13 5.9 5.9 0 0 0 2.13 1.39c.77.3 1.64.5 2.92.57 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c1.28-.06 2.15-.27 2.92-.57a5.9 5.9 0 0 0 2.13-1.39 5.9 5.9 0 0 0 1.39-2.13c.3-.77.5-1.64.57-2.92.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.28-.27-2.15-.57-2.92a5.9 5.9 0 0 0-1.39-2.13A5.9 5.9 0 0 0 19.84.64c-.77-.3-1.64-.5-2.92-.57C15.64.01 15.23 0 12 0z"/><path fill="url(#ig)" d="M12 5.84A6.16 6.16 0 1 0 18.16 12 6.16 6.16 0 0 0 12 5.84zm0 10.16A4 4 0 1 1 16 12a4 4 0 0 1-4 4zM19.85 5.6a1.44 1.44 0 1 1-1.44-1.44 1.44 1.44 0 0 1 1.44 1.44z"/></svg>
+          </a>
+          <a href="#" aria-label="LinkedIn" style="background:rgba(10,102,194,0.14); border-color:rgba(10,102,194,0.3);">
+            <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="founder-wrap">
+      <div class="founder-card">
+        <div class="founder-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="founder-text">Founder's<br>Professional Photo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT YOU'LL MASTER -->
+<section class="master" id="master">
+  <div class="master-head">
+    <div class="eyebrow">WHAT YOU'LL MASTER</div>
+    <h2>What You'll Master</h2>
+  </div>
+
+  <div class="card-grid">
+
+    
