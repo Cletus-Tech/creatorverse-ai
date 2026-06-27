@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #06040c;
+  --electric-purple: #8b3bff;
+  --deep-purple: #5b2bd6;
+  --soft-gray: #a6a0bd;
+  --line: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: #f5f3fb;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- Cinematic hero background pieces (shared by landing + auth) ---------- */
+
+.bg-cinematic {
+  background:
+    radial-gradient(ellipse 1000px 500px at 15% 100%, rgba(255, 150, 140, 0.1), transparent 55%),
+    radial-gradient(ellipse 900px 600px at 18% 92%, rgba(139, 59, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, #07050f 0%, #0a0716 45%, #0d0a1c 100%);
+}
+
+.planet {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 65% 35%, #2a2440 0%, #14101f 45%, #07060d 75%);
+  box-shadow:
+    0 0 140px 40px rgba(139, 59, 255, 0.1),
+    inset -40px -30px 120px rgba(0, 0, 0, 0.6),
+    inset 20px 10px 80px rgba(180, 140, 255, 0.12);
+}
+
+.planet::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    transparent 0deg,
+    transparent 80deg,
+    rgba(170, 130, 255, 0.55) 108deg,
+    rgba(220, 190, 255, 0.95) 118deg,
+    rgba(170, 130, 255, 0.55) 128deg,
+    transparent 156deg,
+    transparent 360deg
+  );
+  mask: radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+  -webkit-mask: radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+  filter: blur(2.5px);
+}
+
+.planet::after {
+  content: '';
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    transparent 0deg,
+    transparent 84deg,
+    rgba(180, 140, 255, 0) 100deg,
+    rgba(200, 160, 255, 0.5) 118deg,
+    rgba(180, 140, 255, 0) 136deg,
+    transparent 360deg
+  );
+  filter: blur(28px);
+}
+
+.star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.glass-card {
+  background: linear-gradient(160deg, rgba(139, 59, 255, 0.14), rgba(20, 14, 36, 0.5) 60%);
+  border: 1px solid rgba(180, 140, 255, 0.28);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.eyebrow-rule {
+  width: 22px;
+  height: 1.5px;
+  background: var(--electric-purple);
+  opacity: 0.7;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #06040c;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a1f47;
+  border-radius: 8px;
+}

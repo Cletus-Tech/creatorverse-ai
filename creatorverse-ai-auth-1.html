@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorVerse AI — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06040c;
+    --bg-2:#0b0717;
+    --deep-purple:#5b2bd6;
+    --electric-purple:#8b3bff;
+    --dark-blue:#1c2a6b;
+    --white:#f5f3fb;
+    --soft-gray:#a6a0bd;
+    --line:rgba(255,255,255,0.10);
+    --glass:rgba(255,255,255,0.035);
+    --danger:#ff5c7a;
+    --success:#3ee08f;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+
+  h1,h2,.brand-name,.eyebrow,.card-title{font-family:'Space Grotesk',sans-serif;}
+
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit;}
+
+  /* ---------- BUTTONS (same system as landing page) ---------- */
+  .btn{
+    font-size:14px; font-weight:600; border-radius:10px; cursor:pointer;
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease;
+    border:none; white-space:nowrap;
+  }
+  .btn-ghost{
+    padding:10px 20px; background:transparent; color:#fff;
+    border:1px solid rgba(255,255,255,0.18);
+  }
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.4); background:rgba(255,255,255,0.04);}
+  .btn-primary{
+    padding:11px 22px;
+    background:linear-gradient(135deg,var(--electric-purple),var(--deep-purple));
+    color:#fff;
+    box-shadow:0 0 0 0 rgba(139,59,255,0.0);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 30px -6px rgba(139,59,255,0.55);
+  }
+  .btn-primary:disabled{opacity:.55; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn-outline{
+    padding:11px 22px; background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.18); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn-outline:hover{border-color:rgba(255,255,255,0.4); transform:translateY(-2px);}
+  .btn-block{width:100%;}
+  .btn-text{
+    background:none; border:none; color:var(--electric-purple); font-size:13.5px;
+    font-weight:600; cursor:pointer; padding:0; transition:color .2s ease;
+  }
+  .btn-text:hover{color:#c9b3ff;}
+
+  /* ---------- BACKDROP (cinematic, shared) ---------- */
+  .scene{
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 1000px 600px at 12% 100%, rgba(255,150,140,0.08), transparent 55%),
+      radial-gradient(ellipse 900px 700px at 15% 85%, rgba(139,59,255,0.20), transparent 60%),
+      linear-gradient(180deg, #07050f 0%, #0a0716 45%, #0d0a1c 100%);
+  }
+  .planet{
+    position:absolute;
+    left:-16%;
+    top:6%;
+    width:56vw; height:56vw;
+    max-width:820px; max-height:820px;
+    border-radius:50%;
+    background:radial-gradient(circle at 65% 35%, #2a2440 0%, #14101f 45%, #07060d 75%);
+    box-shadow:
+      0 0 140px 40px rgba(139,59,255,0.10),
+      inset -40px -30px 120px rgba(0,0,0,0.6),
+      inset 20px 10px 80px rgba(180,140,255,0.12);
+  }
+  .planet::before{
+    content:"";
+    position:absolute; inset:-1px;
+    border-radius:50%;
+    background:conic-gradient(from 200deg at 50% 50%,
+      transparent 0deg, transparent 80deg,
+      rgba(170,130,255,0.55) 108deg, rgba(220,190,255,0.95) 118deg,
+      rgba(170,130,255,0.55) 128deg, transparent 156deg, transparent 360deg);
+    mask:radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+    -webkit-mask:radial-gradient(circle, transparent 98.3%, #000 99%, #000 100%);
+    filter:blur(2.5px);
+  }
+  .planet::after{
+    content:"";
+    position:absolute; inset:-30px;
+    border-radius:50%;
+    background:conic-gradient(from 200deg at 50% 50%,
+      transparent 0deg, transparent 84deg,
+      rgba(180,140,255,0.0) 100deg, rgba(200,160,255,0.5) 118deg,
+      rgba(180,140,255,0.0) 136deg, transparent 360deg);
+    filter:blur(28px);
+  }
+  .stars{position:absolute; inset:0; pointer-events:none;}
+  .star{
+    position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;
+    opacity:.7; animation:twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.9;}}
+
+  .particles{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  .particle{
+    position:absolute; border-radius:50%;
+    background:radial-gradient(circle, rgba(200,170,255,0.9), rgba(139,59,255,0));
+    animation:drift linear infinite;
+  }
+  @keyframes drift{
+    0%{transform:translateY(0) translateX(0); opacity:0;}
+    10%{opacity:.7;}
+    90%{opacity:.5;}
+    100%{transform:translateY(-90vh) translateX(20px); opacity:0;}
+  }
+
+  .network-lines{position:absolute; inset:0; opacity:0.45; pointer-events:none;}
+
+  /* ---------- SHELL / SPLIT LAYOUT ---------- */
+  .shell{
+    position:relative; z-index:2;
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+  }
+
+  /* Left: brand / cinematic panel */
+  .panel-left{
+    position:relative;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:44px 56px;
+    min-height:100vh;
+  }
+  .brand-row{display:flex; align-items:center; gap:12px;}
+  .logo-mark{width:38px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-text{display:flex; flex-direction:column; line-height:1.15;}
+  .brand-name{font-size:17px; font-weight:700; letter-spacing:0.2px;}
+  .brand-name span{color:var(--electric-purple);}
+  .brand-sub{font-size:11px; color:var(--soft-gray); font-family:'Inter',sans-serif; letter-spacing:0.2px;}
+
+  .panel-copy{max-width:440px;}
+  .eyebrow{
+    display:flex; align-items:center; gap:12px;
+    font-size:12.5px; font-weight:600; letter-spacing:1.6px; color:var(--electric-purple);
+    text-transform:uppercase; margin-bottom:20px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.1s;
+  }
+  .eyebrow .rule{width:22px; height:1.5px; background:var(--electric-purple); opacity:0.7;}
+
+  .panel-headline{
+    font-size:clamp(28px,3.6vw,42px);
+    font-weight:700; line-height:1.16; letter-spacing:-0.4px;
+    margin-bottom:18px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.22s;
+  }
+  .panel-headline .accent{color:var(--electric-purple);}
+
+  .panel-desc{
+    font-size:15.5px; line-height:1.65; color:var(--soft-gray);
+    max-width:400px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.34s;
+  }
+
+  .panel-foot{
+    display:flex; align-items:center; gap:14px;
+    opacity:0; animation:fadeUp .8s ease forwards; animation-delay:.5s;
+  }
+  .trust-pill{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; color:var(--soft-gray);
+    padding:8px 14px; border-radius:100px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--line);
+  }
+  .trust-pill svg{width:14px; height:14px; stroke:#c9b3ff; flex-shrink:0;}
+
+  /* Right: form panel */
+  .panel-right{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    padding:48px;
+    min-height:100vh;
+  }
+
+  /* ---------- AUTH CARD (shared component) ---------- */
+  .auth-card{
+    position:relative;
+    width:100%; max-width:420px;
+    padding:42px 40px;
+    border-radius:22px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.045), rgba(20,14,36,0.55) 70%);
+    border:1px solid rgba(180,140,255,0.22);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.02) inset,
+      0 30px 90px -20px rgba(80,30,180,0.5),
+      0 0 120px -20px rgba(139,59,255,0.35);
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
+    animation:cardIn .7s cubic-bezier(.22,1,.36,1) forwards;
+  }
+  @keyframes cardIn{
+    from{opacity:0; transform:translateY(16px) scale(.98);}
+    to{opacity:1; transform:translateY(0) scale(1);}
+  }
+
+  .card-eyebrow{
+    font-size:11.5px; font-weight:600; letter-spacing:1.4px; color:var(--electric-purple);
+    text-transform:uppercase; margin-bottom:10px;
+  }
+  .card-title{font-size:24px; font-weight:700; margin-bottom:8px; letter-spacing:-0.2px;}
+  .card-sub{font-size:14px; color:var(--soft-gray); line-height:1.55; margin-bottom:30px;}
+
+  /* ---------- FORM FIELD (shared component) ---------- */
+  .field{position:relative; margin-bottom:20px;}
+  .field-input{
+    width:100%;
+    padding:18px 16px 8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px;
+    color:#fff;
+    font-size:15px;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .25s ease, box-shadow .25s ease, background .25s ease;
+    height:58px;
+  }
+  .field-input::placeholder{color:transparent;}
+  .field-input:focus{
+    border-color:rgba(139,59,255,0.7);
+    background:rgba(139,59,255,0.05);
+    box-shadow:0 0 0 4px rgba(139,59,255,0.12);
+  }
+  .field-label{
+    position:absolute; left:16px; top:19px;
+    font-size:15px; color:var(--soft-gray);
+    pointer-events:none;
+    transition:top .2s ease, font-size .2s ease, color .2s ease;
+  }
+  .field-input:focus + .field-label,
+  .field-input:not(:placeholder-shown) + .field-label{
+    top:9px; font-size:11px; color:#c9b3ff;
+  }
+  .field-icon-btn{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:var(--soft-gray); display:flex; align-items:center;
+    padding:4px; transition:color .2s ease;
+  }
+  .field-icon-btn:hover{color:#fff;}
+  .field-icon-btn svg{width:18px; height:18px;}
+  .field-valid-icon{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    display:none; align-items:center; pointer-events:none;
+  }
+  .field-valid-icon svg{width:17px; height:17px; stroke:var(--success);}
+  .field.has-icon .field-input{padding-right:46px;}
+  .field-error{
+    font-size:12.5px; color:var(--danger); margin-top:7px; min-height:0;
+    display:none; align-items:center; gap:6px;
+  }
+  .field.error .field-input{border-color:rgba(255,92,122,0.6); box-shadow:0 0 0 4px rgba(255,92,122,0.1);}
+  .field.error .field-error{display:flex;}
+  .field.valid .field-valid-icon{display:flex;}
+
+  /* row utilities */
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:10px;}
+  .checkbox-row{display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--soft-gray); cursor:pointer; user-select:none;}
+  .checkbox-row input{
+    appearance:none; width:17px; height:17px; border-radius:5px;
+    border:1.5px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.03);
+    cursor:pointer; flex-shrink:0; position:relative; transition:all .2s ease;
+  }
+  .checkbox-row input:checked{
+    background:linear-gradient(135deg,var(--electric-purple),var(--deep-purple));
+    border-color:transparent;
+  }
+  .checkbox-row input:checked::after{
+    content:""; position:absolute; left:5px; top:1px; width:4px; height:8px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+
+  /* divider */
+  .divider{display:flex; align-items:center; gap:14px; margin:26px 0; color:var(--soft-gray); font-size:12.5px;}
+  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .google-icon{width:18px; height:18px;}
+
+  .switch-line{text-align:center; font-size:14px; color:var(--soft-gray); margin-top:26px;}
+  .switch-line a{color:var(--electric-purple); font-weight:600; transition:color .2s ease;}
+  .switch-line a:hover{color:#c9b3ff;}
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:13.5px; color:var(--soft-gray); margin-bottom:26px;
+    transition:color .2s ease; cursor:pointer;
+  }
+  .back-link:hover{color:#fff;}
+  .back-link svg{width:15px; height:15px;}
+
+  /* ---------- PASSWORD STRENGTH ---------- */
+  .strength-wrap{margin:-6px 0 20px;}
+  .strength-bars{display:flex; gap:5px; margin-bottom:8px;}
+  .strength-bar{flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,0.1); transition:background .3s ease;}
+  .strength-label{font-size:12px; color:var(--soft-gray); display:flex; justify-content:space-between;}
+  .strength-hint{color:var(--soft-gray);}
+
+  /* ---------- ICON BADGE (security / success screens) ---------- */
+  .icon-badge{
+    width:74px; height:74px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 26px;
+    background:linear-gradient(160deg, rgba(139,59,255,0.18), rgba(20,14,36,0.4));
+    border:1.5px solid rgba(180,140,255,0.4);
+    box-shadow:0 0 50px -8px rgba(139,59,255,0.55);
+  }
+  .icon-badge svg{width:34px; height:34px; stroke:#c9b3ff;}
+  .center-text{text-align:center;}
+
+  /* ---------- OTP (2FA) ---------- */
+  .otp-row{display:flex; gap:10px; margin-bottom:22px; justify-content:space-between;}
+  .otp-box{
+    width:100%; aspect-ratio:1; max-width:54px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.14);
+    color:#fff; text-align:center; font-size:20px; font-weight:700;
+    font-family:'Space Grotesk',sans-serif;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .otp-box:focus{
+    border-color:rgba(139,59,255,0.75);
+    background:rgba(139,59,255,0.06);
+    box-shadow:0 0 0 4px rgba(139,59,255,0.14);
+  }
+  .otp-meta{display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; font-size:13.5px;}
+  .otp-timer{color:var(--soft-gray); display:flex; align-items:center; gap:7px;}
+  .otp-timer svg{width:14px; height:14px; stroke:#c9b3ff;}
+  .otp-timer .count{color:#c9b3ff; font-weight:600; font-family:'Space Grotesk',sans-serif;}
+
+  .security-list{display:flex; flex-direction:column; gap:10px; margin-top:24px;}
+  .security-item{
+    display:flex; align-items:center; gap:10px;
+    font-size:12.5px; color:var(--soft-gray);
+    padding:10px 12px; border-radius:10px;
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--line);
+  }
+  .security-item svg{width:15px; height:15px; stroke:#8b7aa8; flex-shrink:0;}
+
+  /* ---------- FADE TRANSITION BETWEEN VIEWS ---------- */
+  .view{display:none;}
+  .view.active{display:block; animation:fadeUp .5s ease forwards;}
+
+  .toast{
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:rgba(20,14,36,0.92); border:1px solid rgba(180,140,255,0.35);
+    color:#fff; font-size:13.5px; padding:13px 22px; border-radius:12px;
+    box-shadow:0 20px 50px -12px rgba(0,0,0,0.6);
+    opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease;
+    z-index:50; display:flex; align-items:center; gap:9px;
+    backdrop-filter:blur(14px);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast svg{width:16px; height:16px; stroke:var(--success); flex-shrink:0;}
+  .toast.error{border-color:rgba(255,92,122,0.45);}
+  .toast.error svg{stroke:var(--danger);}
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:1024px){
+    .shell{grid-template-columns:1fr;}
+    .panel-left{
+      min-height:auto;
+      padding:36px 32px 60px;
+    }
+    .panel-right{min-height:auto; padding:0 32px 56px;}
+    .panel-copy{max-width:100%;}
+    .panel-foot{flex-wrap:wrap;}
+  }
+  @media (max-width:640px){
+    .panel-left{padding:28px 22px 40px;}
+    .panel-right{padding:0 18px 48px;}
+    .panel-headline{font-size:clamp(24px,7vw,30px);}
+    .auth-card{padding:32px 24px; border-radius:18px;}
+    .otp-box{max-width:46px; font-size:18px;}
+    .planet{width:90vw; height:90vw; left:-30%; top:-10%;}
+  }
+
+  /* ---------- SUCCESS VIEW (post-registration redirect screen) ---------- */
+  .success-icon-badge{
+    width:86px; height:86px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 28px;
+    background:linear-gradient(160deg, rgba(62,224,143,0.18), rgba(20,14,36,0.5));
+    border:1.5px solid rgba(62,224,143,0.45);
+    box-shadow:0 0 60px -8px rgba(62,224,143,0.45);
+    animation:successPulse 2s ease-in-out infinite;
+  }
+  @keyframes successPulse{
+    0%,100%{box-shadow:0 0 40px -8px rgba(62,224,143,0.35);}
+    50%{box-shadow:0 0 80px -4px rgba(62,224,143,0.65);}
+  }
+  .success-icon-badge svg{width:40px; height:40px; stroke:var(--success);}
+
+  .success-title{font-size:26px; font-weight:700; letter-spacing:-0.2px; margin-bottom:10px; font-family:'Space Grotesk',sans-serif;}
+  .success-sub{font-size:14.5px; color:var(--soft-gray); line-height:1.6; margin-bottom:32px;}
+
+  .success-redirect-bar{
+    position:relative; height:4px; border-radius:3px;
+    background:rgba(255,255,255,0.07); margin-bottom:18px; overflow:hidden;
+  }
+  .success-redirect-fill{
+    position:absolute; left:0; top:0; height:100%; width:0%;
+    background:linear-gradient(90deg, var(--success), #23c97a);
+    border-radius:3px;
+    transition:width linear;
+  }
+  .success-redirect-label{
+    font-size:12.5px; color:var(--soft-gray);
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .success-redirect-label svg{width:13px; height:13px; stroke:#c9b3ff; animation:spin 1.4s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* DEV MODE badge */
+  .dev-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; font-weight:600; letter-spacing:1px;
+    color:#ffb84d; background:rgba(255,184,77,0.1);
+    border:1px solid rgba(255,184,77,0.3);
+    border-radius:100px; padding:5px 12px; margin-bottom:22px;
+  }
+  .dev-badge::before{content:""; width:6px; height:6px; border-radius:50%; background:#ffb84d; animation:blink 1.2s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+</style>
+</head>
+<body>
+
+<!-- SHARED CINEMATIC BACKDROP -->
+<div class="scene">
+  <div class="planet"></div>
+  <svg class="network-lines" viewBox="0 0 1400 800" preserveAspectRatio="none">
+    <g stroke="rgba(180,150,255,0.18)" stroke-width="1">
+      <line x1="60" y1="120" x2="220" y2="60"/>
+      <line x1="220" y1="60" x2="380" y2="140"/>
+      <line x1="60" y1="120" x2="120" y2="260"/>
+      <line x1="120" y1="260" x2="60" y2="400"/>
+      <line x1="380" y1="140" x2="320" y2="280"/>
+    </g>
+    <g fill="rgba(200,170,255,0.5)">
+      <circle cx="60" cy="120" r="2.5"/>
+      <circle cx="220" cy="60" r="2"/>
+      <circle cx="380" cy="140" r="2.5"/>
+      <circle cx="120" cy="260" r="2"/>
+      <circle cx="60" cy="400" r="2"/>
+      <circle cx="320" cy="280" r="2"/>
+    </g>
+  </svg>
+  <div class="stars" id="stars"></div>
+  <div class="particles" id="particles"></div>
+</div>
+
+<div class="shell">
+
+  <!-- ================= LEFT PANEL ================= -->
+  <div class="panel-left">
+    <div class="brand-row">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2 L36 11 V29 L20 38 L4 29 V11 Z" stroke="#a87bff" stroke-width="1.6" fill="rgba(139,59,255,0.08)"/>
+          <circle cx="20" cy="20" r="6.5" stroke="#c9b3ff" stroke-width="1.6" fill="rgba(139,59,255,0.15)"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">CREATORVERSE <span>AI</span></span>
+        <span class="brand-sub">Powered by Cletus Tech</span>
+      </div>
+    </div>
+
+    <div class="panel-copy">
+      <div class="eyebrow">WELCOME TO CREATORVERSE AI<span class="rule"></span></div>
+      <h1 class="panel-headline">Continue Your <span class="accent">AI Journey.</span></h1>
+      <p class="panel-desc">Sign in to access your courses, creator community, AI tools, and learning dashboard.</p>
+    </div>
+
+    <div class="panel-foot">
+      <div class="trust-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke-linejoin="round"/></svg>
+        Encrypted &amp; secure
+      </div>
+      <div class="trust-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg>
+        24/7 access
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RIGHT PANEL ================= -->
+  <div class="panel-right">
+
+    <!-- ===== LOGIN ===== -->
+    <div class="view active" id="view-login">
+      <div class="auth-card">
+        <div class="card-eyebrow">SIGN IN</div>
+        <h2 class="card-title">Welcome back</h2>
+        <p class="card-sub">Enter your details to access your dashboard.</p>
+
+        <form onsubmit="return false;">
+          <div class="field has-icon" id="login-email-field">
+            <input class="field-input" type="email" placeholder=" " id="login-email" autocomplete="email">
+            <label class="field-label">Email address</label>
+            <span class="field-valid-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div class="field-error"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Enter a valid email address</div>
+          </div>
+
+          <div class="field has-icon">
+            <input class="field-input" type="password" placeholder=" " id="login-password" autocomplete="current-password">
+            <label class="field-label">Password</label>
+            <button type="button" class="field-icon-btn" onclick="togglePw('login-password', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <div class="row-between">
+            <label class="checkbox-row"><input type="checkbox">Remember me</label>
+            <a class="btn-text" onclick="showView('forgot')">Forgot password?</a>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-block" onclick="handleLogin(this)">Login</button>
+
+          <div class="divider">or continue with</div>
+
+          <button type="button" class="btn btn-outline btn-block">
+            <svg class="google-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20.4H24v7.2h11.3C33.7 31.9 29.3 35 24 35c-6.1 0-11.3-4.9-11.3-11s5.2-11 11.3-11c2.9 0 5.4 1 7.4 2.7l5.4-5.4C33.6 7.1 29 5 24 5 13.5 5 5 13.5 5 24s8.5 19 19 19 19-8.5 19-19c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l5.9 4.3C13.8 15.6 18.5 12.4 24 12.4c2.9 0 5.4 1 7.4 2.7l5.4-5.4C33.6 7.1 29 5 24 5c-7.6 0-14.2 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 43c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.2-7.2 2.2-5.3 0-9.7-3.6-11.2-8.4l-6.1 4.7C9.5 38.4 16.2 43 24 43z"/><path fill="#1976D2" d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C40.8 35.6 43 30.2 43 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+            Continue with Google
+          </button>
+        </form>
+
+        <p class="switch-line">Don't have an account? <a onclick="showView('register')">Create Account</a></p>
+      </div>
+    </div>
+
+    <!-- ===== REGISTER ===== -->
+    <div class="view" id="view-register">
+      <div class="auth-card">
+        <div class="card-eyebrow">GET STARTED</div>
+        <h2 class="card-title">Create your account</h2>
+        <p class="card-sub">Join the AI creator community in minutes.</p>
+
+        <form onsubmit="return false;">
+          <div class="field">
+            <input class="field-input" type="text" placeholder=" " autocomplete="name">
+            <label class="field-label">Full name</label>
+          </div>
+          <div class="field">
+            <input class="field-input" type="email" placeholder=" " id="reg-email" autocomplete="email">
+            <label class="field-label">Email</label>
+          </div>
+          <div class="field">
+            <input class="field-input" type="text" placeholder=" " autocomplete="username">
+            <label class="field-label">Username (optional)</label>
+          </div>
+          <div class="field has-icon">
+            <input class="field-input" type="password" placeholder=" " id="reg-password" oninput="updateStrength(this.value,'reg')" autocomplete="new-password">
+            <label class="field-label">Password</label>
+            <button type="button" class="field-icon-btn" onclick="togglePw('reg-password', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <div class="strength-wrap">
+            <div class="strength-bars">
+              <div class="strength-bar" id="reg-bar-1"></div>
+              <div class="strength-bar" id="reg-bar-2"></div>
+              <div class="strength-bar" id="reg-bar-3"></div>
+              <div class="strength-bar" id="reg-bar-4"></div>
+            </div>
+            <div class="strength-label"><span id="reg-strength-text">Use 8+ characters, a number &amp; symbol</span></div>
+          </div>
+
+          <div class="field has-icon">
+            <input class="field-input" type="password" placeholder=" " autocomplete="new-password">
+            <label class="field-label">Confirm password</label>
+          </div>
+
+          <div class="row-between" style="margin-bottom:22px;">
+            <label class="checkbox-row"><input type="checkbox">I agree to the <a href="#" style="color:#c9b3ff; text-decoration:underline;">Terms</a> &amp; <a href="#" style="color:#c9b3ff; text-decoration:underline;">Privacy Policy</a></label>
+          </div>
+
+          <!-- FLOW CONTROLLED BY EMAIL_VERIFICATION_REQUIRED flag in CONFIG below -->
+          <button type="button" class="btn btn-primary btn-block" onclick="handleRegister(this)">Create Account</button>
+
+          <div class="divider">or continue with</div>
+
+          <button type="button" class="btn btn-outline btn-block">
+            <svg class="google-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20.4H24v7.2h11.3C33.7 31.9 29.3 35 24 35c-6.1 0-11.3-4.9-11.3-11s5.2-11 11.3-11c2.9 0 5.4 1 7.4 2.7l5.4-5.4C33.6 7.1 29 5 24 5 13.5 5 5 13.5 5 24s8.5 19 19 19 19-8.5 19-19c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l5.9 4.3C13.8 15.6 18.5 12.4 24 12.4c2.9 0 5.4 1 7.4 2.7l5.4-5.4C33.6 7.1 29 5 24 5c-7.6 0-14.2 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 43c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.2-7.2 2.2-5.3 0-9.7-3.6-11.2-8.4l-6.1 4.7C9.5 38.4 16.2 43 24 43z"/><path fill="#1976D2" d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C40.8 35.6 43 30.2 43 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+            Continue with Google
+          </button>
+        </form>
+
+        <p class="switch-line">Already have an account? <a onclick="showView('login')">Login</a></p>
+      </div>
+    </div>
+
+    <!-- ===== FORGOT PASSWORD ===== -->
+    <div class="view" id="view-forgot">
+      <div class="auth-card">
+        <span class="back-link" onclick="showView('login')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back to login
+        </span>
+        <div class="card-eyebrow">ACCOUNT RECOVERY</div>
+        <h2 class="card-title">Forgot your password?</h2>
+        <p class="card-sub">Enter your email and we'll send a link to reset it.</p>
+
+        <form onsubmit="return false;">
+          <div class="field">
+            <input class="field-input" type="email" placeholder=" " autocomplete="email">
+            <label class="field-label">Email address</label>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" onclick="fakeSubmit(this,'Reset link sent')">Send Reset Link</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== RESET PASSWORD ===== -->
+    <div class="view" id="view-reset">
+      <div class="auth-card">
+        <div class="card-eyebrow">NEW PASSWORD</div>
+        <h2 class="card-title">Set a new password</h2>
+        <p class="card-sub">Choose a strong password you haven't used before.</p>
+
+        <form onsubmit="return false;">
+          <div class="field has-icon">
+            <input class="field-input" type="password" placeholder=" " id="reset-password" oninput="updateStrength(this.value,'reset')" autocomplete="new-password">
+            <label class="field-label">New password</label>
+            <button type="button" class="field-icon-btn" onclick="togglePw('reset-password', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <div class="strength-wrap">
+            <div class="strength-bars">
+              <div class="strength-bar" id="reset-bar-1"></div>
+              <div class="strength-bar" id="reset-bar-2"></div>
+              <div class="strength-bar" id="reset-bar-3"></div>
+              <div class="strength-bar" id="reset-bar-4"></div>
+            </div>
+            <div class="strength-label"><span id="reset-strength-text">Use 8+ characters, a number &amp; symbol</span></div>
+          </div>
+
+          <div class="field has-icon">
+            <input class="field-input" type="password" placeholder=" " autocomplete="new-password">
+            <label class="field-label">Confirm password</label>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-block" onclick="fakeSubmit(this,'Password updated')">Save Password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== EMAIL VERIFICATION ===== -->
+    <div class="view" id="view-verify">
+      <div class="auth-card center-text">
+        <div class="icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M3 7l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        </div>
+        <div class="card-eyebrow" style="justify-content:center; display:flex;">ALMOST THERE</div>
+        <h2 class="card-title">Check your inbox</h2>
+        <p class="card-sub">Verify your email to activate your CreatorVerse AI account.</p>
+
+        <button type="button" class="btn btn-primary btn-block" onclick="fakeSubmit(this,'Verification email resent')" style="margin-bottom:12px;">Resend Email</button>
+        <button type="button" class="btn btn-outline btn-block" onclick="showView('register')">Change Email</button>
+      </div>
+    </div>
+
+    <!-- ===== REGISTRATION SUCCESS (DEV MODE: shown instead of verify) ===== -->
+    <!--
+      ╔══════════════════════════════════════════════════════════════╗
+      ║  DEV MODE — SUCCESS / AUTO-LOGIN VIEW                       ║
+      ║  This view replaces the email verification step when        ║
+      ║  EMAIL_VERIFICATION_REQUIRED = false.                       ║
+      ║  RE-ENABLE verification before production deployment.       ║
+      ╚══════════════════════════════════════════════════════════════╝
+    -->
+    <div class="view" id="view-success">
+      <div class="auth-card center-text">
+        <div class="success-icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+
+        <div class="dev-badge" id="success-dev-badge">DEV MODE</div>
+
+        <div class="card-eyebrow" id="success-eyebrow" style="justify-content:center; display:flex;">ACCOUNT CREATED</div>
+        <h2 class="success-title" id="success-title">Welcome to CreatorVerse AI!</h2>
+        <p class="success-sub" id="success-sub">Your account has been created successfully.<br>Redirecting you to your dashboard…</p>
+
+        <div class="success-redirect-bar">
+          <div class="success-redirect-fill" id="redirect-fill"></div>
+        </div>
+        <p class="success-redirect-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          Logging you in automatically…
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== 2FA ===== -->
+    <div class="view" id="view-2fa">
+      <div class="auth-card">
+        <div class="card-eyebrow">SECURITY CHECK</div>
+        <h2 class="card-title">Two-factor verification</h2>
+        <p class="card-sub">Enter the 6-digit code sent to your device.</p>
+
+        <div class="otp-row">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-otp>
+        </div>
+
+        <div class="otp-meta">
+          <span class="otp-timer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg>
+            Expires in <span class="count" id="otp-count">00:60</span>
+          </span>
+          <button type="button" class="btn-text" id="resend-btn" onclick="resendOtp()">Resend code</button>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" onclick="fakeSubmit(this,'Identity verified')">Verify</button>
+
+        <div class="security-list">
+          <div class="security-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke-linejoin="round"/></svg>
+            This device will be remembered for 30 days
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-text">Done</span>
+</div>
+
+<script>
+  // ══════════════════════════════════════════════════════════════════
+  //  CREATORVERSE AI — AUTH CONFIGURATION
+  //  ──────────────────────────────────────────────────────────────
+  //  EMAIL_VERIFICATION_REQUIRED:
+  //    false → DEV MODE  : Register → Success → Auto-login → Dashboard
+  //    true  → PROD MODE : Register → Email Verification → Login
+  //
+  //  ⚠️  SET TO true BEFORE PRODUCTION DEPLOYMENT
+  // ══════════════════════════════════════════════════════════════════
+  const CONFIG = {
+    EMAIL_VERIFICATION_REQUIRED: false,   // ← flip to true for production
+    REDIRECT_URL: 'student-dashboard.html', // ← your actual dashboard URL
+    REDIRECT_DELAY_MS: 3200               // ← how long to show success screen
+  };
+  // ══════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════
+  //  SESSION / AUTH STATE
+  //  ──────────────────────────────────────────────────────────────
+  //  This is what was actually broken: the old "Login" button only
+  //  called fakeSubmit() — a toast with no auth state, no saved
+  //  session, and no navigation. The UI said "Welcome back" and then
+  //  just... sat there, because nothing downstream ever ran.
+  //
+  //  Below: a minimal session store (localStorage for "Remember me",
+  //  sessionStorage otherwise) plus helpers any guard/route can use to
+  //  ask "is this user actually authenticated?"
+  // ══════════════════════════════════════════════════════════════════
+  const SESSION_KEY = 'cv_auth_session';
+  const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+  function createSession(email, remember) {
+    const session = {
+      email: email,
+      token: 'tok_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2),
+      createdAt: Date.now(),
+      expiresAt: Date.now() + SESSION_TTL_MS
+    };
+    const store = remember ? localStorage : sessionStorage;
+    const other = remember ? sessionStorage : localStorage;
+    try {
+      other.removeItem(SESSION_KEY);      // avoid a stale/duplicate session in the other storage
+      store.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (err) {
+      console.error('[auth] failed to persist session:', err);
+      throw new Error('Could not save your session (browser storage may be disabled).');
+    }
+    return session;
+  }
+
+  function getSession() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+    } catch (err) {
+      console.error('[auth] storage read failed:', err);
+      return null;
+    }
+    if (!raw) return null;
+    try {
+      const session = JSON.parse(raw);
+      if (!session || !session.token || !session.expiresAt || Date.now() > session.expiresAt) {
+        clearSession();
+        return null;
+      }
+      return session;
+    } catch (err) {
+      console.error('[auth] corrupt session payload, clearing:', err);
+      clearSession();
+      return null;
+    }
+  }
+
+  function clearSession() {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
+    } catch (err) {
+      console.error('[auth] failed to clear session:', err);
+    }
+  }
+
+  function isAuthenticated() {
+    return !!getSession();
+  }
+  window.clearSession = clearSession; // dev convenience: clearSession() in console to re-test login
+
+  // ── ROUTE GUARD ──────────────────────────────────────────────────
+  // Runs immediately on load. If a valid session already exists, this
+  // IS the login page acting as its own guard: don't render the login
+  // form at all, send the user straight to the dashboard. This is what
+  // stops authenticated users from landing on/staying on/being routed
+  // back to /login.
+  //
+  // `?logout=1` clears the session first (demo/testing convenience),
+  // so this page can still be reached to test the login flow again.
+  // ─────────────────────────────────────────────────────────────────
+  (function routeGuard() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('logout') === '1') {
+      clearSession();
+      return;
+    }
+    if (isAuthenticated()) {
+      window.location.href = CONFIG.REDIRECT_URL;
+    }
+  })();
+
+  // ---- view switching ----
+  const panelHeadline = document.querySelector('.panel-headline');
+  const panelDesc = document.querySelector('.panel-desc');
+  const copyMap = {
+    login:    { h:'Continue Your <span class="accent">AI Journey.</span>', d:"Sign in to access your courses, creator community, AI tools, and learning dashboard." },
+    register: { h:'Start Your <span class="accent">AI Journey.</span>',    d:"Create your account to unlock courses, community, and AI tools built for creators." },
+    forgot:   { h:'Recover Your <span class="accent">Account Access.</span>', d:"We'll help you get back in. Enter your email to receive a secure reset link." },
+    reset:    { h:'Set A New <span class="accent">Secure Password.</span>',  d:"Choose a strong password to keep your CreatorVerse AI account protected." },
+    // ── EMAIL VERIFICATION VIEW ─────────────────────────────────────
+    // DEV MODE: This view is bypassed when EMAIL_VERIFICATION_REQUIRED = false.
+    // PROD MODE: Restore by setting EMAIL_VERIFICATION_REQUIRED = true — no
+    //            other changes needed; the flow switches back automatically.
+    // ────────────────────────────────────────────────────────────────
+    verify:   { h:'One Last Step <span class="accent">To Activate.</span>', d:"Confirm your email to unlock your dashboard and start creating." },
+    success:  { h:'You\'re All Set, <span class="accent">Creator.</span>', d:"Your account is ready. Logging you in now — welcome to CreatorVerse AI." },
+    "2fa":    { h:'Confirm It\u2019s <span class="accent">Really You.</span>', d:"A quick security check keeps your account and content safe." }
+  };
+
+  function showView(name){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    const c = copyMap[name];
+    if(c){ panelHeadline.innerHTML = c.h; panelDesc.textContent = c.d; }
+    if(name === '2fa') startOtpTimer();
+    if(name === 'success') startRedirectSequence();
+  }
+
+  // The success view is shared between registration (dev-mode auto-login)
+  // and a normal login. Swap its copy so it's accurate for each case.
+  function setSuccessCopy(mode){
+    const badge = document.getElementById('success-dev-badge');
+    const eyebrow = document.getElementById('success-eyebrow');
+    const title = document.getElementById('success-title');
+    const sub = document.getElementById('success-sub');
+    if (mode === 'login') {
+      if (badge) badge.style.display = 'none';
+      eyebrow.textContent = 'LOGIN SUCCESSFUL';
+      title.textContent = 'Welcome back, Creator!';
+      sub.innerHTML = "You're signed in.<br>Redirecting you to your dashboard…";
+    } else {
+      if (badge) badge.style.display = '';
+      eyebrow.textContent = 'ACCOUNT CREATED';
+      title.textContent = 'Welcome to CreatorVerse AI!';
+      sub.innerHTML = 'Your account has been created successfully.<br>Redirecting you to your dashboard…';
+    }
+  }
+
+  // expose for demo navigation
+  window.showView = showView;
+
+  // ── LOGIN HANDLER ────────────────────────────────────────────────
+  // This replaces the old `fakeSubmit(this,'Welcome back')` call,
+  // which only showed a toast — it never created a session, never
+  // updated auth state, and never navigated anywhere. That's the
+  // entire reason the page said "Welcome back" and went nowhere.
+  //
+  // Flow: validate → call auth → on success, SAVE SESSION → update
+  // auth state → go to dashboard. On failure, show the real error and
+  // stay put (no silent failure back to a blank login form).
+  // ─────────────────────────────────────────────────────────────────
+  function handleLogin(btn) {
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    const emailField = document.getElementById('login-email-field');
+    const rememberInput = document.querySelector('#view-login .checkbox-row input[type="checkbox"]');
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    emailField.classList.remove('error', 'valid');
+    if (!emailValid) {
+      emailField.classList.add('error');
+      emailInput.focus();
+      return;
+    }
+    if (!password) {
+      showToast('Enter your password to continue', 'error');
+      passwordInput.focus();
+      return;
+    }
+
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Signing in…';
+
+    authenticate(email, password)
+      .then((result) => {
+        btn.disabled = false;
+        btn.innerHTML = original;
+
+        // 7) Only move forward once the auth call actually reports success
+        if (!result || !result.success) {
+          showToast((result && result.error) || 'Invalid email or password', 'error');
+          return;
+        }
+
+        // 8) Login never checks EMAIL_VERIFICATION_REQUIRED — that flag only
+        // gates the *registration* flow's verify step, so a disabled
+        // verification requirement can never block a login.
+
+        // 1) Create + persist the authenticated session
+        try {
+          createSession(result.user.email, !!(rememberInput && rememberInput.checked));
+        } catch (err) {
+          // 9) Surface the real failure instead of pretending login worked
+          showToast(err.message || 'Could not start your session', 'error');
+          return;
+        }
+
+        // 2) Auth state is read live from getSession()/isAuthenticated(),
+        // so it's already "updated" the moment the session is saved.
+
+        // 3) Hand off to the shared success → redirect sequence
+        setSuccessCopy('login');
+        showView('success');
+      })
+      .catch((err) => {
+        btn.disabled = false;
+        btn.innerHTML = original;
+        console.error('[auth] login request failed:', err);
+        showToast('Sign-in failed: ' + (err && err.message ? err.message : 'please try again'), 'error');
+      });
+  }
+  window.handleLogin = handleLogin;
+
+  // Mock authentication call. Swap this implementation for a real
+  // request, e.g.:
+  //   return fetch('/api/auth/login', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ email, password })
+  //   }).then(r => r.json());
+  // ...as long as it resolves to { success, user } or { success: false, error }.
+  function authenticate(email, password) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          resolve({ success: true, user: { email: email } });
+        } catch (err) {
+          reject(err);
+        }
+      }, 900);
+    });
+  }
+  window.authenticate = authenticate;
+
+  // ── REGISTRATION HANDLER ─────────────────────────────────────────
+  // Reads CONFIG.EMAIL_VERIFICATION_REQUIRED to branch the flow.
+  // Switch flag to true to restore full verification flow for production.
+  // ─────────────────────────────────────────────────────────────────
+  function handleRegister(btn) {
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Creating account…';
+
+    // Simulate async account creation (replace with real API call)
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = original;
+
+      if (CONFIG.EMAIL_VERIFICATION_REQUIRED) {
+        // ── PRODUCTION PATH ──────────────────────────────────────
+        // Email verification required: show verify view
+        showView('verify');
+      } else {
+        // ── DEV / BYPASS PATH ────────────────────────────────────
+        // Email verification skipped: create the session now (this IS
+        // the "auto-login" the success screen promises) → success view
+        // ⚠️  Re-enable verification before going live
+        const emailInput = document.getElementById('reg-email');
+        const email = (emailInput && emailInput.value.trim()) || 'new-creator@example.com';
+        try {
+          createSession(email, true);
+        } catch (err) {
+          showToast(err.message || 'Could not start your session', 'error');
+          return;
+        }
+        setSuccessCopy('register');
+        showView('success');
+      }
+    }, 900);
+  }
+  window.handleRegister = handleRegister;
+
+  // ── SUCCESS SCREEN + REDIRECT SEQUENCE ──────────────────────────
+  // Animates the progress bar, then performs the real redirect.
+  // ─────────────────────────────────────────────────────────────────
+  function startRedirectSequence() {
+    const fill = document.getElementById('redirect-fill');
+    if (!fill) return;
+
+    // Reset bar
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+
+    // Force reflow before animating
+    fill.getBoundingClientRect();
+
+    // Animate bar to 100% over the redirect delay
+    fill.style.transition = `width ${CONFIG.REDIRECT_DELAY_MS}ms linear`;
+    fill.style.width = '100%';
+
+    setTimeout(redirectToDashboard, CONFIG.REDIRECT_DELAY_MS);
+  }
+
+  // 4/5) Gate the redirect on an actual valid session — this is the
+  // route guard for the *outbound* side: never send someone to the
+  // dashboard without a session, and never strand them with no
+  // feedback if something went wrong.
+  function redirectToDashboard() {
+    const session = getSession();
+    if (!session) {
+      showToast('Your session could not be verified. Please sign in again.', 'error');
+      showView('login');
+      return;
+    }
+    try {
+      window.location.href = CONFIG.REDIRECT_URL;
+    } catch (err) {
+      // 9) If navigation itself throws, show the real error rather than
+      // quietly falling back to the login screen.
+      console.error('[auth] redirect to dashboard failed:', err);
+      showToast('Could not open the dashboard: ' + (err && err.message ? err.message : 'unknown error'), 'error');
+    }
+  }
+
+  // ---- password show/hide ----
+  function togglePw(id, btn){
+    const input = document.getElementById(id);
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    btn.innerHTML = isPw
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.1A11 11 0 0123 12s-1.5 2.6-4 4.4M6.1 6.5C3.6 8.2 1 12 1 12s3.5 7 11 7c1.2 0 2.3-.2 3.3-.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+  window.togglePw = togglePw;
+
+  // ---- email field live validation (login demo) ----
+  const loginEmail = document.getElementById('login-email');
+  const loginEmailField = document.getElementById('login-email-field');
+  loginEmail.addEventListener('input', () => {
+    const val = loginEmail.value.trim();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    loginEmailField.classList.remove('error','valid');
+    if(val.length === 0) return;
+    loginEmailField.classList.add(valid ? 'valid' : 'error');
+  });
+
+  // ---- password strength meter ----
+  function updateStrength(value, prefix){
+    let score = 0;
+    if(value.length >= 8) score++;
+    if(/[A-Z]/.test(value) && /[a-z]/.test(value)) score++;
+    if(/\d/.test(value)) score++;
+    if(/[^A-Za-z0-9]/.test(value)) score++;
+
+    const colors = ['#ff5c7a','#ff5c7a','#ffb84d','#3ee08f'];
+    const labels = ['Weak password','Weak password','Good password','Strong password'];
+    const idx = Math.max(0, score - 1);
+
+    for(let i=1;i<=4;i++){
+      const bar = document.getElementById(prefix+'-bar-'+i);
+      if(!bar) continue;
+      bar.style.background = (i <= score && value.length>0) ? colors[idx] : 'rgba(255,255,255,0.1)';
+    }
+    const text = document.getElementById(prefix+'-strength-text');
+    if(text) text.textContent = value.length === 0 ? 'Use 8+ characters, a number & symbol' : labels[idx];
+  }
+  window.updateStrength = updateStrength;
+
+  // ---- OTP boxes ----
+  const otpBoxes = document.querySelectorAll('[data-otp]');
+  otpBoxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/[^0-9]/g,'').slice(0,1);
+      if(box.value && otpBoxes[i+1]) otpBoxes[i+1].focus();
+    });
+    box.addEventListener('keydown', (e) => {
+      if(e.key === 'Backspace' && !box.value && otpBoxes[i-1]) otpBoxes[i-1].focus();
+    });
+  });
+
+  let otpInterval;
+  function startOtpTimer(){
+    clearInterval(otpInterval);
+    let seconds = 60;
+    const countEl = document.getElementById('otp-count');
+    const resendBtn = document.getElementById('resend-btn');
+    resendBtn.style.opacity = '0.4';
+    resendBtn.style.pointerEvents = 'none';
+    otpInterval = setInterval(() => {
+      seconds--;
+      const m = String(Math.floor(seconds/60)).padStart(2,'0');
+      const s = String(seconds%60).padStart(2,'0');
+      countEl.textContent = `${m}:${s}`;
+      if(seconds <= 0){
+        clearInterval(otpInterval);
+        countEl.textContent = '00:00';
+        resendBtn.style.opacity = '1';
+        resendBtn.style.pointerEvents = 'auto';
+      }
+    }, 1000);
+  }
+  function resendOtp(){
+    showToast('New code sent');
+    startOtpTimer();
+  }
+  window.resendOtp = resendOtp;
+
+  // ---- toast ----
+  function showToast(msg, type){
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = msg;
+    toast.classList.toggle('error', type === 'error');
+    toast.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove('show'), type === 'error' ? 4000 : 2400);
+  }
+  function fakeSubmit(btn, msg){
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Please wait…';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = original;
+      showToast(msg);
+    }, 900);
+  }
+  window.fakeSubmit = fakeSubmit;
+
+  // ---- starfield ----
+  const starsContainer = document.getElementById('stars');
+  const STAR_COUNT = 70;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 90 + '%';
+    s.style.animationDelay = (Math.random() * 4) + 's';
+    s.style.opacity = (0.2 + Math.random() * 0.6).toFixed(2);
+    const size = Math.random() < 0.85 ? 1.5 : 2.5;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    starsContainer.appendChild(s);
+  }
+
+  // ---- floating particles (lightweight, lazy) ----
+  function spawnParticles(){
+    const container = document.getElementById('particles');
+    const COUNT = 16;
+    for(let i=0;i<COUNT;i++){
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 2 + Math.random()*3;
+      p.style.width = size+'px';
+      p.style.height = size+'px';
+      p.style.left = Math.random()*100+'%';
+      p.style.bottom = (Math.random()*20)+'%';
+      p.style.animationDuration = (14 + Math.random()*14)+'s';
+      p.style.animationDelay = (Math.random()*12)+'s';
+      container.appendChild(p);
+    }
+  }
+  if('requestIdleCallback' in window){
+    requestIdleCallback(spawnParticles);
+  } else {
+    setTimeout(spawnParticles, 200);
+  }
+</script>
+
+</body>
+</html>
