@@ -1,0 +1,12 @@
+
+  :root{
+    --bg:#06040c;
+    --bg-2:#0b0717;
+    --deep-purple:#5b2bd6;
+    --electric-purple:#8b3bff;
+    --dark-blue:#1c2a6b;
+    --white:#f5f3fb;
+    --soft-gray:#a6a0bd;
+    --line:rgba(255,255,255,0.10);
+    --glass:rgba(255,255,255,0.035);
+  }
