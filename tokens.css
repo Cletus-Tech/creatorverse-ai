@@ -1,12 +1,12 @@
 
   :root{
-    --bg:#06040c;
-    --bg-2:#0b0717;
-    --deep-purple:#5b2bd6;
-    --electric-purple:#8b3bff;
+    --bg:#040b1f;
+    --bg-2:#071433;
+    --deep-purple:#1456e6;
+    --electric-purple:#2f7bff;
     --dark-blue:#1c2a6b;
-    --white:#f5f3fb;
-    --soft-gray:#a6a0bd;
+    --white:#f4f8ff;
+    --soft-gray:#9fb0cf;
     --line:rgba(255,255,255,0.10);
     --glass:rgba(255,255,255,0.035);
   }
