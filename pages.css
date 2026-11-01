@@ -55,3 +55,17 @@ body[data-page]::before{content:"";position:fixed;right:2vw;bottom:0;width:min(4
 .panel h3{font:600 17px 'Space Grotesk',sans-serif;margin-bottom:8px;color:#fff}
 .panel p{font-size:14.5px}
 .page h1{background:none}
+.page textarea,.page select{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;font:inherit}
+.page select option{background:#0b0717}
+.lesson-video{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000;margin:18px 0}
+.lesson-text{white-space:pre-wrap;line-height:1.75;color:var(--soft-gray);margin:18px 0}
+.progress{height:8px;border-radius:999px;background:rgba(255,255,255,.08);margin:22px 0 8px;overflow:hidden}
+.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--electric-purple),var(--deep-purple))}
+.pmeta{font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.row .btn{margin-top:0}
+.mod{font:600 16px 'Space Grotesk',sans-serif;margin:18px 0 4px;color:#fff}
+.mini{max-width:none;display:grid;gap:8px;margin-top:10px}
+.panel .row .btn{padding:8px 14px;font-size:13px}
+.page li a{color:#d9c8ff}
+#list .panel{margin-bottom:16px}
