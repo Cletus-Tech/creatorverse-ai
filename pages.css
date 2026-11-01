@@ -42,3 +42,16 @@ button.btn{cursor:pointer;font:inherit}
 .msg:empty{display:none}
 .msg.err{border-color:#ff6b81;color:#ffb3bf}.msg.ok{border-color:#4cd98a;color:#a9f0c9}
 .page .alt{display:block;margin-top:16px;font-size:14px}
+/* Founder watermark behind inner pages */
+body[data-page]::before{content:"";position:fixed;right:2vw;bottom:0;width:min(44vw,520px);height:min(80vh,720px);background:url(founder.webp) no-repeat bottom right/contain;opacity:.08;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+@media (max-width:640px){body[data-page]::before{width:78vw;right:-6vw;opacity:.06}}
+/* Dashboard */
+.dash-head{display:flex;gap:18px;align-items:center;margin-bottom:8px}
+.dash-head h1{margin-bottom:4px}
+.avatar{flex:none;width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 28px 'Space Grotesk',sans-serif;color:#fff;background:linear-gradient(135deg,var(--electric-purple),var(--deep-purple));box-shadow:0 0 28px rgba(139,59,255,.35)}
+.chip{display:inline-block;margin:8px 8px 0 0;padding:5px 12px;border-radius:999px;border:1px solid rgba(139,59,255,.45);background:rgba(139,59,255,.1);color:#d9c8ff;font-size:12.5px;text-transform:capitalize}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:26px}
+.panel{padding:22px;border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:1px solid var(--line)}
+.panel h3{font:600 17px 'Space Grotesk',sans-serif;margin-bottom:8px;color:#fff}
+.panel p{font-size:14.5px}
+.page h1{background:none}
