@@ -37,7 +37,9 @@ function sec(S,courses,cats){var items=S.items||[],g,s=h('section',{class:'sec',
  else if(S.type==='faq'){if(!items.length)return null;s.appendChild(head(S));g=h('div',{class:'faq'});items.forEach(function(x){g.appendChild(h('details',{},[h('summary',{text:x.title}),h('p',{text:x.text})]))});s.appendChild(g)}
  else if(S.type==='cta'){s.appendChild(h('div',{class:'cta2'},[h('h2',{text:S.title}),S.text?h('p',{text:S.text}):null,S.label?btn(S.label,S.url,'btn-primary'):null]))}
  return s}
-function draw(content){var X=HD.merge(HD.D,content||{});root.textContent='';var hr=hero(X.hero);if(hr)root.appendChild(hr);
+function draw(content){var X=HD.merge(HD.D,content||{});if(content)return render(X);
+ fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})}
+function render(X){root.textContent='';var hr=hero(X.hero);if(hr)root.appendChild(hr);
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
  Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=id,slug,title,description,duration_text,thumbnail_url,price_ngn,modules(lessons(id))&order=created_at.desc&limit=40').catch(function(){return[]}):[],fetch('categories.json').then(function(r){return r.json()}).catch(function(){return[]})]).then(function(r){
   var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false)return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e)})})}
