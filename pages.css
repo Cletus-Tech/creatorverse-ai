@@ -82,3 +82,5 @@ footer.footer + .announce{margin:0}
 .bottom-nav svg{width:22px;height:22px}
 .bottom-nav .active{color:#5cc8ff}
 @media (max-width:768px){.bottom-nav{display:flex}body{padding-bottom:76px}.menu-btn{display:none!important}.mobile-menu{padding-bottom:96px;overflow-y:auto}}
+.chk{display:flex;align-items:center;gap:10px;margin:10px 0;color:var(--soft-gray);font-size:14.5px}
+.chk input{width:auto}
