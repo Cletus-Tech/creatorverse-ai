@@ -12,41 +12,57 @@ function sorted(a){return (a||[]).slice().sort(function(x,y){return x.position-y
 function boot(sb){
  sb.auth.getSession().then(function(r){var user=r.data.session&&r.data.session.user;
   if(pg==='courses')courses(sb);else if(pg==='course')course(sb,user);else if(pg==='lesson')lesson(sb,user);else admin(sb,user)})}
-function courses(sb){head('Courses');var c=Q.get('c'),q=sb.from('courses').select('*').eq('published',true).order('created_at',{ascending:false});if(c)q=q.eq('category_slug',c);
- q.then(function(r){if(r.error)return note(r.error.message);if(!r.data.length)return note('No courses are published yet.');
-  var g=h('div',{class:'panels'});r.data.forEach(function(x){g.appendChild(h('a',{class:'skill-card',href:'course.html?s='+encodeURIComponent(x.slug)},[x.thumbnail_url?h('img',{class:'thumb',src:x.thumbnail_url,alt:''}):null,h('h3',{class:'card-title',text:x.title}),h('p',{class:'card-desc',text:x.description||''}),h('p',{},[h('span',{class:'chip',text:x.level||'Beginner'}),h('span',{class:'chip',text:x.price_ngn?'₦'+x.price_ngn:'Free'})])]))});main.appendChild(g)})}
+function ico(p){var s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','2');s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');s.innerHTML=p;return s}
+var CK='<path d="M20 6 9 17l-5-5"/>',PL='<polygon points="6 3 20 12 6 21 6 3"/>';
+function nl(c){return(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0)}
+function ccard(c){var n=nl(c),th=c.thumbnail_url?h('img',{src:c.thumbnail_url,alt:'',loading:'lazy'}):h('span',{class:'nothumb'},[ico(PL)]);
+ return h('article',{class:'course-card'},[h('div',{class:'cthumb'},[th,h('span',{class:'badge',text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),h('div',{class:'cbody'},[h('h3',{text:c.title}),h('p',{text:c.description||''}),
+  h('div',{class:'meta'},[n?h('span',{text:n+(n===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,c.level?h('span',{text:c.level}):null]),
+  h('a',{class:'btn btn-primary',href:'course.html?s='+encodeURIComponent(c.slug),text:c.price_ngn?'View Course':'Enroll Now'})])])}
+function courses(sb){head('Explore Courses','Browse published courses and start learning.');var cat=Q.get('c')||'',term='',all=[],cats=[];
+ var tools=h('div',{class:'tools'}),si=h('input',{type:'search',placeholder:'Search courses…','aria-label':'Search courses'}),chips=h('div',{class:'chips'}),g=h('div',{class:'grid'});
+ tools.appendChild(si);main.appendChild(tools);main.appendChild(chips);main.appendChild(g);
+ function draw(){chips.textContent='';[{slug:'',title:'All'}].concat(cats).forEach(function(c){chips.appendChild(h('button',{type:'button',class:'chipbtn'+(c.slug===cat?' on':''),text:c.title,on:function(){cat=c.slug;draw()}}))});
+  g.textContent='';var l=all.filter(function(c){return(!cat||c.category_slug===cat)&&(!term||(c.title+' '+(c.description||'')).toLowerCase().indexOf(term)>-1)});
+  if(!l.length)return g.appendChild(h('div',{class:'note',text:all.length?'No courses match your search.':'No courses are published yet.'}));l.forEach(function(c){g.appendChild(ccard(c))})}
+ si.addEventListener('input',function(){term=si.value.trim().toLowerCase();draw()});
+ Promise.all([sb.from('courses').select('*,modules(lessons(id))').eq('published',true).order('created_at',{ascending:false}),fetch('categories.json').then(function(r){return r.json()}).catch(function(){return[]})]).then(function(r){if(r[0].error)return note(r[0].error.message);all=r[0].data||[];cats=r[1];draw()})}
 function course(sb,user){var s=Q.get('s');
  sb.from('courses').select('*,modules(id,title,position,lessons(id,title,position))').eq('slug',s||'').maybeSingle().then(function(r){
-  if(!r.data)return head('Course not found');var c=r.data;head(c.title,c.description);if(c.thumbnail_url)main.appendChild(h('img',{class:'thumb big',src:c.thumbnail_url,alt:''}));
-  main.appendChild(h('p',{},[h('span',{class:'chip',text:c.level||'Beginner'}),c.duration_text?h('span',{class:'chip',text:c.duration_text}):null,h('span',{class:'chip',text:c.price_ngn?'₦'+c.price_ngn:'Free'})]));
-  var mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});
+  if(!r.data)return head('Course not found');var c=r.data,mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});main.textContent='';
   Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id):{data:[]},user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(x){
-   var enrolled=x[0].data&&x[0].data.length>0,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});
-   var act=h('div');main.appendChild(act);
-   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enrol'}));
-   else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:'Continue learning'}))}
+   var enrolled=x[0].data&&x[0].data.length>0,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
+   var act=h('div',{class:'hero2-cta'});
+   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enroll'}));
+   else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
    else if(c.price_ngn>0)act.appendChild(h('div',{class:'note',text:'Paid courses open when payments launch.'}));
-   else act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Enrol for free',on:function(){sb.from('enrolments').insert({user_id:user.id,course_id:c.id}).then(function(e){e.error?alert(e.error.message):location.reload()})}}));
-   main.appendChild(h('h2',{text:'Curriculum'}));if(!mods.length)note('No lessons yet.');
-   mods.forEach(function(m){main.appendChild(h('h3',{class:'mod',text:m.title}));var ul=h('ul');sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id,text:(done[l.id]?'✓ ':'')+l.title})]))});main.appendChild(ul)})})})}
+   else act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Enroll for free',on:function(){sb.from('enrolments').insert({user_id:user.id,course_id:c.id}).then(function(e){e.error?alert(e.error.message):location.reload()})}}));
+   main.appendChild(h('div',{class:'chero'},[h('div',{},[h('span',{class:'chip2',text:c.level||'Beginner'}),h('h1',{text:c.title}),h('p',{class:'lead',text:c.description||''}),
+    h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
+    enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons completed ('+pct+'%)'})]):null,act]),
+    c.thumbnail_url?h('img',{class:'cimg',src:c.thumbnail_url,alt:''}):null]));
+   main.appendChild(h('h2',{text:'Curriculum'}));if(!mods.length)note('No lessons have been added yet.');
+   mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title})])]))});
+    main.appendChild(h('details',{class:'mod2',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))})})})}
+function bar2(p){return h('div',{class:'progress'},[h('span',{style:'width:'+p+'%'})])}
 function lesson(sb,user){
  sb.from('lessons').select('*,modules(course_id,title,courses(slug,title,price_ngn))').eq('id',Q.get('l')||'').maybeSingle().then(function(r){
-  var l=r.data;if(!l)return head('Lesson not available','It may not exist, or you need to enrol in the course first.');
-  var c=l.modules.courses,cid=l.modules.course_id;head(l.title,c.title+' · '+l.modules.title);var v=embed(l.video_url);if(v)main.appendChild(v);
-  if(l.content)main.appendChild(h('div',{class:'lesson-text',text:l.content}));
-  sb.from('modules').select('position,lessons(id,position)').eq('course_id',cid).then(function(mr){var all=[];sorted(mr.data).forEach(function(m){sorted(m.lessons).forEach(function(x){all.push(x.id)})});
-   var i=all.indexOf(l.id);
-   Promise.all([user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(pp){var done={};(pp[0].data||[]).forEach(function(p){done[p.lesson_id]=1});
-    var n=all.filter(function(x){return done[x]}).length,bar=h('div',{class:'progress'},[h('span',{style:'width:'+(all.length?Math.round(100*n/all.length):0)+'%'})]);
-    var row=h('div',{class:'row'}),pr=h('p',{class:'pmeta',text:n+' of '+all.length+' lessons completed'});
-    main.appendChild(bar);main.appendChild(pr);main.appendChild(row);
-    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+all[i-1],text:'← Previous'}));
-    if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
-    else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){
-     if(done[l.id])return;sb.from('enrolments').upsert({user_id:user.id,course_id:cid},{ignoreDuplicates:true}).then(function(){
-      sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)return alert(e.error.message);location.href=i<all.length-1?'lesson.html?l='+all[i+1]:'course.html?s='+encodeURIComponent(c.slug)})})}}));
-    if(i<all.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+all[i+1],text:'Next →'}));
-    row.appendChild(h('a',{class:'btn btn-outline',href:'course.html?s='+encodeURIComponent(c.slug),text:'Course page'}))})})})}
+  var l=r.data;if(!l)return head('Lesson not available','It may not exist, or you need to enroll in the course first.');
+  var c=l.modules.courses,cid=l.modules.course_id;main.textContent='';
+  Promise.all([sb.from('modules').select('id,title,position,lessons(id,title,position)').eq('course_id',cid),user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(x){
+   var mods=sorted(x[0].data),flat=[],done={};mods.forEach(function(m){sorted(m.lessons).forEach(function(q){flat.push(q.id)})});(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});
+   var i=flat.indexOf(l.id),n=flat.filter(function(q){return done[q]}).length,pct=flat.length?Math.round(100*n/flat.length):0;
+   var side=h('aside',{class:'lside'},[h('h3',{text:'Course content'}),bar2(pct),h('p',{class:'pmeta',text:n+' of '+flat.length+' completed'})]);
+   mods.forEach(function(m){side.appendChild(h('h4',{text:m.title}));var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(q){ul.appendChild(h('li',{class:q.id===l.id?'cur':''},[h('a',{href:'lesson.html?l='+q.id},[h('span',{class:'dot'+(done[q.id]?' on':'')},[done[q.id]?ico(CK):null]),h('span',{text:q.title})])]))});side.appendChild(ul)});
+   var col=h('div',{class:'lmain'},[h('a',{class:'back',href:'course.html?s='+encodeURIComponent(c.slug),text:'← '+c.title}),h('h1',{text:l.title})]);var v=embed(l.video_url);if(v)col.appendChild(v);
+   if(l.content)col.appendChild(h('div',{class:'lesson-text',text:l.content}));
+   var row=h('div',{class:'row'});col.appendChild(row);
+   if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
+   if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
+   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('enrolments').upsert({user_id:user.id,course_id:cid},{ignoreDuplicates:true}).then(function(){
+    sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)return alert(e.error.message);location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)})})}}));
+   if(i<flat.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i+1],text:'Next →'}));
+   main.appendChild(h('div',{class:'lgrid'},[col,side]))})})}
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
  sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){var ro=p.data&&p.data.role;
   if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');var root=document.getElementById('content'),tb=h('div',{class:'row'}),P1=h('div'),P2=h('div',{style:'display:none'}),P3=h('div',{style:'display:none'}),P4=h('div',{style:'display:none'}),T=[['Courses',P1],['Homepage',P4],['Media library',P2],['Website content',P3]];T.forEach(function(t,i){tb.appendChild(h('button',{class:'btn '+(i?'btn-outline':'btn-primary'),type:'button',text:t[0],on:function(){T.forEach(function(x,j){x[1].style.display=j===i?'':'none';tb.children[j].className='btn '+(j===i?'btn-primary':'btn-outline')})}}))});root.appendChild(tb);root.appendChild(P1);root.appendChild(P2);root.appendChild(P3);root.appendChild(P4);main=P1;window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);
