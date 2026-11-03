@@ -27,7 +27,7 @@ function hero(H){if(H.visible===false)return null;var P=H.portrait,F=H.founder,v
  return h('section',{class:'hero2'+(P.position==='left'?' flip':'')},[h('div',{class:'hero2-in'+(art?'':' solo')},[copy,art])])}
 function head(S){return h('div',{class:'sec-head'},[h('h2',{text:S.title}),S.subtitle?h('p',{text:S.subtitle}):null])}
 function sec(S,courses,cats){var items=S.items||[],g,s=h('section',{class:'sec',id:S.id});
- if(S.type==='categories'){if(!cats.length)return null;s.appendChild(head(S));g=h('div',{class:'grid'});cats.forEach(function(c){g.appendChild(h('a',{class:'cat-card',href:'category.html?c='+c.slug},[h('span',{class:'ico'},[ico(I.layers)]),h('h3',{text:c.title}),h('p',{text:c.description}),h('span',{class:'go'},[ico(I.arrow)])]))});s.appendChild(g)}
+ if(S.type==='categories'){if(!cats.length)return null;s.appendChild(head(S));g=h('div',{class:'grid'});cats.forEach(function(c){g.appendChild(h('a',{class:'cat-card',href:'category.html?c='+c.slug},[c.image_url?h('img',{class:'cat-img',src:c.image_url,alt:'',loading:'lazy'}):null,h('span',{class:'ico'},[ico(I.layers)]),h('h3',{text:c.title}),h('p',{text:c.description}),h('span',{class:'go'},[ico(I.arrow)])]))});s.appendChild(g)}
  else if(S.type==='courses'){var list=courses;if(S.ids&&S.ids.length)list=S.ids.map(function(i){return courses.filter(function(c){return c.id===i})[0]}).filter(Boolean);else list=courses.slice(0,4);if(!list.length)return null;
   s.appendChild(head(S));g=h('div',{class:'grid'});list.forEach(function(c){var n=(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0),th=c.thumbnail_url?h('img',{src:c.thumbnail_url,alt:'',loading:'lazy'}):h('span',{class:'nothumb'},[ico(I.play)]);
    g.appendChild(h('article',{class:'course-card'},[h('div',{class:'cthumb'},[th,h('span',{class:'badge',text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),h('div',{class:'cbody'},[h('h3',{text:c.title}),h('p',{text:c.description||''}),
@@ -37,11 +37,15 @@ function sec(S,courses,cats){var items=S.items||[],g,s=h('section',{class:'sec',
  else if(S.type==='faq'){if(!items.length)return null;s.appendChild(head(S));g=h('div',{class:'faq'});items.forEach(function(x){g.appendChild(h('details',{},[h('summary',{text:x.title}),h('p',{text:x.text})]))});s.appendChild(g)}
  else if(S.type==='cta'){s.appendChild(h('div',{class:'cta2'},[h('h2',{text:S.title}),S.text?h('p',{text:S.text}):null,S.label?btn(S.label,S.url,'btn-primary'):null]))}
  return s}
-function draw(content){var X=HD.merge(HD.D,content||{});if(content)return render(X);
- fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})}
+function cms(){if(!C.supabaseUrl)return Promise.resolve({});return rest('site_content?key=in.(founder,intro_video_cfg)&select=key,value').then(function(r){var o={};(Array.isArray(r)?r:[]).forEach(function(x){try{o[x.key]=JSON.parse(x.value)}catch(e){}});return o}).catch(function(){return{}})}
+function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){var f=sc.founder,v=sc.intro_video_cfg;
+ if(f){X.hero.portrait.url=f.photo||'';X.hero.founder=Object.assign({},X.hero.founder,{name:f.name||'',designation:f.designation||'',description:'',visible:X.hero.founder.visible!==false&&f.show_home!==false})}
+ if(v)X.hero.video={enabled:!!v.enabled,url:v.url||'',thumbnail:v.thumbnail||''};
+ if(content||f)return render(X);
+ fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})})}
 function render(X){root.textContent='';var hr=hero(X.hero);if(hr)root.appendChild(hr);
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
- Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=id,slug,title,description,duration_text,thumbnail_url,price_ngn,modules(lessons(id))&order=created_at.desc&limit=40').catch(function(){return[]}):[],fetch('categories.json').then(function(r){return r.json()}).catch(function(){return[]})]).then(function(r){
+ Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=id,slug,title,description,duration_text,thumbnail_url,price_ngn,modules(lessons(id))&order=created_at.desc&limit=40').catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
   var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false)return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e)})})}
 function go(){var ok=C.supabaseUrl&&C.supabaseAnonKey;
  if(Q.get('preview')==='1'){document.body.insertBefore(h('div',{class:'preview-bar',text:'Preview of the unpublished draft. Visitors do not see this.'}),document.body.firstChild);

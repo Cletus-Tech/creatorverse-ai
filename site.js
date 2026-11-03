@@ -28,7 +28,14 @@ var pg=document.body.dataset.page,main=document.getElementById('content');
 if(pg==='about'&&sc.about_text&&main){main.textContent='';var t1=document.createElement('h1');t1.textContent='About CreatorVerse AI';main.appendChild(t1);sc.about_text.split(/\n\s*\n/).forEach(function(x){var pp=document.createElement('p');pp.textContent=x;main.appendChild(pp)});var ab=document.createElement('a');ab.className='btn btn-primary';ab.href='learn.html';ab.textContent='Explore Learning Categories';main.appendChild(ab)}
 if(!main)return;
 var p=new URLSearchParams(location.search).get('p');
-if(pg==='learn'||pg==='category'){var cats=(await j('categories.json'))||[];
+if(pg==='about'&&sc.founder){try{var F=JSON.parse(sc.founder);if(F.show_about!==false&&(F.name||F.bio||F.photo)){var fb=document.createElement('section');fb.className='founder-about';
+ if(F.photo){var im=document.createElement('img');im.src=F.photo;im.alt=F.name?'Portrait of '+F.name:'Founder';fb.appendChild(im)}
+ var bx=document.createElement('div'),t1=document.createElement('h2');t1.textContent=F.name||'Founder';bx.appendChild(t1);
+ if(F.designation){var d1=document.createElement('p');d1.className='fdes';d1.textContent=F.designation;bx.appendChild(d1)}
+ (F.bio||'').split(/\n\s*\n/).filter(Boolean).forEach(function(x){var pp=document.createElement('p');pp.textContent=x;bx.appendChild(pp)});
+ var sl=document.createElement('div');sl.className='fsoc';Object.keys(F.socials||{}).forEach(function(k){var u=F.socials[k];if(u&&/^https?:\/\//.test(u)){var a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener';a.textContent=k.charAt(0).toUpperCase()+k.slice(1);sl.appendChild(a)}});if(sl.children.length)bx.appendChild(sl);
+ fb.appendChild(bx);main.appendChild(fb)}}catch(e){}}
+if(pg==='learn'||pg==='category'){var cats=await window.CV_CATS();
  if(pg==='learn')main.innerHTML='<h1>Learning Categories</h1><p>Pick a category, or <a href="courses.html" style="color:#bfe6ff">browse all courses</a>.</p><div class="panels" style="margin-top:20px">'+cats.map(function(c){return '<a class="skill-card" href="category.html?c='+c.slug+'"><h3 class="card-title">'+c.title+'</h3><p class="card-desc">'+c.description+'</p></a>'}).join('')+'</div>';
  else{var c=cats.filter(function(x){return x.slug===new URLSearchParams(location.search).get('c')})[0];
   main.innerHTML=c?'<h1>'+c.title+'</h1><p>'+c.description+'</p>'+(c.topics.length?'<h2>What this covers</h2><ul class="topics">'+c.topics.map(function(t){return '<li>'+t+'</li>'}).join('')+'</ul>':'')+'<a class="btn btn-primary" href="courses.html?c='+c.slug+'">View courses</a><a class="btn btn-outline" href="learn.html">All categories</a>':'<h1>Category not found</h1><a class="btn btn-outline" href="learn.html">All categories</a>'}}

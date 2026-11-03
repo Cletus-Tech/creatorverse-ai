@@ -84,3 +84,8 @@ footer.footer + .announce{margin:0}
 @media (max-width:768px){.bottom-nav{display:flex}body{padding-bottom:76px}.menu-btn{display:none!important}.mobile-menu{padding-bottom:96px;overflow-y:auto}}
 .chk{display:flex;align-items:center;gap:10px;margin:10px 0;color:var(--soft-gray);font-size:14.5px}
 .chk input{width:auto}
+.founder-about{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:center;margin-top:44px;padding:26px;border-radius:22px;border:1px solid rgba(92,200,255,.22);background:linear-gradient(115deg,rgba(7,20,51,.9),rgba(20,86,230,.2))}
+.founder-about img{width:100%;border-radius:16px;display:block}.founder-about h2{margin:0 0 4px!important}.fdes{color:#5cc8ff!important;margin-bottom:12px}
+.fsoc{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.fsoc a{padding:7px 14px;border-radius:999px;border:1px solid rgba(92,200,255,.35);font-size:14px;color:#bfe6ff}
+@media (max-width:700px){.founder-about{grid-template-columns:1fr}.founder-about img{max-width:260px}}
+.docthumb{display:flex;align-items:center;justify-content:center;height:120px;background:#0a2054;color:#bfe6ff;font-weight:700;letter-spacing:1px}

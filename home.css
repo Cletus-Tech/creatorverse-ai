@@ -58,3 +58,4 @@ main#home{padding-bottom:70px}
  .sec{padding:52px 16px 0}.grid{grid-template-columns:1fr}
  .hero2.flip .hero2-in{direction:ltr}
 }
+.cat-img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:14px;display:block}

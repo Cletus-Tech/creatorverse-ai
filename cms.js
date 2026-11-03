@@ -1,33 +1,77 @@
 (function(){
 function h(t,a,k){var e=document.createElement(t);for(var i in a||{}){if(i==='text')e.textContent=a[i];else if(i==='on')e.addEventListener('click',a[i]);else if(i==='value')e.value=a[i];else e.setAttribute(i,a[i])}(k||[]).forEach(function(c){if(c)e.appendChild(c)});return e}
-var FOLDERS=['general','homepage','founder','course-thumbnails','banners','videos'],MAX=52428800;
+var FOLDERS=['general','homepage','founder','course-thumbnails','categories','banners','videos','documents'],MAX=52428800;
 function kind(f){return /^image\//.test(f.type)?'image':/^video\//.test(f.type)?'video':'file'}
 function clean(n){return n.replace(/[^\w.\-]+/g,'_')}
 function up(file,folder,path,replace){var sb=window.CV_SB;if(file.size>MAX)return Promise.reject(new Error('File is larger than 50 MB.'));
  path=path||folder+'/'+Date.now()+'-'+clean(file.name);
- return sb.storage.from('media').upload(path,file,{upsert:!!replace,contentType:file.type}).then(function(r){if(r.error)throw r.error;
+ return sb.storage.from('media').upload(path,file,{upsert:!!replace,contentType:file.type||'application/octet-stream',cacheControl:'60'}).then(function(r){if(r.error)throw r.error;
   var url=sb.storage.from('media').getPublicUrl(path).data.publicUrl,row={path:path,url:url,name:file.name,kind:kind(file),folder:path.split('/')[0],size:file.size};
   return sb.from('media_files').upsert(row,{onConflict:'path'}).then(function(x){if(x.error)throw x.error;return url})})}
 window.CV_MEDIA={upload:up};
 function pick(kindWanted,input){var sb=window.CV_SB,s=h('select',{},[h('option',{value:'',text:'Choose from media library…'})]);
  sb.from('media_files').select('url,name,folder').eq('kind',kindWanted).order('created_at',{ascending:false}).then(function(r){(r.data||[]).forEach(function(m){s.appendChild(h('option',{value:m.url,text:m.folder+' / '+m.name}))})});
  s.addEventListener('change',function(){if(s.value){input.value=s.value;if(input.dispatchEvent)input.dispatchEvent(new Event('input'))}});return s}
-function media(pane){var sb=window.CV_SB,cur='all';pane.appendChild(h('h2',{text:'Media library'}));
- var fs=h('select',{id:'mfolder'},FOLDERS.map(function(f){return h('option',{value:f,text:f})})),fi=h('input',{type:'file',multiple:'',accept:'image/*,video/*'}),m=h('div',{class:'msg'}),
- flt=h('select',{},[h('option',{value:'all',text:'Show all folders'})].concat(FOLDERS.map(function(f){return h('option',{value:f,text:f})}))),grid=h('div',{class:'panels'});
+function size(n){return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round((n||0)/1024))+' KB'}
+function usage(u){var sb=window.CV_SB,o=[];return Promise.all([sb.from('courses').select('title').eq('thumbnail_url',u),sb.from('lessons').select('title').eq('video_url',u),sb.from('categories').select('title').eq('image_url',u),sb.from('site_content').select('key,value'),sb.from('homepage_versions').select('status,content').order('created_at',{ascending:false}).limit(30)]).then(function(r){
+ (r[0].data||[]).forEach(function(x){o.push('Course thumbnail: '+x.title)});(r[1].data||[]).forEach(function(x){o.push('Lesson video: '+x.title)});(r[2].data||[]).forEach(function(x){o.push('Category image: '+x.title)});
+ (r[3].data||[]).forEach(function(x){if((x.value||'').indexOf(u)>-1)o.push('Website content: '+x.key)});var seen={};(r[4].data||[]).forEach(function(x){if(JSON.stringify(x.content).indexOf(u)>-1&&!seen[x.status]){seen[x.status]=1;o.push('Homepage ('+x.status+')')}});return o}).catch(function(){return o})}
+function media(pane){var sb=window.CV_SB,cur='all',type='all',term='',rows=[];pane.appendChild(h('h2',{text:'Media library'}));
+ var fs=h('select',{id:'mfolder'},FOLDERS.map(function(f){return h('option',{value:f,text:f})})),fi=h('input',{type:'file',multiple:'',accept:'image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt'}),m=h('div',{class:'msg'}),
+ flt=h('select',{},[h('option',{value:'all',text:'All folders'})].concat(FOLDERS.map(function(f){return h('option',{value:f,text:f})}))),
+ tf=h('select',{},[['all','All types'],['image','Images'],['video','Videos'],['file','Documents']].map(function(x){return h('option',{value:x[0],text:x[1]})})),si=h('input',{type:'search',placeholder:'Search by file name…'}),grid=h('div',{class:'panels'});
  var go=h('button',{class:'btn btn-primary',type:'button',text:'Upload',on:function(){var fl=[].slice.call(fi.files);if(!fl.length){m.textContent='Choose files first.';m.className='msg err';return}
   m.textContent='Uploading…';m.className='msg';Promise.all(fl.map(function(f){return up(f,fs.value)})).then(function(){m.textContent='Uploaded.';m.className='msg ok';fi.value='';load()}).catch(function(e){m.textContent=e.message;m.className='msg err'})}});
- [h('label',{class:'field',text:'Folder'}),fs,h('label',{class:'field',text:'Files (images or videos, up to 50 MB each)'}),fi,go,m,h('label',{class:'field',text:'View'}),flt,grid].forEach(function(e){pane.appendChild(e)});
- flt.addEventListener('change',function(){cur=flt.value;load()});
- function load(){var q=sb.from('media_files').select('*').order('created_at',{ascending:false});if(cur!=='all')q=q.eq('folder',cur);
-  q.then(function(r){grid.textContent='';if(!(r.data||[]).length)return grid.appendChild(h('p',{text:'No media in this view.'}));
-   r.data.forEach(function(f){var pv=f.kind==='image'?h('img',{class:'thumb',src:f.url,alt:''}):f.kind==='video'?h('video',{class:'thumb',src:f.url,controls:''}):h('p',{text:'(file)'});
-    var rp=h('input',{type:'file',style:'display:none',accept:f.kind==='image'?'image/*':'video/*'});
-    rp.addEventListener('change',function(){if(rp.files[0])up(rp.files[0],f.folder,f.path,true).then(load).catch(function(e){alert(e.message)})});
-    grid.appendChild(h('div',{class:'panel'},[pv,h('p',{text:f.name+' · '+f.folder}),h('div',{class:'row'},[
-     h('button',{class:'btn btn-outline',type:'button',text:'Copy URL',on:function(){navigator.clipboard.writeText(f.url).then(function(){alert('URL copied')})}}),
-     h('button',{class:'btn btn-outline',type:'button',text:'Replace',on:function(){rp.click()}}),
-     h('button',{class:'btn btn-outline',type:'button',text:'Delete',on:function(){if(confirm('Delete '+f.name+'? Pages using it will lose the file.'))sb.storage.from('media').remove([f.path]).then(function(x){if(x.error)return alert(x.error.message);sb.from('media_files').delete().eq('id',f.id).then(load)})}})]),rp]))})})}
+ [h('label',{class:'field',text:'Upload into folder'}),fs,h('label',{class:'field',text:'Files: images, videos or documents (up to 50 MB each)'}),fi,go,m,h('h3',{class:'mod',text:'Browse'}),h('div',{class:'row'},[flt,tf]),si,grid].forEach(function(e){pane.appendChild(e)});
+ flt.addEventListener('change',function(){cur=flt.value;load()});tf.addEventListener('change',function(){type=tf.value;load()});si.addEventListener('input',function(){term=si.value.trim().toLowerCase();draw()});
+ function load(){var q=sb.from('media_files').select('*').order('created_at',{ascending:false}).limit(300);if(cur!=='all')q=q.eq('folder',cur);if(type!=='all')q=q.eq('kind',type);q.then(function(r){rows=r.data||[];draw()})}
+ function draw(){grid.textContent='';var l=rows.filter(function(f){return!term||f.name.toLowerCase().indexOf(term)>-1});if(!l.length)return grid.appendChild(h('p',{text:rows.length?'No files match.':'No media in this view.'}));
+  l.forEach(function(f){var pv=f.kind==='image'?h('img',{class:'thumb',src:f.url,alt:''}):f.kind==='video'?h('video',{class:'thumb',src:f.url,controls:''}):h('a',{class:'thumb docthumb',href:f.url,target:'_blank',rel:'noopener',text:(f.name.split('.').pop()||'file').toUpperCase()});
+   var rp=h('input',{type:'file',style:'display:none',accept:f.kind==='image'?'image/*':f.kind==='video'?'video/*':'*/*'});
+   rp.addEventListener('change',function(){if(rp.files[0])up(rp.files[0],f.folder,f.path,true).then(load).catch(function(e){alert(e.message)})});
+   grid.appendChild(h('div',{class:'panel'},[pv,h('p',{},[h('strong',{text:f.name})]),h('p',{class:'pmeta',text:f.kind+' · '+size(f.size)+' · '+f.folder+' · '+new Date(f.created_at).toLocaleDateString()}),h('div',{class:'row'},[
+    h('button',{class:'btn btn-outline',type:'button',text:'Copy URL',on:function(){navigator.clipboard.writeText(f.url).then(function(){alert('URL copied')})}}),
+    h('button',{class:'btn btn-outline',type:'button',text:'Replace',on:function(){rp.click()}}),
+    h('button',{class:'btn btn-outline',type:'button',text:'Delete',on:function(){usage(f.url).then(function(u){if(!confirm((u.length?'This file is used in:\n- '+u.join('\n- ')+'\n\nDeleting it will leave those places without the file. ':'')+'Delete '+f.name+'?'))return;
+     sb.storage.from('media').remove([f.path]).then(function(x){if(x.error)return alert(x.error.message);sb.from('media_files').delete().eq('id',f.id).then(load)})})}})]),rp]))})}
+ load()}
+function fld(l,o,k,ta){var i=ta?h('textarea',{rows:ta===2?'8':'3'}):h('input',{type:'text'});i.value=o[k]||'';i.addEventListener('input',function(){o[k]=i.value});return[h('label',{class:'field',text:l}),i]}
+function chk(l,o,k){var i=h('input',{type:'checkbox'});i.checked=o[k]!==false&&!!o[k];i.addEventListener('change',function(){o[k]=i.checked;i.dispatchEvent(new Event('input',{bubbles:true}))});return h('label',{class:'chk'},[i,h('span',{text:l})])}
+function mf(l,o,k,kind,folder,msg){var r=fld(l,o,k),i=r[1],f=h('input',{type:'file',accept:kind+'/*'});
+ f.addEventListener('change',function(){if(f.files[0]){msg.textContent='Uploading…';msg.className='msg';up(f.files[0],folder).then(function(u){i.value=u;o[k]=u;i.dispatchEvent(new Event('input',{bubbles:true}));msg.textContent='Uploaded. Press Save to publish.';msg.className='msg ok'}).catch(function(e){msg.textContent=e.message;msg.className='msg err'})}});
+ return r.concat([f,pick(kind,i),h('button',{class:'btn btn-outline',type:'button',text:'Remove',on:function(){i.value='';o[k]='';i.dispatchEvent(new Event('input',{bubbles:true}))}})])}
+function addAll(p,l){l.forEach(function(e){if(e)p.appendChild(e)});return p}
+function saveKey(key,obj,m){return window.CV_SB.from('site_content').upsert({key:key,value:JSON.stringify(obj),updated_at:new Date().toISOString()}).then(function(r){m.textContent=r.error?r.error.message:'Saved. It is live on the website now.';m.className='msg '+(r.error?'err':'ok')})}
+function loadKey(key,def,cb){window.CV_SB.from('site_content').select('value').eq('key',key).maybeSingle().then(function(r){var o=def;try{if(r.data&&r.data.value)o=Object.assign({},def,JSON.parse(r.data.value))}catch(e){}cb(o)})}
+function embedEl(u){var m=(u||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/);
+ if(m)return h('iframe',{class:'lesson-video',src:'https://www.youtube-nocookie.com/embed/'+m[1],allowfullscreen:''});if(/^https:\/\/player\.vimeo\.com\//.test(u||''))return h('iframe',{class:'lesson-video',src:u,allowfullscreen:''});
+ if(/\.(mp4|webm|mov|m4v)(\?|$)/i.test(u||''))return h('video',{class:'lesson-video',src:u,controls:'',poster:''});return null}
+function founder(pane){var F={name:'',designation:'',bio:'',photo:'',show_home:true,show_about:true,socials:{youtube:'',tiktok:'',facebook:'',instagram:'',linkedin:'',x:''}},m=h('div',{class:'msg'}),prev=h('div',{class:'founder-about'}),form=h('form',{class:'mini'});
+ pane.appendChild(h('h2',{text:'Founder Profile'}));pane.appendChild(h('p',{text:'Shown on the homepage hero and the About page. Saved changes go live immediately.'}));pane.appendChild(form);pane.appendChild(h('h3',{class:'mod',text:'Preview (About page)'}));pane.appendChild(prev);pane.appendChild(m);
+ function draw(){prev.textContent='';if(F.photo)prev.appendChild(h('img',{src:F.photo,alt:''}));prev.appendChild(h('div',{},[h('h2',{text:F.name||'Founder name'}),h('p',{class:'fdes',text:F.designation||'Designation'}),h('p',{text:(F.bio||'').split(/\n\s*\n/)[0]||'Biography'})]))}
+ function build(){form.textContent='';addAll(form,mf('Founder photograph (a transparent PNG/WebP cutout looks best)',F,'photo','image','founder',m));addAll(form,fld('Name',F,'name'));addAll(form,fld('Designation (e.g. Founder, CreatorVerse)',F,'designation'));addAll(form,fld('Biography (blank line between paragraphs)',F,'bio',2));
+  form.appendChild(h('h3',{class:'mod',text:'Social links (https://…)'}));Object.keys(F.socials).forEach(function(k){addAll(form,fld(k.charAt(0).toUpperCase()+k.slice(1),F.socials,k))});
+  form.appendChild(chk('Show on the homepage hero',F,'show_home'));form.appendChild(chk('Show on the About page',F,'show_about'));form.appendChild(h('button',{class:'btn btn-primary',type:'submit',text:'Save founder profile'}));draw()}
+ form.addEventListener('input',draw);form.addEventListener('submit',function(e){e.preventDefault();saveKey('founder',F,m)});build();
+ loadKey('founder',F,function(o){F=o;F.socials=Object.assign({youtube:'',tiktok:'',facebook:'',instagram:'',linkedin:'',x:''},F.socials);build()})}
+function video(pane){var V={enabled:false,url:'',thumbnail:''},m=h('div',{class:'msg'}),form=h('form',{class:'mini'}),pv=h('div');
+ pane.appendChild(h('h2',{text:'Introduction Video'}));pane.appendChild(h('p',{text:'This is the video opened by the Watch Introduction button. Use a YouTube or Vimeo link, or upload a video (up to 50 MB).'}));pane.appendChild(form);pane.appendChild(h('h3',{class:'mod',text:'Preview'}));pane.appendChild(pv);pane.appendChild(m);
+ function draw(){pv.textContent='';var e=V.url?embedEl(V.url):null;if(e){if(V.thumbnail&&e.tagName==='VIDEO')e.setAttribute('poster',V.thumbnail);pv.appendChild(e)}else pv.appendChild(h('p',{text:V.url?'This link is not a supported video (use YouTube, a Vimeo player link, or an uploaded .mp4/.webm).':'No video set.'}));
+  if(V.thumbnail)pv.appendChild(h('img',{class:'thumb',src:V.thumbnail,alt:'Thumbnail'}))}
+ function build(){form.textContent='';form.appendChild(chk('Enabled (show the Watch Introduction button)',V,'enabled'));addAll(form,mf('Video: link or uploaded file',V,'url','video','videos',m));addAll(form,mf('Thumbnail image (optional)',V,'thumbnail','image','videos',m));
+  form.appendChild(h('div',{class:'row'},[h('button',{class:'btn btn-primary',type:'submit',text:'Save video'}),h('button',{class:'btn btn-outline',type:'button',text:'Remove video',on:function(){if(confirm('Remove the introduction video from the website? The uploaded file stays in the media library.')){V={enabled:false,url:'',thumbnail:''};build();saveKey('intro_video_cfg',V,m)}}})]));draw()}
+ form.addEventListener('input',draw);form.addEventListener('submit',function(e){e.preventDefault();saveKey('intro_video_cfg',V,m)});build();loadKey('intro_video_cfg',V,function(o){V=o;build()})}
+function categories(pane){var sb=window.CV_SB,box=h('div'),m=h('div',{class:'msg'});pane.appendChild(h('h2',{text:'Categories'}));pane.appendChild(h('p',{text:'These appear on the homepage, the Categories page and in the course filters.'}));
+ var nf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New category title',required:''}),h('button',{class:'btn btn-primary',type:'submit',text:'Add category'})]);
+ nf.addEventListener('submit',function(e){e.preventDefault();var t=nf.t.value.trim();sb.from('categories').insert({title:t,slug:t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),position:(rows.length?rows[rows.length-1].position:0)+1,description:'',topics:[]}).then(function(r){if(r.error){m.textContent=r.error.message;m.className='msg err'}else{nf.reset();load()}})});
+ pane.appendChild(nf);pane.appendChild(box);pane.appendChild(m);var rows=[];
+ function swap(i,d){var a=rows[i],b=rows[i+d];if(!b)return;Promise.all([sb.from('categories').update({position:b.position}).eq('id',a.id),sb.from('categories').update({position:a.position}).eq('id',b.id)]).then(load)}
+ function load(){sb.from('categories').select('*').order('position').then(function(r){rows=r.data||[];box.textContent='';if(r.error){m.textContent=r.error.message+' (run stage6-cms.sql first)';m.className='msg err'}if(!rows.length)box.appendChild(h('p',{text:'No categories yet.'}));
+  rows.forEach(function(c,i){var o={title:c.title,description:c.description||'',image_url:c.image_url||'',topics:(c.topics||[]).join('\n'),published:c.published},mm=h('div',{class:'msg'}),p=h('div',{class:'panel'},[h('h3',{text:c.title})]);
+   addAll(p,fld('Title',o,'title'));addAll(p,fld('Description',o,'description',1));addAll(p,fld('Topics covered (one per line)',o,'topics',1));addAll(p,mf('Category image (optional)',o,'image_url','image','categories',mm));p.appendChild(chk('Published',o,'published'));
+   p.appendChild(h('div',{class:'row'},[h('button',{class:'btn btn-primary',type:'button',text:'Save',on:function(){sb.from('categories').update({title:o.title,description:o.description,image_url:o.image_url||null,topics:o.topics.split('\n').map(function(x){return x.trim()}).filter(Boolean),published:o.published}).eq('id',c.id).then(function(x){mm.textContent=x.error?x.error.message:'Saved.';mm.className='msg '+(x.error?'err':'ok')})}}),
+    h('button',{class:'btn btn-outline',type:'button',text:'Move up',on:function(){swap(i,-1)}}),h('button',{class:'btn btn-outline',type:'button',text:'Move down',on:function(){swap(i,1)}}),
+    h('button',{class:'btn btn-outline',type:'button',text:'Delete',on:function(){sb.from('courses').select('id',{count:'exact',head:true}).eq('category_slug',c.slug).then(function(n){if(!confirm((n.count?n.count+' course(s) use this category and will be left without one. ':'')+'Delete "'+c.title+'"?'))return;sb.from('categories').delete().eq('id',c.id).then(load)})}})]));p.appendChild(mm);box.appendChild(p)})})}
  load()}
 var KEYS=[['banner_text','Announcement banner text','t'],['banner_link','Banner link (optional, https://…)','t'],['about_text','About page text (blank line between paragraphs)','ta']];
 function site(pane){var sb=window.CV_SB;pane.appendChild(h('h2',{text:'Website content'}));pane.appendChild(h('p',{text:'Leave a field empty to use the website default.'}));
@@ -39,5 +83,5 @@ function site(pane){var sb=window.CV_SB;pane.appendChild(h('h2',{text:'Website c
  sb.from('site_content').select('key,value').then(function(r){(r.data||[]).forEach(function(x){if(inp[x.key])inp[x.key].value=x.value})});
  f.addEventListener('submit',function(e){e.preventDefault();var set=[],del=[];KEYS.forEach(function(k){var v=inp[k[0]].value.trim();v?set.push({key:k[0],value:v,updated_at:new Date().toISOString()}):del.push(k[0])});
   Promise.all([set.length?sb.from('site_content').upsert(set):{},del.length?sb.from('site_content').delete().in('key',del):{}]).then(function(r){var er=(r[0]&&r[0].error)||(r[1]&&r[1].error);m.textContent=er?er.message:'Saved. Refresh the website to see the changes.';m.className='msg '+(er?'err':'ok')})})}
-window.CV_CMS={media:media,site:site,pick:pick};
+window.CV_CMS={media:media,site:site,pick:pick,founder:founder,video:video,categories:categories};
 })();
