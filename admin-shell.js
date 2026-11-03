@@ -18,7 +18,7 @@ var IC={dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7
 var NAV=[[['dashboard','Dashboard'],['homepage','Homepage Manager'],['founder','Founder Profile'],['video','Introduction Video'],['media','Media Library']],
  [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['quizzes','Quizzes & Assignments','Soon'],['certificates','Certificates','Soon']],
  [['payments','Payments','Soon'],['analytics','Analytics'],['notifications','Notifications','Soon'],['settings','Settings'],['help','Help & Support']]];
-var SOON={quizzes:'Quizzes and assignments (Stage 8)',certificates:'Certificates and public verification (Stage 8)',payments:'Paystack payments and transactions (Stage 9)',notifications:'Notifications and announcements (Stage 7)'};
+var SOON={quizzes:'Quizzes and assignments (Stage 8)',certificates:'Certificates and public verification (Stage 8)',payments:'Paystack payments and transactions (Stage 9)',notifications:'Notifications and announcements (a later stage)'};
 function day(d){return d.toISOString().slice(0,10)}
 function chart(title,rows,total){var days=[],i,m={};for(i=29;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(day(d))}days.forEach(function(d){m[d]=0});rows.forEach(function(r){var k=day(new Date(r.created_at));if(k in m)m[k]++});
  var vals=days.map(function(d){return m[d]}),mx=Math.max.apply(null,vals.concat([1])),NS='http://www.w3.org/2000/svg',s=document.createElementNS(NS,'svg');s.setAttribute('viewBox','0 0 300 100');s.setAttribute('class','bars');
@@ -40,7 +40,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   if(id==='dashboard')dash();else if(id==='analytics')analytics();else if(id==='students')students();else if(id==='help')help();
   else if(id==='homepage')pane(P.homepage);else if(id==='founder')pane(P.founder);else if(id==='video')pane(P.video);else if(id==='categories')pane(P.categories);
   else if(id==='media')pane(P.media);else if(id==='settings')pane(P.settings,'Announcement banner and About page text.');
-  else if(id==='courses')pane(P.courses);else if(id==='modules'||id==='lessons')pane(P.courses,'Modules and lessons are managed inside each course. Open a course below to add or remove them. Reordering arrives in Stage 7.');
+  else if(id==='courses')pane(P.courses);else if(id==='modules'||id==='lessons')pane(P.courses,'Modules and lessons are managed inside each course. Open a course below to add or remove them. Use Up and Down to reorder.');
   else view.appendChild(h('div',{class:'panel'},[h('h3',{text:label}),h('p',{text:'This feature is not built yet. Planned: '+SOON[id]+'.'}),h('p',{class:'pmeta',text:'Nothing on this page is placeholder data.'})]))}
  function cnt(t,f){var q=sb.from(t).select('id',{count:'exact',head:true});return(f?f(q):q).then(function(r){return r.count||0})}
  function dash(){var g=h('div',{class:'stats4'}),qa=h('div',{class:'qa'}),cm=h('div',{class:'panel'}),ru=h('div',{class:'panel'}),ra=h('div',{class:'panel'}),cg=h('div',{class:'two'});

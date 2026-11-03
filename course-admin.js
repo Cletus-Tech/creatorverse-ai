@@ -1,0 +1,52 @@
+(function(){
+var U=window.CV_UI,h=U.h,sb;
+function srt(a){return(a||[]).slice().sort(function(x,y){return x.position-y.position})}
+function slug(t){return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6)}
+function btn(t,f,c){return h('button',{class:'btn '+(c||'btn-outline'),type:'button',text:t,on:f})}
+window.CV_COURSES=function(pane){sb=window.CV_SB;var root=h('div');pane.appendChild(root);list();
+ function list(){root.textContent='';root.appendChild(h('h2',{text:'Courses'}));
+  var nf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New course title',required:''}),h('button',{class:'btn btn-primary',type:'submit',text:'Create course (draft)'})]);
+  nf.addEventListener('submit',function(e){e.preventDefault();sb.from('courses').insert({title:nf.t.value.trim(),slug:slug(nf.t.value)}).select('id').maybeSingle().then(function(r){r.error?alert(r.error.message):edit(r.data.id)})});root.appendChild(nf);
+  var box=h('div');root.appendChild(box);
+  sb.from('courses').select('*,modules(lessons(id))').order('created_at',{ascending:false}).then(function(r){var d=r.data||[];if(r.error)return box.appendChild(h('div',{class:'msg err',text:r.error.message}));if(!d.length)return box.appendChild(h('p',{text:'No courses yet. Create the first one above.'}));
+   d.forEach(function(c){var n=(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0);
+    box.appendChild(h('div',{class:'panel crow2'},[c.thumbnail_url?h('img',{class:'thumb',src:c.thumbnail_url,alt:''}):null,h('div',{},[h('h3',{text:c.title}),
+     h('p',{},[h('span',{class:'chip',text:c.published?'Published':'Draft'}),c.featured?h('span',{class:'chip',text:'Featured'}):null,h('span',{class:'chip',text:c.price_ngn?'₦'+c.price_ngn:'Free'}),h('span',{class:'chip',text:n+' lessons'})]),
+     h('div',{class:'row'},[btn('Edit',function(){edit(c.id)},'btn-primary'),btn(c.published?'Unpublish':'Publish',function(){sb.from('courses').update({published:!c.published}).eq('id',c.id).then(list)}),h('a',{class:'btn btn-outline',href:'course.html?s='+encodeURIComponent(c.slug),target:'_blank',text:'View'}),
+      btn('Delete',function(){if(confirm('Delete "'+c.title+'" with all its modules, lessons and student progress?'))sb.from('courses').delete().eq('id',c.id).then(list)})])])]))})})}
+ function edit(id){root.textContent='';root.appendChild(btn('← All courses',list));
+  sb.from('courses').select('*').eq('id',id).maybeSingle().then(function(r){var c=r.data;if(!c)return root.appendChild(h('p',{text:'Course not found.'}));
+   var o={title:c.title,description:c.description||'',category_slug:c.category_slug||'',level:c.level||'',duration_text:c.duration_text||'',price_ngn:c.price_ngn||0,requirements:c.requirements||'',outcomes:c.outcomes||'',featured:!!c.featured,thumbnail_url:c.thumbnail_url||''},m=h('div',{class:'msg'}),f=h('form',{class:'mini'}),pv=h('img',{class:'thumb',alt:'',style:o.thumbnail_url?'':'display:none',src:o.thumbnail_url});
+   root.appendChild(h('h2',{text:'Course details'}));root.appendChild(f);root.appendChild(m);
+   window.CV_CATS().then(function(cats){var sel=h('select',{},[h('option',{value:'',text:'No category'})].concat(cats.map(function(x){return h('option',{value:x.slug,text:x.title})})));sel.value=o.category_slug;sel.addEventListener('change',function(){o.category_slug=sel.value});
+    U.addAll(f,U.fld('Title',o,'title'));U.addAll(f,U.fld('Description',o,'description',1));f.appendChild(h('label',{class:'field',text:'Category'}));f.appendChild(sel);U.addAll(f,U.fld('Level (Beginner, Intermediate, Advanced)',o,'level'));U.addAll(f,U.fld('Duration (e.g. 4 hours)',o,'duration_text'));U.addAll(f,U.fld('Price in naira (0 = free)',o,'price_ngn'));
+    U.addAll(f,U.fld('Requirements (one per line)',o,'requirements',1));U.addAll(f,U.fld('What students will learn (one per line)',o,'outcomes',1));f.appendChild(U.chk('Featured on the homepage',o,'featured'));
+    f.appendChild(h('label',{class:'field',text:'Course flyer / thumbnail'}));f.appendChild(pv);U.addAll(f,U.mf('Flyer image',o,'thumbnail_url','image','course-thumbnails',m));f.addEventListener('input',function(){pv.src=o.thumbnail_url||'';pv.style.display=o.thumbnail_url?'':'none'});
+    f.appendChild(h('button',{class:'btn btn-primary',type:'submit',text:'Save course details'}))});
+   f.addEventListener('submit',function(e){e.preventDefault();sb.from('courses').update({title:o.title,description:o.description,category_slug:o.category_slug||null,level:o.level,duration_text:o.duration_text,price_ngn:parseInt(o.price_ngn,10)||0,requirements:o.requirements,outcomes:o.outcomes,featured:o.featured,thumbnail_url:o.thumbnail_url||null}).eq('id',id).then(function(x){m.textContent=x.error?x.error.message:'Saved.';m.className='msg '+(x.error?'err':'ok')})});
+   root.appendChild(h('h2',{text:'Curriculum'}));var cu=h('div'),reopen=null,lastLm=null;root.appendChild(cu);
+   function swap(t,a,b){if(!b)return;Promise.all([sb.from(t).update({position:b.position}).eq('id',a.id),sb.from(t).update({position:a.position}).eq('id',b.id)]).then(load)}
+   function load(){sb.from('modules').select('id,title,position,lessons(id,title,position,video_url,content,lesson_resources(id,title,url,position))').eq('course_id',id).then(function(r){cu.textContent='';if(r.error)return cu.appendChild(h('div',{class:'msg err',text:r.error.message+' (run stage7-courses.sql first)'}));var mods=srt(r.data);
+    mods.forEach(function(md,i){var mt={t:md.title},p=h('div',{class:'panel'}),lst=srt(md.lessons);
+     p.appendChild(h('div',{class:'row'},[h('input',{value:md.title,'aria-label':'Module title'}),btn('Rename',function(){var v=p.querySelector('input').value.trim();if(v)sb.from('modules').update({title:v}).eq('id',md.id).then(load)}),btn('Up',function(){swap('modules',md,mods[i-1])}),btn('Down',function(){swap('modules',md,mods[i+1])}),
+      btn('Delete module',function(){if(confirm('Delete module "'+md.title+'" and its '+lst.length+' lessons?'))sb.from('modules').delete().eq('id',md.id).then(load)})]));
+     lst.forEach(function(l,j){var ed=h('div',{style:'display:none'}),built=false;if(reopen&&reopen.id===l.id){built=true;lessonEd(ed,l);lastLm.textContent=reopen.msg;lastLm.className='msg ok';ed.style.display='block';reopen=null}
+      p.appendChild(h('div',{class:'row lrow'},[h('strong',{text:l.title}),btn('Edit',function(){if(!built){built=true;lessonEd(ed,l)}ed.style.display=ed.style.display==='none'?'block':'none'}),btn('Up',function(){swap('lessons',l,lst[j-1])}),btn('Down',function(){swap('lessons',l,lst[j+1])}),
+       btn('Delete',function(){if(confirm('Delete lesson "'+l.title+'"?'))sb.from('lessons').delete().eq('id',l.id).then(load)})]));p.appendChild(ed)});
+     var lf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New lesson title',required:''}),h('button',{class:'btn btn-primary',type:'submit',text:'Add lesson'})]);
+     lf.addEventListener('submit',function(e){e.preventDefault();sb.from('lessons').insert({module_id:md.id,title:lf.t.value.trim(),position:lst.length?lst[lst.length-1].position+1:1}).then(function(x){x.error?alert(x.error.message):load()})});p.appendChild(lf);cu.appendChild(p)});
+    var mf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New module title',required:''}),h('button',{class:'btn btn-primary',type:'submit',text:'Add module'})]);
+    mf.addEventListener('submit',function(e){e.preventDefault();sb.from('modules').insert({course_id:id,title:mf.t.value.trim(),position:mods.length?mods[mods.length-1].position+1:1}).then(function(x){x.error?alert(x.error.message):load()})});cu.appendChild(mf)})}
+   function lessonEd(box,l){var o={title:l.title,video_url:l.video_url||'',content:l.content||''},res=srt(l.lesson_resources).map(function(x){return{id:x.id,title:x.title,url:x.url}}),del=[],lm=h('div',{class:'msg'}),rb=h('div'),fm=h('form',{class:'mini'});lastLm=lm;
+    U.addAll(fm,U.fld('Lesson title',o,'title'));U.addAll(fm,U.mf('Lesson video: YouTube/Vimeo link or uploaded video (up to 50 MB)',o,'video_url','video','videos',lm));U.addAll(fm,U.fld('Lesson description / notes',o,'content',2));
+    fm.appendChild(h('h3',{class:'mod',text:'Downloadable resources'}));fm.appendChild(rb);
+    function drawR(){rb.textContent='';res.forEach(function(x,k){var ti=h('input',{placeholder:'Title',value:x.title}),ui=h('input',{placeholder:'File link (https://…)',value:x.url}),fi=h('input',{type:'file'});ti.addEventListener('input',function(){x.title=ti.value});ui.addEventListener('input',function(){x.url=ui.value});
+      fi.addEventListener('change',function(){if(fi.files[0]){lm.textContent='Uploading…';lm.className='msg';window.CV_MEDIA.upload(fi.files[0],'documents').then(function(u){x.url=u;ui.value=u;if(!x.title){x.title=fi.files[0].name;ti.value=x.title}lm.textContent='Uploaded. Save the lesson to keep it.';lm.className='msg ok'}).catch(function(e){lm.textContent=e.message;lm.className='msg err'})}});
+      rb.appendChild(h('div',{class:'mini'},[ti,ui,fi,btn('Remove',function(){if(x.id)del.push(x.id);res.splice(k,1);drawR()})]))})}
+    fm.appendChild(btn('Add resource',function(){res.push({title:'',url:''});drawR()}));drawR();fm.appendChild(h('button',{class:'btn btn-primary',type:'submit',text:'Save lesson'}));box.appendChild(fm);box.appendChild(lm);
+    fm.addEventListener('submit',function(e){e.preventDefault();var good=res.filter(function(x){return x.title.trim()&&x.url.trim()});
+     sb.from('lessons').update({title:o.title,video_url:o.video_url||null,content:o.content||null}).eq('id',l.id).then(function(x){if(x.error){lm.textContent=x.error.message;lm.className='msg err';return}
+      Promise.all([del.length?sb.from('lesson_resources').delete().in('id',del):0].concat(good.map(function(r,k){return r.id?sb.from('lesson_resources').update({title:r.title,url:r.url,position:k+1}).eq('id',r.id):sb.from('lesson_resources').insert({lesson_id:l.id,title:r.title,url:r.url,position:k+1})}))).then(function(rs){var er=rs.filter(function(q){return q&&q.error})[0];lm.textContent=er?er.error.message:'Lesson saved.';lm.className='msg '+(er?'err':'ok');if(!er){reopen={id:l.id,msg:'Lesson saved.'};load()}})})})}
+   load()})}
+};
+})();

@@ -26,7 +26,7 @@ function courses(sb){head('Explore Courses','Browse published courses and start 
   g.textContent='';var l=all.filter(function(c){return(!cat||c.category_slug===cat)&&(!term||(c.title+' '+(c.description||'')).toLowerCase().indexOf(term)>-1)});
   if(!l.length)return g.appendChild(h('div',{class:'note',text:all.length?'No courses match your search.':'No courses are published yet.'}));l.forEach(function(c){g.appendChild(ccard(c))})}
  si.addEventListener('input',function(){term=si.value.trim().toLowerCase();draw()});
- Promise.all([sb.from('courses').select('*,modules(lessons(id))').eq('published',true).order('created_at',{ascending:false}),window.CV_CATS()]).then(function(r){if(r[0].error)return note(r[0].error.message);all=r[0].data||[];cats=r[1];draw()})}
+ Promise.all([sb.from('courses').select('*,modules(lessons(id))').eq('published',true).order('created_at',{ascending:false}),window.CV_CATS()]).then(function(r){if(r[0].error)return note(r[0].error.message);all=(r[0].data||[]).slice().sort(function(a,b){return (b.featured?1:0)-(a.featured?1:0)});cats=r[1];draw()})}
 function course(sb,user){var s=Q.get('s');
  sb.from('courses').select('*,modules(id,title,position,lessons(id,title,position))').eq('slug',s||'').maybeSingle().then(function(r){
   if(!r.data)return head('Course not found');var c=r.data,mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});main.textContent='';
@@ -41,6 +41,9 @@ function course(sb,user){var s=Q.get('s');
     h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
     enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons completed ('+pct+'%)'})]):null,act]),
     c.thumbnail_url?h('img',{class:'cimg',src:c.thumbnail_url,alt:''}):null]));
+   var ol=(c.outcomes||'').split('\n').map(function(x){return x.trim()}).filter(Boolean),rq=(c.requirements||'').split('\n').map(function(x){return x.trim()}).filter(Boolean);
+   if(ol.length){main.appendChild(h('h2',{text:'What you will learn'}));var u1=h('ul',{class:'clist'});ol.forEach(function(t){u1.appendChild(h('li',{},[h('span',{class:'outc'},[h('span',{class:'dot on'},[ico(CK)]),h('span',{text:t})])]))});main.appendChild(u1)}
+   if(rq.length){main.appendChild(h('h2',{text:'Requirements'}));var u2=h('ul');rq.forEach(function(t){u2.appendChild(h('li',{text:t}))});main.appendChild(u2)}
    main.appendChild(h('h2',{text:'Curriculum'}));if(!mods.length)note('No lessons have been added yet.');
    mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title})])]))});
     main.appendChild(h('details',{class:'mod2',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))})})})}
@@ -55,7 +58,7 @@ function lesson(sb,user){
    var side=h('aside',{class:'lside'},[h('h3',{text:'Course content'}),bar2(pct),h('p',{class:'pmeta',text:n+' of '+flat.length+' completed'})]);
    mods.forEach(function(m){side.appendChild(h('h4',{text:m.title}));var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(q){ul.appendChild(h('li',{class:q.id===l.id?'cur':''},[h('a',{href:'lesson.html?l='+q.id},[h('span',{class:'dot'+(done[q.id]?' on':'')},[done[q.id]?ico(CK):null]),h('span',{text:q.title})])]))});side.appendChild(ul)});
    var col=h('div',{class:'lmain'},[h('a',{class:'back',href:'course.html?s='+encodeURIComponent(c.slug),text:'← '+c.title}),h('h1',{text:l.title})]);var v=embed(l.video_url);if(v)col.appendChild(v);
-   if(l.content)col.appendChild(h('div',{class:'lesson-text',text:l.content}));
+   if(l.content)col.appendChild(h('div',{class:'lesson-text',text:l.content}));var rl=h('div');col.appendChild(rl);sb.from('lesson_resources').select('title,url,position').eq('lesson_id',l.id).then(function(rr){var d=sorted(rr.data||[]);if(!d.length)return;rl.appendChild(h('h3',{class:'mod',text:'Resources'}));var ul=h('ul',{class:'clist'});d.forEach(function(x){ul.appendChild(h('li',{},[h('a',{href:x.url,target:'_blank',rel:'noopener'},[h('span',{class:'dot'},[ico('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>')]),h('span',{text:x.title})])]))});rl.appendChild(ul)});
    var row=h('div',{class:'row'});col.appendChild(row);
    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
    if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
@@ -65,30 +68,8 @@ function lesson(sb,user){
    main.appendChild(h('div',{class:'lgrid'},[col,side]))})})}
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
  sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){var ro=p.data&&p.data.role;
-  if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div');main=P1;window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7});
-  window.CV_CATS().then(function(cats){
-   var f=h('form',{id:'nc'});function fld(l,n,t,x){var i=t==='ta'?h('textarea',{id:n,name:n,rows:'3'}):h('input',{id:n,name:n,type:t||'text'});return[h('label',{class:'field',for:n,text:l}),i]}
-   var sel=h('select',{name:'category',id:'category'},cats.map(function(c){return h('option',{value:c.slug,text:c.title})}));
-   [].concat(fld('Title','title'),fld('Short description','description','ta'),[h('label',{class:'field',for:'category',text:'Category'}),sel],fld('Level (Beginner, Intermediate, Advanced)','level'),fld('Duration (e.g. 4 hours)','duration'),fld('Price in naira (0 = free)','price','number')).forEach(function(e){f.appendChild(e)});
-   f.title.required=true;f.price.value=0;f.level.value='Beginner';f.appendChild(h('button',{class:'btn btn-primary',type:'submit',text:'Create course (draft)'}));
-   main.appendChild(h('h2',{text:'New course'}));main.appendChild(f);var out=h('div',{id:'list'});main.appendChild(h('h2',{text:'All courses'}));main.appendChild(out);
-   function slug(t){return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6)}
-   f.addEventListener('submit',function(e){e.preventDefault();sb.from('courses').insert({title:f.title.value,slug:slug(f.title.value),description:f.description.value,category_slug:sel.value,level:f.level.value,duration_text:f.duration.value,price_ngn:parseInt(f.price.value,10)||0}).then(function(r){r.error?alert(r.error.message):(f.reset(),f.price.value=0,f.level.value='Beginner',load())})});
-   function load(){sb.from('courses').select('*,modules(id,title,position,lessons(id,title,position))').order('created_at',{ascending:false}).then(function(r){out.textContent='';(r.data||[]).forEach(function(c){
-    var thumb=c.thumbnail_url||'',box=h('div',{class:'panel'},[thumb?h('img',{class:'thumb',src:thumb,alt:''}):null,h('h3',{text:c.title+(c.published?'':' (draft)')}),h('p',{text:(c.category_slug||'')+' · '+(c.price_ngn?'₦'+c.price_ngn:'Free')})]);
-    var ef=h('form',{class:'mini',style:'display:none'}),eT=h('input',{value:c.title,required:''}),eD=h('textarea',{rows:'3',value:c.description||''}),eC=h('select',{},cats.map(function(x){return h('option',{value:x.slug,text:x.title})})),eL=h('input',{value:c.level||''}),eU=h('input',{value:c.duration_text||''}),eP=h('input',{type:'number',value:c.price_ngn||0}),eV=h('img',{class:'thumb',alt:'',style:thumb?'':'display:none',src:thumb}),eF=h('input',{type:'file',accept:'image/*'}),em=h('div',{class:'msg'});eC.value=c.category_slug||'';
-    eF.addEventListener('change',function(){if(eF.files[0]){em.textContent='Uploading…';em.className='msg';window.CV_MEDIA.upload(eF.files[0],'course-thumbnails').then(function(u){thumb=u;eV.src=u;eV.style.display='';em.textContent='Preview ready. Press Save to apply.';em.className='msg ok'}).catch(function(e){em.textContent=e.message;em.className='msg err'})}});
-    [h('label',{class:'field',text:'Title'}),eT,h('label',{class:'field',text:'Description'}),eD,h('label',{class:'field',text:'Category'}),eC,h('label',{class:'field',text:'Level'}),eL,h('label',{class:'field',text:'Duration'}),eU,h('label',{class:'field',text:'Price in naira (0 = free)'}),eP,h('label',{class:'field',text:'Course flyer / thumbnail'}),eV,eF,window.CV_CMS.pick('image',{set value(v){thumb=v;eV.src=v;eV.style.display=''}}),h('button',{class:'btn btn-outline',type:'button',text:'Remove image',on:function(){thumb='';eV.style.display='none'}}),h('button',{class:'btn btn-primary',type:'submit',text:'Save changes'}),em].forEach(function(e){ef.appendChild(e)});
-    ef.addEventListener('submit',function(e){e.preventDefault();sb.from('courses').update({title:eT.value,description:eD.value,category_slug:eC.value,level:eL.value,duration_text:eU.value,price_ngn:parseInt(eP.value,10)||0,thumbnail_url:thumb||null}).eq('id',c.id).then(function(r){r.error?(em.textContent=r.error.message,em.className='msg err'):load()})});
-    var row=h('div',{class:'row'},[h('button',{class:'btn btn-outline',type:'button',text:'Edit',on:function(){ef.style.display=ef.style.display==='none'?'grid':'none'}}),h('button',{class:'btn btn-outline',type:'button',text:c.published?'Unpublish':'Publish',on:function(){sb.from('courses').update({published:!c.published}).eq('id',c.id).then(load)}}),
-     h('a',{class:'btn btn-outline',href:'course.html?s='+encodeURIComponent(c.slug),text:'View'}),
-     h('button',{class:'btn btn-outline',type:'button',text:'Delete',on:function(){if(confirm('Delete "'+c.title+'" and all its lessons?'))sb.from('courses').delete().eq('id',c.id).then(load)}})]);box.appendChild(row);box.appendChild(ef);
-    sorted(c.modules).forEach(function(m){var ls=h('ul');sorted(m.lessons).forEach(function(l){ls.appendChild(h('li',{},[h('span',{text:l.title+' '}),h('a',{href:'#',text:'remove',on:function(e){e.preventDefault();if(confirm('Remove lesson?'))sb.from('lessons').delete().eq('id',l.id).then(load)}})]))});
-     var lf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'Lesson title',required:''}),h('input',{name:'v',placeholder:'YouTube / Vimeo / .mp4 link (optional)'}),h('textarea',{name:'c',rows:'3',placeholder:'Lesson text (optional)'}),h('button',{class:'btn btn-primary',type:'submit',text:'Add lesson'})]);
-     lf.addEventListener('submit',function(e){e.preventDefault();sb.from('lessons').insert({module_id:m.id,title:lf.t.value,video_url:lf.v.value||null,content:lf.c.value||null,position:(m.lessons||[]).length+1}).then(function(x){x.error?alert(x.error.message):load()})});
-     box.appendChild(h('h3',{class:'mod',text:m.title}));box.appendChild(ls);box.appendChild(lf)});
-    var mf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New module title',required:''}),h('button',{class:'btn btn-outline',type:'submit',text:'Add module'})]);
-    mf.addEventListener('submit',function(e){e.preventDefault();sb.from('modules').insert({course_id:c.id,title:mf.t.value,position:(c.modules||[]).length+1}).then(function(x){x.error?alert(x.error.message):load()})});box.appendChild(mf);out.appendChild(box)})})}
-   load()})})}
+  if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');
+  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div');window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);
+  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7})})}
 if(window.CV_SB)boot(window.CV_SB);else document.addEventListener('cv-ready',function(){boot(window.CV_SB)});
 })();

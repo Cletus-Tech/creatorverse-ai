@@ -45,7 +45,7 @@ function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){
  fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})})}
 function render(X){root.textContent='';var hr=hero(X.hero);if(hr)root.appendChild(hr);
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
- Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=id,slug,title,description,duration_text,thumbnail_url,price_ngn,modules(lessons(id))&order=created_at.desc&limit=40').catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
+ Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=*,modules(lessons(id))&order=created_at.desc&limit=40').then(function(d){return Array.isArray(d)?d.sort(function(x,y){return(y.featured?1:0)-(x.featured?1:0)}):[]}).catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
   var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false)return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e)})})}
 function go(){var ok=C.supabaseUrl&&C.supabaseAnonKey;
  if(Q.get('preview')==='1'){document.body.insertBefore(h('div',{class:'preview-bar',text:'Preview of the unpublished draft. Visitors do not see this.'}),document.body.firstChild);

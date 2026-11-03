@@ -83,5 +83,5 @@ function site(pane){var sb=window.CV_SB;pane.appendChild(h('h2',{text:'Website c
  sb.from('site_content').select('key,value').then(function(r){(r.data||[]).forEach(function(x){if(inp[x.key])inp[x.key].value=x.value})});
  f.addEventListener('submit',function(e){e.preventDefault();var set=[],del=[];KEYS.forEach(function(k){var v=inp[k[0]].value.trim();v?set.push({key:k[0],value:v,updated_at:new Date().toISOString()}):del.push(k[0])});
   Promise.all([set.length?sb.from('site_content').upsert(set):{},del.length?sb.from('site_content').delete().in('key',del):{}]).then(function(r){var er=(r[0]&&r[0].error)||(r[1]&&r[1].error);m.textContent=er?er.message:'Saved. Refresh the website to see the changes.';m.className='msg '+(er?'err':'ok')})})}
-window.CV_CMS={media:media,site:site,pick:pick,founder:founder,video:video,categories:categories};
+window.CV_UI={h:h,fld:fld,chk:chk,mf:mf,addAll:addAll};window.CV_CMS={media:media,site:site,pick:pick,founder:founder,video:video,categories:categories};
 })();
