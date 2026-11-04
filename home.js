@@ -21,6 +21,7 @@ function hero(H){if(H.visible===false)return null;var P=H.portrait,F=H.founder,v
  var row=h('div',{class:'hero2-cta'});if(H.primary.visible!==false&&H.primary.label)row.appendChild(btn(H.primary.label,H.primary.url,'btn-primary'));
  if(H.secondary.visible!==false&&H.secondary.label&&vid.enabled&&e)row.appendChild(h('button',{class:'btn btn-outline',type:'button',id:'watch-intro',on:function(){modal(vid)}},[ico(I.play),h('span',{text:H.secondary.label})]));
  copy.appendChild(row);
+ copy.appendChild(h('div',{class:'hero-proof'},[['Practical skills','Learn by doing'],['Creative tools','Build real projects'],['Community','Grow together']].map(function(x){return h('div',{class:'proof-item'},[h('strong',{text:x[0]}),h('span',{text:x[1]})])})));
  var art=null,cap=null;if(F.visible!==false&&(F.name||F.designation||F.description))cap=h('figcaption',{class:'cap'},[F.name?h('strong',{text:F.name}):null,F.designation?h('span',{text:F.designation}):null,F.description?h('small',{text:F.description}):null]);
  if(P.visible!==false&&P.url)art=h('figure',{class:'portrait '+(P.style==='framed'?'framed':'cutout')},[h('img',{src:P.url,alt:F.name?'Portrait of '+F.name:'Founder portrait'}),cap]);
  else if(cap||P.visible!==false)art=h('figure',{class:'portrait fallback'},[h('div',{class:'fb-mark'},[ico(I.play)]),cap]);
