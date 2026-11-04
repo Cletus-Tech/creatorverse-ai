@@ -7,7 +7,19 @@ $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}
 function load(cb){if(window.supabase)return cb();var s=document.createElement('script');s.src=CDN;s.onload=cb;document.head.appendChild(s)}
 function hasSession(){try{for(var k in localStorage)if(k.indexOf('sb-')===0)return true}catch(e){}return false}
-function navState(s){document.querySelectorAll('a[href="login.html"]').forEach(function(a){a.textContent='Dashboard';a.href='dashboard.html'});
+function navState(s){document.querySelectorAll('a[href="login.html"]').forEach(function(a){a.textContent='Dashboard';a.href='dashboard.html'}); 
+ sb.from('profiles').select('role').eq('id',s.user.id).maybeSingle().then(function(r){
+  var role=r.data&&r.data.role;
+  if(role==='admin'||role==='super_admin'){
+   document.querySelectorAll('.nav-right,.mobile-menu').forEach(function(box){
+    if(box.querySelector('a[href="admin.html"]'))return;
+    var link=document.createElement('a');link.href='admin.html';link.textContent='Admin Panel';link.className='btn btn-primary cv-admin-nav';
+    var logout=box.querySelector('a[href="#"]');if(logout)box.insertBefore(link,logout);else box.appendChild(link);
+   });
+   var bottom=document.querySelector('.bottom-nav');
+   if(bottom&&!bottom.querySelector('a[href="admin.html"]')){var x=document.createElement('a');x.href='admin.html';x.textContent='Admin';x.className='cv-admin-bottom';bottom.appendChild(x)}
+  }
+ });
  document.querySelectorAll('a[href="register.html"]').forEach(function(a){a.textContent='Log out';a.href='#';a.addEventListener('click',function(e){e.preventDefault();sb.auth.signOut().then(function(){location.href='index.html'})})})}
 function form(id,fn){var f=$(id);if(!f)return;f.addEventListener('submit',function(e){e.preventDefault();var b=f.querySelector('button');b.disabled=true;
  Promise.resolve(fn(new FormData(f))).catch(function(x){msg(x.message||'Something went wrong.','err')}).then(function(){b.disabled=false})})}
