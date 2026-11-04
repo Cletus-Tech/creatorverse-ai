@@ -364,3 +364,14 @@ main#home{padding-bottom:70px}
 .founder-social-links a:nth-child(4) img{filter:brightness(0) saturate(100%) invert(54%) sepia(91%) saturate(448%) hue-rotate(86deg) brightness(95%) contrast(91%)!important}
 @media(max-width:900px){.founder-visual .portrait{flex:0 1 300px;width:100%;max-width:300px}}
 @media(max-width:560px){.founder-visual .portrait{flex:1 1 auto;width:auto;max-width:none}.founder-social-links a{font-size:8px!important}.founder-social-links a img{width:19px;height:19px;flex-basis:19px}}
+
+
+/* Founder portrait prominence + compact identity badge. */
+.hero2 .founder-visual .portrait{flex:0 1 460px;width:100%;max-width:460px;transform:translateZ(55px)}
+.hero2 .founder-visual .portrait img{width:100%;max-height:560px;aspect-ratio:4/5;object-fit:contain;object-position:center bottom}
+.hero2 .founder-visual .portrait .cap{right:2%;bottom:18px;max-width:66%;gap:1px;padding:7px 10px;border-radius:9px}
+.hero2 .founder-visual .portrait .cap strong{font-size:12px;line-height:1.2}
+.hero2 .founder-visual .portrait .cap span{font-size:9px;line-height:1.25}
+.hero2 .founder-visual .portrait .cap small{font-size:8px;line-height:1.2;margin-top:2px}
+@media(max-width:900px){.hero2 .founder-visual .portrait{flex:0 1 380px;width:100%;max-width:380px}.hero2 .founder-visual .portrait img{max-height:460px}}
+@media(max-width:560px){.hero2 .founder-visual .portrait{flex:1 1 auto;width:auto;max-width:none}.hero2 .founder-visual .portrait img{max-height:380px}.hero2 .founder-visual .portrait .cap{max-width:72%;padding:6px 8px}.hero2 .founder-visual .portrait .cap strong{font-size:11px}.hero2 .founder-visual .portrait .cap span{font-size:8px}.hero2 .founder-visual .portrait .cap small{font-size:7px}}
