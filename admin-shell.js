@@ -61,6 +61,20 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    (r[0].data||[]).forEach(function(p){ev.push([p.created_at,(p.full_name||p.email||'A student')+' registered'])});(r[1].data||[]).forEach(function(e){ev.push([e.created_at,(pn[e.user_id]||'A student')+' enrolled in '+(cn[e.course_id]||'a course')])});
    (r[2].data||[]).forEach(function(p){ev.push([p.completed_at,(pn[p.user_id]||'A student')+' completed a lesson'])});(r[3].data||[]).forEach(function(m){ev.push([m.created_at,'Uploaded '+m.name])});(r[4].data||[]).forEach(function(c){ev.push([c.created_at,'Course created: '+c.title])});
    ev.sort(function(a,b){return new Date(b[0])-new Date(a[0])});if(!ev.length)return ra.appendChild(h('p',{text:'No activity yet.'}));var ul=h('ul',{class:'act'});ev.slice(0,8).forEach(function(e){ul.appendChild(h('li',{},[h('span',{text:e[1]}),h('small',{text:ago(e[0])})]))});ra.appendChild(ul)})}
+ function platformActivity(){
+  var box=h('div',{class:'panel'});box.appendChild(h('h3',{text:'Platform activity log'}));
+  var filter=h('select',{},[['all','All activity'],['signup','New accounts'],['enrolment','Course enrolments'],['community_post','Community posts'],['report','Reports']].map(function(x){return h('option',{value:x[0],text:x[1]})}));
+  var list=h('div',{class:'act'}),status=h('p',{class:'pmeta',text:'Loading recorded platform events…'});
+  box.append(filter,status,list);view.appendChild(box);
+  function load(){list.textContent='';status.textContent='Loading…';var q=sb.from('admin_activity').select('id,event_type,actor_id,summary,metadata,created_at').order('created_at',{ascending:false}).limit(100);if(filter.value!=='all')q=q.eq('event_type',filter.value);
+   q.then(async function(r){if(r.error){status.textContent='Could not load activity: '+r.error.message;return}var rows=r.data||[],ids=Array.from(new Set(rows.map(function(x){return x.actor_id}).filter(Boolean))),profiles={};
+    if(ids.length){var p=await sb.from('profiles').select('id,full_name,email').in('id',ids);(p.data||[]).forEach(function(x){profiles[x.id]=x})}
+    status.textContent=rows.length?rows.length+' recorded events':'No events recorded yet.';
+    rows.forEach(function(x){var p=profiles[x.actor_id]||{},label=p.full_name||p.email||'Platform event';list.appendChild(h('li',{},[h('span',{text:x.summary}),h('small',{text:label+' · '+ago(x.created_at)})]))})
+   })
+  }
+  filter.addEventListener('change',load);load()
+ }
  function analytics(){var since=new Date(Date.now()-30*864e5).toISOString(),g=h('div',{class:'two'});view.appendChild(g);
   Promise.all([sb.from('profiles').select('created_at').gte('created_at',since),sb.from('enrolments').select('created_at').gte('created_at',since),sb.from('lesson_progress').select('completed_at').gte('completed_at',since)]).then(function(r){
    g.appendChild(chart('New registrations',r[0].data||[],(r[0].data||[]).length));g.appendChild(chart('New enrolments',r[1].data||[],(r[1].data||[]).length));
