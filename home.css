@@ -193,3 +193,28 @@ main#home{padding-bottom:70px}
 #courses .cbody p{font-size:14px;min-height:62px}
 @media(max-width:1050px){#categories .grid{grid-template-columns:repeat(2,minmax(0,1fr))}#courses .grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.hero2-in{padding:28px 20px 0;min-height:0}.hero2 h1{font-size:clamp(38px,11vw,54px)}.hero-proof{display:grid;grid-template-columns:1fr 1fr}.proof-item:last-child{grid-column:1/-1}#categories .grid,#courses .grid{grid-template-columns:1fr}.cat-card{min-height:235px}.portrait{max-width:340px}}
+
+
+/* Immersive 3D learning hero and compact founder portrait */
+.hero2{perspective:1400px;overflow:hidden}
+.hero2-in{position:relative;isolation:isolate;transform-style:preserve-3d;box-shadow:inset 0 1px rgba(255,255,255,.08)}
+.hero2-in::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:.23;background:
+ radial-gradient(ellipse at 77% 52%,rgba(43,150,255,.24),transparent 42%),
+ linear-gradient(90deg,rgba(3,10,29,.1),rgba(3,10,29,.52)),
+ repeating-linear-gradient(0deg,transparent 0 48px,rgba(132,183,255,.055) 49px 50px),
+ repeating-linear-gradient(90deg,transparent 0 48px,rgba(132,183,255,.045) 49px 50px)}
+.hero2-copy{position:relative;z-index:3;transform:translateZ(35px)}
+.hero2 .portrait{width:clamp(190px,25vw,330px);max-width:330px;max-height:390px;align-self:center;transform:translateZ(55px);border-radius:26px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.48),0 0 0 1px rgba(143,190,255,.24)}
+.hero2 .portrait img{width:100%;height:100%;max-height:390px;object-fit:cover;object-position:center top}
+.hero2 .portrait .cap{padding:12px 15px;background:linear-gradient(90deg,rgba(5,14,38,.96),rgba(8,31,74,.9))}
+.hero2 .portrait .cap strong{font-size:14px}
+.hero2 .portrait .cap span,.hero2 .portrait .cap small{font-size:11px}
+.hero-proof{position:relative;z-index:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:610px;gap:10px;margin-top:28px}
+.proof-item{min-width:0;backdrop-filter:blur(14px);box-shadow:0 10px 25px rgba(0,0,0,.16)}
+.cat-card,.course-card{transform-style:preserve-3d;transition:transform .3s ease,box-shadow .3s ease}
+.cat-card:hover,.course-card:hover{transform:translateY(-7px) rotateX(1deg);box-shadow:0 24px 50px rgba(0,0,0,.3)}
+.course-card .cthumb{position:relative;overflow:hidden}
+.course-card .cthumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(3,8,24,.48));pointer-events:none}
+.course-card .cthumb img{width:100%;height:100%;object-fit:cover}
+@media(max-width:760px){.hero2-in{display:flex;flex-direction:column}.hero2 .portrait{width:min(72vw,260px);max-height:300px;margin:22px auto}.hero2 .portrait img{max-height:300px}.hero-proof{grid-template-columns:1fr 1fr}.proof-item:last-child{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.cat-card,.course-card{transition:none}.cat-card:hover,.course-card:hover{transform:none}}
