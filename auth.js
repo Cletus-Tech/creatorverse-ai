@@ -26,7 +26,7 @@ function form(id,fn){var f=$(id);if(!f)return;f.addEventListener('submit',functi
 function oops(e,t){if(e){msg(/not confirmed/i.test(e.message)?'Please verify your email first. Check your inbox.':/invalid login/i.test(e.message)?'Wrong email or password.':e.message,'err');return true}}
 function run(){
  sb=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);window.CV_SB=sb;document.dispatchEvent(new Event('cv-ready'));
- sb.auth.getSession().then(function(r){if(r.data.session)navState()});
+ sb.auth.getSession().then(function(r){if(r.data.session)navState(r.data.session)});
  if(pg==='register')form('f',function(d){if(String(d.get('password')).length<8){msg('Password must be at least 8 characters.','err');return}
   return sb.auth.signUp({email:d.get('email'),password:d.get('password'),options:{data:{full_name:d.get('name')},emailRedirectTo:base+'login.html'}}).then(function(r){
    if(oops(r.error))return;if(r.data.user&&r.data.user.identities&&!r.data.user.identities.length){msg('This email is already registered. Try logging in.','err');return}
