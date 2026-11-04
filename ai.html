@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Your CreatorVerse AI assistant. Get help navigating CreatorVerse and its learning resources.">
+<title>CreatorVerse AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="components.css"><link rel="stylesheet" href="pages.css"><link rel="stylesheet" href="responsive.css"><link rel="stylesheet" href="ai.css">
+</head><body data-page="ai" class="cv-ai-page">
+<div id="site-header"></div>
+<main class="cv-ai-wrap">
+  <aside class="cv-ai-side">
+    <div class="cv-ai-brand"><span class="cv-ai-orb">CV</span><div><strong>CreatorVerse AI</strong><small>Your platform assistant</small></div></div>
+    <button class="cv-ai-new" id="new-chat">＋ <span>New conversation</span></button>
+    <div class="cv-ai-side-label">YOUR MODES</div>
+    <button class="cv-ai-mode active" data-mode="general"><span class="mode-dot"></span><span><b>General mode</b><small>Everyday help and guidance</small></span></button>
+    <button class="cv-ai-mode" data-mode="creatorverse"><span class="mode-dot"></span><span><b>CreatorVerse specialist</b><small>Courses, features and creator learning</small></span></button>
+    <div class="cv-ai-side-note">The assistant uses approved CreatorVerse knowledge. It will tell you when information has not yet been confirmed.</div>
+  </aside>
+  <section class="cv-ai-main">
+    <header class="cv-ai-top"><div><span class="cv-ai-eyebrow">YOUR DIGITAL COMPANION</span><h1 id="mode-title">How can I help you today?</h1><p id="mode-subtitle">Ask a question and I'll help using the information available to me.</p></div><span class="cv-ai-status"><i></i> Assistant online</span></header>
+    <div class="cv-ai-thread" id="chat-thread" aria-live="polite">
+      <div class="cv-ai-welcome" id="welcome">
+        <div class="cv-ai-welcome-icon">CV</div><h2>Welcome to CreatorVerse AI</h2><p>I'm here to help you find your way around CreatorVerse and make the most of its learning resources.</p>
+        <div class="cv-ai-suggestions"><button>What is CreatorVerse AI?</button><button>What can I learn here?</button><button>How do I get started?</button></div>
+      </div>
+    </div>
+    <form class="cv-ai-composer" id="chat-form"><textarea id="chat-input" rows="1" maxlength="2000" placeholder="Message CreatorVerse AI..." aria-label="Your message"></textarea><button id="send-btn" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg></button><small>CreatorVerse AI can make mistakes. Check important information.</small></form>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="layout.js"></script><script src="nav.js"></script><script src="config.js"></script><script src="auth.js"></script><script src="ai.js"></script>
+</body></html>
