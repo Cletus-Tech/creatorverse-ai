@@ -2,6 +2,7 @@
 var root=document.getElementById('community-app');if(!root)return;
 var sb=null,user=null,role='',filter='all',sort='new',term='',posts=[],profiles={},creators=[],saved={},liked={},following=[],followed={},blocked={},commentsOpen={},$=function(id){return document.getElementById(id)};
 function el(t,a,children){var n=document.createElement(t);Object.keys(a||{}).forEach(function(k){if(k==='text')n.textContent=a[k];else if(k==='class')n.className=a[k];else if(k==='style')n.setAttribute('style',a[k]);else n.setAttribute(k,a[k])});(children||[]).forEach(function(x){if(x)n.appendChild(x)});return n}
+function hideCommunityLoader(){var l=$('community-loader');if(l)l.classList.add('is-hidden')}
 function msg(t,bad){$('community-msg').textContent=t||'';$('community-msg').className='community-msg'+(bad?' error':'')}
 function modal(on){$('post-modal').classList.toggle('open',!!on);document.body.style.overflow=on?'hidden':''}
 function initials(p){return((p&&p.full_name)||'Creator').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
@@ -14,6 +15,7 @@ function load(){
   var postResult=await sb.from('community_posts').select('*').eq('status','published').order('created_at',{ascending:false}).limit(100);
   if(postResult.error)throw postResult.error;
   posts=postResult.data||[];
+  hideCommunityLoader();
   // Render the public feed immediately; optional social data must never hold posts behind a spinner.
   posts.forEach(function(p){p._likes=0});
   draw();
@@ -47,6 +49,7 @@ function load(){
   renderCreators();draw();
  }).catch(function(e){
   console.error('CreatorVerse community load failed:',e);
+  hideCommunityLoader();
   $('community-feed').textContent='Could not load the community: '+(e&&e.message||'Please refresh and try again.');
  });
 }
@@ -109,7 +112,7 @@ function card(p){
 }
 function loadComments(id,box){box.textContent='Loading comments…';sb.from('community_comments').select('*').eq('post_id',id).order('created_at',{ascending:true}).then(async function(r){box.textContent='';if(r.error){box.textContent=r.error.message;return}var list=r.data||[],ids=Array.from(new Set(list.map(function(c){return c.user_id})));var ps=ids.length?await sb.from('profiles').select('id,full_name,username,avatar_url').in('id',ids):{data:[]};(ps.data||[]).forEach(function(p){profiles[p.id]=p});var roots=list.filter(function(c){return !c.parent_id}),children={};list.filter(function(c){return c.parent_id}).forEach(function(c){(children[c.parent_id]||(children[c.parent_id]=[])).push(c)});function drawComment(c,depth){var p=profiles[c.user_id]||{},row=el('div',{class:'comment-row'+(depth?' comment-reply':'')});row.append(el('strong',{text:p.full_name||'Creator'}),el('p',{text:c.body}));if(user){var reply=el('button',{class:'comment-tool',text:'Reply'});reply.onclick=function(){var form=el('form',{class:'comment-form'}),input=el('input',{placeholder:'Write a reply…',maxlength:'1000',required:''});form.append(input,el('button',{class:'btn btn-primary',text:'Send'}));form.onsubmit=function(e){e.preventDefault();sb.from('community_comments').insert({post_id:id,parent_id:c.id,user_id:user.id,body:input.value.trim()}).then(function(x){if(x.error)return msg(x.error.message,true);loadComments(id,box)})};row.append(form)};if(c.user_id!==user.id){var report=el('button',{class:'comment-tool',text:'Report'});report.onclick=function(){reportTarget('comment',c.id)};row.append(report)}}box.append(row);(children[c.id]||[]).forEach(function(ch){drawComment(ch,depth+1)})}roots.forEach(function(c){drawComment(c,0)});if(user){var f=el('form',{class:'comment-form'}),i=el('input',{name:'body',placeholder:'Add a thoughtful comment…',maxlength:'1000',required:''});f.append(i,el('button',{class:'btn btn-primary',text:'Send'}));f.onsubmit=function(e){e.preventDefault();sb.from('community_comments').insert({post_id:id,user_id:user.id,body:i.value.trim()}).then(function(x){if(x.error)return msg(x.error.message,true);loadComments(id,box)})};box.append(f)}else box.append(el('a',{href:'login.html',text:'Log in to comment'}))})}
 function openComposer(){if(!user){location.href='login.html';return}modal(true)}
-var nb=el('button',{class:'community-bell',id:'community-notify-toggle',type:'button','aria-label':'Notifications',title:'Notifications',text:'♧'});
+var nb=el('button',{class:'community-bell',id:'community-notify-toggle',type:'button','aria-label':'Notifications',title:'Notifications',text:'🔔'});
 var toolbar=document.querySelector('.community-toolbar');toolbar.insertBefore(nb,toolbar.firstChild);nb.onclick=notifyPanel;
 var bb=el('button',{class:'community-settings-link',id:'community-blocked-toggle',type:'button',text:'Blocked accounts'});
 bb.onclick=blockedPanel;var sideGuides=document.querySelector('.side-guidelines');if(sideGuides)sideGuides.append(bb);var mp=el('section',{id:'community-moderation',class:'community-moderation',hidden:'hidden'});document.querySelector('.community-main').insertBefore(mp,document.querySelector('.community-main').firstChild);$('open-post').onclick=openComposer;$('side-create').onclick=function(e){e.preventDefault();openComposer()};$('close-post').onclick=$('cancel-post').onclick=function(){modal(false)};
