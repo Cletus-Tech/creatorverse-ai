@@ -17,7 +17,7 @@ function modal(v){var md=h('div',{class:'modal open'}),box=h('div',{class:'modal
  var e=embed(v.url);if(v.thumbnail&&e&&e.iframe){body.appendChild(h('button',{class:'cover',type:'button','aria-label':'Play video',on:load},[h('img',{src:v.thumbnail,alt:''}),h('span',{class:'playdot'},[ico(I.play)])]))}else load();
  box.appendChild(x);box.appendChild(body);md.appendChild(box);document.body.appendChild(md)}
 function hero(H){if(H.visible===false)return null;var P=H.portrait,F=H.founder,vid=H.video,e=vid.url?embed(vid.url):null;
- var copy=h('div',{class:'hero2-copy'},[h('span',{class:'chip2',text:'CreatorVerse AI'})]),t=h('h1');accent(t,H.title);copy.appendChild(t);copy.appendChild(h('p',{class:'lead',text:H.text}));
+ var copy=h('div',{class:'hero2-copy'},[h('span',{class:'chip2',text:'Your Digital Learning Partner'})]),t=h('h1');accent(t,H.title);copy.appendChild(t);copy.appendChild(h('p',{class:'lead',text:H.text}));
  var row=h('div',{class:'hero2-cta'});if(H.primary.visible!==false&&H.primary.label)row.appendChild(btn(H.primary.label,H.primary.url,'btn-primary'));
  if(H.secondary.visible!==false&&H.secondary.label&&vid.enabled&&e)row.appendChild(h('button',{class:'btn btn-outline',type:'button',id:'watch-intro',on:function(){modal(vid)}},[ico(I.play),h('span',{text:H.secondary.label})]));
  copy.appendChild(row);
@@ -27,7 +27,7 @@ function hero(H){if(H.visible===false)return null;var P=H.portrait,F=H.founder,v
  return h('section',{class:'hero2'+(P.position==='left'?' flip':'')},[h('div',{class:'hero2-in'+(art?'':' solo')},[copy,art])])}
 function head(S){return h('div',{class:'sec-head'},[h('h2',{text:S.title}),S.subtitle?h('p',{text:S.subtitle}):null])}
 function sec(S,courses,cats){var items=S.items||[],g,s=h('section',{class:'sec',id:S.id});
- if(S.type==='categories'){if(!cats.length)return null;s.appendChild(head(S));g=h('div',{class:'grid'});cats.forEach(function(c){g.appendChild(h('a',{class:'cat-card',href:'category.html?c='+c.slug},[c.image_url?h('img',{class:'cat-img',src:c.image_url,alt:'',loading:'lazy'}):null,h('span',{class:'ico'},[ico(I.layers)]),h('h3',{text:c.title}),h('p',{text:c.description}),h('span',{class:'go'},[ico(I.arrow)])]))});s.appendChild(g)}
+ if(S.type==='categories'){if(!cats.length)return null;s.appendChild(head(S));g=h('div',{class:'grid'});cats.forEach(function(c){g.appendChild(h('a',{class:'cat-card'+(c.image_url?' has-art':''),href:'category.html?c='+c.slug},[c.image_url?h('img',{class:'cat-img',src:c.image_url,alt:c.title+' course category artwork',loading:'lazy'}):h('span',{class:'cat-art-mark'},[ico(I.layers)]),h('div',{class:'cat-copy'},[h('h3',{text:c.title}),h('p',{text:c.description})]),h('span',{class:'go'},[ico(I.arrow)])]))});s.appendChild(g)}
  else if(S.type==='courses'){var list=courses;if(S.ids&&S.ids.length)list=S.ids.map(function(i){return courses.filter(function(c){return c.id===i})[0]}).filter(Boolean);else list=courses.slice(0,4);if(!list.length)return null;
   s.appendChild(head(S));g=h('div',{class:'grid'});list.forEach(function(c){var n=(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0),th=c.thumbnail_url?h('img',{src:c.thumbnail_url,alt:'',loading:'lazy'}):h('span',{class:'nothumb'},[ico(I.play)]);
    g.appendChild(h('article',{class:'course-card'},[h('div',{class:'cthumb'},[th,h('span',{class:'badge',text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),h('div',{class:'cbody'},[h('h3',{text:c.title}),h('p',{text:c.description||''}),
