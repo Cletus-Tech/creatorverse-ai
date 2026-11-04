@@ -7,7 +7,16 @@ function msg(t,bad){$('community-msg').textContent=t||'';$('community-msg').clas
 function modal(on){$('post-modal').classList.toggle('open',!!on);document.body.style.overflow=on?'hidden':''}
 function initials(p){return((p&&p.full_name)||'Creator').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
 function avatar(p){return p&&p.avatar_url?el('img',{src:p.avatar_url,alt:''}):el('span',{text:initials(p)})}
+var communityLoadTimer=null,communityLoadStarted=false;
 function load(){
+ if(communityLoadStarted)return;communityLoadStarted=true;
+ if(communityLoadTimer)clearTimeout(communityLoadTimer);
+ communityLoadTimer=setTimeout(function(){
+  hideCommunityLoader();
+  var feed=$('community-feed');
+  if(feed&&feed.textContent.indexOf('Loading')>-1)feed.textContent='The community is taking longer than expected to connect. Check your connection and tap Retry.';
+  if(feed&&!feed.querySelector('#community-retry')){var retry=el('button',{id:'community-retry',class:'btn btn-outline',text:'Retry'});retry.onclick=function(){communityLoadStarted=false;load()};feed.appendChild(retry)}
+ },15000);
  if(!sb){$('community-feed').textContent='Connecting to CreatorVerse…';return}
  $('community-feed').textContent='Loading the community…';
  sb.auth.getSession().then(async function(sessionResult){
@@ -15,6 +24,7 @@ function load(){
   var postResult=await sb.from('community_posts').select('*').eq('status','published').order('created_at',{ascending:false}).limit(100);
   if(postResult.error)throw postResult.error;
   posts=postResult.data||[];
+  if(communityLoadTimer)clearTimeout(communityLoadTimer);
   hideCommunityLoader();
   // Render the public feed immediately; optional social data must never hold posts behind a spinner.
   posts.forEach(function(p){p._likes=0});
@@ -49,6 +59,7 @@ function load(){
   renderCreators();draw();
  }).catch(function(e){
   console.error('CreatorVerse community load failed:',e);
+  if(communityLoadTimer)clearTimeout(communityLoadTimer);
   hideCommunityLoader();
   $('community-feed').textContent='Could not load the community: '+(e&&e.message||'Please refresh and try again.');
  });
@@ -138,7 +149,7 @@ setTimeout(function(){
  ],index=0;
  function trySdk(){
   if(window.supabase&&window.supabase.createClient){try{boot(window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey))}catch(e){$('community-feed').textContent='Community could not initialize: '+e.message}return}
-  if(index>=sources.length){$('community-feed').textContent='Could not connect to the community service. Check your internet connection and refresh.';return}
+  if(index>=sources.length){hideCommunityLoader();$('community-feed').textContent='Could not load the community service. Check your internet connection and refresh the page.';return}
   var script=document.createElement('script'),done=false,timer=setTimeout(function(){if(done)return;done=true;script.remove();index++;trySdk()},9000);
   script.src=sources[index];script.onload=function(){if(done)return;done=true;clearTimeout(timer);if(window.supabase&&window.supabase.createClient)trySdk();else{index++;trySdk()}};
   script.onerror=function(){if(done)return;done=true;clearTimeout(timer);index++;trySdk()};
