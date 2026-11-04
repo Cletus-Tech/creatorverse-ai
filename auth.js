@@ -5,7 +5,7 @@ AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson
 base=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''),
 $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}
-function load(cb){if(window.supabase)return cb();var s=document.createElement('script');s.src=CDN;s.onload=cb;document.head.appendChild(s)}
+function load(cb){if(window.supabase&&window.supabase.createClient)return cb();var urls=[CDN,'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'],i=0;function attempt(){if(window.supabase&&window.supabase.createClient)return cb();if(i>=urls.length){console.error('CreatorVerse: Supabase SDK could not be loaded from either CDN.');document.dispatchEvent(new Event('cv-sdk-error'));return}var s=document.createElement('script'),done=false,t=setTimeout(function(){if(done)return;done=true;s.remove();i++;attempt()},8000);s.src=urls[i];s.onload=function(){if(done)return;done=true;clearTimeout(t);if(window.supabase&&window.supabase.createClient)cb();else{i++;attempt()}};s.onerror=function(){if(done)return;done=true;clearTimeout(t);s.remove();i++;attempt()};document.head.appendChild(s)}attempt()}
 function hasSession(){try{for(var k in localStorage)if(k.indexOf('sb-')===0)return true}catch(e){}return false}
 function navState(s){document.querySelectorAll('a[href="login.html"]').forEach(function(a){a.textContent='Dashboard';a.href='dashboard.html'}); 
  sb.from('profiles').select('role').eq('id',s.user.id).maybeSingle().then(function(r){
