@@ -128,17 +128,3 @@ footer.footer + .announce{margin:0}
 .cv-social-links a:hover{border-color:#5cc8ff;transform:translateY(-2px);background:rgba(92,200,255,.08)}
 .cv-social-arrow{color:#5cc8ff}
 @media(max-width:640px){.cv-social-section{padding:12px 16px 52px}.cv-social-inner{padding:24px 18px}.cv-social-links a{flex:1 1 42%;min-width:0}}
-
-/* Homepage social icon row */
-.cv-social-inline{display:flex;align-items:center;justify-content:center;gap:14px;margin:28px auto 34px;padding:0 20px}
-.cv-social-inline a{width:46px;height:46px;display:grid;place-items:center;border:1px solid rgba(116,157,255,.28);border-radius:50%;color:#dce8ff;background:rgba(20,49,104,.28);transition:transform .2s,border-color .2s,background .2s}
-.cv-social-inline a:hover{transform:translateY(-3px);border-color:#5ca4ff;background:rgba(47,123,255,.18)}
-.cv-social-inline svg{width:21px;height:21px}
-.brand-powered{display:block;margin-top:3px;font-size:9px;letter-spacing:.08em;color:#79aaff;font-weight:600}
-.cv-live-notice{display:flex;align-items:center;gap:18px;max-width:1120px;margin:18px auto 26px;padding:18px 22px;border:1px solid rgba(90,145,255,.32);border-left:4px solid #4c91ff;border-radius:14px;background:linear-gradient(110deg,rgba(18,43,91,.96),rgba(8,19,44,.96));color:#f4f7ff}
-.cv-live-notice.emergency{border-left-color:#ff555f;background:linear-gradient(110deg,rgba(91,22,34,.96),rgba(31,13,30,.96))}
-.cv-live-notice.deadline{border-left-color:#f4b942}.cv-live-notice.registration{border-left-color:#40c7a3}
-.cv-live-notice-label{font-size:10px;letter-spacing:.12em;font-weight:800;color:#9fc3ff;white-space:nowrap}
-.cv-live-notice-copy{flex:1}.cv-live-notice-copy strong{font-size:16px}.cv-live-notice-copy p{margin:4px 0 0;color:#d0daef;font-size:14px;line-height:1.55}
-.cv-live-notice>a{color:#a9ccff;font-weight:700;white-space:nowrap}
-@media(max-width:650px){.cv-live-notice{margin:14px 14px 22px;align-items:flex-start;flex-wrap:wrap;gap:9px}.cv-live-notice-copy{flex-basis:100%}.cv-live-notice>a{margin-left:auto}.cv-social-inline{gap:11px;margin:22px auto}.cv-social-inline a{width:42px;height:42px}}
