@@ -35,10 +35,39 @@ if(pg==='about'&&sc.founder){try{var F=JSON.parse(sc.founder);if(F.show_about!==
  (F.bio||'').split(/\n\s*\n/).filter(Boolean).forEach(function(x){var pp=document.createElement('p');pp.textContent=x;bx.appendChild(pp)});
  var sl=document.createElement('div');sl.className='fsoc';Object.keys(F.socials||{}).forEach(function(k){var u=F.socials[k];if(u&&/^https?:\/\//.test(u)){var a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener';a.textContent=k.charAt(0).toUpperCase()+k.slice(1);sl.appendChild(a)}});if(sl.children.length)bx.appendChild(sl);
  fb.appendChild(bx);main.appendChild(fb)}}catch(e){}}
-if(pg==='learn'||pg==='category'){var cats=await window.CV_CATS();
- if(pg==='learn')main.innerHTML='<h1>Learning Categories</h1><p>Pick a category, or <a href="courses.html" style="color:#bfe6ff">browse all courses</a>.</p><div class="panels" style="margin-top:20px">'+cats.map(function(c){return '<a class="skill-card" href="category.html?c='+c.slug+'"><h3 class="card-title">'+c.title+'</h3><p class="card-desc">'+c.description+'</p></a>'}).join('')+'</div>';
- else{var c=cats.filter(function(x){return x.slug===new URLSearchParams(location.search).get('c')})[0];
-  main.innerHTML=c?'<h1>'+c.title+'</h1><p>'+c.description+'</p>'+(c.topics.length?'<h2>What this covers</h2><ul class="topics">'+c.topics.map(function(t){return '<li>'+t+'</li>'}).join('')+'</ul>':'')+'<a class="btn btn-primary" href="courses.html?c='+c.slug+'">View courses</a><a class="btn btn-outline" href="learn.html">All categories</a>':'<h1>Category not found</h1><a class="btn btn-outline" href="learn.html">All categories</a>'}}
+if(pg==='learn'||pg==='category'){
+ var cats=await window.CV_CATS();
+ function node(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+ function link(label,url,cls){var a=node('a',cls,label);a.href=url;return a}
+ if(pg==='learn'){
+  main.textContent='';main.appendChild(node('h1','page-title','Learning Categories'));
+  var intro=node('p','page-intro','Choose a skill area and explore the topics covered.');main.appendChild(intro);
+  main.appendChild(link('Browse all courses','courses.html','btn btn-outline'));
+  var grid=node('div','category-grid');
+  cats.forEach(function(cat,i){
+   var card=link('','category.html?c='+encodeURIComponent(cat.slug),'category-tile category-tone-'+(i%7+1));
+   if(cat.image_url){var img=node('img','category-tile-image');img.src=cat.image_url;img.alt='';img.loading='lazy';img.onerror=function(){img.remove()};card.appendChild(img)}
+   card.appendChild(node('span','category-tile-index',String(i+1).padStart(2,'0')));
+   card.appendChild(node('h2','',cat.title));
+   card.appendChild(node('p','',cat.description||'Explore practical lessons and projects in this category.'));
+   card.appendChild(node('span','category-tile-link','Explore category →'));
+   grid.appendChild(card);
+  });
+  main.appendChild(grid);
+ }else{
+  var cat=cats.filter(function(x){return x.slug===new URLSearchParams(location.search).get('c')})[0];
+  main.textContent='';
+  if(!cat){main.appendChild(node('h1','','Category not found'));main.appendChild(link('All categories','learn.html','btn btn-outline'))}
+  else{
+   var hero=node('section','category-detail-hero');
+   if(cat.image_url){var img=node('img','category-detail-image');img.src=cat.image_url;img.alt='';img.onerror=function(){img.remove()};hero.appendChild(img)}
+   var shade=node('div','category-detail-shade');hero.appendChild(shade);
+   var body=node('div','category-detail-copy');body.appendChild(node('span','category-eyebrow','LEARNING CATEGORY'));body.appendChild(node('h1','',cat.title));body.appendChild(node('p','',cat.description||''));body.appendChild(link('Explore courses','courses.html?c='+encodeURIComponent(cat.slug),'btn btn-primary'));hero.appendChild(body);main.appendChild(hero);
+   if(cat.topics&&cat.topics.length){main.appendChild(node('h2','category-topics-title','What you can learn'));var ul=node('ul','category-topics');cat.topics.forEach(function(topic){ul.appendChild(node('li','',topic))});main.appendChild(ul)}
+   main.appendChild(link('← All categories','learn.html','btn btn-outline'));
+  }
+ }
+}
 if(pg==='soon'){var S={community:['Community','The creator community is in development.'],resources:['Resources','The resource library is in development.'],login:['Login','Accounts are in development. Login will open when registration launches.'],'get-started':['Get Started','Registration is in development and will open soon.']},s=S[p]||['Coming soon','This page is in development.'];
  main.innerHTML='<h1>'+s[0]+'</h1><div class="note">'+s[1]+'</div><a class="btn btn-primary" href="index.html">Back to Home</a>'}
 if(pg==='legal'){var T={privacy:['Privacy Policy','Explain what data CreatorVerse AI collects (account details, learning progress, uploads, payment references), why, how long it is kept, who it is shared with, and how users can access, correct or delete it.'],terms:['Terms of Service','Cover account rules, acceptable use, user content, course access and payments, refunds, termination and liability.']},t=T[p]||T.privacy;
