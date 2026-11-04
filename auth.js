@@ -1,7 +1,7 @@
 (function(){
 var C=window.CV_CONFIG||{},pg=document.body.dataset.page,sb=null,
 CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
-AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin'],
+AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment'],
 base=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''),
 $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}

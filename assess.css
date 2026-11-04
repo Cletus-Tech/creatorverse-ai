@@ -1,0 +1,9 @@
+.qbox{border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0;max-width:760px}.qbox legend{padding:0 8px;color:#fff;font-weight:600}
+.cert{max-width:860px;margin:20px auto;padding:48px 40px;text-align:center;background:#fffdf7;color:#0b1530;border:10px double #1456e6;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.cert *{color:#0b1530!important}.cert-brand{font:700 22px 'Space Grotesk',sans-serif;letter-spacing:3px;color:#1456e6!important}
+.cert-sm{margin:10px 0;font-size:16px}.cert-name{font:700 clamp(30px,5vw,48px) 'Space Grotesk',sans-serif;margin:14px 0;border-bottom:2px solid #1456e6;display:inline-block;padding:0 24px 6px}
+.cert-course{font:600 clamp(22px,3vw,30px) 'Space Grotesk',sans-serif;margin:12px 0 22px}.cert-no{font-size:12px;opacity:.8;word-break:break-all;margin:4px 0}
+.vbar{max-width:860px;margin:0 auto;padding:12px 16px;border-radius:12px;font-weight:600}.vbar.ok{background:rgba(76,217,138,.12);border:1px solid #4cd98a;color:#a9f0c9}.vbar.bad{background:rgba(255,107,129,.12);border:1px solid #ff6b81;color:#ffb3bf}
+.cert+.row{justify-content:center}
+.grade-box{display:grid;gap:8px;margin-top:10px}
+@media print{body *{visibility:hidden}.cert,.cert *{visibility:visible}.cert{position:absolute;left:0;top:0;width:100%;box-shadow:none;margin:0}body{background:#fff!important}}

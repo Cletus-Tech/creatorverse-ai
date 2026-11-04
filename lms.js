@@ -46,7 +46,7 @@ function course(sb,user){var s=Q.get('s');
    if(rq.length){main.appendChild(h('h2',{text:'Requirements'}));var u2=h('ul');rq.forEach(function(t){u2.appendChild(h('li',{text:t}))});main.appendChild(u2)}
    main.appendChild(h('h2',{text:'Curriculum'}));if(!mods.length)note('No lessons have been added yet.');
    mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title})])]))});
-    main.appendChild(h('details',{class:'mod2',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))})})})}
+    main.appendChild(h('details',{class:'mod2',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))});window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));})})}
 function bar2(p){return h('div',{class:'progress'},[h('span',{style:'width:'+p+'%'})])}
 function lesson(sb,user){
  sb.from('lessons').select('*,modules(course_id,title,courses(slug,title,price_ngn))').eq('id',Q.get('l')||'').maybeSingle().then(function(r){
@@ -69,7 +69,7 @@ function lesson(sb,user){
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
  sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){var ro=p.data&&p.data.role;
   if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');
-  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div');window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);
-  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7})})}
+  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div'),P8=h('div'),P9=h('div');window.CV_ASSESS_ADMIN.assess(P8);window.CV_ASSESS_ADMIN.certs(P9);window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);
+  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7,assess:P8,certs:P9})})}
 if(window.CV_SB)boot(window.CV_SB);else document.addEventListener('cv-ready',function(){boot(window.CV_SB)});
 })();

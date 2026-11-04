@@ -1,0 +1,50 @@
+(function(){
+var U=window.CV_UI,h=U.h;
+function btn(t,f,c){return h('button',{class:'btn '+(c||'btn-outline'),type:'button',text:t,on:f})}
+function srt(a){return(a||[]).slice().sort(function(x,y){return x.position-y.position})}
+function say(m,t,k){m.textContent=t;m.className='msg '+(k||'')}
+function names(sb){return sb.from('profiles').select('id,full_name,email').then(function(r){var m={};(r.data||[]).forEach(function(p){m[p.id]=p.full_name||p.email||'Student'});return m})}
+window.CV_ASSESS_ADMIN={
+ assess:function(pane){var sb=window.CV_SB,cid='',body=h('div'),sel=h('select',{});
+  pane.appendChild(h('h2',{text:'Quizzes and assignments'}));pane.appendChild(h('p',{text:'Choose a course, then manage its quizzes, assignments and student submissions.'}));pane.appendChild(sel);pane.appendChild(body);
+  sb.from('courses').select('id,title').order('title').then(function(r){sel.appendChild(h('option',{value:'',text:'Choose a course…'}));(r.data||[]).forEach(function(c){sel.appendChild(h('option',{value:c.id,text:c.title}))})});
+  sel.addEventListener('change',function(){cid=sel.value;draw()});
+  function draw(){body.textContent='';if(!cid)return;var qb=h('div'),ab=h('div'),sbx=h('div'),at=h('div');
+   [h('h3',{class:'mod',text:'Quizzes'}),qb,h('h3',{class:'mod',text:'Assignments'}),ab,h('h3',{class:'mod',text:'Submissions to grade'}),sbx,h('h3',{class:'mod',text:'Quiz attempts'}),at].forEach(function(e){body.appendChild(e)});quizzes(qb);assigns(ab);subs(sbx);attempts(at)}
+  function quizzes(box){var nf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New quiz title',required:''}),h('input',{name:'p',type:'number',min:'1',max:'100',value:'70','aria-label':'Pass mark percent'}),h('button',{class:'btn btn-primary',type:'submit',text:'Add quiz (pass mark %)'})]);
+   nf.addEventListener('submit',function(e){e.preventDefault();sb.from('quizzes').insert({course_id:cid,title:nf.t.value.trim(),pass_mark:parseInt(nf.p.value,10)||70}).then(function(x){x.error?alert(x.error.message):load()})});box.appendChild(nf);var list=h('div');box.appendChild(list);
+   function load(){sb.from('quizzes').select('*,quiz_questions(id,question,options,correct_index,position)').eq('course_id',cid).order('created_at').then(function(r){list.textContent='';if(r.error)return list.appendChild(h('div',{class:'msg err',text:r.error.message+' (run stage8-assessments.sql)'}));if(!(r.data||[]).length)list.appendChild(h('p',{text:'No quizzes yet.'}));
+    (r.data||[]).forEach(function(q){var p=h('div',{class:'panel'}),o={title:q.title,pass_mark:q.pass_mark},m=h('div',{class:'msg'});
+     U.addAll(p,U.fld('Quiz title',o,'title'));U.addAll(p,U.fld('Pass mark (%)',o,'pass_mark'));
+     p.appendChild(h('div',{class:'row'},[btn('Save quiz',function(){sb.from('quizzes').update({title:o.title,pass_mark:parseInt(o.pass_mark,10)||70}).eq('id',q.id).then(function(x){say(m,x.error?x.error.message:'Saved.',x.error?'err':'ok')})},'btn-primary'),btn('Delete quiz',function(){if(confirm('Delete this quiz, its questions and all attempts?'))sb.from('quizzes').delete().eq('id',q.id).then(load)})]));p.appendChild(m);
+     p.appendChild(h('h4',{text:'Questions'}));srt(q.quiz_questions).forEach(function(x){qform(p,q,x,load)});qform(p,q,null,load);list.appendChild(p)})})}
+   function qform(p,q,x,reload){var o={question:x?x.question:'',options:x?(x.options||[]).join('\n'):'',correct:x?String(x.correct_index+1):'1'},m=h('div',{class:'msg'}),f=h('form',{class:'mini qrow'});
+    U.addAll(f,U.fld(x?'Question':'New question',o,'question'));U.addAll(f,U.fld('Answer options (one per line, at least 2)',o,'options',1));U.addAll(f,U.fld('Number of the correct option (1, 2, 3…)',o,'correct'));
+    f.appendChild(h('div',{class:'row'},[h('button',{class:'btn btn-primary',type:'submit',text:x?'Save question':'Add question'}),x?btn('Delete question',function(){if(confirm('Delete this question?'))sb.from('quiz_questions').delete().eq('id',x.id).then(reload)}):null]));f.appendChild(m);
+    f.addEventListener('submit',function(e){e.preventDefault();var opts=o.options.split('\n').map(function(t){return t.trim()}).filter(Boolean),ci=parseInt(o.correct,10)-1;
+     if(!o.question.trim()||opts.length<2||!(ci>=0&&ci<opts.length)){say(m,'Enter a question, at least 2 options, and a valid correct option number.','err');return}
+     var row={question:o.question.trim(),options:opts,correct_index:ci};var qq=x?sb.from('quiz_questions').update(row).eq('id',x.id):sb.from('quiz_questions').insert(Object.assign({quiz_id:q.id,position:(q.quiz_questions||[]).length+1},row));
+     qq.then(function(r){r.error?say(m,r.error.message,'err'):reload()})});p.appendChild(f)}
+   load()}
+  function assigns(box){var nf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New assignment title',required:''}),h('textarea',{name:'i',rows:'3',placeholder:'Instructions for students'}),h('button',{class:'btn btn-primary',type:'submit',text:'Add assignment'})]);
+   nf.addEventListener('submit',function(e){e.preventDefault();sb.from('assignments').insert({course_id:cid,title:nf.t.value.trim(),instructions:nf.i.value}).then(function(x){x.error?alert(x.error.message):load()})});box.appendChild(nf);var list=h('div');box.appendChild(list);
+   function load(){sb.from('assignments').select('*').eq('course_id',cid).order('created_at').then(function(r){list.textContent='';if(r.error)return list.appendChild(h('div',{class:'msg err',text:r.error.message}));if(!(r.data||[]).length)list.appendChild(h('p',{text:'No assignments yet.'}));
+    (r.data||[]).forEach(function(a){var o={title:a.title,instructions:a.instructions||''},m=h('div',{class:'msg'}),p=h('div',{class:'panel'});U.addAll(p,U.fld('Title',o,'title'));U.addAll(p,U.fld('Instructions',o,'instructions',1));
+     p.appendChild(h('div',{class:'row'},[btn('Save',function(){sb.from('assignments').update(o).eq('id',a.id).then(function(x){say(m,x.error?x.error.message:'Saved.',x.error?'err':'ok')})},'btn-primary'),btn('Delete',function(){if(confirm('Delete this assignment and all submissions?'))sb.from('assignments').delete().eq('id',a.id).then(load)})]));p.appendChild(m);list.appendChild(p)})})}
+   load()}
+  function subs(box){Promise.all([sb.from('assignments').select('id,title').eq('course_id',cid),names(sb)]).then(function(r){var as=r[0].data||[],nm=r[1],ids=as.map(function(a){return a.id}),at={};as.forEach(function(a){at[a.id]=a.title});if(!ids.length)return box.appendChild(h('p',{text:'No assignments yet.'}));
+   sb.from('submissions').select('*').in('assignment_id',ids).order('submitted_at',{ascending:false}).then(function(s){var d=s.data||[];if(!d.length)return box.appendChild(h('p',{text:'No submissions yet.'}));
+    d.forEach(function(x){var o={grade:x.grade==null?'':String(x.grade),feedback:x.feedback||''},m=h('div',{class:'msg'}),p=h('div',{class:'panel'},[h('h3',{text:(nm[x.user_id]||'Student')+' · '+at[x.assignment_id]}),h('p',{class:'pmeta',text:(x.status==='graded'?'Graded':'Awaiting grade')+' · '+new Date(x.submitted_at).toLocaleString()})]);
+     if(x.content)p.appendChild(h('div',{class:'lesson-text',text:x.content}));
+     if(x.file_path)p.appendChild(btn('Open attached file',function(){sb.storage.from('submissions').createSignedUrl(x.file_path,3600).then(function(u){u.error?alert(u.error.message):window.open(u.data.signedUrl,'_blank')})}));
+     U.addAll(p,U.fld('Grade (0-100)',o,'grade'));U.addAll(p,U.fld('Feedback to the student',o,'feedback',1));
+     p.appendChild(btn('Save grade',function(){var g=parseInt(o.grade,10);if(!(g>=0&&g<=100)){say(m,'Enter a grade from 0 to 100.','err');return}sb.from('submissions').update({grade:g,feedback:o.feedback||null,status:'graded',graded_at:new Date().toISOString()}).eq('id',x.id).then(function(u){say(m,u.error?u.error.message:'Grade saved.',u.error?'err':'ok')})},'btn-primary'));p.appendChild(m);box.appendChild(p)})})})}
+  function attempts(box){Promise.all([sb.from('quizzes').select('id,title').eq('course_id',cid),names(sb)]).then(function(r){var qs=r[0].data||[],nm=r[1],qt={};qs.forEach(function(q){qt[q.id]=q.title});if(!qs.length)return box.appendChild(h('p',{text:'No quizzes yet.'}));
+   sb.from('quiz_attempts').select('*').in('quiz_id',qs.map(function(q){return q.id})).order('created_at',{ascending:false}).limit(100).then(function(a){var d=a.data||[];if(!d.length)return box.appendChild(h('p',{text:'No attempts yet.'}));
+    d.forEach(function(x){box.appendChild(h('div',{class:'row lrow'},[h('strong',{text:nm[x.user_id]||'Student'}),h('span',{text:qt[x.quiz_id]}),h('span',{class:'chip',text:x.score+'% · '+(x.passed?'Passed':'Not passed')}),h('small',{text:new Date(x.created_at).toLocaleString()})]))})})})}
+ },
+ certs:function(pane){var sb=window.CV_SB,box=h('div');pane.appendChild(h('h2',{text:'Certificates'}));pane.appendChild(h('p',{text:'Certificates are issued automatically when a student completes every lesson, passes every quiz and has every assignment graded. Revoke one if needed. Anyone can verify a number on the Verify page.'}));pane.appendChild(h('a',{class:'btn btn-outline',href:'certificate.html',target:'_blank',text:'Open verification page'}));pane.appendChild(box);
+  function load(){sb.from('certificates').select('*').order('issued_at',{ascending:false}).limit(200).then(function(r){box.textContent='';if(r.error)return box.appendChild(h('div',{class:'msg err',text:r.error.message+' (run stage8-assessments.sql)'}));if(!(r.data||[]).length)return box.appendChild(h('p',{text:'No certificates issued yet.'}));
+   r.data.forEach(function(c){box.appendChild(h('div',{class:'panel'},[h('h3',{text:c.student_name+' · '+c.course_title}),h('p',{class:'pmeta',text:c.certificate_no+' · '+new Date(c.issued_at).toLocaleDateString()}),h('div',{class:'row'},[h('span',{class:'chip',text:c.revoked?'Revoked':'Valid'}),h('a',{class:'btn btn-outline',href:'certificate.html?n='+encodeURIComponent(c.certificate_no),target:'_blank',text:'View'}),btn(c.revoked?'Restore':'Revoke',function(){sb.from('certificates').update({revoked:!c.revoked}).eq('id',c.id).then(load)})])]))})})}
+  load()}};
+})();

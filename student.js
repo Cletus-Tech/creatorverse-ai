@@ -23,6 +23,10 @@ window.CV_DASH=function(sb,session,X){var u=session.user,name=(u.user_metadata&&
    main.appendChild(h('h2',{text:'My courses'}));var g=h('div',{class:'grid'});cs.forEach(function(x){g.appendChild(ccard(x.c,x))});main.appendChild(g);
    var act=pr.slice(0,6).filter(function(p){return all[p.lesson_id]});
    if(act.length){main.appendChild(h('h2',{text:'Recent activity'}));var ul=h('ul',{class:'act'});act.forEach(function(p){ul.appendChild(h('li',{},[h('span',{text:'Completed “'+all[p.lesson_id].t+'”'}),h('small',{text:all[p.lesson_id].c+' · '+new Date(p.completed_at).toLocaleDateString()})]))});main.appendChild(ul)}}
+  var extra=h('div');main.appendChild(extra);
+  Promise.all([sb.from('certificates').select('certificate_no,course_title,issued_at,revoked').order('issued_at',{ascending:false}),sb.from('quiz_attempts').select('score,passed,created_at,quizzes(title)').order('created_at',{ascending:false}).limit(5)]).then(function(z){
+   var cr=(z[0].data||[]),qa=(z[1].data||[]);if(cr.length){extra.appendChild(h('h2',{text:'My certificates'}));cr.forEach(function(c){extra.appendChild(h('div',{class:'row lrow'},[h('strong',{text:c.course_title}),h('small',{text:new Date(c.issued_at).toLocaleDateString()+(c.revoked?' · revoked':'')}),h('a',{class:'btn btn-outline',href:'certificate.html?n='+encodeURIComponent(c.certificate_no),text:'View'})]))})}
+   if(qa.length){extra.appendChild(h('h2',{text:'Recent quiz results'}));qa.forEach(function(x){extra.appendChild(h('div',{class:'row lrow'},[h('strong',{text:(x.quizzes&&x.quizzes.title)||'Quiz'}),h('span',{class:'chip',text:x.score+'% · '+(x.passed?'Passed':'Not passed')}),h('small',{text:new Date(x.created_at).toLocaleDateString()})]))})}});
   main.appendChild(h('h2',{text:'Account settings'}));
   var f=h('form',{id:'f'},[h('label',{class:'field',for:'name',text:'Full name'}),h('input',{id:'name',name:'name',required:'',maxlength:'80'}),h('button',{class:'btn btn-primary',type:'submit',text:'Save changes'})]);
   main.appendChild(f);main.appendChild(h('div',{id:'msg',class:'msg'}));f.name.value=name;
