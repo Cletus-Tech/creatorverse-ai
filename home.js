@@ -38,13 +38,14 @@ function sec(S,courses,cats){var items=S.items||[],g,s=h('section',{class:'sec',
  else if(S.type==='faq'){if(!items.length)return null;s.appendChild(head(S));g=h('div',{class:'faq'});items.forEach(function(x){g.appendChild(h('details',{},[h('summary',{text:x.title}),h('p',{text:x.text})]))});s.appendChild(g)}
  else if(S.type==='cta'){s.appendChild(h('div',{class:'cta2'},[h('h2',{text:S.title}),S.text?h('p',{text:S.text}):null,S.label?btn(S.label,S.url,'btn-primary'):null]))}
  return s}
-function cms(){if(!C.supabaseUrl)return Promise.resolve({});return rest('site_content?key=in.(founder,intro_video_cfg)&select=key,value').then(function(r){var o={};(Array.isArray(r)?r:[]).forEach(function(x){try{o[x.key]=JSON.parse(x.value)}catch(e){}});return o}).catch(function(){return{}})}
+function cms(){if(!C.supabaseUrl)return Promise.resolve({});return rest('site_content?key=in.(founder,intro_video_cfg,homepage_bg_cfg)&select=key,value').then(function(r){var o={};(Array.isArray(r)?r:[]).forEach(function(x){try{o[x.key]=JSON.parse(x.value)}catch(e){}});return o}).catch(function(){return{}})}
 function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){var f=sc.founder,v=sc.intro_video_cfg;
  if(f){X.hero.portrait.url=f.photo||'';X.hero.founder=Object.assign({},X.hero.founder,{name:f.name||'',designation:f.designation||'',description:'',visible:X.hero.founder.visible!==false&&f.show_home!==false})}
  if(v)X.hero.video={enabled:!!v.enabled,url:v.url||'',thumbnail:v.thumbnail||''};
+ if(sc.homepage_bg_cfg){try{X.homepageBackground=JSON.parse(sc.homepage_bg_cfg)}catch(e){}}
  if(content||f)return render(X);
  fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})})}
-function render(X){root.textContent='';var hr=hero(X.hero);if(hr)root.appendChild(hr);
+function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));hr.insertBefore(bg,hr.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
  Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=*,modules(lessons(id))&order=created_at.desc&limit=40').then(function(d){return Array.isArray(d)?d.sort(function(x,y){return(y.featured?1:0)-(x.featured?1:0)}):[]}).catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
   var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false)return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e)})})}
