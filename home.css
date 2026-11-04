@@ -323,3 +323,15 @@ main#home{padding-bottom:70px}
  .hero2 .portrait img{max-height:285px}
  .hero2 .hero-proof{margin-top:14px}
 }
+
+
+/* Founder social links sit beside the portrait instead of below it. */
+.founder-visual{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:16px;min-width:0;align-self:center}
+.founder-visual .portrait{flex:1 1 auto;min-width:0}
+.founder-social-follow{position:relative;z-index:4;display:flex;flex-direction:column;align-items:center;gap:10px;flex:0 0 92px;margin:0;padding:12px 9px;border:1px solid rgba(151,197,255,.24);border-radius:16px;background:rgba(4,14,38,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.founder-social-follow>span{font-size:11px;line-height:1.3;text-align:center;color:#d7e6ff}
+.founder-social-links{display:flex;flex-direction:column;align-items:center;gap:9px}
+.founder-social-links a{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid rgba(151,197,255,.35);background:rgba(39,94,190,.2);color:#fff;font-size:10px;font-weight:700;text-decoration:none;overflow:hidden}
+.founder-social-links a:hover{background:linear-gradient(120deg,#075bff,#9565ed);border-color:rgba(255,255,255,.65)}
+@media(max-width:900px){.founder-visual{width:100%;max-width:430px;margin:10px auto 0;gap:12px}.founder-visual .portrait{max-width:300px}.founder-social-follow{flex-basis:76px;padding:10px 7px}}
+@media(max-width:560px){.founder-visual{max-width:340px;gap:8px}.founder-visual .portrait{max-width:none;width:auto;flex:1}.founder-social-follow{flex-basis:68px;padding:8px 5px}.founder-social-links{gap:7px}.founder-social-links a{width:30px;height:30px;font-size:9px}}
