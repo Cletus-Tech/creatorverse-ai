@@ -227,3 +227,11 @@ main#home{padding-bottom:70px}
 .hero2.has-watermark .hero2-in{background:linear-gradient(110deg,rgba(4,11,31,.9),rgba(6,22,54,.78) 58%,rgba(5,14,38,.88))}
 
 .hero2.has-watermark .home-watermark{z-index:0}.hero2.has-watermark .hero2-in{z-index:1}
+
+
+/* Fix: reveal the admin-uploaded 3D watermark through a translucent hero panel */
+.hero2.has-watermark .hero2-in{background:linear-gradient(110deg,rgba(4,11,31,.43),rgba(6,22,54,.30) 58%,rgba(5,14,38,.42))!important;position:relative;isolation:isolate}
+.hero2.has-watermark .home-watermark{position:absolute;z-index:0;inset:0;opacity:var(--watermark-opacity,.28);border-radius:inherit;background-size:cover;background-repeat:no-repeat;background-position:center;filter:saturate(1.05) contrast(1.02);mix-blend-mode:normal;mask-image:linear-gradient(90deg,rgba(0,0,0,.55),#000 18%,#000 82%,rgba(0,0,0,.55));-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.55),#000 18%,#000 82%,rgba(0,0,0,.55))}
+.hero2.has-watermark .hero2-in::before,.hero2.has-watermark .hero2-in::after{z-index:1}
+.hero2.has-watermark .hero2-in>*:not(.home-watermark){position:relative;z-index:2}
+@media(max-width:900px){.hero2.has-watermark .hero2-in{background:linear-gradient(180deg,rgba(4,11,31,.48),rgba(6,22,54,.36))!important}.hero2.has-watermark .home-watermark{inset:0;mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.65));-webkit-mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.65))}}
