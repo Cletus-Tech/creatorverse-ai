@@ -8,10 +8,47 @@ function initials(p){return((p&&p.full_name)||'Creator').trim().split(/\s+/).sli
 function avatar(p){return p&&p.avatar_url?el('img',{src:p.avatar_url,alt:''}):el('span',{text:initials(p)})}
 function load(){
  if(!sb){$('community-feed').textContent='Connecting to CreatorVerse…';return}
- Promise.all([sb.from('community_posts').select('*').eq('status','published').order('created_at',{ascending:false}).limit(100),sb.auth.getSession()]).then(function(r){
-  if(r[0].error)throw r[0].error;posts=r[0].data||[];user=r[1].data.session&&r[1].data.session.user;
-  return Promise.all([sb.from('profiles').select('id,full_name,avatar_url,username,bio,cover_url,location,website_url,skills,status_text').in('id',Array.from(new Set(posts.map(function(p){return p.user_id}))).concat(user?[user.id]:[])),user?sb.from('community_likes').select('post_id').eq('user_id',user.id):{data:[]},user?sb.from('community_saves').select('post_id').eq('user_id',user.id):{data:[]},user?sb.from('profiles').select('role').eq('id',user.id).maybeSingle():{data:null},user?sb.from('community_follows').select('following_id').eq('follower_id',user.id):{data:[]},sb.from('community_likes').select('post_id').in('post_id',posts.map(function(p){return p.id})),sb.from('profiles').select('id,full_name,avatar_url,username,bio,skills,status_text').order('created_at',{ascending:false}).limit(40)])
- }).then(async function(x){(x[0].data||[]).forEach(function(p){profiles[p.id]=p});(x[1].data||[]).forEach(function(x){liked[x.post_id]=1});(x[2].data||[]).forEach(function(x){saved[x.post_id]=1});role=x[3].data&&x[3].data.role||'';if(user){var br=await sb.from('community_blocks').select('blocked_id').eq('blocker_id',user.id);(br.data||[]).forEach(function(v){blocked[v.blocked_id]=1})}(x[4].data||[]).forEach(function(v){followed[v.following_id]=1;following.push(v.following_id)});var counts={};creators=(x[6].data||[]).filter(function(p){return !user||p.id!==user.id});creators.forEach(function(p){profiles[p.id]=p});renderCreators();(x[5].data||[]).forEach(function(v){counts[v.post_id]=(counts[v.post_id]||0)+1});posts.forEach(function(p){p._likes=counts[p.id]||0});draw()}).catch(function(e){$('community-feed').textContent='Could not load the community. '+(e.message||'Please refresh and try again.')})
+ $('community-feed').textContent='Loading the community…';
+ sb.auth.getSession().then(async function(sessionResult){
+  user=sessionResult.data&&sessionResult.data.session&&sessionResult.data.session.user||null;
+  var postResult=await sb.from('community_posts').select('*').eq('status','published').order('created_at',{ascending:false}).limit(100);
+  if(postResult.error)throw postResult.error;
+  posts=postResult.data||[];
+  // Render the public feed immediately; optional social data must never hold posts behind a spinner.
+  posts.forEach(function(p){p._likes=0});
+  draw();
+  var ids=Array.from(new Set(posts.map(function(p){return p.user_id})));
+  if(user)ids.push(user.id);
+  var jobs=[
+   ids.length?sb.from('profiles').select('id,full_name,avatar_url,username,bio,cover_url,location,website_url,skills,status_text').in('id',ids):Promise.resolve({data:[]}),
+   user?sb.from('community_likes').select('post_id').eq('user_id',user.id):Promise.resolve({data:[]}),
+   user?sb.from('community_saves').select('post_id').eq('user_id',user.id):Promise.resolve({data:[]}),
+   user?sb.from('profiles').select('role').eq('id',user.id).maybeSingle():Promise.resolve({data:null}),
+   user?sb.from('community_follows').select('following_id').eq('follower_id',user.id):Promise.resolve({data:[]}),
+   posts.length?sb.from('community_likes').select('post_id').in('post_id',posts.map(function(p){return p.id})):Promise.resolve({data:[]}),
+   sb.from('profiles').select('id,full_name,avatar_url,username,bio,skills,status_text').order('created_at',{ascending:false}).limit(40)
+  ];
+  var results=await Promise.all(jobs);
+  results.forEach(function(result,index){if(result&&result.error)console.warn('Community optional query '+index+':',result.error.message)});
+  (results[0].data||[]).forEach(function(p){profiles[p.id]=p});
+  (results[1].data||[]).forEach(function(v){liked[v.post_id]=1});
+  (results[2].data||[]).forEach(function(v){saved[v.post_id]=1});
+  role=results[3].data&&results[3].data.role||'';
+  if(user){
+   var br=await sb.from('community_blocks').select('blocked_id').eq('blocker_id',user.id);
+   if(br.error)console.warn('Blocked creators could not be loaded:',br.error.message);
+   (br.data||[]).forEach(function(v){blocked[v.blocked_id]=1});
+  }
+  (results[4].data||[]).forEach(function(v){followed[v.following_id]=1;following.push(v.following_id)});
+  var counts={};(results[5].data||[]).forEach(function(v){counts[v.post_id]=(counts[v.post_id]||0)+1});
+  posts.forEach(function(p){p._likes=counts[p.id]||0});
+  creators=(results[6].data||[]).filter(function(p){return !user||p.id!==user.id});
+  creators.forEach(function(p){profiles[p.id]=p});
+  renderCreators();draw();
+ }).catch(function(e){
+  console.error('CreatorVerse community load failed:',e);
+  $('community-feed').textContent='Could not load the community: '+(e&&e.message||'Please refresh and try again.');
+ });
 }
 function notifyPanel(){var old=$('community-notifications');if(old){old.remove();return}if(!user)return;var panel=el('div',{id:'community-notifications',class:'community-notifications'});panel.textContent='Loading notifications…';$('community-app').insertBefore(panel,$('community-app').children[1]);sb.from('community_notifications').select('id,type,message,is_read,created_at,actor_id,post_id').order('created_at',{ascending:false}).limit(25).then(async function(r){panel.textContent='';if(r.error){panel.textContent='Notifications unavailable: '+r.error.message;return}var rows=r.data||[];var ids=Array.from(new Set(rows.map(function(x){return x.actor_id}).filter(Boolean)));var ps=ids.length?await sb.from('profiles').select('id,full_name,username,avatar_url').in('id',ids):{data:[]};var map={};(ps.data||[]).forEach(function(p){map[p.id]=p});if(!rows.length){panel.textContent='You are all caught up.';return}rows.forEach(function(n){var who=map[n.actor_id];var row=el('button',{class:'notification-row'+(n.is_read?'':' unread')});row.append(el('strong',{text:(who&&who.full_name||'Someone')+' '+n.message}),el('small',{text:new Date(n.created_at).toLocaleString()}));row.onclick=function(){sb.from('community_notifications').update({is_read:true}).eq('id',n.id).then(function(){row.classList.remove('unread')});if(n.post_id){var card=document.querySelector('[data-post-id="'+n.post_id+'"]');if(card)card.scrollIntoView({behavior:'smooth',block:'center'})}};panel.append(row)})})}
 async function reportTarget(kind,id){if(!user)return location.href='login.html';var reason=prompt('Why are you reporting this '+kind+'? (Spam, harassment, harmful content, impersonation, other)');if(!reason)return;var payload={reporter_id:user.id,reason:reason.slice(0,80),details:''};payload[kind==='post'?'post_id':'comment_id']=id;var r=await sb.from('community_reports').insert(payload);if(r.error)return msg(r.error.message,true);msg('Report submitted for moderator review.')}
