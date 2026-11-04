@@ -1,7 +1,7 @@
 (function(){
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
 if(f==='category.html')f='learn.html';
-var L=[['Home','index.html'],['Explore Courses','courses.html'],['Categories','learn.html'],['About','about.html'],['Community','soon.html?p=community']];
+var L=[['Home','index.html'],['Explore Courses','courses.html'],['Categories','learn.html'],['About','about.html'],['Community','community.html']];
 function act(h){return h===f+q||h===f&&h.indexOf('?')<0?' class="active"':''}
 var links=L.map(function(l){return '<a href="'+l[1]+'"'+act(l[1])+'>'+l[0]+'</a>'}).join('');
 var mob=L.map(function(l){return '<a href="'+l[1]+'">'+l[0]+'</a>'}).join('');
@@ -11,7 +11,7 @@ if(h)h.outerHTML='<nav class="nav" id="nav"><a class="nav-left" href="index.html
 var ft=document.getElementById('site-footer');
 if(ft)ft.outerHTML='<footer class="footer"><div class="footer-in"><div><span class="brand-name" style="font-size:20px;font-weight:700">CreatorVerse <span style="color:var(--electric-purple)">AI</span></span><p style="color:var(--soft-gray);font-size:14px;margin-top:8px;max-width:260px">Learn AI. Create without limits. Build your future.<br>Powered by Cletus Tech.</p></div><div><h4>Explore</h4><a href="learn.html">Learn</a><a href="soon.html?p=community">Community</a><a href="soon.html?p=resources">Resources</a><a href="about.html">About</a></div><div><h4>Legal</h4><a href="legal.html?p=privacy">Privacy Policy</a><a href="legal.html?p=terms">Terms of Service</a></div><div id="footer-contact"></div></div><div class="copy">&copy; '+new Date().getFullYear()+' CreatorVerse AI. All rights reserved.</div></footer>';
 var IC={home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>',dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',more:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'};
-var BN=[['Home','index.html','home'],['Courses','courses.html','play'],['Dashboard','dashboard.html','dash']];
+var BN=[['Home','index.html','home'],['Courses','courses.html','play'],['Dashboard','dashboard.html','dash'],['Community','community.html','more']];
 var bar=document.createElement('nav');bar.className='bottom-nav';bar.setAttribute('aria-label','Primary');
 bar.innerHTML=BN.map(function(x){return '<a href="'+x[1]+'"'+(x[1]===f?' class="active"':'')+'>'+IC[x[2]]+'<span>'+x[0]+'</span></a>'}).join('')+'<button type="button" id="bn-more">'+IC.more+'<span>More</span></button>';
 document.body.appendChild(bar);
