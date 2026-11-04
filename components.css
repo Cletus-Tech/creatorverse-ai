@@ -310,3 +310,19 @@
     .hero-buttons{flex-direction:column; width:100%;}
     .hero-buttons .btn{width:100%; justify-content:center;}
   }
+
+
+/* Global polish: richer surfaces, gradients and accessible motion */
+body{background:radial-gradient(ellipse at 8% 4%,rgba(118,87,255,.10),transparent 32%),radial-gradient(ellipse at 92% 24%,rgba(72,217,232,.07),transparent 28%),var(--bg)}
+.nav.scrolled{background:rgba(8,11,27,.78);border-bottom-color:rgba(183,194,255,.16)}
+.brand-name span{background:var(--aurora);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn-primary{background:linear-gradient(110deg,#5578ff,#8d61ff 52%,#d66ac6);box-shadow:0 8px 28px rgba(118,87,255,.22)}
+.btn-primary:hover{box-shadow:0 12px 34px rgba(118,87,255,.38)}
+.btn-ghost:hover,.btn-outline:hover{border-color:rgba(72,217,232,.55);background:rgba(72,217,232,.07)}
+::selection{background:rgba(154,107,255,.42);color:#fff}
+:focus-visible{outline:2px solid var(--accent-cyan);outline-offset:3px}
+.footer h4{background:var(--aurora);-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes cvFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-12px,0)}}
+@keyframes cvGlow{0%,100%{opacity:.55;filter:blur(28px)}50%{opacity:.95;filter:blur(42px)}}
+@keyframes cvRise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:no-preference){.btn,.nav a,.panel,.qcard{transition-duration:.28s}}
