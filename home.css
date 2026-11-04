@@ -335,3 +335,12 @@ main#home{padding-bottom:70px}
 .founder-social-links a:hover{background:linear-gradient(120deg,#075bff,#9565ed);border-color:rgba(255,255,255,.65)}
 @media(max-width:900px){.founder-visual{width:100%;max-width:430px;margin:10px auto 0;gap:12px}.founder-visual .portrait{max-width:300px}.founder-social-follow{flex-basis:76px;padding:10px 7px}}
 @media(max-width:560px){.founder-visual{max-width:340px;gap:8px}.founder-visual .portrait{max-width:none;width:auto;flex:1}.founder-social-follow{flex-basis:68px;padding:8px 5px}.founder-social-links{gap:7px}.founder-social-links a{width:30px;height:30px;font-size:9px}}
+
+
+/* Recognizable social brand icons with compact labels. */
+.founder-social-follow{flex:0 0 116px;align-items:stretch}
+.founder-social-links{width:100%;align-items:stretch;gap:8px}
+.founder-social-links a{width:100%;height:32px;box-sizing:border-box;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:0 8px;border-radius:9px;font-size:10px;white-space:nowrap}
+.founder-social-links a img{display:block;width:16px;height:16px;object-fit:contain;filter:brightness(0) invert(1);flex:0 0 16px}
+.founder-social-links a span{display:block;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:560px){.founder-social-follow{flex-basis:104px}.founder-social-links a{height:30px;font-size:9px;gap:6px;padding:0 6px}.founder-social-links a img{width:15px;height:15px;flex-basis:15px}}
