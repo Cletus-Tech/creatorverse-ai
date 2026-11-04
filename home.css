@@ -293,3 +293,33 @@ main#home{padding-bottom:70px}
 @media(prefers-reduced-motion:reduce){
  .hero2-copy .chip2,.hero2-copy h1,.hero2-copy .lead,.hero2-copy .hero2-cta,.hero2-copy .hero-proof,.hero2 .portrait,.hero2.has-watermark .home-watermark{animation:none!important;filter:none!important;opacity:1!important;transform:none!important;translate:none!important}
 }
+
+
+/* Compact homepage hero: keep headline, founder and calls-to-action within one screen */
+.hero2{padding-top:82px;padding-bottom:12px}
+.hero2-in{min-height:clamp(500px,calc(100svh - 155px),650px);padding:clamp(28px,3.3vw,48px) max(5vw,30px) 12px;gap:clamp(18px,3vw,42px)}
+.hero2-copy{padding:0 0 8px;max-width:740px}
+.hero2 .chip2{margin-bottom:17px}
+.hero2 h1{font-size:clamp(40px,4.65vw,66px);line-height:1.025;margin-bottom:16px}
+.hero2 .lead{font-size:clamp(15px,1.15vw,17px);line-height:1.58;margin-bottom:20px}
+.hero2-cta .btn{min-height:48px;padding:12px 22px}
+.hero2 .hero-proof{margin-top:18px;gap:8px}
+.hero2 .proof-item{padding:8px 11px}
+.hero2 .portrait{max-width:370px;max-height:460px}
+.hero2 .portrait img{max-height:460px}
+@media(max-width:900px){
+ .hero2{padding-top:76px}
+ .hero2-in{min-height:0;padding:28px 22px 8px;gap:0}
+ .hero2-copy{padding-bottom:4px}
+ .hero2 .portrait{max-width:300px;max-height:340px;margin:8px auto 0}
+ .hero2 .portrait img{max-height:340px}
+}
+@media(max-width:560px){
+ .hero2{padding-top:72px}
+ .hero2-in{padding:24px 18px 4px}
+ .hero2 h1{font-size:clamp(36px,9.4vw,47px);line-height:1.04}
+ .hero2 .lead{font-size:14px;line-height:1.55;margin-bottom:17px}
+ .hero2 .portrait{max-width:245px;max-height:285px}
+ .hero2 .portrait img{max-height:285px}
+ .hero2 .hero-proof{margin-top:14px}
+}
