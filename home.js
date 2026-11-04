@@ -42,7 +42,7 @@ function cms(){if(!C.supabaseUrl)return Promise.resolve({});return rest('site_co
 function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){var f=sc.founder,v=sc.intro_video_cfg;
  if(f){X.hero.portrait.url=f.photo||'';X.hero.founder=Object.assign({},X.hero.founder,{name:f.name||'',designation:f.designation||'',description:'',visible:X.hero.founder.visible!==false&&f.show_home!==false})}
  if(v)X.hero.video={enabled:!!v.enabled,url:v.url||'',thumbnail:v.thumbnail||''};
- if(sc.homepage_bg_cfg){try{X.homepageBackground=JSON.parse(sc.homepage_bg_cfg)}catch(e){}}
+ if(sc.homepage_bg_cfg){try{X.homepageBackground=(typeof sc.homepage_bg_cfg==='string'?JSON.parse(sc.homepage_bg_cfg):sc.homepage_bg_cfg)}catch(e){console.warn('CreatorVerse homepage background config could not be read:',e)}}
  if(content||f)return render(X);
  fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})})}
 function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));var inner=hr.querySelector('.hero2-in');if(inner)inner.insertBefore(bg,inner.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
