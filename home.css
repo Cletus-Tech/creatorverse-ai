@@ -351,3 +351,16 @@ main#home{padding-bottom:70px}
 .founder-social-follow>span{display:none!important}
 .founder-social-links a{border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 .founder-social-links a:hover{background:transparent!important;border:0!important;opacity:.78}
+
+
+/* Founder social polish: restore portrait scale and show recognizable brand colours. */
+.founder-visual .portrait{flex:0 1 370px;width:100%;max-width:370px;min-width:0}
+.founder-social-links{gap:7px!important}
+.founder-social-links a{font-size:9px!important;gap:7px!important;line-height:1.1}
+.founder-social-links a img{width:21px;height:21px;flex-basis:21px;filter:none!important}
+.founder-social-links a:nth-child(1) img{filter:brightness(0) saturate(100%) invert(31%) sepia(98%) saturate(1848%) hue-rotate(202deg) brightness(101%) contrast(101%)!important}
+.founder-social-links a:nth-child(2) img{filter:brightness(0) saturate(100%) invert(14%) sepia(99%) saturate(6906%) hue-rotate(357deg) brightness(98%) contrast(110%)!important}
+.founder-social-links a:nth-child(3) img{filter:brightness(0) invert(1) drop-shadow(-2px 0 #25f4ee) drop-shadow(2px 0 #fe2c55)!important}
+.founder-social-links a:nth-child(4) img{filter:brightness(0) saturate(100%) invert(54%) sepia(91%) saturate(448%) hue-rotate(86deg) brightness(95%) contrast(91%)!important}
+@media(max-width:900px){.founder-visual .portrait{flex:0 1 300px;width:100%;max-width:300px}}
+@media(max-width:560px){.founder-visual .portrait{flex:1 1 auto;width:auto;max-width:none}.founder-social-links a{font-size:8px!important}.founder-social-links a img{width:19px;height:19px;flex-basis:19px}}
