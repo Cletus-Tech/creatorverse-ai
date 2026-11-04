@@ -126,3 +126,23 @@ main#home{padding-bottom:70px}
 .nothumb{color:rgba(255,255,255,.9)}
 .nothumb svg{width:52px;height:52px;padding:13px;border-radius:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(10px)}
 @media(max-width:640px){.cat-card{min-height:205px}.cat-card p{max-width:100%}}
+
+
+/* Homepage screenshot fixes: clear CTA contrast and illustrated category artwork when no image is uploaded */
+.hero2-cta .btn-primary{color:#fff!important;background:linear-gradient(110deg,#5578ff 0%,#9565ed 55%,#d76caf 100%);text-shadow:0 1px 2px rgba(12,15,40,.25);min-height:54px}
+.hero2-cta .btn-primary span{color:#fff!important;font-weight:800}
+.cat-card:not(:has(.cat-img)){background:linear-gradient(145deg,rgba(30,38,86,.98),rgba(12,18,42,.98))}
+.cat-card:not(:has(.cat-img))::before{opacity:1;background:
+ radial-gradient(circle at 83% 25%,rgba(118,87,255,.42) 0 7%,transparent 7.5%),
+ radial-gradient(circle at 88% 31%,rgba(72,217,232,.25) 0 15%,transparent 15.5%),
+ radial-gradient(circle at 78% 18%,rgba(255,111,174,.2) 0 23%,transparent 23.5%),
+ repeating-linear-gradient(135deg,transparent 0 17px,rgba(255,255,255,.025) 18px 19px,transparent 20px 38px)}
+.cat-card:nth-child(4n+1):not(:has(.cat-img))::before{background:radial-gradient(circle at 84% 25%,rgba(118,87,255,.55) 0 8%,transparent 8.5%),radial-gradient(circle at 86% 25%,rgba(72,217,232,.2) 0 26%,transparent 26.5%),repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.025) 19px 20px,transparent 21px 40px)}
+.cat-card:nth-child(4n+2):not(:has(.cat-img))::before{background:radial-gradient(circle at 85% 26%,rgba(255,111,174,.5) 0 8%,transparent 8.5%),radial-gradient(circle at 88% 28%,rgba(118,87,255,.24) 0 27%,transparent 27.5%),repeating-linear-gradient(45deg,transparent 0 20px,rgba(255,255,255,.025) 21px 22px,transparent 23px 42px)}
+.cat-card:nth-child(4n+3):not(:has(.cat-img))::before{background:radial-gradient(circle at 85% 25%,rgba(72,217,232,.48) 0 8%,transparent 8.5%),radial-gradient(circle at 87% 30%,rgba(118,87,255,.25) 0 27%,transparent 27.5%),repeating-linear-gradient(135deg,transparent 0 20px,rgba(255,255,255,.025) 21px 22px,transparent 23px 42px)}
+.cat-card:nth-child(4n):not(:has(.cat-img))::before{background:radial-gradient(circle at 85% 25%,rgba(255,184,107,.48) 0 8%,transparent 8.5%),radial-gradient(circle at 87% 30%,rgba(255,111,174,.22) 0 27%,transparent 27.5%),repeating-linear-gradient(45deg,transparent 0 20px,rgba(255,255,255,.025) 21px 22px,transparent 23px 42px)}
+.cat-card .ico{position:relative;z-index:2}
+.cat-card h3{position:relative;z-index:2}
+.cat-card p{position:relative;z-index:2}
+.cat-card .go{z-index:2}
+@supports not selector(:has(*)){.cat-card{background:linear-gradient(145deg,rgba(31,42,86,.98),rgba(12,17,39,.98))}}
