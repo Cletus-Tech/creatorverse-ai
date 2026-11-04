@@ -98,26 +98,8 @@ function card(p){
  return box
 }
 function loadComments(id,box){box.textContent='Loading comments…';sb.from('community_comments').select('*').eq('post_id',id).order('created_at',{ascending:true}).then(async function(r){box.textContent='';if(r.error){box.textContent=r.error.message;return}var list=r.data||[],ids=Array.from(new Set(list.map(function(c){return c.user_id})));var ps=ids.length?await sb.from('profiles').select('id,full_name,username,avatar_url').in('id',ids):{data:[]};(ps.data||[]).forEach(function(p){profiles[p.id]=p});var roots=list.filter(function(c){return !c.parent_id}),children={};list.filter(function(c){return c.parent_id}).forEach(function(c){(children[c.parent_id]||(children[c.parent_id]=[])).push(c)});function drawComment(c,depth){var p=profiles[c.user_id]||{},row=el('div',{class:'comment-row'+(depth?' comment-reply':'')});row.append(el('strong',{text:p.full_name||'Creator'}),el('p',{text:c.body}));if(user){var reply=el('button',{class:'comment-tool',text:'Reply'});reply.onclick=function(){var form=el('form',{class:'comment-form'}),input=el('input',{placeholder:'Write a reply…',maxlength:'1000',required:''});form.append(input,el('button',{class:'btn btn-primary',text:'Send'}));form.onsubmit=function(e){e.preventDefault();sb.from('community_comments').insert({post_id:id,parent_id:c.id,user_id:user.id,body:input.value.trim()}).then(function(x){if(x.error)return msg(x.error.message,true);loadComments(id,box)})};row.append(form)};if(c.user_id!==user.id){var report=el('button',{class:'comment-tool',text:'Report'});report.onclick=function(){reportTarget('comment',c.id)};row.append(report)}}box.append(row);(children[c.id]||[]).forEach(function(ch){drawComment(ch,depth+1)})}roots.forEach(function(c){drawComment(c,0)});if(user){var f=el('form',{class:'comment-form'}),i=el('input',{name:'body',placeholder:'Add a thoughtful comment…',maxlength:'1000',required:''});f.append(i,el('button',{class:'btn btn-primary',text:'Send'}));f.onsubmit=function(e){e.preventDefault();sb.from('community_comments').insert({post_id:id,user_id:user.id,body:i.value.trim()}).then(function(x){if(x.error)return msg(x.error.message,true);loadComments(id,box)})};box.append(f)}else box.append(el('a',{href:'login.html',text:'Log in to comment'}))})}
-async function openComposer(){
- // The page can render before Supabase finishes initializing. Resolve the client/session
- // on demand so the primary Create Post action never silently redirects or does nothing.
- if(!sb&&window.CV_SB)sb=window.CV_SB;
- var attempts=0;
- while(!sb&&attempts<24){await new Promise(function(resolve){setTimeout(resolve,500)});if(window.CV_SB)sb=window.CV_SB;attempts++}
- if(!sb){msg('Community is still connecting. Please try again in a moment.',true);return}
- try{
-  var sessionResult=await sb.auth.getSession();
-  user=sessionResult.data&&sessionResult.data.session&&sessionResult.data.session.user||null;
-  if(!user){location.href='login.html';return}
-  modal(true);
- }catch(e){msg('Could not verify your account: '+(e.message||'Please refresh and try again.'),true)}
-}
-var nb=el('button',{class:'btn btn-outline',id:'community-notify-toggle',text:'Notifications'});document.querySelector('.community-actions').append(nb);nb.onclick=notifyPanel;var bb=el('button',{class:'btn btn-outline',id:'community-blocked-toggle',text:'Blocked creators'});document.querySelector('.community-actions').append(bb);bb.onclick=blockedPanel;var mp=el('section',{id:'community-moderation',class:'community-moderation',hidden:'hidden'});document.querySelector('.community-main').insertBefore(mp,document.querySelector('.community-main').firstChild);var openPostButton=$('open-post'),sideCreate=$('side-create'),closePost=$('close-post'),cancelPost=$('cancel-post');
-if(openPostButton)openPostButton.addEventListener('click',function(e){e.preventDefault();openComposer()});
-if(sideCreate)sideCreate.addEventListener('click',function(e){e.preventDefault();openComposer()});
-if(closePost)closePost.addEventListener('click',function(e){e.preventDefault();modal(false)});
-if(cancelPost)cancelPost.addEventListener('click',function(e){e.preventDefault();modal(false)});
-
+function openComposer(){if(!user){location.href='login.html';return}modal(true)}
+var nb=el('button',{class:'btn btn-outline',id:'community-notify-toggle',text:'Notifications'});document.querySelector('.community-actions').append(nb);nb.onclick=notifyPanel;var bb=el('button',{class:'btn btn-outline',id:'community-blocked-toggle',text:'Blocked creators'});document.querySelector('.community-actions').append(bb);bb.onclick=blockedPanel;var mp=el('section',{id:'community-moderation',class:'community-moderation',hidden:'hidden'});document.querySelector('.community-main').insertBefore(mp,document.querySelector('.community-main').firstChild);$('open-post').onclick=openComposer;$('side-create').onclick=function(e){e.preventDefault();openComposer()};$('close-post').onclick=$('cancel-post').onclick=function(){modal(false)};
 $('community-search').oninput=function(){term=this.value.toLowerCase().trim();draw()};
 $('feed-sort').onchange=function(){sort=this.value;draw()};
 $('community-tabs').addEventListener('click',function(e){var b=e.target.closest('button[data-filter]');if(!b)return;filter=b.dataset.filter;this.querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b)});$('feed-caption').textContent=filter==='saved'?'Your saved inspiration':filter==='following'?'Creations from creators you follow':'Fresh ideas from the CreatorVerse community';draw()});
