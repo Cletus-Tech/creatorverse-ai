@@ -35,7 +35,7 @@ function course(sb,user){var s=Q.get('s');
    var act=h('div',{class:'hero2-cta'});
    if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enroll'}));
    else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
-   else if(c.price_ngn>0)act.appendChild(h('div',{class:'note',text:'Paid courses open when payments launch.'}));
+   else if(c.price_ngn>0)act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Unlock course · ₦'+Number(c.price_ngn).toLocaleString('en-NG'),on:function(){checkout(sb,user,c,act)}}));
    else act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Enroll for free',on:function(){sb.from('enrolments').insert({user_id:user.id,course_id:c.id}).then(function(e){e.error?alert(e.error.message):location.reload()})}}));
    main.appendChild(h('div',{class:'chero'},[h('div',{},[h('span',{class:'chip2',text:c.level||'Beginner'}),h('h1',{text:c.title}),h('p',{class:'lead',text:c.description||''}),
     h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
@@ -47,6 +47,29 @@ function course(sb,user){var s=Q.get('s');
    main.appendChild(h('h2',{text:'Curriculum'}));if(!mods.length)note('No lessons have been added yet.');
    mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title})])]))});
     main.appendChild(h('details',{class:'mod2',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))});window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));})})}
+function checkout(sb,user,c,host){
+ host.textContent='';host.appendChild(h('p',{class:'pmeta',text:'Loading available payment methods…'}));
+ sb.from('payment_settings').select('*').eq('id',true).maybeSingle().then(function(r){
+  host.textContent='';if(r.error){host.appendChild(h('div',{class:'note',text:'Unable to load payment options: '+r.error.message}));return}
+  var cfg=r.data||{},methods=[];
+  if(cfg.bank_transfer_enabled&&cfg.bank_name&&cfg.account_name&&cfg.account_number)methods.push(['bank_transfer','Bank transfer']);
+  if(cfg.ussd_enabled&&cfg.ussd_instructions)methods.push(['ussd','USSD']);
+  if(!methods.length){host.appendChild(h('div',{class:'note',text:'Checkout is being configured. Please check back later.'}));return}
+  var select=h('select',{},methods.map(function(m){return h('option',{value:m[0],text:m[1]})})),start=h('button',{class:'btn btn-primary',type:'button',text:'Continue to payment'});host.append(select,start);
+  start.addEventListener('click',function(){start.disabled=true;start.textContent='Creating payment…';
+   sb.from('payment_orders').insert({user_id:user.id,course_id:c.id,method:select.value}).select('*').single().then(function(x){
+    if(x.error){start.disabled=false;start.textContent='Continue to payment';host.appendChild(h('p',{class:'msg err',text:x.error.message}));return}
+    var o=x.data;host.textContent='';var title=h('h3',{text:'Complete your payment'}),ref=h('p',{text:'Payment reference: '+o.reference}),amount=h('h2',{text:'₦'+Number(o.amount_ngn).toLocaleString('en-NG')}),timer=h('p',{class:'countdown'}),details=h('div',{class:'note'}),copy;
+    if(o.method==='bank_transfer'){details.append(h('p',{text:'Bank: '+cfg.bank_name}),h('p',{text:'Account name: '+cfg.account_name}),h('p',{text:'Account number: '+cfg.account_number}));copy=h('button',{class:'btn btn-outline',type:'button',text:'Copy account number',on:function(){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(cfg.account_number).then(function(){copy.textContent='Copied ✓'}).catch(function(){alert('Copy failed. Please copy the number manually.')});else alert('Please copy: '+cfg.account_number)}});details.append(copy)}
+    else details.append(h('p',{text:cfg.ussd_instructions}));
+    var tr=h('input',{type:'text',placeholder:'Bank transfer reference / narration'}),submit=h('button',{class:'btn btn-primary',type:'button',text:'I have made the payment'}),state=h('p',{class:'pmeta',text:'After submitting, your payment will wait for admin verification.'});
+    host.append(title,amount,ref,details,timer,tr,submit,state);
+    var deadline=new Date(o.expires_at).getTime(),tick=setInterval(function(){var left=Math.max(0,deadline-Date.now()),m=Math.floor(left/60000),s=Math.floor(left%60000/1000);timer.textContent=left?'Time remaining: '+m+':'+String(s).padStart(2,'0'):'Payment window expired';if(!left){clearInterval(tick);submit.disabled=true}},1000);
+    submit.addEventListener('click',function(){if(!tr.value.trim())return alert('Enter your bank transaction reference first.');submit.disabled=true;sb.from('payment_orders').update({status:'proof_submitted',transfer_reference:tr.value.trim()}).eq('id',o.id).then(function(z){if(z.error){submit.disabled=false;state.textContent=z.error.message}else{clearInterval(tick);timer.textContent='Submitted for verification';state.textContent='Your payment reference has been submitted. The course unlocks after an administrator confirms receipt.'}})});
+   })
+  })
+ })
+}
 function bar2(p){return h('div',{class:'progress'},[h('span',{style:'width:'+p+'%'})])}
 function lesson(sb,user){
  sb.from('lessons').select('*,modules(course_id,title,courses(slug,title,price_ngn))').eq('id',Q.get('l')||'').maybeSingle().then(function(r){
