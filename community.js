@@ -108,5 +108,26 @@ $('post-form').onsubmit=function(e){e.preventDefault();if(!user)return location.
  var ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');var path=user.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
  sb.storage.from('community-media').upload(path,f,{upsert:false,contentType:f.type}).then(function(up){if(up.error)throw up.error;var url=sb.storage.from('community-media').getPublicUrl(path).data.publicUrl;return sb.from('community_posts').insert({user_id:user.id,title:String(d.get('title')).trim(),description:String(d.get('description')||'').trim(),category:d.get('category'),destination_url:String(d.get('destination_url')||'').trim()||null,image_url:url}).select().single()}).then(function(r){if(r.error)throw r.error;posts.unshift(r.data);profiles[user.id]=profiles[user.id]||{full_name:user.user_metadata&&user.user_metadata.full_name||'Creator',id:user.id};modal(false);form.reset();preview.textContent='Your image preview will appear here.';msg('Your creation has been published.');draw()}).catch(function(err){$('post-msg').textContent=err.message||'Could not publish this post.'}).finally(function(){btn.disabled=false})};
 function boot(client){if(sb)return;sb=client;load();sb.auth.getSession().then(function(r){var u=r.data.session&&r.data.session.user;if(!u)return;sb.from('profiles').select('role').eq('id',u.id).maybeSingle().then(function(x){if(x.data&&['admin','super_admin'].indexOf(x.data.role)>-1){var h=el('div',{class:'moderation-heading'},[el('h3',{text:'Community moderation'}),el('button',{class:'btn btn-outline',text:'Refresh reports'})]);h.children[1].onclick=loadModeration;mp.append(h);loadModeration()}})})}
-if(window.CV_SB)boot(window.CV_SB);document.addEventListener('cv-ready',function(){if(window.CV_SB)boot(window.CV_SB)});
+if(window.CV_SB)boot(window.CV_SB);
+document.addEventListener('cv-ready',function(){if(window.CV_SB)boot(window.CV_SB)});
+/* Community must not depend solely on auth.js successfully loading its CDN script. */
+setTimeout(function(){
+ if(sb||window.CV_SB)return;
+ var cfg=window.CV_CONFIG||{};
+ if(!cfg.supabaseUrl||!cfg.supabaseAnonKey){$('community-feed').textContent='Community connection is not configured. Please contact the site administrator.';return}
+ $('community-feed').textContent='Connecting to the community service…';
+ var sources=[
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+  'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'
+ ],index=0;
+ function trySdk(){
+  if(window.supabase&&window.supabase.createClient){try{boot(window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey))}catch(e){$('community-feed').textContent='Community could not initialize: '+e.message}return}
+  if(index>=sources.length){$('community-feed').textContent='Could not connect to the community service. Check your internet connection and refresh.';return}
+  var script=document.createElement('script'),done=false,timer=setTimeout(function(){if(done)return;done=true;script.remove();index++;trySdk()},9000);
+  script.src=sources[index];script.onload=function(){if(done)return;done=true;clearTimeout(timer);if(window.supabase&&window.supabase.createClient)trySdk();else{index++;trySdk()}};
+  script.onerror=function(){if(done)return;done=true;clearTimeout(timer);index++;trySdk()};
+  document.head.appendChild(script);
+ }
+ trySdk();
+},7000);
 })();
