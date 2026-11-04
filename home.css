@@ -344,3 +344,10 @@ main#home{padding-bottom:70px}
 .founder-social-links a img{display:block;width:16px;height:16px;object-fit:contain;filter:brightness(0) invert(1);flex:0 0 16px}
 .founder-social-links a span{display:block;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:560px){.founder-social-follow{flex-basis:104px}.founder-social-links a{height:30px;font-size:9px;gap:6px;padding:0 6px}.founder-social-links a img{width:15px;height:15px;flex-basis:15px}}
+
+
+/* Social links: plain icons and names only, with no panel, background, border or button layer. */
+.founder-social-follow{border:0!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;gap:8px!important}
+.founder-social-follow>span{display:none!important}
+.founder-social-links a{border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+.founder-social-links a:hover{background:transparent!important;border:0!important;opacity:.78}
