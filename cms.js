@@ -5,8 +5,8 @@ function kind(f){return /^image\//.test(f.type)?'image':/^video\//.test(f.type)?
 function clean(n){return n.replace(/[^\w.\-]+/g,'_')}
 function up(file,folder,path,replace){var sb=window.CV_SB;if(file.size>MAX)return Promise.reject(new Error('File is larger than 50 MB.'));
  path=path||folder+'/'+Date.now()+'-'+clean(file.name);
- return sb.storage.from('media').upload(path,file,{upsert:!!replace,contentType:file.type||'application/octet-stream',cacheControl:'60'}).then(function(r){if(r.error)throw r.error;
-  var url=sb.storage.from('media').getPublicUrl(path).data.publicUrl,row={path:path,url:url,name:file.name,kind:kind(file),folder:path.split('/')[0],size:file.size};
+ return sb.storage.from('creatorverse-media').upload(path,file,{upsert:!!replace,contentType:file.type||'application/octet-stream',cacheControl:'60'}).then(function(r){if(r.error)throw r.error;
+  var url=sb.storage.from('creatorverse-media').getPublicUrl(path).data.publicUrl,row={path:path,url:url,name:file.name,kind:kind(file),folder:path.split('/')[0],size:file.size};
   return sb.from('media_files').upsert(row,{onConflict:'path'}).then(function(x){if(x.error)throw x.error;return url})})}
 window.CV_MEDIA={upload:up};
 function pick(kindWanted,input){var sb=window.CV_SB,s=h('select',{},[h('option',{value:'',text:'Choose from media library…'})]);
@@ -33,7 +33,7 @@ function media(pane){var sb=window.CV_SB,cur='all',type='all',term='',rows=[];pa
     h('button',{class:'btn btn-outline',type:'button',text:'Copy URL',on:function(){navigator.clipboard.writeText(f.url).then(function(){alert('URL copied')})}}),
     h('button',{class:'btn btn-outline',type:'button',text:'Replace',on:function(){rp.click()}}),
     h('button',{class:'btn btn-outline',type:'button',text:'Delete',on:function(){usage(f.url).then(function(u){if(!confirm((u.length?'This file is used in:\n- '+u.join('\n- ')+'\n\nDeleting it will leave those places without the file. ':'')+'Delete '+f.name+'?'))return;
-     sb.storage.from('media').remove([f.path]).then(function(x){if(x.error)return alert(x.error.message);sb.from('media_files').delete().eq('id',f.id).then(load)})})}})]),rp]))})}
+     sb.storage.from('creatorverse-media').remove([f.path]).then(function(x){if(x.error)return alert(x.error.message);sb.from('media_files').delete().eq('id',f.id).then(load)})})}})]),rp]))})}
  load()}
 function fld(l,o,k,ta){var i=ta?h('textarea',{rows:ta===2?'8':'3'}):h('input',{type:'text'});i.value=o[k]||'';i.addEventListener('input',function(){o[k]=i.value});return[h('label',{class:'field',text:l}),i]}
 function chk(l,o,k){var i=h('input',{type:'checkbox'});i.checked=o[k]!==false&&!!o[k];i.addEventListener('change',function(){o[k]=i.checked;i.dispatchEvent(new Event('input',{bubbles:true}))});return h('label',{class:'chk'},[i,h('span',{text:l})])}
