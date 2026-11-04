@@ -75,7 +75,8 @@ function lesson(sb,user){
  sb.from('lessons').select('*,modules(course_id,title,courses(slug,title,price_ngn))').eq('id',Q.get('l')||'').maybeSingle().then(function(r){
   var l=r.data;if(!l)return head('Lesson not available','It may not exist, or you need to enroll in the course first.');
   var c=l.modules.courses,cid=l.modules.course_id;main.textContent='';
-  Promise.all([sb.from('modules').select('id,title,position,lessons(id,title,position)').eq('course_id',cid),user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(x){
+  Promise.all([sb.from('modules').select('id,title,position,lessons(id,title,position)').eq('course_id',cid),user?sb.from('lesson_progress').select('lesson_id'):{data:[]},user?sb.from('enrolments').select('course_id').eq('course_id',cid).maybeSingle():{data:null}]).then(function(x){
+   if(!user||!x[2].data){head('Course access required','Please enroll in this course before opening its lessons.');main.appendChild(h('a',{class:'btn btn-primary',href:'course.html?s='+encodeURIComponent(c.slug),text:'Return to course'}));return}
    var mods=sorted(x[0].data),flat=[],done={};mods.forEach(function(m){sorted(m.lessons).forEach(function(q){flat.push(q.id)})});(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});
    var i=flat.indexOf(l.id),n=flat.filter(function(q){return done[q]}).length,pct=flat.length?Math.round(100*n/flat.length):0;
    var side=h('aside',{class:'lside'},[h('h3',{text:'Course content'}),bar2(pct),h('p',{class:'pmeta',text:n+' of '+flat.length+' completed'})]);
@@ -85,8 +86,7 @@ function lesson(sb,user){
    var row=h('div',{class:'row'});col.appendChild(row);
    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
    if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
-   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('enrolments').upsert({user_id:user.id,course_id:cid},{ignoreDuplicates:true}).then(function(){
-    sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)return alert(e.error.message);location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)})})}}));
+   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)return alert(e.error.message);location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)})}}));
    if(i<flat.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i+1],text:'Next →'}));
    main.appendChild(h('div',{class:'lgrid'},[col,side]))})})}
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
