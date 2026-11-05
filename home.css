@@ -375,3 +375,46 @@ main#home{padding-bottom:70px}
 .hero2 .founder-visual .portrait .cap small{font-size:8px;line-height:1.2;margin-top:2px}
 @media(max-width:900px){.hero2 .founder-visual .portrait{flex:0 1 380px;width:100%;max-width:380px}.hero2 .founder-visual .portrait img{max-height:460px}}
 @media(max-width:560px){.hero2 .founder-visual .portrait{flex:1 1 auto;width:auto;max-width:none}.hero2 .founder-visual .portrait img{max-height:380px}.hero2 .founder-visual .portrait .cap{max-width:72%;padding:6px 8px}.hero2 .founder-visual .portrait .cap strong{font-size:11px}.hero2 .founder-visual .portrait .cap span{font-size:8px}.hero2 .founder-visual .portrait .cap small{font-size:7px}}
+
+
+/* === Navigation and homepage information architecture refinement === */
+@media(min-width:1025px){
+ .nav{display:grid;grid-template-columns:minmax(210px,auto) minmax(0,1fr) auto;column-gap:clamp(14px,2vw,30px);row-gap:12px;align-items:center;padding:14px clamp(18px,3vw,42px);min-height:82px}
+ .nav.scrolled{padding:10px clamp(18px,3vw,42px)}
+ .nav-left{grid-column:1;grid-row:1}
+ .nav-center{position:static;left:auto;transform:none;grid-column:1/-1;grid-row:2;width:100%;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:clamp(12px,2.2vw,30px);min-width:0}
+ .nav-center a{white-space:nowrap;font-size:clamp(12px,.95vw,14px)}
+ .nav-right{grid-column:3;grid-row:1;justify-content:flex-end;flex-wrap:wrap;min-width:0;gap:8px}
+ .nav-right .btn{padding:9px 13px;font-size:12px}
+}
+@media(min-width:1025px) and (max-width:1280px){
+ .nav-center{gap:12px}
+ .nav-center a{font-size:12px}
+ .nav-right{gap:6px}
+ .nav-right .btn{padding:8px 10px}
+}
+@media(max-width:1024px){
+ .nav{display:flex;flex-wrap:nowrap;gap:10px;min-height:64px}
+ .nav-left{min-width:0}
+ .nav-right{margin-left:auto;flex-shrink:0}
+}
+.cv-home-experience{max-width:1240px;margin:0 auto;padding:72px 24px 12px}
+.cv-home-intro{max-width:760px;margin:0 auto 30px;text-align:center}
+.cv-kicker{display:inline-block;color:#83cfff;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.cv-home-intro h2,.cv-pathway h2{font:700 clamp(28px,3.5vw,42px)/1.12 'Space Grotesk',sans-serif;color:#fff;letter-spacing:-.7px}
+.cv-home-intro p,.cv-pathway p{color:#aebbd4;line-height:1.75;margin-top:14px;font-size:15px}
+.cv-experience-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.cv-experience-card{position:relative;min-width:0;min-height:245px;padding:28px;border:1px solid rgba(151,190,255,.17);border-radius:20px;background:linear-gradient(145deg,rgba(24,45,87,.72),rgba(10,16,35,.94));box-shadow:0 16px 44px rgba(0,0,0,.16);transition:transform .25s,border-color .25s}
+.cv-experience-card:hover{transform:translateY(-5px);border-color:rgba(104,203,255,.5)}
+.cv-card-index{display:inline-flex;width:38px;height:38px;align-items:center;justify-content:center;border-radius:12px;background:rgba(78,157,255,.13);border:1px solid rgba(112,195,255,.25);color:#9bdcff;font-size:12px;font-weight:800}
+.cv-experience-card h3{font:600 20px 'Space Grotesk',sans-serif;color:#fff;margin:24px 0 10px}
+.cv-experience-card p{color:#aebbd4;font-size:14px;line-height:1.7;max-width:330px}
+.cv-experience-card>a{display:inline-flex;align-items:center;gap:10px;margin-top:20px;color:#8bd8ff;font-size:13px;font-weight:700}
+.cv-experience-card>a svg{width:16px;height:16px}
+.cv-pathway{display:flex;justify-content:space-between;align-items:center;gap:30px;margin-top:26px;padding:36px;border:1px solid rgba(104,177,255,.22);border-radius:24px;background:radial-gradient(ellipse at 10% 0%,rgba(48,120,255,.2),transparent 50%),linear-gradient(120deg,#101c3a,#11152d 65%,#14283a)}
+.cv-pathway-copy{max-width:700px}
+.cv-pathway h2{font-size:clamp(25px,3vw,34px)}
+.cv-pathway-actions{display:flex;flex-wrap:wrap;gap:12px;flex-shrink:0}
+.cv-pathway-actions .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px}
+@media(max-width:900px){.cv-home-experience{padding:48px 16px 10px}.cv-experience-grid{grid-template-columns:1fr}.cv-experience-card{min-height:0}.cv-pathway{display:block;padding:26px}.cv-pathway-actions{margin-top:22px}.cv-pathway-actions .btn{flex:1 1 100%}}
+@media(prefers-reduced-motion:reduce){.cv-experience-card{transition:none}}
