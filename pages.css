@@ -150,3 +150,57 @@ footer.footer + .announce{margin:0}
 @media(max-width:1100px){.nav{min-height:74px}.nav-center{display:none!important}.nav-left{margin-right:auto}.nav-right>.account-dropdown{display:none}.menu-btn{display:flex!important}}
 @media(max-width:480px){.nav{min-height:66px;padding:8px 13px!important}.logo-mark{width:39px!important;height:39px!important;border-radius:12px}.logo-mark svg{width:31px;height:31px}.nav-left{min-width:0;gap:9px}.brand-name{font-size:16px!important}.brand-sub{font-size:8px!important;letter-spacing:1px!important}.mobile-menu{padding-top:82px!important}.mobile-menu-links>a{padding:12px 11px!important;font-size:14px!important}}
 @media(prefers-reduced-motion:reduce){.nav-drop-panel,.account-panel,.nav-chevron,.mobile-menu-links>a{transition:none!important}}
+
+
+/* Navigation refinement: compact, transparent and background-led */
+body.home .nav{
+  position:relative!important;
+  z-index:120!important;
+  min-height:66px!important;
+  height:66px!important;
+  margin:0 0 -66px!important;
+  padding:7px clamp(18px,3.2vw,48px)!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:18px!important;
+  background:linear-gradient(180deg,rgba(3,9,24,.26),rgba(3,9,24,.06))!important;
+  border:0!important;
+  border-bottom:1px solid rgba(210,226,255,.10)!important;
+  box-shadow:none!important;
+  backdrop-filter:blur(5px)!important;
+  -webkit-backdrop-filter:blur(5px)!important;
+}
+body.home .nav::before{height:1px!important;opacity:.55!important}
+body.home .nav-left{min-width:0!important;gap:9px!important}
+body.home .logo-mark{width:37px!important;height:37px!important;border-radius:11px!important;box-shadow:0 3px 14px rgba(75,117,255,.16)!important}
+body.home .logo-mark svg{width:29px!important;height:29px!important}
+body.home .brand-name{font-size:16px!important;letter-spacing:-.35px!important}
+body.home .brand-sub{font-size:7px!important;letter-spacing:1.05px!important;margin-top:2px!important}
+body.home .nav-center{gap:clamp(10px,1.35vw,20px)!important}
+body.home .nav-center>a,body.home .nav-drop-trigger{font-size:12px!important;padding:8px 0!important;color:rgba(240,246,255,.9)!important}
+body.home .nav-drop-trigger{padding:7px 9px!important}
+body.home .nav-right{gap:8px!important}
+body.home .account-trigger{padding:5px 9px!important;border-color:rgba(213,229,255,.18)!important;background:rgba(5,13,30,.22)!important}
+body.home .account-orb{width:25px!important;height:25px!important;border-radius:8px!important}
+body.home .account-trigger-text{font-size:11px!important}
+body.home .nav-drop-panel,body.home .account-panel{top:calc(100% + 9px)!important;background:rgba(7,14,32,.94)!important;backdrop-filter:blur(18px)!important}
+body.home .hero2.has-watermark{padding-top:0!important}
+body.home .hero2.has-watermark .hero2-in{padding-top:calc(clamp(72px,10vh,120px) + 8px)!important}
+body.home .mobile-menu{z-index:180!important}
+@media(max-width:1100px){
+ body.home .nav{min-height:60px!important;height:60px!important;margin-bottom:-60px!important;padding:6px 17px!important;background:linear-gradient(180deg,rgba(3,9,24,.2),transparent)!important}
+ body.home .logo-mark{width:34px!important;height:34px!important}
+ body.home .logo-mark svg{width:27px!important;height:27px!important}
+ body.home .brand-name{font-size:15px!important}
+ body.home .menu-btn{width:38px!important;height:38px!important;background:rgba(5,14,32,.24)!important;border-color:rgba(210,226,255,.2)!important}
+ body.home .hero2.has-watermark .hero2-in{padding-top:82px!important}
+}
+@media(max-width:480px){
+ body.home .nav{min-height:54px!important;height:54px!important;margin-bottom:-54px!important;padding:5px 13px!important}
+ body.home .logo-mark{width:31px!important;height:31px!important;border-radius:9px!important}
+ body.home .logo-mark svg{width:24px!important;height:24px!important}
+ body.home .brand-name{font-size:14px!important}
+ body.home .brand-sub{font-size:6.5px!important;letter-spacing:.8px!important}
+ body.home .menu-btn{width:35px!important;height:35px!important}
+ body.home .hero2.has-watermark .hero2-in{padding-top:76px!important}
+}
