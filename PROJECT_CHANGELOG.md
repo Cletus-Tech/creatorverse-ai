@@ -143,3 +143,12 @@ Status: **Committed directly to main; deployment verification pending.**
 - Redesigned the mobile navigation as a responsive discovery panel with numbered destinations and clear account actions.
 - Preserved the existing mobile bottom navigation and its destinations.
 - No course, community, authentication, role-permission or database workflows were intentionally changed.
+
+
+## 2026-11-05 — Navigation size and transparency correction
+
+- Reduced the homepage navigation height and brand mark sizing to reclaim vertical space.
+- Removed the heavy opaque bar, large shadow and prominent top border; the compact navigation now overlays the hero with a subtle transparent glass treatment so the 3D background remains visible behind it.
+- Tightened link spacing, button sizing and dropdown offsets.
+- Adjusted the homepage hero's top content offset to prevent text from colliding with the compact navigation.
+- Kept the navigation dropdown, account actions and mobile menu interactions intact.
