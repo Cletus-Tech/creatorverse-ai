@@ -52,3 +52,11 @@ Every substantial change must update `PROJECT_CHANGELOG.md` and this plan when i
 
 ## Unified brand identity
 The canonical CreatorVerse symbol is `assets/creatorverse-mark.svg`. All parent-brand placements must reuse this asset rather than inventing local logo variants. Approved lockups may vary in size or omit the wordmark in constrained spaces, but the underlying symbol must remain identical. Division-specific icons may identify individual divisions and must not be mistaken for alternate CreatorVerse parent logos. New pages, emails, certificates, app surfaces and favicons should adopt this same source asset.
+
+## Search visibility and SEO foundation
+
+- Current canonical host (until a custom domain is purchased): `https://creatorverse-ai.vercel.app/`.
+- Initial technical SEO is implemented on the public homepage, About, Divisions, Courses, Learn and Community pages: unique titles/descriptions, canonical URLs, social sharing metadata and a public sitemap. Homepage includes Organization and WebSite structured data.
+- Private account, admin, dashboard, assessment and utility routes use page-level `noindex, follow` directives.
+- `robots.txt` points to the production sitemap. Search engine ownership verification and sitemap submission are not complete until the owner completes the Google Search Console and Bing Webmaster Tools steps.
+- Next SEO milestones: verify the live deployment and crawler access; submit sitemap; inspect index coverage; create original, useful digital-skills and AI-learning resources; add public course-specific landing pages; monitor performance and migrate canonical signals carefully when a custom domain is acquired.
