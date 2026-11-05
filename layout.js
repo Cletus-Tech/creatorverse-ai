@@ -1,7 +1,7 @@
 (function(){
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
 if(f==='category.html')f='learn.html';
-var L=[['Home','index.html'],['Divisions','divisions.html'],['Explore Courses','courses.html'],['Categories','learn.html'],['About','about.html'],['Community','community.html'],['AI Assistant','ai.html']];
+var L=[['Home','index.html'],['Divisions','divisions.html'],['Courses','courses.html'],['Learning Paths','learn.html'],['About','about.html'],['Community','community.html'],['AI Assistant','ai.html']];
 function act(h){return h===f+q||h===f&&h.indexOf('?')<0?' class="active"':''}
 var links=L.map(function(l){return '<a href="'+l[1]+'"'+act(l[1])+'>'+l[0]+'</a>'}).join('');
 var mob=L.map(function(l){return '<a href="'+l[1]+'">'+l[0]+'</a>'}).join('');
