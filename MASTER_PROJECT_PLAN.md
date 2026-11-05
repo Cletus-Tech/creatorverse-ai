@@ -31,6 +31,9 @@ The repository README describes a static HTML/CSS/JavaScript website in `public/
 ## Immediate priority
 **Phase 0 — Discovery and baseline audit.** Inspect the complete repository, hosting/deployment, current live experience, connected Supabase schema/RLS/storage/functions, and actual user journeys. Back up before any schema or production changes. Do not create new division schemas or rewrite the frontend until this audit is complete.
 
+## Current homepage redesign
+The homepage is being refined to keep the existing 3D hero while separating course discovery into the dedicated catalogue page. The shared navigation is being changed to a two-row desktop layout to prevent account actions and navigation links from colliding. The homepage will introduce the platform and link to Academy, Community, and Divisions without duplicating course/category cards. This work remains in development until responsive browser checks and production deployment are verified.
+
 ## Detailed specification
 See [docs/CREATORVERSE-GLOBAL-MASTER-BLUEPRINT.md](docs/CREATORVERSE-GLOBAL-MASTER-BLUEPRINT.md) for the complete vision, division scope, roles, conceptual data domains, security requirements, roadmap, acceptance gates, and decision log.
 
