@@ -420,87 +420,101 @@ main#home{padding-bottom:70px}
 @media(prefers-reduced-motion:reduce){.cv-experience-card{transition:none}}
 
 
-/* === Founder visual: borderless, atmospheric double-exposure blend ===
-   The portrait is intentionally free-floating: no card, frame, crop or hard edge. */
-.hero2 .portrait,
-.hero2 .portrait.framed,
-.hero2 .portrait.cutout{
+/* === Homepage hero: full-bleed 3D scene, no enclosing frame === */
+.hero2.has-watermark{
   position:relative!important;
-  width:min(100%,460px)!important;
-  max-width:460px!important;
-  max-height:none!important;
-  height:auto!important;
-  align-self:center!important;
-  justify-self:center!important;
-  margin:0 auto!important;
-  padding:0!important;
+  isolation:isolate!important;
+  overflow:hidden!important;
+  padding-top:116px!important;
+  background:
+    radial-gradient(ellipse at 78% 45%,rgba(38,103,214,.16),transparent 54%),
+    linear-gradient(180deg,#050b19 0%,#071126 72%,#040b1f 100%)!important;
+}
+.hero2.has-watermark .hero2-in{
+  position:relative!important;
+  z-index:1!important;
+  max-width:1380px!important;
+  min-height:clamp(590px,calc(100svh - 112px),760px)!important;
   overflow:visible!important;
   border:0!important;
   border-radius:0!important;
-  background:transparent!important;
   box-shadow:none!important;
-  isolation:isolate;
+  background:transparent!important;
+  isolation:isolate!important;
 }
-.hero2 .portrait::before{
-  content:""!important;
+.hero2.has-watermark .home-watermark{
   position:absolute!important;
   z-index:-1!important;
-  inset:12% -12% 4%!important;
-  border:0!important;
-  border-radius:50%!important;
-  background:
-    radial-gradient(ellipse at 50% 48%,rgba(34,130,255,.30),rgba(63,91,230,.12) 48%,transparent 74%),
-    radial-gradient(ellipse at 65% 68%,rgba(67,218,235,.12),transparent 62%)!important;
-  filter:blur(34px)!important;
-  opacity:.95;
-  pointer-events:none;
-}
-.hero2 .portrait img{
-  display:block!important;
+  inset:0!important;
   width:100%!important;
-  height:auto!important;
-  max-height:clamp(380px,58vw,690px)!important;
-  object-fit:contain!important;
-  object-position:center bottom!important;
-  border:0!important;
+  height:100%!important;
   border-radius:0!important;
-  outline:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-  filter:drop-shadow(0 24px 42px rgba(0,0,0,.24)) saturate(1.04)!important;
-  -webkit-mask-image:radial-gradient(ellipse 82% 88% at 50% 45%,#000 55%,rgba(0,0,0,.94) 69%,rgba(0,0,0,.55) 83%,transparent 100%);
-  mask-image:radial-gradient(ellipse 82% 88% at 50% 45%,#000 55%,rgba(0,0,0,.94) 69%,rgba(0,0,0,.55) 83%,transparent 100%);
+  background-size:cover!important;
+  background-position:center 43%!important;
+  background-repeat:no-repeat!important;
+  opacity:var(--watermark-opacity,.28)!important;
+  filter:saturate(.94) contrast(1.04)!important;
+  mix-blend-mode:screen!important;
+  -webkit-mask-image:radial-gradient(ellipse 94% 90% at 54% 48%,#000 44%,rgba(0,0,0,.88) 68%,rgba(0,0,0,.4) 86%,transparent 100%)!important;
+  mask-image:radial-gradient(ellipse 94% 90% at 54% 48%,#000 44%,rgba(0,0,0,.88) 68%,rgba(0,0,0,.4) 86%,transparent 100%)!important;
+  pointer-events:none!important;
 }
-.hero2 .portrait.framed img{
-  aspect-ratio:auto!important;
-  object-fit:contain!important;
+.hero2.has-watermark .hero2-in::before,
+.hero2.has-watermark .hero2-in::after{display:none!important}
+.hero2.has-watermark .hero2-copy,
+.hero2.has-watermark .founder-visual{position:relative;z-index:2}
+.hero2.has-watermark .hero2-copy{
+  padding:34px 0 42px!important;
+  text-shadow:0 3px 24px rgba(0,0,0,.6);
 }
-.hero2 .portrait .cap{
-  right:2%!important;
-  bottom:5%!important;
-  max-width:78%!important;
-  padding:9px 14px!important;
-  border:0!important;
-  border-left:2px solid rgba(100,205,255,.72)!important;
-  border-radius:0 8px 8px 0!important;
-  background:linear-gradient(90deg,rgba(4,12,31,.56),rgba(4,12,31,.08))!important;
-  box-shadow:none!important;
-  backdrop-filter:blur(3px)!important;
+.hero2.has-watermark .chip2{
+  background:rgba(5,13,29,.9)!important;
+  border:1px solid rgba(126,190,255,.28)!important;
+  box-shadow:0 8px 30px rgba(0,0,0,.24)!important;
 }
-.hero2 .portrait.framed{margin-bottom:0!important}
-.hero2 .founder-visual{position:relative;z-index:2;align-self:center;overflow:visible!important}
-@media(max-width:760px){
-  .hero2 .portrait,.hero2 .portrait.framed,.hero2 .portrait.cutout{
-    width:min(84vw,360px)!important;
-    max-width:360px!important;
-    max-height:none!important;
-    margin:8px auto 0!important;
-    transform:none!important;
-  }
-  .hero2 .portrait img{
-    max-height:460px!important;
-    -webkit-mask-image:radial-gradient(ellipse 88% 90% at 50% 46%,#000 62%,rgba(0,0,0,.9) 77%,transparent 100%);
-    mask-image:radial-gradient(ellipse 88% 90% at 50% 46%,#000 62%,rgba(0,0,0,.9) 77%,transparent 100%);
-  }
-  .hero2 .portrait .cap{right:0!important;bottom:4%!important}
+@media(max-width:900px){
+ .hero2.has-watermark{padding-top:94px!important}
+ .hero2.has-watermark .hero2-in{min-height:0!important;padding:30px 22px 18px!important}
+ .hero2.has-watermark .home-watermark{
+   background-position:center!important;
+   -webkit-mask-image:radial-gradient(ellipse 110% 92% at 50% 42%,#000 50%,rgba(0,0,0,.82) 76%,transparent 100%)!important;
+   mask-image:radial-gradient(ellipse 110% 92% at 50% 42%,#000 50%,rgba(0,0,0,.82) 76%,transparent 100%)!important;
+ }
+}
+@media(max-width:560px){
+ .hero2.has-watermark{padding:86px 0 12px!important}
+ .hero2.has-watermark .hero2-in{padding:24px 18px 12px!important}
+ .hero2.has-watermark .hero2-copy{padding:20px 0 12px!important}
+}
+
+/* === Navigation: deliberate opaque header band === */
+.nav{
+  background:rgba(4,10,24,.97)!important;
+  -webkit-backdrop-filter:blur(22px)!important;
+  backdrop-filter:blur(22px)!important;
+  border-bottom:1px solid rgba(125,166,226,.18)!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.28)!important;
+}
+.nav.scrolled{background:rgba(4,10,24,.985)!important}
+.mobile-menu{
+  background:rgba(4,10,24,.985)!important;
+  -webkit-backdrop-filter:blur(22px)!important;
+  backdrop-filter:blur(22px)!important;
+  border-bottom:1px solid rgba(125,166,226,.18)!important;
+}
+@media(min-width:1025px){
+ .nav{min-height:104px!important;padding-top:12px!important;padding-bottom:12px!important}
+ .nav-center{gap:clamp(14px,1.8vw,26px)!important}
+ .nav-center a{
+   color:#c4cee0!important;
+   font-size:13px!important;
+   font-weight:600!important;
+   letter-spacing:.01em;
+   padding:9px 2px!important;
+ }
+ .nav-center a:hover,.nav-center a.active{color:#fff!important}
+ .nav-center a.active::after{bottom:0!important;height:2px!important;background:linear-gradient(90deg,#55c8ff,#6d8fff)!important}
+}
+@media(max-width:1024px){
+ .nav{background:rgba(4,10,24,.985)!important;min-height:68px!important}
 }
