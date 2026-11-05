@@ -91,3 +91,17 @@ Status: **Committed to main; production deployment triggered.**
 - Applied the same borderless treatment when the CMS portrait style is set to framed, so the visual cannot unexpectedly return to a boxed appearance.
 - Responsive sizing and image blending are included for mobile.
 - Browser/device visual validation remains pending.
+
+
+## 2026-11-05 — Full-bleed 3D homepage artwork and navigation polish
+
+Status: **Committed to main; Vercel deployment pending verification.**
+
+- Corrected the target: this change applies to the admin-uploaded 3D classroom/background artwork, not the founder portrait.
+- Moved the 3D artwork layer to the full homepage hero section so it is no longer confined inside the rounded, bordered hero panel.
+- Removed the inner hero panel border, rounded corners, clipping and heavy card shadow when the 3D artwork is enabled.
+- Added broad radial edge blending so the scene dissolves into the page background rather than ending in a visible rectangle.
+- Kept the navigation as the intentional opaque, dark top layer, with a stronger backdrop and clear separation from the hero artwork.
+- Renamed the navigation destinations to the shorter, cleaner “Courses” and “Learning Paths”.
+- Founder portrait presentation and CMS founder image settings were not targeted by this correction.
+- Browser/device visual validation remains pending.
