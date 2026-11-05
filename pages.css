@@ -277,3 +277,14 @@ body.home .founder-social-links a img{width:14px!important;height:14px!important
  body.home .founder-social-links a{width:25px!important;height:25px!important}
  body.home .founder-social-links a img{width:13px!important;height:13px!important}
 }
+
+/* Keep the founder identity readable inside the circular portrait frame. */
+body.home .founder-visual .portrait .cap{
+ position:absolute!important;left:8px!important;right:8px!important;bottom:10px!important;
+ margin:0!important;padding:7px 5px!important;border-radius:0 0 100px 100px!important;
+ background:linear-gradient(180deg,transparent,rgba(3,10,28,.86))!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ text-align:center!important;gap:2px!important;
+}
+body.home .founder-visual .portrait .cap strong{font-size:12px!important;text-shadow:0 1px 4px #000}
+body.home .founder-visual .portrait .cap span{font-size:9px!important;color:#d4e2ff!important;text-shadow:0 1px 4px #000}
