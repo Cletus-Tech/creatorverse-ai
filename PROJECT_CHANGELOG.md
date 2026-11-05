@@ -1,4 +1,12 @@
-## 2026-11-06 — Signature loading experience refinement
+## 2026-11-06 — Minimal professional loading redesign
+
+Status: **Implemented on `main`; awaiting browser verification.**
+
+- Replaced the decorative emblem/orbit treatment with a restrained editorial loader: compact CV monogram, clean CreatorVerse AI wordmark, thin indeterminate progress line and quiet status label.
+- Removed glow effects, decorative grids, floating particles, orbital animation and oversized visual elements for a more mature, enterprise-style presentation.
+- Kept the page-visibility gate, readiness dismissal, mobile layout and reduced-motion support intact. No homepage content or application behavior changed.
+
+## 2026-11-06 — Previous loading concept (superseded)
 
 Status: **Implemented on `main`; awaiting browser verification.**
 
