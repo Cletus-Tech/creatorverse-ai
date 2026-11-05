@@ -31,7 +31,7 @@ The repository README describes a static HTML/CSS/JavaScript website in `public/
 ## Immediate priority
 **Phase 0 — Discovery and baseline audit.** Inspect the complete repository, hosting/deployment, current live experience, connected Supabase schema/RLS/storage/functions, and actual user journeys. Back up before any schema or production changes. Do not create new division schemas or rewrite the frontend until this audit is complete.
 
-## Current homepage redesign
+## About page redesign\nThe About page has been rebuilt as a responsive editorial-style introduction to CreatorVerse AI, its purpose, guiding principles and six-division ecosystem. Academy and Community are shown as available; the remaining divisions are labelled in development. The CMS-managed founder profile and portrait remain supported. Browser and production verification are still required.\n\n## Current homepage redesign
 The homepage is being refined to keep the existing 3D hero while separating course discovery into the dedicated catalogue page. The shared navigation is being changed to a two-row desktop layout to prevent account actions and navigation links from colliding. The homepage will introduce the platform and link to Academy, Community, and Divisions without duplicating course/category cards. This work remains in development until responsive browser checks and production deployment are verified.
 
 ## Detailed specification
