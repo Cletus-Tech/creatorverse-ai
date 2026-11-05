@@ -48,3 +48,7 @@ See [docs/CREATORVERSE-GLOBAL-MASTER-BLUEPRINT.md](docs/CREATORVERSE-GLOBAL-MAST
 - **Deployed:** verified on the intended live deployment.
 
 Every substantial change must update `PROJECT_CHANGELOG.md` and this plan when it changes scope, architecture, or decisions.
+
+
+## Unified brand identity
+The canonical CreatorVerse symbol is `assets/creatorverse-mark.svg`. All parent-brand placements must reuse this asset rather than inventing local logo variants. Approved lockups may vary in size or omit the wordmark in constrained spaces, but the underlying symbol must remain identical. Division-specific icons may identify individual divisions and must not be mistaken for alternate CreatorVerse parent logos. New pages, emails, certificates, app surfaces and favicons should adopt this same source asset.
