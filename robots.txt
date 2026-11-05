@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://creatorverse.ai/sitemap.xml
+# Private and utility pages carry page-level noindex directives.
+Sitemap: https://creatorverse-ai.vercel.app/sitemap.xml
