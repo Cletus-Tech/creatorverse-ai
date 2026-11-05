@@ -1,3 +1,13 @@
+## 2026-11-06 — Homepage division cards and icon-only social links
+
+Status: **Implemented on `main`; responsive browser and production verification pending.**
+
+- Reworked the six homepage division cards to reduce their overall height, typography, badges, padding and visual weight on desktop.
+- Rebuilt the phone layout as compact horizontal cards with a smaller image panel and a controlled text column, consistent spacing and two-line descriptions to prevent oversized stacked image cards.
+- Changed shared footer social controls and homepage founder social controls to recognisable icon-only links; accessible names and hover titles remain available for assistive technology.
+- Kept all existing social destinations, division names, availability labels and working Academy/Community links unchanged.
+- No backend, authentication, Academy/Community workflows or payment behavior changed.
+
 ## 2026-11-06 — Full About page redesign
 
 Status: **Implemented on `main`; browser and production verification pending.**
