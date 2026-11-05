@@ -131,3 +131,15 @@ Status: **Committed directly to main; deployment verification pending.**
 - Added more colour variation to the pathway panel and social controls while preserving the dark premium visual identity, readable contrast and responsive layouts.
 - No Academy/Community workflows, database schema, authentication or payment logic changed.
 - Visual QA on actual mobile and desktop browsers remains required.
+
+ 
+## 2026-11-05 — Global navigation and brand identity redesign
+
+Status: **Committed directly to main; deployment verification pending.**
+
+- Rebuilt the shared top navigation with a stronger CreatorVerse AI brand mark, refined typography, luminous gradient accents and glass-like surfaces.
+- Consolidated secondary destinations into an accessible Explore dropdown with Courses, Learning Paths, About, Community and AI Assistant.
+- Added a dedicated account dropdown for Login/Get Started and signed-in Dashboard/Logout actions; Admin Panel is injected only for admin and super-admin roles.
+- Redesigned the mobile navigation as a responsive discovery panel with numbered destinations and clear account actions.
+- Preserved the existing mobile bottom navigation and its destinations.
+- No course, community, authentication, role-permission or database workflows were intentionally changed.
