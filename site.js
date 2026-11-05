@@ -25,7 +25,7 @@ if(w){var md=document.createElement('div');md.className='modal';md.innerHTML='<d
  md.addEventListener('click',function(e){if(e.target===md||e.target.className==='modal-x')close()});
  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()})}
 var pg=document.body.dataset.page,main=document.getElementById('content');
-if(pg==='about'&&sc.about_text&&main){main.textContent='';var t1=document.createElement('h1');t1.textContent='About CreatorVerse AI';main.appendChild(t1);sc.about_text.split(/\n\s*\n/).forEach(function(x){var pp=document.createElement('p');pp.textContent=x;main.appendChild(pp)});var ab=document.createElement('a');ab.className='btn btn-primary';ab.href='learn.html';ab.textContent='Explore Learning Categories';main.appendChild(ab)}
+if(pg==='about'&&sc.about_text&&main){var story=main.querySelector('.about-story-copy');if(story){story.textContent='';sc.about_text.split(/\n\s*\n/).filter(Boolean).forEach(function(x){var pp=document.createElement('p');pp.textContent=x;story.appendChild(pp)})}}
 if(!main)return;
 var p=new URLSearchParams(location.search).get('p');
 if(pg==='about'&&sc.founder){try{var F=JSON.parse(sc.founder);if(F.show_about!==false&&(F.name||F.bio||F.photo)){var fb=document.createElement('section');fb.className='founder-about';
