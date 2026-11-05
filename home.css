@@ -543,7 +543,7 @@ main#home{padding-bottom:70px}
   background-size:cover!important;
   background-position:center 42%!important;
   background-repeat:no-repeat!important;
-  opacity:var(--watermark-opacity,.3)!important;
+  opacity:clamp(.28,calc(var(--watermark-opacity,.18) + .22),.68)!important;
   filter:saturate(.82) contrast(1.08)!important;
   mix-blend-mode:screen!important;
   -webkit-mask-image:radial-gradient(ellipse 104% 100% at 62% 46%,#000 36%,rgba(0,0,0,.96) 58%,rgba(0,0,0,.62) 78%,transparent 100%)!important;
@@ -728,7 +728,7 @@ main#home{padding-bottom:70px}
  .hero2.has-watermark{padding:0 18px 30px!important;min-height:0!important}
  .hero2.has-watermark::after{background:linear-gradient(180deg,rgba(3,9,22,.72),rgba(3,9,22,.55) 48%,rgba(4,10,24,.94) 100%)}
  .hero2.has-watermark .home-watermark{
-  background-position:center 35%!important;opacity:var(--watermark-opacity,.34)!important;
+  background-position:center 35%!important;opacity:clamp(.32,calc(var(--watermark-opacity,.18) + .24),.7)!important;
   -webkit-mask-image:radial-gradient(ellipse 112% 90% at 50% 42%,#000 42%,rgba(0,0,0,.86) 72%,transparent 100%)!important;
   mask-image:radial-gradient(ellipse 112% 90% at 50% 42%,#000 42%,rgba(0,0,0,.86) 72%,transparent 100%)!important;
  }
