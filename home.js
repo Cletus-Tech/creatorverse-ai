@@ -62,8 +62,11 @@ function landingSections(){
   {n:'06',name:'CreatorVerse Business',desc:'Help businesses build visibility, reach customers and generate new leads.',status:'In development',kind:'business'}
  ];
  var grid=h('div',{class:'cv-division-grid'});
+ var artImages={academy:'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=82',community:'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=82',market:'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=82',affiliate:'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=900&q=82',realty:'https://images.unsplash.com/photo-160059_info?auto=format&fit=crop&w=900&q=82',business:'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=82'};
+ artImages.realty='https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=82';
  divisions.forEach(function(d){
   var card=h('article',{class:'cv-division-card cv-'+d.kind},[
+   h('div',{class:'cv-division-art'},[h('img',{src:artImages[d.kind],alt:'',loading:'lazy'})]),
    h('div',{class:'cv-division-top'},[
     h('span',{class:'cv-division-number',text:d.n}),
     h('span',{class:'cv-division-status'+(d.live?' is-live':''),text:d.status})
