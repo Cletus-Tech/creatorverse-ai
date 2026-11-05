@@ -1,3 +1,16 @@
+## 2026-11-06 — Initial technical SEO foundation
+
+Status: **Implemented on `main`; production deployment and search-engine verification pending.**
+
+- Standardised the canonical production URL to `https://creatorverse-ai.vercel.app/` while the project has no custom domain.
+- Added page-specific titles, descriptions, canonical URLs, Open Graph metadata and Twitter summary metadata to the homepage, About, Divisions, Courses, Learn and Community pages.
+- Added homepage Schema.org `Organization` and `WebSite` structured data.
+- Added an XML sitemap containing the six selected public discovery pages.
+- Corrected `robots.txt` to reference the actual production-host sitemap rather than the unrelated `creatorverse.ai` domain.
+- Added page-level `noindex, follow` directives to authentication, account, admin, dashboard, assessment, utility and other non-discovery pages.
+- Search Console and Bing Webmaster verification/submission remain a manual owner step; no indexing or ranking outcome is claimed.
+- SEO copy is an initial foundation. Ongoing original learning content, course-specific landing pages, performance/accessibility checks and Search Console monitoring remain future work.
+
 ## 2026-11-06 — Unified CreatorVerse logo system
 
 Status: **Implemented on `main`; full browser and production verification pending.**
