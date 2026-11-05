@@ -204,3 +204,76 @@ body.home .mobile-menu{z-index:180!important}
  body.home .menu-btn{width:35px!important;height:35px!important}
  body.home .hero2.has-watermark .hero2-in{padding-top:76px!important}
 }
+
+
+/* 2026-11-05: homepage-only navigation and founder portrait refinement */
+body.home .nav-center{gap:clamp(12px,1.45vw,22px)!important}
+body.home .nav-center>a{display:inline-flex!important;align-items:center;min-height:34px;padding:7px 0!important;font-size:12.5px!important;letter-spacing:.01em}
+body.home .nav-center>a.active{color:#fff!important}
+body.home .nav-center>a.active::after{content:"";position:absolute;left:0;right:0;bottom:0}
+body.home .nav-center>a{position:relative}
+body.home .nav-center>a:hover{color:#fff!important}
+@media(min-width:1101px) and (max-width:1240px){
+ body.home .nav-center{gap:10px!important}
+ body.home .nav-center>a{font-size:11.5px!important}
+ body.home .nav-left{gap:7px!important}
+ body.home .brand-name{font-size:14px!important}
+}
+@media(max-width:1100px){
+ body.home .nav-center{display:none!important}
+}
+
+/* Founder portrait: smaller, static and circular; confined to the hero artwork column. */
+body.home .founder-visual{
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:12px!important;width:100%;max-width:330px!important;
+ margin:0 auto!important;align-self:center!important;
+}
+body.home .founder-visual .portrait{
+ flex:none!important;width:clamp(150px,18vw,218px)!important;height:clamp(150px,18vw,218px)!important;
+ max-width:none!important;max-height:none!important;margin:0!important;align-self:center!important;
+ display:grid!important;place-items:center!important;border-radius:50%!important;overflow:hidden!important;
+ aspect-ratio:1/1!important;background:radial-gradient(circle at 50% 35%,rgba(73,133,255,.22),rgba(7,19,48,.78) 70%);
+ border:1px solid rgba(135,194,255,.55)!important;
+ box-shadow:0 0 0 6px rgba(105,151,255,.055),0 0 34px rgba(63,133,255,.2),inset 0 0 24px rgba(115,170,255,.12)!important;
+}
+body.home .founder-visual .portrait::before{content:""!important;position:absolute!important;inset:5px!important;border:1px solid rgba(220,235,255,.14)!important;border-radius:50%!important;z-index:2!important;pointer-events:none!important;filter:none!important;background:none!important}
+body.home .founder-visual .portrait img{
+ display:block!important;width:100%!important;height:100%!important;max-height:none!important;
+ object-fit:cover!important;object-position:center 22%!important;border-radius:50%!important;
+ -webkit-mask-image:none!important;mask-image:none!important;filter:none!important;
+}
+body.home .founder-visual .portrait .cap{
+ position:static!important;max-width:100%!important;margin-top:9px!important;padding:0!important;
+ display:flex!important;align-items:center!important;text-align:center!important;gap:3px!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;
+}
+body.home .founder-visual .portrait .cap strong{font-size:14px!important}
+body.home .founder-visual .portrait .cap span{font-size:11px!important}
+body.home .founder-visual .portrait .cap small{display:none!important}
+body.home .founder-social-follow{
+ flex:none!important;width:auto!important;max-width:100%!important;padding:8px 11px!important;
+ display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px!important;
+ border-radius:999px!important;background:rgba(5,14,35,.5)!important;
+ border:1px solid rgba(151,197,255,.18)!important;backdrop-filter:blur(10px)!important;
+}
+body.home .founder-social-follow>span{font-size:10px!important;white-space:nowrap!important}
+body.home .founder-social-links{display:flex!important;flex-direction:row!important;align-items:center!important;gap:7px!important;width:auto!important}
+body.home .founder-social-links a{width:27px!important;height:27px!important;padding:0!important;justify-content:center!important;border-radius:50%!important}
+body.home .founder-social-links a span{display:none!important}
+body.home .founder-social-links a img{width:14px!important;height:14px!important}
+@media(max-width:900px){
+ body.home .founder-visual{max-width:100%!important;margin:12px auto 20px!important}
+ body.home .founder-visual .portrait{width:184px!important;height:184px!important}
+ body.home .hero2-in{grid-template-columns:1fr!important}
+ body.home .hero2-copy{padding-bottom:12px!important}
+}
+@media(max-width:560px){
+ body.home .founder-visual{gap:9px!important;margin:8px auto 14px!important}
+ body.home .founder-visual .portrait{width:156px!important;height:156px!important}
+ body.home .founder-social-follow{padding:7px 9px!important;gap:8px!important}
+ body.home .founder-social-follow>span{font-size:9px!important}
+ body.home .founder-social-links{gap:6px!important}
+ body.home .founder-social-links a{width:25px!important;height:25px!important}
+ body.home .founder-social-links a img{width:13px!important;height:13px!important}
+}
