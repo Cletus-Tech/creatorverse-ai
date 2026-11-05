@@ -45,10 +45,34 @@ function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){
  if(sc.homepage_bg_cfg){try{X.homepageBackground=(typeof sc.homepage_bg_cfg==='string'?JSON.parse(sc.homepage_bg_cfg):sc.homepage_bg_cfg)}catch(e){console.warn('CreatorVerse homepage background config could not be read:',e)}}
  if(content||f)return render(X);
  fetch('site.json').then(function(r){return r.json()}).catch(function(){return{}}).then(function(c){if(c&&c.founderPhoto)X.hero.portrait.url=c.founderPhoto;render(X)})})}
+
+function landingSections(){
+ var wrap=h('div',{class:'cv-home-experience'});
+ var intro=h('section',{class:'cv-home-intro'},[
+  h('span',{class:'cv-kicker',text:'ONE PLATFORM · MANY POSSIBILITIES'}),
+  h('h2',{text:'A place to learn, build and grow.'}),
+  h('p',{text:'CreatorVerse brings practical learning, creator connections and digital opportunities into one connected experience.'})
+ ]);
+ var cards=[
+  ['01','Learn practical skills','Explore guided learning in AI, content creation, design, automation and digital business.','courses.html','Explore courses'],
+  ['02','Create with confidence','Turn what you learn into real projects, content and useful digital products.','divisions.html','Explore divisions'],
+  ['03','Connect with creators','Share your work, exchange ideas and learn alongside a growing creator community.','community.html','Visit community']
+ ];
+ var grid=h('div',{class:'cv-experience-grid'});
+ cards.forEach(function(c){grid.appendChild(h('article',{class:'cv-experience-card'},[
+  h('span',{class:'cv-card-index',text:c[0]}),h('h3',{text:c[1]}),h('p',{text:c[2]}),h('a',{href:c[3]},[h('span',{text:c[4]}),ico(I.arrow)])
+ ]))});
+ var path=h('section',{class:'cv-pathway'},[
+  h('div',{class:'cv-pathway-copy'},[h('span',{class:'cv-kicker',text:'YOUR NEXT STEP STARTS HERE'}),h('h2',{text:'Find the skill. Build the project. Create the opportunity.'}),h('p',{text:'Browse the course catalogue to find learning experiences that match your interests and goals.'})]),
+  h('div',{class:'cv-pathway-actions'},[btn('Browse all courses','courses.html','btn-primary'),btn('Discover CreatorVerse','divisions.html','btn-outline')])
+ ]);
+ wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(path);root.appendChild(wrap);
+}
 function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));var inner=hr.querySelector('.hero2-in');if(inner)inner.insertBefore(bg,inner.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
+ landingSections();
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
  Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=*,modules(lessons(id))&order=created_at.desc&limit=40').then(function(d){return Array.isArray(d)?d.sort(function(x,y){return(y.featured?1:0)-(x.featured?1:0)}):[]}).catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
-  var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false)return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e);})})}
+  var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false||S.type==='courses'||S.type==='categories')return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e);})})}
 function go(){var ok=C.supabaseUrl&&C.supabaseAnonKey;
  if(Q.get('preview')==='1'){document.body.insertBefore(h('div',{class:'preview-bar',text:'Preview of the unpublished draft. Visitors do not see this.'}),document.body.firstChild);
   var f=function(){window.CV_SB.from('homepage_versions').select('content').eq('status','draft').maybeSingle().then(function(r){draw(r.data&&r.data.content)})};
