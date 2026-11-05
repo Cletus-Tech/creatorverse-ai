@@ -1,3 +1,15 @@
+## 2026-11-06 — Full About page redesign
+
+Status: **Implemented on `main`; browser and production verification pending.**
+
+- Rebuilt the About page as a complete editorial-style experience with a clear introduction, purpose, guiding principles, ecosystem overview and closing call to action.
+- Replaced the generic page typography with a clean Manrope/DM Sans type system, stronger hierarchy, controlled line lengths, restrained blue accents and more consistent spacing.
+- Added a responsive, CSS-built brand visual rather than introducing another stock portrait or replacing the existing founder portrait.
+- Added a clear division directory: Academy and Community are labelled available; Marketplace, Affiliate, Realty and Business remain labelled in development.
+- Preserved the existing dynamic founder profile and portrait insertion from the CMS, and refined its presentation without changing the image source.
+- Kept the About page's editable `about_text` CMS field working by targeting the story-copy area rather than replacing the redesigned page.
+- No authentication, database schema, Academy, Community, payment or navigation behavior was intentionally changed.
+
 ## 2026-11-06 — Lower homepage typography and spacing refinement
 
 Status: **Implemented on `main`; browser and production verification pending.**
