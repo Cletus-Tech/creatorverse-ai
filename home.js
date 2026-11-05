@@ -78,18 +78,31 @@ function landingSections(){
   ]);
   grid.appendChild(card);
  });
- var path=h('section',{class:'cv-pathway'},[
+ var path=h('section',{class:'cv-pathway cv-reveal'},[
   h('div',{class:'cv-pathway-copy'},[
    h('span',{class:'cv-kicker',text:'START WITH WHAT IS AVAILABLE TODAY'}),
    h('h2',{text:'Your next skill could change what comes next.'}),
-   h('p',{text:'Explore practical courses, learn by doing and turn what you know into something real.'})
+   h('p',{text:'Explore practical courses, learn by doing and turn what you know into something real.'}),
+   h('div',{class:'cv-pathway-actions'},[
+    btn('Browse all courses','courses.html','btn-primary'),
+    btn('Explore all divisions','divisions.html','btn-outline')
+   ])
   ]),
-  h('div',{class:'cv-pathway-actions'},[
-   btn('Browse all courses','courses.html','btn-primary'),
-   btn('Explore all divisions','divisions.html','btn-outline')
+  h('div',{class:'cv-pathway-visual'},[
+   h('img',{src:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85',alt:'A collaborative team sharing ideas around a table',loading:'lazy'}),
+   h('div',{class:'cv-visual-shade'}),
+   h('div',{class:'cv-visual-label'},[h('span',{text:'THE CREATORVERSE WAY'}),h('strong',{text:'Learn. Build. Grow.'})]),
+   h('div',{class:'cv-visual-stamp'},[h('span',{text:'01 — 06'}),h('b',{text:'ONE ECOSYSTEM'})])
   ])
  ]);
+ intro.classList.add('cv-reveal');
+ grid.classList.add('cv-reveal');
  wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(path);root.appendChild(wrap);
+ var revealItems=wrap.querySelectorAll('.cv-reveal,.cv-division-card');
+ if('IntersectionObserver' in window){
+  var revealObserver=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target)}})},{threshold:.12,rootMargin:'0px 0px -35px 0px'});
+  revealItems.forEach(function(el,i){el.style.setProperty('--reveal-delay',Math.min(i%6,5)*85+'ms');revealObserver.observe(el)});
+ }else{revealItems.forEach(function(el){el.classList.add('is-visible')})}
 }
 function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));hr.insertBefore(bg,hr.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
  landingSections();
