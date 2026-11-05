@@ -95,7 +95,7 @@ function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageB
  landingSections();
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
  Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=*,modules(lessons(id))&order=created_at.desc&limit=40').then(function(d){return Array.isArray(d)?d.sort(function(x,y){return(y.featured?1:0)-(x.featured?1:0)}):[]}).catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
-  var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false||S.type==='courses'||S.type==='categories')return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e);})})}
+  var courses=Array.isArray(r[0])?r[0]:[];X.sections.forEach(function(S){if(S.visible===false||S.type==='courses'||S.type==='categories')return;var e=sec(S,courses,r[1]);if(e)root.appendChild(e);});requestAnimationFrame(function(){requestAnimationFrame(function(){if(window.cvFinishLoading)window.cvFinishLoading()})})})}
 function go(){var ok=C.supabaseUrl&&C.supabaseAnonKey;
  if(Q.get('preview')==='1'){document.body.insertBefore(h('div',{class:'preview-bar',text:'Preview of the unpublished draft. Visitors do not see this.'}),document.body.firstChild);
   var f=function(){window.CV_SB.from('homepage_versions').select('content').eq('status','draft').maybeSingle().then(function(r){draw(r.data&&r.data.content)})};
