@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+<title id="title">CreatorVerse brand mark</title>
+<defs><linearGradient id="cv" x1="18" y1="18" x2="108" y2="110" gradientUnits="userSpaceOnUse"><stop stop-color="#63E4FF"/><stop offset=".52" stop-color="#318BFF"/><stop offset="1" stop-color="#665CFF"/></linearGradient></defs>
+<path d="M91.5 25.5A49 49 0 1 0 91.5 102.5" fill="none" stroke="url(#cv)" stroke-width="13" stroke-linecap="round"/>
+<path d="M45 43.5 83 64 45 84.5V43.5Z" fill="url(#cv)"/>
+<path d="M82 64h24m-10-10 10 10-10 10" fill="none" stroke="#63E4FF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="45" cy="43.5" r="5" fill="#EAFBFF"/><circle cx="45" cy="84.5" r="5" fill="#EAFBFF"/>
+</svg>
