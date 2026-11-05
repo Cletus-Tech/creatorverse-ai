@@ -790,3 +790,18 @@ main#home{padding-bottom:70px}
 .cv-pathway{background:radial-gradient(ellipse at 12% 0%,rgba(91,124,255,.22),transparent 40%),radial-gradient(ellipse at 88% 100%,rgba(255,111,174,.18),transparent 42%),linear-gradient(115deg,#111a3b,#1b1940 58%,#103447)!important}
 .cv-kicker{background:linear-gradient(90deg,#83cfff,#c3a4ff,#ff9fc7);-webkit-background-clip:text;background-clip:text;color:transparent!important}
 @media(max-width:560px){.cv-division-art{height:156px;margin:0 -21px 18px}.hero2.has-watermark .founder-social-follow{margin:8px auto 16px}}
+
+
+/* Initial homepage loading gate: keep the footer and page content covered until the page is ready. */
+html.cv-loading,html.cv-loading body{min-height:100%;overflow:hidden!important;background:#040b1f!important}
+html.cv-loading body>*:not(#cv-page-loader){visibility:hidden!important}
+.cv-page-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:17px;background:radial-gradient(ellipse at 50% 42%,rgba(28,78,166,.28),transparent 48%),#040b1f;color:#eaf2ff;opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}
+.cv-page-loader.is-done{opacity:0;visibility:hidden;pointer-events:none}
+.cv-loader-brand{display:flex;align-items:center;gap:11px;font:700 13px 'Space Grotesk',sans-serif;letter-spacing:1.5px}
+.cv-loader-brand b{color:#63dfff}
+.cv-loader-mark{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(99,223,255,.65);border-radius:12px;background:linear-gradient(145deg,rgba(43,112,255,.3),rgba(120,91,255,.12));color:#8deaff;font:700 14px 'Space Grotesk',sans-serif;box-shadow:0 0 25px rgba(49,137,255,.18)}
+.cv-loader-track{width:154px;height:3px;border-radius:9px;overflow:hidden;background:rgba(169,197,255,.14)}
+.cv-loader-track span{display:block;width:38%;height:100%;border-radius:9px;background:linear-gradient(90deg,#2879ff,#64e5ff);animation:cv-loader-progress 1.15s ease-in-out infinite}
+.cv-page-loader p{margin:0;color:#9eb4d8;font:500 11px Inter,sans-serif;letter-spacing:.35px}
+@keyframes cv-loader-progress{0%{transform:translateX(-115%)}100%{transform:translateX(410%)}}
+@media(prefers-reduced-motion:reduce){.cv-page-loader,.cv-loader-track span{transition:none!important;animation:none!important}}
