@@ -65,3 +65,17 @@ Done:
 Not yet done:
 - Browser/device testing and deployment verification.
 - Full audit/reconciliation of live deployment and connected Supabase project.
+
+
+## 2026-11-05 — Homepage information architecture and navigation redesign
+
+Status: **In development — implementation on feature branch; browser testing and deployment pending.**
+
+Planned changes:
+- Rework the shared desktop navigation into a deliberate two-row layout so the primary navigation and account actions cannot collide or overlap at common desktop widths.
+- Keep the existing 3D hero/visual treatment intact.
+- Remove course and learning-category card sections from the landing-page rendering; direct visitors to the dedicated course catalogue at `courses.html`.
+- Add a concise platform introduction, three real destination cards (Academy, creation pathway, Community), and a prominent course-catalogue call to action.
+- Preserve the existing course catalogue, category pages, CMS content, authentication and division routes.
+
+Acceptance checks still required: desktop widths around 1024–1600px, mobile/tablet menu behavior, no horizontal overflow, landing page has no course/category card grid, and course links open the existing catalogue.
