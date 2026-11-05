@@ -105,3 +105,17 @@ Status: **Committed to main; Vercel deployment pending verification.**
 - Renamed the navigation destinations to the shorter, cleaner “Courses” and “Learning Paths”.
 - Founder portrait presentation and CMS founder image settings were not targeted by this correction.
 - Browser/device visual validation remains pending.
+
+
+## 2026-11-05 — Immersive CreatorVerse homepage redesign
+
+Status: **Committed directly to main; production deployment verification pending.**
+
+- Adopted the premium digital-agency visual direction selected by the user, while retaining CreatorVerse's dark navy and blue identity.
+- Reworked the 3D hero artwork into a full-bleed background layer with a controlled blue-toned dark overlay and broad radial edge fading. The image is no longer confined to a rounded rectangular panel or clipped card.
+- Kept the top navigation as a distinct opaque dark band above the hero artwork.
+- Refined hero typography, call-to-action styling, proof points, founder image placement and responsive layout without changing founder CMS content.
+- Replaced the generic three-card landing section with a six-division ecosystem overview. Academy and Community link to existing destinations; Marketplace, Affiliate, Realty and Business are clearly marked as in development and are not presented as working features.
+- Added a focused course/divisions call-to-action section and preserved the separate course catalogue.
+- No backend schema, authentication, payment, or existing Academy/Community workflows were changed.
+- Visual QA across actual mobile and desktop browsers remains pending.
