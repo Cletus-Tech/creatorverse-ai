@@ -1,3 +1,11 @@
+## 2026-11-05 — Homepage initial loading gate
+
+Status: **Implemented on `main`; awaiting browser verification.**
+
+- Added a branded, full-screen initial loading state on the homepage so the footer and unfinished page layout are not briefly exposed while the homepage content is being assembled.
+- The loading state is dismissed only after the homepage hero and configured sections have been inserted, with a 9-second safety fallback if a network request stalls.
+- Added reduced-motion support and kept the loader scoped to the homepage; other pages and the existing homepage content/layout remain unchanged.
+
 ## 2026-11-05 — Homepage navigation and founder portrait refinement
 
 Status: **Implemented on `main`; awaiting visual review on desktop and mobile.**
