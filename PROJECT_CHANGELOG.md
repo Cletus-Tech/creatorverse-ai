@@ -1,3 +1,14 @@
+## 2026-11-06 — Homepage lower-section visual experience
+
+Status: **Implemented on `main`; browser and production verification pending.**
+
+- Refined the lower homepage into an image-led ecosystem showcase while keeping the existing hero, navigation, founder portrait and working destinations unchanged.
+- Reworked the six division cards with full-bleed photography, layered cinematic contrast, individual accent markers, clear availability badges, and restrained hover depth.
+- Upgraded the ecosystem introduction with stronger editorial typography and a visual accent.
+- Rebuilt the course-discovery pathway as a responsive split panel with collaborative photography, layered labels and existing course/division actions.
+- Added scroll-triggered reveal motion with staggered card entrances, while respecting reduced-motion preferences.
+- Kept Academy and Community as the only active division links; upcoming divisions remain clearly marked as in development. No backend, authentication, CMS or payment behavior changed.
+
 ## 2026-11-06 — Minimal professional loading redesign
 
 Status: **Implemented on `main`; awaiting browser verification.**
