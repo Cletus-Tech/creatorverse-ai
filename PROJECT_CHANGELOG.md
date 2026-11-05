@@ -79,3 +79,15 @@ Planned changes:
 - Preserve the existing course catalogue, category pages, CMS content, authentication and division routes.
 
 Acceptance checks still required: desktop widths around 1024–1600px, mobile/tablet menu behavior, no horizontal overflow, landing page has no course/category card grid, and course links open the existing catalogue.
+
+
+## 2026-11-05 — Borderless founder visual blend
+
+Status: **Committed to main; production deployment triggered.**
+
+- Removed the portrait's framed-card treatment, hard border, crop and enclosing shadow.
+- Changed the founder visual to a free-floating, naturally proportioned image with soft radial edge fading and restrained blue/cyan atmospheric glow.
+- Kept the founder caption integrated as a subtle overlay rather than a separate card.
+- Applied the same borderless treatment when the CMS portrait style is set to framed, so the visual cannot unexpectedly return to a boxed appearance.
+- Responsive sizing and image blending are included for mobile.
+- Browser/device visual validation remains pending.
