@@ -119,3 +119,15 @@ Status: **Committed directly to main; production deployment verification pending
 - Added a focused course/divisions call-to-action section and preserved the separate course catalogue.
 - No backend schema, authentication, payment, or existing Academy/Community workflows were changed.
 - Visual QA across actual mobile and desktop browsers remains pending.
+
+
+## 2026-11-05 — Homepage social restoration and visual enrichment
+
+Status: **Committed directly to main; deployment verification pending.**
+
+- Restored visible Facebook, WhatsApp Channel, TikTok and YouTube links in the homepage founder/social area instead of hiding the social row over the full-bleed hero.
+- Added a dedicated Connect area in the shared footer with the same official social destinations; the existing configurable contact email slot remains available.
+- Enriched the six division cards with relevant photographic artwork, layered image overlays, distinct restrained accent colours and hover treatment.
+- Added more colour variation to the pathway panel and social controls while preserving the dark premium visual identity, readable contrast and responsive layouts.
+- No Academy/Community workflows, database schema, authentication or payment logic changed.
+- Visual QA on actual mobile and desktop browsers remains required.
