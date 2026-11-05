@@ -1,3 +1,12 @@
+## 2026-11-05 — Homepage navigation and founder portrait refinement
+
+Status: **Implemented on `main`; awaiting visual review on desktop and mobile.**
+
+- Replaced the desktop Explore dropdown with six visible navigation links: Home, Divisions, Explore, About, Community and AI Assistant. Explore now opens the learning/discovery page; Courses remains accessible from the mobile menu and its own page.
+- Preserved the existing account area and its authentication-driven Dashboard/Profile/Admin controls; no role or access logic was changed.
+- Redesigned only the homepage founder portrait area: reduced it to a static circular portrait with a restrained ring/glow, compact identity caption and a small horizontal social strip. Responsive sizing keeps it within the hero artwork column.
+- Left homepage copy, 3D/background artwork, division cards, course sections, footer and other page layouts unchanged.
+
 # PROJECT_CHANGELOG
 
 Stages: Planned · In development · Completed · Tested · Deployed
