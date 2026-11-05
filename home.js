@@ -49,22 +49,42 @@ function draw(content){var X=HD.merge(HD.D,content||{});cms().then(function(sc){
 function landingSections(){
  var wrap=h('div',{class:'cv-home-experience'});
  var intro=h('section',{class:'cv-home-intro'},[
-  h('span',{class:'cv-kicker',text:'ONE PLATFORM · MANY POSSIBILITIES'}),
-  h('h2',{text:'A place to learn, build and grow.'}),
-  h('p',{text:'CreatorVerse brings practical learning, creator connections and digital opportunities into one connected experience.'})
+  h('span',{class:'cv-kicker',text:'THE CREATORVERSE ECOSYSTEM'}),
+  h('h2',{text:'One connected platform. More ways to grow.'}),
+  h('p',{text:'Learn new skills, connect with creators, grow a business and discover new opportunities across one connected digital ecosystem.'})
  ]);
- var cards=[
-  ['01','Learn practical skills','Explore guided learning in AI, content creation, design, automation and digital business.','courses.html','Explore courses'],
-  ['02','Create with confidence','Turn what you learn into real projects, content and useful digital products.','divisions.html','Explore divisions'],
-  ['03','Connect with creators','Share your work, exchange ideas and learn alongside a growing creator community.','community.html','Visit community']
+ var divisions=[
+  {n:'01',name:'CreatorVerse Academy',desc:'Build practical skills through guided courses, learning paths and hands-on projects.',status:'Available now',live:true,href:'courses.html',action:'Explore Academy',kind:'academy'},
+  {n:'02',name:'CreatorVerse Community',desc:'Meet other creators, share your work, exchange ideas and grow together.',status:'Available now',live:true,href:'community.html',action:'Visit Community',kind:'community'},
+  {n:'03',name:'CreatorVerse Marketplace',desc:'A future home for creator services, digital products, orders and client work.',status:'In development',kind:'market'},
+  {n:'04',name:'CreatorVerse Affiliate',desc:'A planned network for referral campaigns, transparent tracking and commissions.',status:'In development',kind:'affiliate'},
+  {n:'05',name:'CreatorVerse Realty',desc:'Discover property opportunities, verified agents and viewing enquiries.',status:'In development',kind:'realty'},
+  {n:'06',name:'CreatorVerse Business',desc:'Help businesses build visibility, reach customers and generate new leads.',status:'In development',kind:'business'}
  ];
- var grid=h('div',{class:'cv-experience-grid'});
- cards.forEach(function(c){grid.appendChild(h('article',{class:'cv-experience-card'},[
-  h('span',{class:'cv-card-index',text:c[0]}),h('h3',{text:c[1]}),h('p',{text:c[2]}),h('a',{href:c[3]},[h('span',{text:c[4]}),ico(I.arrow)])
- ]))});
+ var grid=h('div',{class:'cv-division-grid'});
+ divisions.forEach(function(d){
+  var card=h('article',{class:'cv-division-card cv-'+d.kind},[
+   h('div',{class:'cv-division-top'},[
+    h('span',{class:'cv-division-number',text:d.n}),
+    h('span',{class:'cv-division-status'+(d.live?' is-live':''),text:d.status})
+   ]),
+   h('div',{class:'cv-division-symbol','aria-hidden':'true',text:d.n}),
+   h('h3',{text:d.name}),
+   h('p',{text:d.desc}),
+   d.live?h('a',{class:'cv-division-action',href:d.href},[h('span',{text:d.action}),ico(I.arrow)]):h('span',{class:'cv-division-action is-disabled',text:'Coming soon'})
+  ]);
+  grid.appendChild(card);
+ });
  var path=h('section',{class:'cv-pathway'},[
-  h('div',{class:'cv-pathway-copy'},[h('span',{class:'cv-kicker',text:'YOUR NEXT STEP STARTS HERE'}),h('h2',{text:'Find the skill. Build the project. Create the opportunity.'}),h('p',{text:'Browse the course catalogue to find learning experiences that match your interests and goals.'})]),
-  h('div',{class:'cv-pathway-actions'},[btn('Browse all courses','courses.html','btn-primary'),btn('Discover CreatorVerse','divisions.html','btn-outline')])
+  h('div',{class:'cv-pathway-copy'},[
+   h('span',{class:'cv-kicker',text:'START WITH WHAT IS AVAILABLE TODAY'}),
+   h('h2',{text:'Your next skill could change what comes next.'}),
+   h('p',{text:'Explore practical courses, learn by doing and turn what you know into something real.'})
+  ]),
+  h('div',{class:'cv-pathway-actions'},[
+   btn('Browse all courses','courses.html','btn-primary'),
+   btn('Explore all divisions','divisions.html','btn-outline')
+  ])
  ]);
  wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(path);root.appendChild(wrap);
 }
