@@ -979,3 +979,41 @@ html.cv-loading,html.cv-loading body{background:#050916!important}
  .cv-pathway-visual{min-height:205px}
 }
 @media(prefers-reduced-motion:reduce){.cv-division-card:hover .cv-division-art img{transform:none}}
+
+
+/* Homepage division cards — compact spacing and phone-first horizontal layout */
+.cv-home-experience{padding-top:clamp(42px,5vw,66px)!important;padding-bottom:30px!important}
+.cv-home-intro{margin-bottom:28px!important}
+.cv-division-grid{gap:18px!important}
+.cv-division-card{min-height:232px!important;padding:18px!important;border-radius:15px!important}
+.cv-division-card h3{font-size:17px!important;line-height:1.24!important;margin-bottom:6px!important}
+.cv-division-card p{font-size:11.5px!important;line-height:1.5!important;margin-bottom:9px!important;max-width:100%!important}
+.cv-division-top{top:12px!important;left:12px!important;right:12px!important}
+.cv-division-number{font-size:9px!important;padding:5px 7px!important}
+.cv-division-status{font-size:8px!important;padding:5px 7px!important}
+.cv-division-action{font-size:10px!important}
+.cv-division-action:not(.is-disabled){padding:6px 9px!important}
+@media(max-width:760px){
+ .cv-home-experience{padding:38px 14px 22px!important}
+ .cv-home-intro{margin-bottom:20px!important}
+ .cv-home-intro h2{font-size:clamp(24px,6.8vw,30px)!important}
+ .cv-division-grid{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+ .cv-division-card{min-height:142px!important;height:142px!important;padding:13px 12px 12px 38%!important;border-radius:12px!important;justify-content:center!important}
+ .cv-division-art{position:absolute!important;left:0!important;top:0!important;bottom:0!important;width:33%!important;height:auto!important;margin:0!important}
+ .cv-division-art::after{background:linear-gradient(90deg,rgba(7,14,31,.02),rgba(7,14,31,.25) 72%,rgba(7,14,31,.92))!important}
+ .cv-division-art img{height:100%!important;object-fit:cover!important;filter:saturate(.72) contrast(1.02)!important}
+ .cv-division-top{position:absolute!important;top:9px!important;left:calc(33% + 10px)!important;right:9px!important;justify-content:flex-end!important}
+ .cv-division-number{display:none!important}
+ .cv-division-status{font-size:8px!important;line-height:1!important;padding:5px 7px!important}
+ .cv-division-card h3{font-size:14px!important;line-height:1.2!important;margin:0 0 5px!important;letter-spacing:-.02em!important}
+ .cv-division-card h3:before{width:2px!important;height:12px!important;margin-right:6px!important}
+ .cv-division-card p{font-size:10px!important;line-height:1.4!important;margin:0 0 7px!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
+ .cv-division-action{font-size:9px!important;line-height:1.1!important}
+ .cv-division-action:not(.is-disabled){padding:5px 7px!important}
+ .cv-pathway{margin-top:24px!important}
+}
+@media(max-width:380px){
+ .cv-division-card{height:136px!important;min-height:136px!important;padding-left:39%!important}
+ .cv-division-card h3{font-size:13px!important}
+ .cv-division-card p{font-size:9.5px!important}
+}
