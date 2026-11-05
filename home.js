@@ -68,7 +68,7 @@ function landingSections(){
  ]);
  wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(path);root.appendChild(wrap);
 }
-function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));var inner=hr.querySelector('.hero2-in');if(inner)inner.insertBefore(bg,inner.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
+function render(X){root.textContent='';var hr=hero(X.hero);if(hr){if(X.homepageBackground&&X.homepageBackground.enabled&&X.homepageBackground.url){var bg=h('div',{class:'home-watermark','aria-hidden':'true'});bg.style.backgroundImage='url("'+X.homepageBackground.url.replace(/"/g,'%22')+'")';bg.style.backgroundPosition=X.homepageBackground.position||'center center';bg.style.setProperty('--watermark-opacity',String(Math.max(5,Math.min(45,Number(X.homepageBackground.opacity)||18))/100));hr.insertBefore(bg,hr.firstChild);hr.classList.add('has-watermark')}root.appendChild(hr)}
  landingSections();
  var need=X.sections.some(function(s){return s.visible!==false&&s.type==='courses'});
  Promise.all([need&&C.supabaseUrl?rest('courses?published=eq.true&select=*,modules(lessons(id))&order=created_at.desc&limit=40').then(function(d){return Array.isArray(d)?d.sort(function(x,y){return(y.featured?1:0)-(x.featured?1:0)}):[]}).catch(function(){return[]}):[],window.CV_CATS()]).then(function(r){
