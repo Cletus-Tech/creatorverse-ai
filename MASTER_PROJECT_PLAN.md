@@ -47,3 +47,14 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Messages & Stories must be directly discoverable from the mobile persistent bottom navigation as well as account dropdown and hamburger navigation.
 - Security hardening applied: SECURITY INVOKER on `community_profiles`, fixed search_path on `block_role_change()`, and API EXECUTE revoked from trigger-only functions.
 - Remaining audit items: enable leaked-password protection in Supabase Auth settings; review public/authenticated SECURITY DEFINER RPC grants by actual caller requirements; resolve foreign-key index and RLS performance advisories in controlled batches; inspect duplicate permissive policies and duplicate index; verify all major user journeys with two test accounts.
+
+
+## 2026-11-06 — CreatorVerse Connect reliability and moderation
+
+- Connect messaging routes must be included in the shared auth bootstrap; every protected route must load the Supabase SDK even when no previous local session key exists, then redirect unauthenticated users to login.
+- Connect page must initialize exactly once, render newest messages first, prevent duplicate Realtime/render inserts, report failures clearly and remain usable on narrow mobile screens.
+- Add user reporting for stories and messages. Admin moderation must be report-based: admins may review user-submitted reports and remove stories, but must not have unrestricted access to private direct-message inboxes.
+- Admin moderation route: `connect-admin.html`; link from main admin navigation and Connect page for admin/super_admin roles.
+- RLS table: `cv_content_reports`; users can submit reports, admins can review/update them. Story deletion is allowed for admins.
+- Release QA: two separate accounts on separate sessions; test discover creator → create conversation → send/receive both directions → online/offline → story text/photo upload → story view count → report submission → admin review/status update/story removal → sign-out/unauthenticated redirect.
+- Voice/video calls, group chat, attachments, typing/read receipts and scheduled one-to-one classrooms remain separate phases and must not be represented as already available.
