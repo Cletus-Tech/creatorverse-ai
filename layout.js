@@ -19,4 +19,44 @@ var b=document.getElementById('menu-btn'),m=document.getElementById('mobile-menu
  document.addEventListener('click',function(){document.querySelectorAll('.nav-dropdown.open,.account-dropdown.open').forEach(function(w){w.classList.remove('open');var t=w.querySelector('button');if(t)t.setAttribute('aria-expanded','false')})});
 var bm=document.getElementById('bn-more');if(bm)bm.addEventListener('click',function(){m.classList.toggle('open')});
 if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});
+
+// Universal page-loading gate: prevents the footer or unfinished layout from flashing
+// while page scripts render their content. Reuses the homepage loader when present.
+(function(){
+ var start=Date.now(),minTime=420,maxTime=9000,stable=0,lastText='',done=false;
+ var style=document.createElement('style');
+ style.id='cv-universal-loader-style';
+ style.textContent='.cv-universal-gate{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:28px;padding:24px;background:radial-gradient(ellipse at 50% 42%,rgba(36,92,190,.20),transparent 52%),#070d1d;color:#eef4ff;opacity:1;visibility:visible;transition:opacity .38s ease,visibility .38s ease}.cv-universal-gate.is-leaving{opacity:0;visibility:hidden;pointer-events:none}.cv-universal-gate .cv-gate-brand{display:flex;align-items:center;gap:12px;font:800 17px/1.2 Inter,system-ui,sans-serif;letter-spacing:.08em}.cv-universal-gate img{width:44px;height:44px}.cv-universal-gate b{color:#83aaff}.cv-universal-gate .cv-gate-track{width:150px;height:3px;border-radius:9px;background:rgba(151,177,226,.16);overflow:hidden}.cv-universal-gate .cv-gate-track:after{content:"";display:block;width:42%;height:100%;border-radius:9px;background:linear-gradient(90deg,#3989ff,#a16bff);animation:cvGateProgress 1.15s ease-in-out infinite alternate}.cv-universal-gate .cv-gate-caption{color:#8fa2c3;font:600 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase}@keyframes cvGateProgress{from{transform:translateX(-5%)}to{transform:translateX(145%)}}html.cv-loading,html.cv-loading body{overflow:hidden!important}';
+ document.head.appendChild(style);
+ var gate=document.getElementById('cv-page-loader');
+ if(!gate){
+  gate=document.createElement('div');gate.id='cv-page-loader';gate.className='cv-universal-gate';gate.setAttribute('role','status');gate.setAttribute('aria-live','polite');
+  gate.innerHTML='<div class="cv-gate-brand"><img src="assets/creatorverse-mark.svg" alt=""><span>CREATORVERSE <b>AI</b></span></div><div class="cv-gate-track"></div><div class="cv-gate-caption">Preparing your experience</div>';
+  document.body.appendChild(gate);
+ }else{
+  gate.style.position='fixed';gate.style.inset='0';gate.style.zIndex='2147483000';
+ }
+ document.documentElement.classList.add('cv-loading');
+ function finish(){
+  if(done)return;done=true;
+  document.documentElement.classList.remove('cv-loading');
+  gate.classList.add('is-leaving');
+  setTimeout(function(){if(gate&&gate.parentNode)gate.remove();if(style&&style.parentNode)style.remove()},430);
+  if(window.cvFinishLoading&&gate.id==='cv-page-loader')window.cvFinishLoading=function(){};
+ }
+ function check(){
+  if(done)return;
+  var main=document.querySelector('main,[role="main"]');
+  var txt=main?(main.innerText||main.textContent||'').trim():'';
+  var pending=/^(Loading…?|Please wait…?|Connecting…?)$/i.test(txt)||/Loading (courses|your|CreatorVerse|community|stories)/i.test(txt);
+  if(txt&&txt===lastText&&!pending)stable++;else stable=0;
+  lastText=txt;
+  if(Date.now()-start>=minTime&&document.readyState==='complete'&&(!pending&&stable>=1)){finish();return}
+  if(Date.now()-start>=maxTime){finish();return}
+  setTimeout(check,180);
+ }
+ function begin(){setTimeout(check,80)}
+ if(document.readyState==='complete')begin();else window.addEventListener('load',begin,{once:true});
+ window.addEventListener('pageshow',function(e){if(e.persisted)finish()});
+})();
 var helper=document.createElement('script');helper.src='assistant-widget.js';helper.defer=true;document.body.appendChild(helper);})();
