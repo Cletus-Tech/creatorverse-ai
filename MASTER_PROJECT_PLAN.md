@@ -60,3 +60,8 @@ The canonical CreatorVerse symbol is `assets/creatorverse-mark.svg`. All parent-
 - Private account, admin, dashboard, assessment and utility routes use page-level `noindex, follow` directives.
 - `robots.txt` points to the production sitemap. Search engine ownership verification and sitemap submission are not complete until the owner completes the Google Search Console and Bing Webmaster Tools steps.
 - Next SEO milestones: verify the live deployment and crawler access; submit sitemap; inspect index coverage; create original, useful digital-skills and AI-learning resources; add public course-specific landing pages; monitor performance and migrate canonical signals carefully when a custom domain is acquired.
+
+
+## Academy Explore / Learning Categories visual redesign
+
+The Learn page (`learn.html`) now has a distinct colourful creative-education direction: editorial hero with learning photography, category search and quick topic chips, varied image-led category cards, client-side category filtering, and a clear route to the existing Courses catalogue. Category data remains dynamically loaded from the existing source and links continue to use the existing category detail route. No Academy data model, authentication, enrolment, payment, or admin permissions were changed. Implementation is committed to `main`; desktop/mobile visual QA and production verification remain pending.
