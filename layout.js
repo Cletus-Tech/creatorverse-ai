@@ -34,13 +34,13 @@ if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.se
   gate.innerHTML='<div class="cv-gate-brand"><img src="assets/creatorverse-mark.svg" alt=""><span>CREATORVERSE <b>AI</b></span></div><div class="cv-gate-track"></div><div class="cv-gate-caption">Preparing your experience</div>';
   document.body.appendChild(gate);
  }else{
-  gate.style.position='fixed';gate.style.inset='0';gate.style.zIndex='2147483000';
+  gate.classList.add('cv-universal-gate');gate.style.position='fixed';gate.style.inset='0';gate.style.zIndex='2147483000';
  }
  document.documentElement.classList.add('cv-loading');
  function finish(){
   if(done)return;done=true;
   document.documentElement.classList.remove('cv-loading');
-  gate.classList.add('is-leaving');
+  gate.classList.add('is-done','is-leaving');
   setTimeout(function(){if(gate&&gate.parentNode)gate.remove();if(style&&style.parentNode)style.remove()},430);
   if(window.cvFinishLoading&&gate.id==='cv-page-loader')window.cvFinishLoading=function(){};
  }
