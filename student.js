@@ -1,6 +1,25 @@
 (function(){
 function el(tag,attrs,children){var n=document.createElement(tag);Object.keys(attrs||{}).forEach(function(k){if(k==='text')n.textContent=attrs[k];else if(k==='html')n.innerHTML=attrs[k];else n.setAttribute(k,attrs[k])});(children||[]).forEach(function(c){if(c)n.appendChild(c)});return n}
 function sorted(a){return(a||[]).slice().sort(function(x,y){return(x.position||0)-(y.position||0)})}
+
+function courseImage(c){
+ if(c&&c.thumbnail_url)return c.thumbnail_url;
+ var s=((c&&c.title)||'').toLowerCase()+' '+((c&&c.category_slug)||'').toLowerCase();
+ var map=[
+  [/artificial intelligence|\bai\b|machine learning|prompt/,'photo-1677442136019-21780ecad995'],
+  [/graphic|design|illustrat|photoshop|canva/,'photo-1626785774573-4b799315345d'],
+  [/web|coding|program|developer|javascript|software/,'photo-1498050108023-c5249f4df085'],
+  [/video|film|editing|motion|animation/,'photo-1574717024653-61fd2cf4d44d'],
+  [/market|social media|marketing|seo|brand/,'photo-1557838923-2985c318be48'],
+  [/business|entrepreneur|startup|finance/,'photo-1556761175-b413da4baf72'],
+  [/photo|photography|camera/,'photo-1516035069371-29a1b244cc32'],
+  [/content|creator|youtube|writing/,'photo-1492619375914-88005aa9e8fb']
+ ];
+ var id='photo-1516321318423-f06f85e504b3';
+ for(var i=0;i<map.length;i++){if(map[i][0].test(s)){id=map[i][1];break}}
+ return 'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1100&q=85';
+}
+
 function initials(n){return(n||'S').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
 function progress(p){var w=el('div',{class:'cv-progress'});w.appendChild(el('span',{style:'width:'+Math.max(0,Math.min(100,p))+'%'}));return w}
 function note(target,msg,type){target.textContent=msg;target.className='cv-feedback '+(type||'')}
@@ -41,7 +60,7 @@ window.CV_DASH=function(sb,session,X){
  if(!courses.length){body.appendChild(el('div',{class:'cv-empty'},[el('div',{class:'cv-empty-icon',text:'＋'}),el('h3',{text:'Your learning journey starts here'}),el('p',{text:'Explore the course library and enrol in a learning path to see your progress here.'}),el('a',{class:'cv-hero-btn',href:'courses.html',text:'Explore courses'})]))}
  else{var next=courses.filter(function(c){return c.next&&c.pct<100})[0]||courses[0];var card=el('article',{class:'cv-continue-card'},[next.course.thumbnail_url?el('img',{class:'cv-course-cover',src:next.course.thumbnail_url,alt:''}):el('div',{class:'cv-course-cover cv-course-placeholder',text:'CV'}),el('div',{class:'cv-continue-info'},[el('span',{class:'cv-course-tag',text:'YOUR CURRENT COURSE'}),el('h3',{text:next.course.title}),el('p',{text:next.next?(next.pct===100?'You have completed this course. Revisit a lesson anytime.':'Next lesson: '+next.next.title):'Course lessons are being prepared.'}),progress(next.pct),el('div',{class:'cv-course-meta'},[el('span',{text:next.completed+' of '+next.total+' lessons completed'}),el('strong',{text:next.pct+'%'})]),next.next?el('a',{class:'cv-hero-btn',href:'lesson.html?l='+encodeURIComponent(next.next.id),text:next.pct===100?'Review course':'Continue lesson'}):null])]);body.appendChild(card);
  body.appendChild(el('div',{class:'cv-section-heading cv-my-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'YOUR LIBRARY'}),el('h2',{text:'My courses'})]),el('span',{class:'cv-muted',text:courses.length+' enrolled'})]));
- var grid=el('div',{class:'cv-course-grid'});courses.forEach(function(c){grid.appendChild(el('article',{class:'cv-course-card'},[c.course.thumbnail_url?el('img',{src:c.course.thumbnail_url,alt:'',class:'cv-course-thumb'}):el('div',{class:'cv-course-thumb cv-course-placeholder',text:'CREATORVERSE'}),el('div',{class:'cv-course-card-body'},[el('h3',{text:c.course.title}),el('p',{text:c.course.description||'Continue developing practical digital skills.'}),progress(c.pct),el('div',{class:'cv-course-meta'},[el('span',{text:c.completed+'/'+c.total+' lessons'}),el('strong',{text:c.pct+'%'})]),el('a',{href:c.next?'lesson.html?l='+encodeURIComponent(c.next.id):'course.html?s='+encodeURIComponent(c.course.slug),class:'cv-text-link',text:c.next?'Resume learning →':'View course →'})])]))});body.appendChild(grid)}
+ var grid=el('div',{class:'cv-course-grid'});courses.forEach(function(c){grid.appendChild(el('article',{class:'cv-course-card'},[el('img',{src:courseImage(c.course),alt:c.course.title+' course cover',class:'cv-course-thumb',loading:'lazy'}),el('div',{class:'cv-course-card-body'},[el('h3',{text:c.course.title}),el('p',{text:c.course.description||'Continue developing practical digital skills.'}),progress(c.pct),el('div',{class:'cv-course-meta'},[el('span',{text:c.completed+'/'+c.total+' lessons'}),el('strong',{text:c.pct+'%'})]),el('a',{href:c.next?'lesson.html?l='+encodeURIComponent(c.next.id):'course.html?s='+encodeURIComponent(c.course.slug),class:'cv-text-link',text:c.next?'Resume learning →':'View course →'})])]))});body.appendChild(grid)}
  var act=el('section',{class:'cv-section'});act.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'YOUR MOMENTUM'}),el('h2',{text:'Recent learning activity'})])]));
  if(pr.length){var list=el('div',{class:'cv-activity-list'});pr.slice(0,5).forEach(function(p){list.appendChild(el('div',{class:'cv-activity-row'},[el('span',{class:'cv-activity-check',text:'✓'}),el('div',{},[el('strong',{text:'Lesson completed'}),el('small',{text:new Date(p.completed_at).toLocaleString()})])]))});act.appendChild(list)}else act.appendChild(el('div',{class:'cv-empty compact',text:'Your completed lessons will appear here.'}));body.appendChild(act);
  ach.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'MILESTONES'}),el('h2',{text:'Achievements & results'})])]));
