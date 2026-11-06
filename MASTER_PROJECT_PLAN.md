@@ -108,3 +108,14 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - Existing page-specific loaders remain intact and can continue handling later data refreshes; the shared gate addresses the initial page-load flash.
 - Scope: pages that include `layout.js`. Standalone pages without the shared layout require explicit integration if any exist.
 - QA: source-level inspection only. Production deployment and device-by-device visual verification pending.
+
+
+## 2026-11-06 — Academy curriculum structure and admin controls (expanded)
+
+- Extended the course model with editable programme length in months and expected study hours per week.
+- Extended modules with stage number, stage duration and stage description; extended lessons with chapter number, estimated minutes and topic outline.
+- Reworked the seven seeded Academy programmes into ordered stages and topic-specific chapter titles: YouTube Automation (4 months, 6 hours/week); AI Content Creation (3 months, 5 hours/week); TikTok Growth & Monetisation (3 months, 5 hours/week); Prompt Engineering (2 months, 5 hours/week); AI Graphic Design (3 months, 5 hours/week); Digital Business (3 months, 5 hours/week); Algorithm & Niche Research (2 months, 5 hours/week).
+- Each programme contains 3 stages and 9 sequenced chapters, with chapter timings, teaching content, professional workflow, practical workshop, common mistakes, assignment and self-assessment. The 63 chapters total approximately 3,085 minutes of lesson time, excluding independent project work.
+- Student course pages now display stage names, stage schedule, stage description, chapter count and estimated chapter time. Lesson view displays chapter number, estimated minutes and topic outline.
+- Admin Portal → Courses now exposes programme months, weekly study hours, stage timing and description, chapter duration and topic outline, alongside existing editable teaching content/video/resources. Reordering stages updates stage numbering; new chapters receive sequence numbers and default timings.
+- QA: Supabase schema and curriculum counts verified; `course-admin.js` and `lms.js` JavaScript syntax checks passed. Full browser/device and enrolment/progress flow testing remains outstanding.
