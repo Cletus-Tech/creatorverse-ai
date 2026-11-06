@@ -65,3 +65,13 @@ The canonical CreatorVerse symbol is `assets/creatorverse-mark.svg`. All parent-
 ## Academy Explore / Learning Categories visual redesign
 
 The Learn page (`learn.html`) now has a distinct colourful creative-education direction: editorial hero with learning photography, category search and quick topic chips, varied image-led category cards, client-side category filtering, and a clear route to the existing Courses catalogue. Category data remains dynamically loaded from the existing source and links continue to use the existing category detail route. No Academy data model, authentication, enrolment, payment, or admin permissions were changed. Implementation is committed to `main`; desktop/mobile visual QA and production verification remain pending.
+
+
+## 2026-11-06 — Academy course experience redesign
+
+The Academy redesign scope covers the full learner journey, not only the Explore categories page:
+- Course catalogue and discovery: image-led course cards, search, category filters and responsive layout.
+- Course detail: cover imagery, learning outcomes, requirements, curriculum and existing enrolment/payment actions.
+- Lesson player: video/content presentation, progress, navigation and curriculum sidebar.
+- Student dashboard: overview, enrolled-course imagery, progress, achievements and profile areas.
+Existing Supabase data, RLS/access controls, payment flows, enrolments, progress and certificates must be preserved. Admin-uploaded course thumbnails remain the source of truth; curated topic-matched images are fallback visuals only. Mark this work as implemented in source, not fully tested or deployed, until production and learner-flow QA is completed.
