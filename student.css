@@ -202,3 +202,72 @@ body[data-page="courses"] .page.academy-catalogue{max-width:1400px;padding-top:1
 @media(max-width:900px){.academy-course-image{height:205px}.academy-course-grid{gap:18px}}
 @media(max-width:680px){body[data-page="courses"] .page.academy-catalogue{padding-top:96px}.academy-catalogue-hero{min-height:0}.academy-catalogue-visual{min-height:215px}.academy-library-tools{margin-top:44px}.academy-course-grid{gap:17px}.academy-course-image{height:215px}.academy-course-content{padding:18px}.academy-course-content>p{min-height:0}.academy-course-link{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.academy-course-card,.academy-course-image img,.academy-course-link{transition:none}}
+
+
+/* Dashboard repair — restore the intended dark CreatorVerse workspace and
+   prevent mobile grid/flex children from widening the page. */
+body[data-page="dashboard"]{
+  color-scheme:dark;
+  background:#080d1a!important;
+  color:#edf3ff!important;
+  width:100%;
+  max-width:100%;
+  overflow-x:clip;
+}
+body[data-page="dashboard"] .cv-dash-shell{
+  display:grid;
+  grid-template-columns:238px minmax(0,1fr);
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:clip;
+  background:radial-gradient(ellipse at 75% 0%,rgba(48,111,255,.13),transparent 34%),#080d1a!important;
+}
+body[data-page="dashboard"] .cv-dash-side{background:rgba(9,16,32,.92)!important;border-color:rgba(151,180,235,.12)!important}
+body[data-page="dashboard"] .cv-side-brand,
+body[data-page="dashboard"] .cv-top-user,
+body[data-page="dashboard"] .cv-section-heading h2,
+body[data-page="dashboard"] .cv-continue-info h3,
+body[data-page="dashboard"] .cv-course-card h3,
+body[data-page="dashboard"] .cv-activity-row strong,
+body[data-page="dashboard"] .cv-certificate-row strong,
+body[data-page="dashboard"] .cv-settings-title h3,
+body[data-page="dashboard"] .cv-stat-value{color:#edf3ff!important}
+body[data-page="dashboard"] .cv-side-link{color:#aabbd9!important}
+body[data-page="dashboard"] .cv-side-link.active,
+body[data-page="dashboard"] .cv-side-link:hover{color:#fff!important;background:linear-gradient(100deg,rgba(45,112,255,.24),rgba(45,112,255,.06))!important;box-shadow:inset 2px 0 #55aaff!important}
+body[data-page="dashboard"] .cv-dash-top{background:rgba(9,16,32,.7)!important;border-color:rgba(151,180,235,.1)!important}
+body[data-page="dashboard"] .cv-welcome{background:linear-gradient(112deg,#102448 0%,#123c79 55%,#25226b 100%)!important}
+body[data-page="dashboard"] .cv-stat,
+body[data-page="dashboard"] .cv-continue-card,
+body[data-page="dashboard"] .cv-course-card,
+body[data-page="dashboard"] .cv-empty,
+body[data-page="dashboard"] .cv-activity-list,
+body[data-page="dashboard"] .cv-achievement-card,
+body[data-page="dashboard"] .cv-settings-card{
+  background:linear-gradient(145deg,rgba(18,33,59,.96),rgba(10,20,39,.96))!important;
+  border-color:rgba(142,174,226,.16)!important;
+  color:#edf3ff!important;
+}
+body[data-page="dashboard"] .cv-field input{background:#0a162a!important;border-color:rgba(143,174,222,.2)!important;color:#f3f7ff!important}
+body[data-page="dashboard"] .cv-dash-area,
+body[data-page="dashboard"] .cv-dash-content,
+body[data-page="dashboard"] .cv-welcome,
+body[data-page="dashboard"] .cv-welcome-copy{min-width:0;max-width:100%}
+body[data-page="dashboard"] .cv-dash-area{width:100%}
+body[data-page="dashboard"] .cv-dash-content{width:100%;overflow-wrap:anywhere}
+body[data-page="dashboard"] .cv-welcome{width:100%;flex-wrap:wrap}
+body[data-page="dashboard"] .cv-welcome h1,
+body[data-page="dashboard"] .cv-welcome p{overflow-wrap:anywhere;word-break:normal}
+@media(max-width:900px){
+  body[data-page="dashboard"] .cv-dash-shell{grid-template-columns:minmax(0,1fr)!important}
+  body[data-page="dashboard"] .cv-dash-side{min-width:0;max-width:100%;overflow-x:auto}
+  body[data-page="dashboard"] .cv-dash-area{min-width:0;width:100%}
+}
+@media(max-width:620px){
+  body[data-page="dashboard"] .cv-dash-content{padding:17px 14px 30px!important}
+  body[data-page="dashboard"] .cv-welcome{padding:23px 20px!important;min-height:0}
+  body[data-page="dashboard"] .cv-welcome-copy{width:100%}
+  body[data-page="dashboard"] .cv-welcome h1{font-size:clamp(24px,7vw,29px)}
+  body[data-page="dashboard"] .cv-welcome p{font-size:13px;line-height:1.65}
+}
