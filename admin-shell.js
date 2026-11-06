@@ -30,6 +30,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
  function open(o){side.classList.toggle('open',o);back.classList.toggle('on',o)}back.addEventListener('click',function(){open(false)});
  side.appendChild(h('a',{class:'adm-brand',href:'index.html'},[h('span',{class:'adm-logo'},[h('img',{src:'assets/creatorverse-mark.svg',alt:'',width:'38',height:'38'})]),h('span',{},[h('strong',{text:'CreatorVerse'}),h('small',{text:'Learn. Create. Grow.'})])]));
  var links={};NAV.forEach(function(g,gi){if(gi)side.appendChild(h('hr'));g.forEach(function(n){var a=h('a',{href:'#'+n[0],class:'adm-link'},[ico(IC[n[0]]),h('span',{text:n[1]}),n[2]?h('em',{text:n[2]}):null]);a.addEventListener('click',function(){open(false)});links[n[0]]=a;side.appendChild(a)})});
+ side.appendChild(h('a',{href:'connect-admin.html',class:'adm-link'},[h('span',{text:'◈'}),h('span',{text:'Connect Moderation'})]));
  var who=h('span',{class:'adm-who'}),top=h('header',{class:'adm-top'},[h('button',{class:'adm-burger',type:'button','aria-label':'Menu',on:function(){open(true)}},[ico(IC.menu)]),h('strong',{id:'adm-title',text:'Dashboard'}),h('span',{class:'sp'}),h('a',{class:'btn btn-outline',href:'index.html',text:'View website'}),who,
   h('button',{class:'btn btn-outline',type:'button',on:function(){sb.auth.signOut().then(function(){location.href='index.html'})}},[ico(IC.out),h('span',{text:'Log out'})])]);
  root.appendChild(h('div',{class:'adm'},[side,back,h('div',{class:'adm-main'},[top,view])]));
