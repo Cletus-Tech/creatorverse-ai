@@ -123,3 +123,16 @@ Status: **Database and client code committed; deployment and two-account verific
 - Confirmed in Supabase that every new course has 3 modules, 9 lessons and 9 resources and is published.
 - Course management uses the existing Admin Portal → Courses controls. Admins can edit metadata/flyers, publish/unpublish, reorder and edit modules/lessons, update lesson content/video, and manage resources. No content is hardcoded into the website.
 - Remaining QA: verify catalogue cards and lesson text on desktop/mobile, test a student enrolment/lesson-completion flow, and edit/save one lesson and resource from the admin portal.
+
+
+## 2026-11-06 — Compact movable assistant and verified badges
+
+Status: **Committed to `main`; deployment and live browser QA pending.**
+
+- Reduced the floating assistant launcher to a compact bot-face button for desktop and mobile, with a smaller greeting bubble and responsive chat panel.
+- Kept the existing page-aware assistant and chat integration; the welcome copy now introduces CreatorVerse AI as the user's personal assistant and explains what it can help with.
+- Enabled saved drag positioning across mobile and desktop, with edge snapping after a drag.
+- Added `profiles.verified_badge` (`none`, `blue`, `green`, `gold`) and a database trigger that prevents non-super-admin users from changing badge assignments.
+- Existing super-admin accounts were assigned the gold badge. Admin Portal → Students exposes badge management to super admins; gold is reserved for the owner account.
+- Added badge indicators to public creator profiles, creator discovery and messaging.
+- Source syntax checks passed for the updated JavaScript files. Production deployment and real-device drag/tap/overlap testing remain pending.
