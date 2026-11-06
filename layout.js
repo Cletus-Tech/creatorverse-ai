@@ -19,4 +19,4 @@ var b=document.getElementById('menu-btn'),m=document.getElementById('mobile-menu
  document.addEventListener('click',function(){document.querySelectorAll('.nav-dropdown.open,.account-dropdown.open').forEach(function(w){w.classList.remove('open');var t=w.querySelector('button');if(t)t.setAttribute('aria-expanded','false')})});
 var bm=document.getElementById('bn-more');if(bm)bm.addEventListener('click',function(){m.classList.toggle('open')});
 if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});
-})();
+var helper=document.createElement('script');helper.src='assistant-widget.js';helper.defer=true;document.body.appendChild(helper);})();
