@@ -72,3 +72,8 @@ Status: **Database and client code committed; deployment and two-account verific
 - Added ephemeral typing indicators through private conversation Realtime Broadcast channels, with policies limited to the two participants.
 - Added attachment selection, file validation, progress/error feedback and attachment rendering in the chat interface.
 - Release QA still requires two separate authenticated accounts and actual file upload/download, typing, and read receipt checks. Voice/video calls, group chats, scheduled class rooms and push notifications remain unimplemented.
+
+
+- Added direct Messages navigation on desktop, retained mobile bottom/mobile menu/account-menu access, and added owner controls to delete stories (including best-effort removal of the owner's uploaded story image).
+- Final source checks passed for JavaScript syntax, all referenced DOM IDs, protected route registration, desktop/mobile Messages links and the private conversation channel name.
+- A new production deployment was attempted for the latest commit but Vercel rejected deployment creation with its free API daily deployment limit (HTTP 402; retry after 24 hours). The previous READY production build therefore does not include these phase-two additions yet.
