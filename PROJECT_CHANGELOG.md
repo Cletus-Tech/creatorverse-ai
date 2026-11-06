@@ -4,8 +4,8 @@
 
 Status: **Implemented on `main`; deployment and browser QA pending.**
 
-- Replaced the dark, basic chat panel with a professional assistant workspace: compact dark mode sidebar, clean light conversation canvas, polished header, prompt starter cards and a clearer message composer.
-- Updated typography, spacing, borders, shadows, colour accents and mobile breakpoints for a cleaner desktop and phone experience.
+- Replaced the dark, basic chat panel with a professional assistant workspace: compact dark mode sidebar, dark navy conversation canvas, polished header, prompt starter cards and a clearer message composer.
+- Updated typography, spacing, borders, shadows, multi-colour accents, image-led prompt cards and mobile breakpoints while retaining the original dark theme.
 - Kept the existing authenticated-only route, General and CreatorVerse specialist modes, conversation/message persistence and Supabase Edge Function endpoint/payload intact.
 - Added functional starter prompts to fresh conversations, textarea auto-resizing, clearer loading feedback and safer response/error handling.
 - No AI model/provider, Edge Function, database schema, RLS, authentication or billing changes were made.
