@@ -5,7 +5,7 @@
 Status: **Implemented on `main`; deployment and browser QA pending.**
 
 - Rebuilt the AI Assistant page as a focused, responsive workspace with a refined mode sidebar, clear conversation header, prompt starter cards and a more usable message composer.
-- Introduced a clean light canvas with restrained blue/violet accents, readable typography, clear hierarchy and responsive mobile layouts.
+- Retained CreatorVerse's existing dark navy theme, enhancing it with richer blue, violet, cyan and magenta accents, image-led prompt cards, readable typography and responsive mobile layouts.
 - Preserved the existing General and CreatorVerse specialist modes, authenticated access, Supabase conversation/message persistence, and the existing `creatorverse-assistant` Edge Function request contract.
 - Improved new-chat and mode-switch welcome states, prompt-card interactions, textarea auto-sizing and response/error handling.
 - No AI provider, model, Edge Function, database schema, RLS policy, authentication or billing configuration was changed.
