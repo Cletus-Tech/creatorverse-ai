@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Messages & Stories — CreatorVerse AI</title>
+<meta name="description" content="Chat in real time, see who's online and share 24-hour stories with the CreatorVerse community.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="components.css"><link rel="stylesheet" href="pages.css"><link rel="stylesheet" href="responsive.css"><link rel="stylesheet" href="messages.css">
+<link rel="canonical" href="https://creatorverse-ai.vercel.app/messages.html">
+<meta name="robots" content="noindex,follow">
+</head><body data-page="messages">
+<div id="site-header"></div>
+<main class="cv-messages-page">
+ <section class="msg-welcome"><div><span class="msg-kicker">CREATORVERSE CONNECT</span><h1>Your people. Your conversations.</h1><p>Message creators, catch up on stories and keep your collaborations moving.</p></div><div class="msg-live-pill"><i></i> Real-time community</div></section>
+ <section class="msg-stories-section">
+  <div class="msg-section-head"><div><span class="msg-kicker">A LITTLE UPDATE</span><h2>Stories</h2></div><button id="story-create-open" class="msg-quiet-btn" type="button">＋ Add story</button></div>
+  <div id="story-rail" class="msg-story-rail"><div class="msg-loading">Loading stories…</div></div>
+ </section>
+ <section class="msg-workspace">
+  <aside class="msg-inbox">
+   <div class="msg-inbox-head"><div><span class="msg-kicker">YOUR SPACE</span><h2>Messages</h2></div><button id="new-message" class="msg-new-btn" type="button" aria-label="Start a new message">＋</button></div>
+   <label class="msg-search"><span aria-hidden="true">⌕</span><input id="people-search" type="search" placeholder="Find a conversation or creator" autocomplete="off"></label>
+   <div class="msg-presence-summary"><span class="msg-online-dot"></span><span id="online-count">Connecting to your community…</span></div>
+   <div id="conversation-list" class="msg-conversation-list"><div class="msg-loading">Loading your conversations…</div></div>
+   <div id="people-results" class="msg-people-results" hidden></div>
+  </aside>
+  <section class="msg-chat" aria-label="Conversation">
+   <div id="chat-empty" class="msg-chat-empty"><div class="msg-empty-art"><span></span><b>CV</b></div><span class="msg-kicker">CREATORVERSE CONNECT</span><h2>Good ideas start with a conversation.</h2><p>Choose someone from your inbox or find a creator to start a private chat.</p><button id="empty-new-message" class="msg-primary-btn" type="button">Start a conversation</button></div>
+   <div id="chat-active" class="msg-chat-active" hidden>
+    <header class="msg-chat-head"><div class="msg-chat-person" id="chat-person"></div><div class="msg-chat-actions"><span class="msg-encryption-note">Private conversation</span></div></header>
+    <div id="chat-thread" class="msg-thread" aria-live="polite"><div class="msg-loading">Opening conversation…</div></div>
+    <form id="message-form" class="msg-composer"><textarea id="message-input" rows="1" maxlength="8000" placeholder="Write a message…" aria-label="Write a message"></textarea><button id="message-send" type="submit" aria-label="Send message"><span>Send</span><b>↗</b></button></form>
+    <div class="msg-composer-hint">Enter to send · Shift + Enter for a new line</div>
+   </div>
+  </section>
+ </section>
+ <div class="msg-safety-note"><span>CREATORVERSE COMMUNITY</span><p>Keep conversations respectful. You can block users from their community profile. Messages are private to the two participants.</p></div>
+</main>
+<div id="story-create-modal" class="msg-modal" aria-hidden="true"><div class="msg-modal-card"><button class="msg-modal-close" data-close="story-create-modal" aria-label="Close">×</button><span class="msg-kicker">SHARE A MOMENT</span><h2>Create a story</h2><p>Your story will be visible to signed-in CreatorVerse members for 24 hours.</p><form id="story-form"><label class="msg-field-label">Your update<textarea id="story-content" maxlength="500" rows="4" placeholder="What are you working on today?"></textarea></label><label class="msg-field-label">Add a photo (optional)<input id="story-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><div id="story-preview" class="msg-story-preview">Your story preview will appear here.</div><div id="story-error" class="msg-form-error" role="status"></div><button class="msg-primary-btn" type="submit" id="story-publish">Share story</button></form></div></div>
+<div id="story-viewer" class="msg-story-viewer" aria-hidden="true"><button class="msg-viewer-close" data-close="story-viewer" aria-label="Close story">×</button><div class="msg-viewer-card"><div class="msg-viewer-progress"><i></i></div><div id="story-viewer-owner" class="msg-viewer-owner"></div><div id="story-viewer-content" class="msg-viewer-content"></div><div id="story-viewer-foot" class="msg-viewer-foot"></div></div></div>
+<div id="site-footer"></div>
+<script src="layout.js"></script><script src="nav.js"></script><script src="config.js"></script><script src="cv-data.js"></script><script src="auth.js"></script><script src="messages.js"></script>
+</body></html>
