@@ -69,3 +69,11 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Acceptance test: two distinct accounts, both directions of chat, typing in one account, recipient opens chat and sender sees Seen, upload/download supported attachment, verify unrelated user cannot read signed attachment or subscribe to private conversation channel.
 
 - Story feed is newest-first; owners can delete their own stories and associated image from the community-media bucket. Direct Messages is exposed in desktop primary navigation, mobile navigation and the account menu; Connect Moderation is available from the main admin sidebar.
+
+
+## 2026-11-06 — CreatorVerse AI intelligence rebuild
+- Replaced keyword-only answer composition with a real language-model integration through the authenticated Supabase Edge Function.
+- Combines conversation history, mode-specific instructions and relevant published CreatorVerse knowledge before calling an OpenAI-compatible chat-completions provider.
+- Server-side secrets only: AI_API_KEY (or OPENAI_API_KEY), optional AI_BASE_URL and AI_MODEL. Default model gpt-5.4-mini.
+- If no key is configured, return a clear AI_PROVIDER_NOT_CONFIGURED error; never disguise keyword retrieval as model generation.
+- Frontend sends up to 16 recent turns, keeps per-chat context, uses task-specific suggestion prompts and saves model responses.
