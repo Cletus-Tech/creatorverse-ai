@@ -173,3 +173,6 @@ body[data-page="messages"]{background:#070b16!important;color:#f3f6ff}
  .msg-bubble-row{max-width:92%}
  .msg-safety-note{margin-bottom:25px}
 }
+
+.msg-admin-link{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;padding:10px 13px;border:1px solid rgba(130,165,255,.25);border-radius:10px;background:rgba(72,112,220,.15);color:#dce8ff;text-decoration:none;font:700 10px Inter}
+.msg-admin-link[hidden]{display:none!important}
