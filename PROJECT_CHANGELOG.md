@@ -60,3 +60,15 @@ Status: **Core fixes and moderation tools committed; deployment and live multi-a
 - Added RLS-protected `cv_content_reports` for user-submitted story/message reports and an admin-only policy for removing stories.
 - Added a dedicated `connect-admin.html` moderation workspace. Admins can review reports, update moderation status, review active stories and remove stories. Administrators cannot browse private conversations; only user-reported message excerpts are shown.
 - Verification: migration applied; source syntax and deployment build must be checked; real two-account messaging, Realtime presence, image upload, and admin moderation QA remain required.
+
+
+## 2026-11-06 — CreatorVerse Connect phase 2: attachments, typing and read receipts
+
+Status: **Database and client code committed; deployment and two-account verification pending.**
+
+- Added private `cv-chat-files` storage bucket with a 15 MB limit and restricted MIME types (images, PDF, plain text). Upload paths are conversation/user scoped; only the two conversation participants can read files. Files are served through short-lived signed URLs, not public URLs.
+- Added attachment metadata columns to direct messages.
+- Added recipient-only read receipt updates. Authenticated users receive column-level UPDATE permission only for `read_at`; message content/sender/conversation cannot be edited through this permission. Sender bubbles show Sent/Seen.
+- Added ephemeral typing indicators through private conversation Realtime Broadcast channels, with policies limited to the two participants.
+- Added attachment selection, file validation, progress/error feedback and attachment rendering in the chat interface.
+- Release QA still requires two separate authenticated accounts and actual file upload/download, typing, and read receipt checks. Voice/video calls, group chats, scheduled class rooms and push notifications remain unimplemented.
