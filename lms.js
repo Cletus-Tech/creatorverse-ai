@@ -98,7 +98,7 @@ function courses(sb){
  }).catch(function(){grid.appendChild(h('div',{class:'academy-empty',text:'Something went wrong while loading courses. Please try again.'}))});
 }
 function course(sb,user){var s=Q.get('s');
- sb.from('courses').select('*,modules(id,title,position,lessons(id,title,position))').eq('slug',s||'').maybeSingle().then(function(r){
+ sb.from('courses').select('*,modules(id,title,position,description,duration_text,stage_number,lessons(id,title,position,estimated_minutes,chapter_number,topic_outline))').eq('slug',s||'').maybeSingle().then(function(r){
   if(!r.data)return head('Course not found');var c=r.data,mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});main.textContent='';
   Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id):{data:[]},user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(x){
    var enrolled=x[0].data&&x[0].data.length>0,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
@@ -115,8 +115,8 @@ function course(sb,user){var s=Q.get('s');
    if(ol.length){main.appendChild(h('h2',{class:'academy-section-title',text:'What you will learn'}));var u1=h('ul',{class:'academy-lesson-list'});ol.forEach(function(t){u1.appendChild(h('li',{},[h('span',{class:'outc'},[h('span',{class:'dot on'},[ico(CK)]),h('span',{text:t})])]))});main.appendChild(u1)}
    if(rq.length){main.appendChild(h('h2',{class:'academy-section-title',text:'What you need to get started'}));var u2=h('ul');rq.forEach(function(t){u2.appendChild(h('li',{text:t}))});main.appendChild(u2)}
    main.appendChild(h('h2',{class:'academy-section-title',text:'Course curriculum'}));if(!mods.length)note('No lessons have been added yet.');
-   mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title})])]))});
-    main.appendChild(h('details',{class:'academy-module',open:''},[h('summary',{text:m.title+' · '+(m.lessons||[]).length+' lessons'}),ul]))});window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));})})}
+   mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title+(l.estimated_minutes?' · '+l.estimated_minutes+' min':'')})])]))});
+    main.appendChild(h('details',{class:'academy-module',open:''},[h('summary',{text:(m.stage_number?'Stage '+m.stage_number+' · ':'')+m.title+' · '+(m.lessons||[]).length+' chapters'+(m.duration_text?' · '+m.duration_text:'')}),m.description?h('p',{class:'pmeta',text:m.description}):null,ul]))});window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));})})}
 function checkout(sb,user,c,host){
  host.textContent='';host.appendChild(h('p',{class:'pmeta',text:'Loading available payment methods…'}));
  sb.from('payment_settings').select('*').eq('id',true).maybeSingle().then(function(r){
@@ -145,13 +145,13 @@ function lesson(sb,user){
  sb.from('lessons').select('*,modules(course_id,title,courses(slug,title,price_ngn))').eq('id',Q.get('l')||'').maybeSingle().then(function(r){
   var l=r.data;if(!l)return head('Lesson not available','It may not exist, or you need to enroll in the course first.');
   var c=l.modules.courses,cid=l.modules.course_id;main.textContent='';
-  Promise.all([sb.from('modules').select('id,title,position,lessons(id,title,position)').eq('course_id',cid),user?sb.from('lesson_progress').select('lesson_id'):{data:[]},user?sb.from('enrolments').select('course_id').eq('course_id',cid).maybeSingle():{data:null}]).then(function(x){
+  Promise.all([sb.from('modules').select('id,title,position,description,duration_text,stage_number,lessons(id,title,position,estimated_minutes,chapter_number,topic_outline)').eq('course_id',cid),user?sb.from('lesson_progress').select('lesson_id'):{data:[]},user?sb.from('enrolments').select('course_id').eq('course_id',cid).maybeSingle():{data:null}]).then(function(x){
    if(!user||!x[2].data){head('Course access required','Please enroll in this course before opening its lessons.');main.appendChild(h('a',{class:'btn btn-primary',href:'course.html?s='+encodeURIComponent(c.slug),text:'Return to course'}));return}
    var mods=sorted(x[0].data),flat=[],done={};mods.forEach(function(m){sorted(m.lessons).forEach(function(q){flat.push(q.id)})});(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});
    var i=flat.indexOf(l.id),n=flat.filter(function(q){return done[q]}).length,pct=flat.length?Math.round(100*n/flat.length):0;
    var side=h('aside',{class:'academy-lesson-sidebar'},[h('h3',{text:'Course content'}),bar2(pct),h('p',{class:'pmeta',text:n+' of '+flat.length+' completed'})]);
    mods.forEach(function(m){side.appendChild(h('h4',{text:m.title}));var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(q){ul.appendChild(h('li',{class:q.id===l.id?'cur':''},[h('a',{href:'lesson.html?l='+q.id},[h('span',{class:'dot'+(done[q.id]?' on':'')},[done[q.id]?ico(CK):null]),h('span',{text:q.title})])]))});side.appendChild(ul)});
-   var col=h('div',{class:'academy-lesson-main'},[h('a',{class:'back',href:'course.html?s='+encodeURIComponent(c.slug),text:'← '+c.title}),h('h1',{text:l.title})]);var v=embed(l.video_url);if(v)col.appendChild(v);
+   var col=h('div',{class:'academy-lesson-main'},[h('a',{class:'back',href:'course.html?s='+encodeURIComponent(c.slug),text:'← '+c.title}),h('div',{class:'pmeta',text:(l.chapter_number?'Chapter '+l.chapter_number+' · ':'')+(l.estimated_minutes||30)+' minute lesson'}),h('h1',{text:l.title}),l.topic_outline?h('p',{class:'lead',text:l.topic_outline}):null]);var v=embed(l.video_url);if(v)col.appendChild(v);
    if(l.content)col.appendChild(h('div',{class:'academy-lesson-text',text:l.content}));var rl=h('div');col.appendChild(rl);sb.from('lesson_resources').select('title,url,position').eq('lesson_id',l.id).then(function(rr){var d=sorted(rr.data||[]);if(!d.length)return;rl.appendChild(h('h3',{class:'mod',text:'Resources'}));var ul=h('ul',{class:'clist'});d.forEach(function(x){ul.appendChild(h('li',{},[h('a',{href:x.url,target:'_blank',rel:'noopener'},[h('span',{class:'dot'},[ico('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>')]),h('span',{text:x.title})])]))});rl.appendChild(ul)});
    var row=h('div',{class:'row'});col.appendChild(row);
    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
