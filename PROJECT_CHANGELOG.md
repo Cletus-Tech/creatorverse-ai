@@ -48,3 +48,15 @@ Status: **Fixes committed to `main`; production deployment verification pending.
 - Supabase security hardening: changed `community_profiles` to SECURITY INVOKER, fixed the search_path on `block_role_change()`, and revoked API execution grants from trigger-only functions. Verified the view option, function search_path, and zero exposed execute grants for those trigger functions.
 - Full platform review found remaining advisory items documented in the audit response: leaked-password protection is disabled; several intentionally callable SECURITY DEFINER RPCs remain; performance lints include unindexed foreign keys, auth RLS initplan warnings, duplicate/overlapping permissive policies, unused indexes, and one duplicate index. These need targeted review rather than unsafe blanket policy changes.
 - No two-account messaging test or authenticated browser-based end-to-end dashboard test was possible in this audit pass; those remain explicit verification items.
+
+
+## 2026-11-06 — CreatorVerse Connect reliability and moderation rebuild
+
+Status: **Core fixes and moderation tools committed; deployment and live multi-account QA pending.**
+
+- Fixed the authentication bootstrap: `messages` and the new `connect-admin` route are now explicitly included in the protected-page SDK/session loader. Previously, a signed-out visitor could land on a messaging page without the Supabase client ever being initialized, leaving the page stuck at a connection failure rather than consistently redirecting to login.
+- Rebuilt the Connect client flow with one-time initialization, latest-first message loading, duplicate-message protection, clearer connection errors, online presence state, conversation search, story reporting, message reporting, and guarded story view recording.
+- Refined the Connect workspace styling and mobile layout; added report controls without exposing private inboxes to administrators.
+- Added RLS-protected `cv_content_reports` for user-submitted story/message reports and an admin-only policy for removing stories.
+- Added a dedicated `connect-admin.html` moderation workspace. Admins can review reports, update moderation status, review active stories and remove stories. Administrators cannot browse private conversations; only user-reported message excerpts are shown.
+- Verification: migration applied; source syntax and deployment build must be checked; real two-account messaging, Realtime presence, image upload, and admin moderation QA remain required.
