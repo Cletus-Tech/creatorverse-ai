@@ -36,17 +36,18 @@ function courseImage(c){
 function nl(c){return(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0)}
 function ccard(c){
  var n=nl(c),img=courseImage(c),cat=c.category_slug||'Featured learning';
- return h('article',{class:'academy-course-card'},[
+ return h('article',{class:'academy-course-card'+(c.featured?' is-featured':'')},[
   h('a',{class:'academy-course-image',href:'course.html?s='+encodeURIComponent(c.slug),'aria-label':'View '+c.title},[
    h('img',{src:img,alt:c.title+' course cover',loading:'lazy'}),
    h('span',{class:'academy-image-shade'}),
+   c.featured?h('span',{class:'academy-featured-tag',text:'FEATURED'}):null,
    h('span',{class:'academy-course-price',text:c.price_ngn?'₦'+Number(c.price_ngn).toLocaleString('en-NG'):'Free'})
   ]),
   h('div',{class:'academy-course-content'},[
-   h('div',{class:'academy-course-overline'},[h('span',{class:'academy-category-dot'}),h('span',{text:cat.replace(/[-_]/g,' ')})]),
+   h('div',{class:'academy-course-overline'},[h('span',{class:'academy-category-dot'}),h('span',{text:cat.replace(/[-_]/g,' ')}),h('span',{class:'academy-course-level',text:c.level||'All levels'})]),
    h('h3',{text:c.title}),
    h('p',{text:c.description||'Build practical knowledge and develop skills you can put to work.'}),
-   h('div',{class:'academy-course-meta'},[n?h('span',{text:n+(n===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,c.level?h('span',{text:c.level}):null]),
+   h('div',{class:'academy-course-meta'},[n?h('span',{text:n+(n===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null]),
    h('a',{class:'academy-course-link',href:'course.html?s='+encodeURIComponent(c.slug),text:'Explore course', 'aria-label':'Explore '+c.title})
   ])
  ]);
