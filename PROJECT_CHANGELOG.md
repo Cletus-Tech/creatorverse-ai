@@ -265,3 +265,16 @@ Status: **Implemented on `main`; production deployment triggered; visual browser
 - Added client-side filtering over each category's title, description and topics without changing database records or Academy enrolment logic.
 - Added a course-catalogue call to action. No category/course data, authentication, permissions, payments or backend schema changed.
 - Mobile and desktop visual QA and live production inspection remain required.
+
+
+## 2026-11-06 — CreatorVerse Academy full course experience redesign
+
+Status: **Implemented on `main`; production deployment and visual QA pending.**
+
+- Reworked the course catalogue into a colorful, image-led Academy library with a new hero, course search, category filters, course counts, responsive course cards and clearer course metadata.
+- Redesigned course detail pages with a visual course cover, learning outcomes, requirements, curriculum modules and existing enrol/enrolment/payment actions retained.
+- Restyled the lesson-learning experience with a clearer content layout, video area, lesson navigation, progress and curriculum sidebar.
+- Refreshed the student dashboard to a lighter, more colorful learning workspace and updated enrolled-course cards to use course-specific imagery.
+- Course thumbnails remain dynamically admin-managed and take priority. Added topic-matched visual fallbacks only when a course has no uploaded thumbnail.
+- No course records, enrolments, lesson progress, certificates, quiz data, payment settings or access rules were intentionally changed.
+- Browser QA is still required for desktop/mobile layouts, course filters, enrolment, payment, lesson progress and dashboard data.
