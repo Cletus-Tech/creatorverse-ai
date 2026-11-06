@@ -38,7 +38,7 @@ function ccard(c){
  var n=nl(c),img=courseImage(c),cat=c.category_slug||'Featured learning';
  return h('article',{class:'academy-course-card'},[
   h('a',{class:'academy-course-image',href:'course.html?s='+encodeURIComponent(c.slug),'aria-label':'View '+c.title},[
-   h('img',{src:img,alt:c.title+' course cover',loading:'lazy',onerror:function(){this.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1100&q=85'}}),
+   h('img',{src:img,alt:c.title+' course cover',loading:'lazy'}),
    h('span',{class:'academy-image-shade'}),
    h('span',{class:'academy-course-price',text:c.price_ngn?'₦'+Number(c.price_ngn).toLocaleString('en-NG'):'Free'})
   ]),
