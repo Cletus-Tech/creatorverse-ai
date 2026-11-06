@@ -119,3 +119,11 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - Student course pages now display stage names, stage schedule, stage description, chapter count and estimated chapter time. Lesson view displays chapter number, estimated minutes and topic outline.
 - Admin Portal → Courses now exposes programme months, weekly study hours, stage timing and description, chapter duration and topic outline, alongside existing editable teaching content/video/resources. Reordering stages updates stage numbering; new chapters receive sequence numbers and default timings.
 - QA: Supabase schema and curriculum counts verified; `course-admin.js` and `lms.js` JavaScript syntax checks passed. Full browser/device and enrolment/progress flow testing remains outstanding.
+
+
+## Verification badges and compact assistant (2026-11-06)
+- The floating CreatorVerse assistant is being reduced to a compact circular bot-face launcher with drag positioning, saved placement and a one-time welcome introduction per browser session.
+- The assistant remains page-aware and opens the existing chat panel; the launcher is designed to take less space on mobile.
+- Added `profiles.verified_badge` values `none`, `blue`, `green`, and `gold`. Badge changes are restricted by a database trigger to super admins; the gold owner badge is reserved for the signed-in super-admin account.
+- Admin Portal → Students now includes verification badge controls for super admins. Blue and green are available for other users; gold is reserved for the owner.
+- Profile, creator discovery and messaging surfaces show verification indicators. Full end-to-end browser QA and production deployment confirmation remain pending.
