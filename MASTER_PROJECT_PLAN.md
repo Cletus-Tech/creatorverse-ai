@@ -67,3 +67,5 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Typing indicators use private Realtime Broadcast on `cv:dm:<conversation_uuid>`, with realtime.messages SELECT/INSERT policies checking conversation membership.
 - Mobile composer includes attachment control, responsive typing status, attachment label and read state.
 - Acceptance test: two distinct accounts, both directions of chat, typing in one account, recipient opens chat and sender sees Seen, upload/download supported attachment, verify unrelated user cannot read signed attachment or subscribe to private conversation channel.
+
+- Story feed is newest-first; owners can delete their own stories and associated image from the community-media bucket. Direct Messages is exposed in desktop primary navigation, mobile navigation and the account menu; Connect Moderation is available from the main admin sidebar.
