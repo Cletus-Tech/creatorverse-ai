@@ -36,3 +36,15 @@ Status: **Implemented in repository and Supabase; production deployment and live
 - Video/voice calls and one-to-one class rooms are planned follow-on work, not part of this release. Reliable calls require signaling plus TURN relay infrastructure or a managed video provider; a STUN-only prototype would not be dependable.
 - Expired stories are filtered out after 24 hours; automated deletion of expired story rows and media is not yet configured.
 - Pending QA: test messaging and presence with two separate accounts, test story upload/view/expiry and test the block rules.
+
+
+## 2026-11-06 — Dashboard mobile and theme repair + platform audit
+
+Status: **Fixes committed to `main`; production deployment verification pending.**
+
+- Restored the student dashboard's intended dark navy CreatorVerse theme; removed the later light-surface overrides that were overriding the dark dashboard design.
+- Added defensive mobile sizing and overflow rules for the dashboard shell, content area, welcome panel, and flex/grid children to prevent the narrow clipped dashboard layout shown in the user's phone screenshot.
+- Added a dedicated **Messages** entry to the persistent mobile bottom navigation, rather than leaving messaging discoverable only inside the account dropdown or hamburger menu.
+- Supabase security hardening: changed `community_profiles` to SECURITY INVOKER, fixed the search_path on `block_role_change()`, and revoked API execution grants from trigger-only functions. Verified the view option, function search_path, and zero exposed execute grants for those trigger functions.
+- Full platform review found remaining advisory items documented in the audit response: leaked-password protection is disabled; several intentionally callable SECURITY DEFINER RPCs remain; performance lints include unindexed foreign keys, auth RLS initplan warnings, duplicate/overlapping permissive policies, unused indexes, and one duplicate index. These need targeted review rather than unsafe blanket policy changes.
+- No two-account messaging test or authenticated browser-based end-to-end dashboard test was possible in this audit pass; those remain explicit verification items.
