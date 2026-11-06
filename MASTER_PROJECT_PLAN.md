@@ -84,3 +84,16 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Store the Gemini API key as Supabase Edge Function secret `AI_API_KEY`. Never place it in frontend config or GitHub.
 - Optional overrides: `AI_BASE_URL`, `AI_MODEL`; an OpenAI-compatible provider can be configured without changing client code.
 - Free-tier usage and quotas are controlled by the provider and may change; monitor provider usage and never promise unlimited free inference.
+
+
+## 2026-11-06 — Academy curriculum and resource population
+
+Status: **Seeded in Supabase; admin-managed; production page verification pending.**
+
+- Published seven structured Academy courses: YouTube Automation, AI Content Creation, TikTok Growth & Creator Monetisation, Prompt Engineering, AI Graphic Design & Visual Branding, Digital Business, and Algorithm Analysis & Niche Research.
+- Each new course includes course overview, level, estimated duration, requirements, learning outcomes, three sequenced modules, nine lessons, practical workshops/assignments, quality checks and one official further-learning resource per lesson.
+- Seeded 21 modules, 63 lessons and 63 resource links. All seven courses are published and free (₦0); the existing 3D Animation course was preserved.
+- Resources point to official platform/help/learning destinations rather than invented downloads. Platform monetisation and recommendation policies are explicitly treated as changeable and must be checked against current official guidance.
+- Existing course-admin.js controls remain the management surface: admins/super_admins can edit course metadata and flyer, publish/unpublish, rename/reorder/delete modules, edit/reorder/delete lessons, update lesson text/video, and add/remove/edit downloadable or external resources. No course content was hardcoded into the frontend.
+- Admin management is available through the existing Admin Portal → Courses panel. Existing course access/enrolment rules remain in force.
+- QA verified database counts per new course (3 modules, 9 lessons, 9 resources) and published status. Browser QA of student-facing catalogue, lesson rendering and admin edits remains to be completed.
