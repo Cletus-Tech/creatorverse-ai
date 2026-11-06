@@ -77,3 +77,10 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Server-side secrets only: AI_API_KEY (or OPENAI_API_KEY), optional AI_BASE_URL and AI_MODEL. Default model gpt-5.4-mini.
 - If no key is configured, return a clear AI_PROVIDER_NOT_CONFIGURED error; never disguise keyword retrieval as model generation.
 - Frontend sends up to 16 recent turns, keeps per-chat context, uses task-specific suggestion prompts and saves model responses.
+
+
+## CreatorVerse AI — provider defaults
+- Free-first default provider: Google Gemini OpenAI-compatible endpoint `https://generativelanguage.googleapis.com/v1beta/openai`, model `gemini-3.6-flash`.
+- Store the Gemini API key as Supabase Edge Function secret `AI_API_KEY`. Never place it in frontend config or GitHub.
+- Optional overrides: `AI_BASE_URL`, `AI_MODEL`; an OpenAI-compatible provider can be configured without changing client code.
+- Free-tier usage and quotas are controlled by the provider and may change; monitor provider usage and never promise unlimited free inference.
