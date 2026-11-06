@@ -1,5 +1,16 @@
 
 
+## 2026-11-06 — Universal page loading gate
+
+- Added a shared loading gate in `layout.js`, so every page using the common site layout displays a full-viewport branded loading screen while its initial page content is being prepared.
+- The gate overlays the page during rendering, preventing the footer or page shell from flashing before the main content is ready.
+- Reuses the existing homepage loader and applies a consistent fade-out; other pages receive the shared CreatorVerse mark, progress line and status caption.
+- Gate waits for the browser load event and stable, non-placeholder main content, with a 9-second safety timeout to prevent a permanently stuck overlay. It also handles browser back/forward cache restores.
+- Existing page-specific loaders remain intact and can continue handling later data refreshes; the shared gate addresses the initial page-load flash.
+- Scope: pages that include `layout.js`. Standalone pages without the shared layout require explicit integration if any exist.
+- QA: source-level inspection only. Production deployment and device-by-device visual verification pending.
+
+
 ## 2026-11-06 — CreatorVerse AI assistant interface redesign
 
 Status: **Implemented on `main`; deployment and browser QA pending.**
