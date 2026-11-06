@@ -77,3 +77,11 @@ Status: **Database and client code committed; deployment and two-account verific
 - Added direct Messages navigation on desktop, retained mobile bottom/mobile menu/account-menu access, and added owner controls to delete stories (including best-effort removal of the owner's uploaded story image).
 - Final source checks passed for JavaScript syntax, all referenced DOM IDs, protected route registration, desktop/mobile Messages links and the private conversation channel name.
 - A new production deployment was attempted for the latest commit but Vercel rejected deployment creation with its free API daily deployment limit (HTTP 402; retry after 24 hours). The previous READY production build therefore does not include these phase-two additions yet.
+
+
+## 2026-11-06 — CreatorVerse AI intelligence rebuild
+- Root cause: the active creatorverse-assistant Edge Function was not connected to any language model. It tokenised the question, searched cv_ai_knowledge, and pasted matching text into a template.
+- Rebuilt the Edge Function to call an actual OpenAI-compatible language model with server-side credentials, while retaining published CreatorVerse knowledge as grounding context.
+- Added general and CreatorVerse-guide instructions, bounded chat history, timeout and provider error handling, and explicit missing-key feedback.
+- Updated frontend to pass recent conversation turns, retain context and use useful task-specific suggestions.
+- Required setup: configure AI_API_KEY (or OPENAI_API_KEY) in Supabase Edge Function secrets. Optional AI_BASE_URL and AI_MODEL. No API key is committed to GitHub or exposed to the browser.
