@@ -89,3 +89,15 @@ Status: **Database and client code committed; deployment and two-account verific
 
 - Switched the default provider configuration to Google's Gemini OpenAI-compatible API and `gemini-3.6-flash` to keep the first setup free-tier-friendly. The user still needs to create a Gemini API key in AI Studio and store it as the Supabase Edge Function secret `AI_API_KEY`. Free-tier quota and model availability are subject to Google's current limits.
 - Supabase Edge Function `creatorverse-assistant` deployed as active version 4. The GitHub frontend updates are committed; Vercel production has not yet been verified to include the latest `ai.js` commit.
+
+
+## 2026-11-06 — Academy course content and resource launch
+
+- Added seven published, free, admin-managed courses across the existing Academy categories: YouTube Automation; AI Content Creation; TikTok Growth & Creator Monetisation; Prompt Engineering; AI Graphic Design & Visual Branding; Digital Business; Algorithm Analysis & Niche Research.
+- Populated 21 modules and 63 lessons. Each lesson contains an overview, learning outcomes, expert guidance, practical workshop, quality checklist, common mistakes and an assignment.
+- Added 63 further-learning resource links to official documentation and learning destinations.
+- Added learning outcomes, prerequisites, course levels and estimated durations to course records. Updated the Algorithm Analysis category description and topic tags.
+- Preserved the existing 3D Animation course and existing enrolment/progress/payment schema. New courses are published at ₦0.
+- Confirmed in Supabase that every new course has 3 modules, 9 lessons and 9 resources and is published.
+- Course management uses the existing Admin Portal → Courses controls. Admins can edit metadata/flyers, publish/unpublish, reorder and edit modules/lessons, update lesson content/video, and manage resources. No content is hardcoded into the website.
+- Remaining QA: verify catalogue cards and lesson text on desktop/mobile, test a student enrolment/lesson-completion flow, and edit/save one lesson and resource from the admin portal.
