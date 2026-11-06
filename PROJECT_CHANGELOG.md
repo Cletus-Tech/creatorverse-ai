@@ -85,3 +85,7 @@ Status: **Database and client code committed; deployment and two-account verific
 - Added general and CreatorVerse-guide instructions, bounded chat history, timeout and provider error handling, and explicit missing-key feedback.
 - Updated frontend to pass recent conversation turns, retain context and use useful task-specific suggestions.
 - Required setup: configure AI_API_KEY (or OPENAI_API_KEY) in Supabase Edge Function secrets. Optional AI_BASE_URL and AI_MODEL. No API key is committed to GitHub or exposed to the browser.
+
+
+- Switched the default provider configuration to Google's Gemini OpenAI-compatible API and `gemini-3.6-flash` to keep the first setup free-tier-friendly. The user still needs to create a Gemini API key in AI Studio and store it as the Supabase Edge Function secret `AI_API_KEY`. Free-tier quota and model availability are subject to Google's current limits.
+- Supabase Edge Function `creatorverse-assistant` deployed as active version 4. The GitHub frontend updates are committed; Vercel production has not yet been verified to include the latest `ai.js` commit.
