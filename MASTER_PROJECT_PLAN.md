@@ -97,3 +97,14 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - Existing course-admin.js controls remain the management surface: admins/super_admins can edit course metadata and flyer, publish/unpublish, rename/reorder/delete modules, edit/reorder/delete lessons, update lesson text/video, and add/remove/edit downloadable or external resources. No course content was hardcoded into the frontend.
 - Admin management is available through the existing Admin Portal → Courses panel. Existing course access/enrolment rules remain in force.
 - QA verified database counts per new course (3 modules, 9 lessons, 9 resources) and published status. Browser QA of student-facing catalogue, lesson rendering and admin edits remains to be completed.
+
+
+## 2026-11-06 — Universal page loading gate
+
+- Added a shared loading gate in `layout.js`, so every page using the common site layout displays a full-viewport branded loading screen while its initial page content is being prepared.
+- The gate overlays the page during rendering, preventing the footer or page shell from flashing before the main content is ready.
+- Reuses the existing homepage loader and applies a consistent fade-out; other pages receive the shared CreatorVerse mark, progress line and status caption.
+- Gate waits for the browser load event and stable, non-placeholder main content, with a 9-second safety timeout to prevent a permanently stuck overlay. It also handles browser back/forward cache restores.
+- Existing page-specific loaders remain intact and can continue handling later data refreshes; the shared gate addresses the initial page-load flash.
+- Scope: pages that include `layout.js`. Standalone pages without the shared layout require explicit integration if any exist.
+- QA: source-level inspection only. Production deployment and device-by-device visual verification pending.
