@@ -38,3 +38,12 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - Next communication phase: implement call invitations/signaling and one-to-one WebRTC sessions with a TURN relay for reliable cross-network connections; add scheduled private class rooms, class links, availability and optional screen sharing. Production video calling needs TURN infrastructure or a managed provider; a browser-only STUN demo is not sufficient for dependable real-world calls.
 - Stories disappear from the active feed after 24 hours; expired database rows/media are not yet automatically purged.
 - Verification still required: sign in as two different accounts, create a conversation, exchange messages in both directions, confirm online/offline presence, post/view stories, confirm expiry behavior and verify blocked-user restrictions.
+
+
+## 2026-11-06 — Dashboard repair and cross-platform audit findings
+
+- Dashboard must retain the CreatorVerse dark navy theme. Do not apply the Academy's light catalogue palette to the student portal.
+- Mobile dashboard acceptance criteria: content spans the viewport without horizontal clipping; the welcome card and its text wrap within the screen; stats/cards collapse cleanly; no blank oversized left area.
+- Messages & Stories must be directly discoverable from the mobile persistent bottom navigation as well as account dropdown and hamburger navigation.
+- Security hardening applied: SECURITY INVOKER on `community_profiles`, fixed search_path on `block_role_change()`, and API EXECUTE revoked from trigger-only functions.
+- Remaining audit items: enable leaked-password protection in Supabase Auth settings; review public/authenticated SECURITY DEFINER RPC grants by actual caller requirements; resolve foreign-key index and RLS performance advisories in controlled batches; inspect duplicate permissive policies and duplicate index; verify all major user journeys with two test accounts.
