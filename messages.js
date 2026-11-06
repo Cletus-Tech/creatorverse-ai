@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 var root=document.querySelector('.cv-messages-page');if(!root)return;
-var sb=null,user=null,me=null,profiles={},conversations=[],active=null,messageChannel=null,presenceChannel=null,presence={},stories=[],storyTimer=null,searchTimer=null;
+var sb=null,user=null,me=null,profiles={},blockedUsers={},conversations=[],active=null,messageChannel=null,presenceChannel=null,presence={},stories=[],storyTimer=null,searchTimer=null;
 var $=function(id){return document.getElementById(id)};
 function node(tag,attrs,children){var n=document.createElement(tag);Object.keys(attrs||{}).forEach(function(k){if(k==='text')n.textContent=attrs[k];else if(k==='class')n.className=attrs[k];else n.setAttribute(k,attrs[k])});(children||[]).forEach(function(c){if(c)n.appendChild(c)});return n}
 function initials(p){return((p&&p.full_name)||p&&p.username||'Creator').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
@@ -96,7 +96,7 @@ function searchPeople(term){
   rows.forEach(function(p){profiles[p.id]=p;var b=node('button',{type:'button',class:'msg-person-result'},[avatar(p,online(p.id)),node('span',{text:profileName(p)})]);b.addEventListener('click',function(){results.hidden=true;$('people-search').value='';startConversation(p)});results.appendChild(b)});
  });
 }
-function isBlocked(id){return false}
+function isBlocked(id){return !!blockedUsers[id]}
 function renderStories(){
  var rail=$('story-rail');rail.textContent='';
  var mine=stories.filter(function(s){return s.user_id===user.id});
@@ -131,7 +131,7 @@ function openStoryGroup(id,index){
  content.textContent='';if(s.media_type==='image'&&s.media_url)content.appendChild(node('img',{src:s.media_url,alt:'Story'}));if(s.content)content.appendChild(node('p',{text:s.content}));
  content.style.background=s.media_type==='text'?storyBackground(s.background):'transparent';
  foot.textContent='';if(s.user_id===user.id){sb.from('cv_story_views').select('viewer_id',{count:'exact',head:true}).eq('story_id',s.id).then(function(r){foot.textContent=(r.count||0)+' views'});}else{
-  sb.from('cv_story_views').upsert({story_id:s.id,viewer_id:user.id},{onConflict:'story_id,viewer_id'}).then(function(){});
+  sb.from('cv_story_views').insert({story_id:s.id,viewer_id:user.id}).then(function(){});
   foot.textContent='Shared with the CreatorVerse community';
  }
  var viewer=$('story-viewer');viewer.classList.add('open');viewer.setAttribute('aria-hidden','false');
@@ -168,6 +168,7 @@ function init(){
   if(!user){location.href='login.html?next=messages.html';return}
   var pr=await sb.from('profiles').select('id,full_name,username,avatar_url,bio,role').eq('id',user.id).maybeSingle();
   if(pr.error)throw pr.error;me=pr.data||{id:user.id,full_name:user.user_metadata&&user.user_metadata.full_name||'Creator'};profiles[user.id]=me;
+  var br=await sb.from('community_blocks').select('blocked_id').eq('blocker_id',user.id);if(!br.error)(br.data||[]).forEach(function(x){blockedUsers[x.blocked_id]=1});
   startPresence();
   await Promise.all([loadConversations(),loadStories()]);
   sb.channel('cv:stories').on('postgres_changes',{event:'INSERT',schema:'public',table:'cv_stories'},function(p){if(p.new.expires_at>new Date().toISOString()){stories.push(p.new);if(!profiles[p.new.user_id])uniqueProfiles([p.new.user_id]).then(renderStories);else renderStories()}}).on('postgres_changes',{event:'DELETE',schema:'public',table:'cv_stories'},function(p){stories=stories.filter(function(s){return s.id!==p.old.id});renderStories()}).subscribe();
