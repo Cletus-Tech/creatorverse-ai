@@ -253,3 +253,15 @@ Status: **Committed directly to main; deployment verification pending.**
 - Tightened link spacing, button sizing and dropdown offsets.
 - Adjusted the homepage hero's top content offset to prevent text from colliding with the compact navigation.
 - Kept the navigation dropdown, account actions and mobile menu interactions intact.
+
+
+## 2026-11-06 — CreatorVerse Academy Explore redesign
+
+Status: **Implemented on `main`; production deployment triggered; visual browser QA pending.**
+
+- Rebuilt the Learn / Explore Categories experience with a colourful editorial hero, collaborative learning photography, prominent category search, quick topic chips and a bright discovery surface distinct from the site's dark-blue shell.
+- Reworked category cards with varied colour identities, stronger typography, image overlays, clearer exploration actions and responsive layouts.
+- Preserved live category loading from the existing category source, category detail routes, image URLs and the separate course catalogue destination.
+- Added client-side filtering over each category's title, description and topics without changing database records or Academy enrolment logic.
+- Added a course-catalogue call to action. No category/course data, authentication, permissions, payments or backend schema changed.
+- Mobile and desktop visual QA and live production inspection remain required.
