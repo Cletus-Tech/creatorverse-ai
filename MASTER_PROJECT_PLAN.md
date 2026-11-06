@@ -58,3 +58,12 @@ Status: **Initial implementation committed to `main`; production deployment and 
 - RLS table: `cv_content_reports`; users can submit reports, admins can review/update them. Story deletion is allowed for admins.
 - Release QA: two separate accounts on separate sessions; test discover creator → create conversation → send/receive both directions → online/offline → story text/photo upload → story view count → report submission → admin review/status update/story removal → sign-out/unauthenticated redirect.
 - Voice/video calls, group chat, attachments, typing/read receipts and scheduled one-to-one classrooms remain separate phases and must not be represented as already available.
+
+
+## 2026-11-06 — CreatorVerse Connect phase 2
+
+- Private chat attachments use a dedicated private Storage bucket `cv-chat-files`; images/PDF/plain text, 15 MB max, participant-scoped reads, user-scoped uploads and signed URLs.
+- Message read receipts use a recipient-only update of `read_at`; grant authenticated users column-level UPDATE on `read_at` only. Do not grant broad message UPDATE.
+- Typing indicators use private Realtime Broadcast on `cv:dm:<conversation_uuid>`, with realtime.messages SELECT/INSERT policies checking conversation membership.
+- Mobile composer includes attachment control, responsive typing status, attachment label and read state.
+- Acceptance test: two distinct accounts, both directions of chat, typing in one account, recipient opens chat and sender sees Seen, upload/download supported attachment, verify unrelated user cannot read signed attachment or subscribe to private conversation channel.
