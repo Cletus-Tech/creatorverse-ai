@@ -97,7 +97,26 @@ function landingSections(){
  ]);
  intro.classList.add('cv-reveal');
  grid.classList.add('cv-reveal');
- wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(path);root.appendChild(wrap);
+ var admissions=h('section',{class:'cv-admissions-entry cv-reveal'},[
+  h('div',{class:'cv-admissions-entry-copy'},[
+   h('span',{class:'cv-kicker',text:'CREATORVERSE ACADEMY · ADMISSIONS'}),
+   h('h2',{text:'Ready to turn your interest into real skills?'}),
+   h('p',{text:'Apply to join a guided learning pathway. Your application, placement review, admission offer and interview updates stay connected to your learner account.'}),
+   h('div',{class:'cv-admissions-entry-actions'},[
+    btn('Apply for admission','academy-apply.html','btn-primary'),
+    btn('Check application status','academy-status.html','btn-outline')
+   ])
+  ]),
+  h('div',{class:'cv-admissions-entry-art'},[
+   h('span',{class:'cv-admissions-orbit cv-orbit-a'}),
+   h('span',{class:'cv-admissions-orbit cv-orbit-b'}),
+   h('div',{class:'cv-admissions-entry-mark'},[ico(I.book)]),
+   h('strong',{text:'LEARN WITH DIRECTION'}),
+   h('small',{text:'Apply · Get placed · Progress'})
+  ])
+ ]);
+ admissions.classList.add('is-visible');
+ wrap.appendChild(intro);wrap.appendChild(grid);wrap.appendChild(admissions);wrap.appendChild(path);root.appendChild(wrap);
  var revealItems=wrap.querySelectorAll('.cv-reveal,.cv-division-card');
  if('IntersectionObserver' in window){
   var revealObserver=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target)}})},{threshold:.12,rootMargin:'0px 0px -35px 0px'});
