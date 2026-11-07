@@ -4,6 +4,7 @@ var cfg=(await j('site.json'))||{},soc=cfg.socials||{};
 var CC=window.CV_CONFIG||{},sc={};
 if(CC.supabaseUrl&&CC.supabaseAnonKey){try{var rr=await fetch(CC.supabaseUrl+'/rest/v1/site_content?select=key,value',{headers:{apikey:CC.supabaseAnonKey,Authorization:'Bearer '+CC.supabaseAnonKey}});(await rr.json()).forEach(function(r){sc[r.key]=r.value})}catch(e){}}
 if(sc.founder_photo)cfg.founderPhoto=sc.founder_photo;if(sc.intro_video)cfg.introVideo=sc.intro_video;
+if(sc.founder){try{var founderSettings=JSON.parse(sc.founder);soc=Object.assign({},soc,founderSettings.socials||{})}catch(e){}}
 var hl=document.querySelector('.headline'),hs=document.querySelector('.sub');
 if(hl&&sc.hero_title){var ls=sc.hero_title.split(/\n/).filter(Boolean);hl.textContent='';ls.forEach(function(t,i){if(i===ls.length-1&&ls.length>1){var sp=document.createElement('span');sp.className='accent';sp.textContent=t;hl.appendChild(sp)}else{hl.appendChild(document.createTextNode(t));if(i<ls.length-1)hl.appendChild(document.createElement('br'))}})}
 if(hs&&sc.hero_text)hs.textContent=sc.hero_text;
