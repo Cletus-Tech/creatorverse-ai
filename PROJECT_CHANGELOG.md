@@ -295,3 +295,12 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - No email, SMS, browser push or mobile push delivery is claimed; this phase is in-app notification delivery only.
 - Verified JavaScript parsing for `academy-status.js`, `academy-progress-admin.js`, `admissions-admin.js` and `academy-apply.js`.
 - Database migration remains unapplied. SQL must still receive a full dependency, RLS, privilege and trigger review before any live application; then test notifications with learner/admin accounts and verify reminder timing and deduplication.
+
+
+## 2026-11-07 — Learner pace and progression enforcement improvements
+
+- Learner Academy status now displays completed lessons, weekly lesson-completion pace, active study days over the last 30 days, current/highest level and the next published level's configured milestone thresholds.
+- The lifecycle migration draft now recalculates progression immediately after learner lesson completions and learner quiz/assignment submissions, so admin monitoring is not dependent only on a learner opening the status page.
+- The evaluator remains subject to the existing configured rule thresholds and admin-approval workflow. This is still a draft implementation until the migration is reviewed and safely applied in an isolated/staging environment.
+- JavaScript syntax validation passed for the learner status, learning progress admin, admissions admin and application scripts.
+- No live schema changes, account changes, data deletion, merge or deployment occurred.
