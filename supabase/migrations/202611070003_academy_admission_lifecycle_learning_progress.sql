@@ -88,11 +88,15 @@ declare v_course uuid;
 begin
  select m.course_id into v_course from public.lessons l join public.modules m on m.id=l.module_id where l.id=new.lesson_id;
  if v_course is null then return new; end if;
- if tg_op='INSERT' or (old.completed_at is null and new.completed_at is not null) then
+ if tg_op='INSERT' and new.completed_at is not null then
   insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
   values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
   on conflict do nothing;
- elsif old.completed_at is not null and new.completed_at is null then
+ elsif tg_op='UPDATE' and old.completed_at is null and new.completed_at is not null then
+  insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
+  values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
+  on conflict do nothing;
+ elsif tg_op='UPDATE' and old.completed_at is not null and new.completed_at is null then
   insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
   values(new.user_id,v_course,new.lesson_id,'lesson_reopened',new.user_id::text||':'||new.lesson_id::text||':'||extract(epoch from clock_timestamp())::text);
  end if;
@@ -218,3 +222,67 @@ begin
 end $$;
 revoke all on function public.respond_to_academy_interview_invitation(uuid,text) from public,anon;
 grant execute on function public.respond_to_academy_interview_invitation(uuid,text) to authenticated;
+
+
+create table if not exists public.academy_level_unlock_requests (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete restrict,
+ course_id uuid not null references public.courses(id) on delete restrict,
+ level_name text not null check(level_name in ('Beginner','Foundation','Intermediate','Advanced','Professional')),
+ progress_percent numeric(5,2) not null,
+ status text not null default 'pending' check(status in ('pending','approved','rejected')),
+ requested_at timestamptz not null default now(),
+ reviewed_at timestamptz,
+ reviewed_by uuid references auth.users(id) on delete set null,
+ reviewer_note text,
+ unique(user_id,course_id,level_name)
+);
+alter table public.academy_level_unlock_requests enable row level security;
+grant select,insert,update on public.academy_level_unlock_requests to authenticated;
+drop policy if exists "Learners read own level unlock requests" on public.academy_level_unlock_requests;
+create policy "Learners read own level unlock requests" on public.academy_level_unlock_requests for select to authenticated using(user_id=auth.uid() or public.is_admin());
+drop policy if exists "Admins manage level unlock requests" on public.academy_level_unlock_requests;
+create policy "Admins manage level unlock requests" on public.academy_level_unlock_requests for all to authenticated using(public.is_admin()) with check(public.is_admin());
+
+-- Re-evaluate a learner's progress after a lesson completion. Rule thresholds are configured by admins.
+-- Rules requiring approval create a request instead of unlocking automatically.
+create or replace function public.refresh_academy_learner_level(p_course_id uuid)
+returns jsonb language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare
+ v_user uuid:=auth.uid(); v_total integer; v_done integer; v_pct numeric(5,2); v_days integer;
+ v_quiz numeric(5,2); v_assignments integer; v_current text:='Beginner'; v_highest text:='Beginner';
+ v_rule public.academy_level_rules%rowtype; v_pending text;
+begin
+ if v_user is null then raise exception 'Sign in is required'; end if;
+ if not exists(select 1 from public.enrolments where user_id=v_user and course_id=p_course_id) then raise exception 'You must be enrolled in this course'; end if;
+ select count(*)::integer into v_total from public.lessons l join public.modules m on m.id=l.module_id where m.course_id=p_course_id;
+ select count(distinct lp.lesson_id)::integer into v_done from public.lesson_progress lp join public.lessons l on l.id=lp.lesson_id join public.modules m on m.id=l.module_id where lp.user_id=v_user and m.course_id=p_course_id and lp.completed_at is not null;
+ v_pct:=case when v_total=0 then 0 else round(100.0*v_done/v_total,2) end;
+ select count(distinct occurred_at::date)::integer into v_days from public.academy_learning_activity where user_id=v_user and course_id=p_course_id;
+ select coalesce(avg(qa.score),0)::numeric(5,2) into v_quiz from public.quiz_attempts qa join public.quizzes q on q.id=qa.quiz_id where qa.user_id=v_user and q.course_id=p_course_id;
+ select count(*)::integer into v_assignments from public.submissions s join public.assignments a on a.id=s.assignment_id where s.user_id=v_user and a.course_id=p_course_id and s.status in ('submitted','graded');
+ select current_level,highest_unlocked_level into v_current,v_highest from public.academy_learner_levels where user_id=v_user and course_id=p_course_id;
+ v_current:=coalesce(v_current,'Beginner');v_highest:=coalesce(v_highest,'Beginner');
+ select * into v_rule from public.academy_level_rules r where r.course_id=p_course_id and r.published=true and r.sequence_no>(select coalesce(max(x.sequence_no),0) from public.academy_level_rules x where x.course_id=p_course_id and x.level_name=v_highest)
+ and r.min_completed_percent<=v_pct and r.min_active_days<=v_days and (r.min_quiz_average is null or v_quiz>=r.min_quiz_average) and v_assignments>=r.min_assignment_count
+ order by r.sequence_no desc limit 1;
+ insert into public.academy_learner_levels(user_id,course_id,current_level,highest_unlocked_level,progress_percent,completed_lessons,total_lessons,last_activity_at,last_evaluated_at,updated_at)
+ values(v_user,p_course_id,v_current,v_highest,v_pct,v_done,v_total,now(),now(),now())
+ on conflict(user_id,course_id) do update set progress_percent=excluded.progress_percent,completed_lessons=excluded.completed_lessons,total_lessons=excluded.total_lessons,last_activity_at=excluded.last_activity_at,last_evaluated_at=now(),updated_at=now();
+ if found then null; end if;
+ if v_rule.id is not null then
+  if v_rule.requires_admin_approval then
+   insert into public.academy_level_unlock_requests(user_id,course_id,level_name,progress_percent)
+   values(v_user,p_course_id,v_rule.level_name,v_pct) on conflict(user_id,course_id,level_name) do nothing;
+   v_pending:=v_rule.level_name;
+  else
+   update public.academy_learner_levels set current_level=v_rule.level_name,highest_unlocked_level=v_rule.level_name,updated_at=now() where user_id=v_user and course_id=p_course_id;
+   insert into public.academy_learning_activity(user_id,course_id,activity_type,metadata) values(v_user,p_course_id,'level_unlocked',jsonb_build_object('level',v_rule.level_name));
+   v_current:=v_rule.level_name;v_highest:=v_rule.level_name;
+  end if;
+ end if;
+ return jsonb_build_object('progress_percent',v_pct,'completed_lessons',v_done,'total_lessons',v_total,'current_level',v_current,'highest_unlocked_level',v_highest,'pending_level',v_pending);
+end $$;
+revoke all on function public.refresh_academy_learner_level(uuid) from public,anon;
+grant execute on function public.refresh_academy_learner_level(uuid) to authenticated;
