@@ -195,3 +195,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt all six CreatorVerse division cards with individual relevant imagery, stronger descriptions, feature lists and a consistent image-led layout. The Affiliate division now clearly communicates referral links, campaign tracking, conversions and commission statements.
 - Preserved current routes, live/in-development statuses, course filters, enrolment, progress, pricing, lesson curriculum and admin controls. No course/module/lesson structure or payment behavior was altered.
 - Database verification completed: all eight course thumbnails and all seven category images are populated. Inspect course and division pages on desktop and mobile before production promotion.
+
+
+## 2026-11-07 — Academy admissions and academic systems blueprint
+
+- Added `ACADEMY_ADMISSIONS_PLACEMENT_ASSESSMENT_SPEC.md` on the private `education-build` branch.
+- Defined application statuses and admin decisions, the free-vs-paid access gate, five placement levels, course-specific diagnostics, recorded interview consent/privacy controls, provider-neutral live interview requirements, server-authoritative lesson completion and CBT, practical grading, admin certificate issuance/revocation, notifications and audit.
+- Explicitly prohibited learner self-enrolment, direct learner academic-completion writes, client-side answer keys and self-claim certificate issuance.
+- This is a design milestone only. No production database schema/policies/functions/storage were changed, no production deployment was made, and no merge to `main` was made.
+- Next milestone: inspect the complete live schema, RLS policies, grants, triggers, RPC definitions, storage policies and existing learner records; prepare a compatibility-first migration plan that preserves all existing records.
