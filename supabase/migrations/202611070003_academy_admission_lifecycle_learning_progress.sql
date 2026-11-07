@@ -171,3 +171,50 @@ left join public.academy_learning_activity act on act.user_id=e.user_id and act.
 group by e.user_id,e.course_id,c.title;
 revoke all on public.academy_learner_activity_summary from anon;
 grant select on public.academy_learner_activity_summary to authenticated;
+
+
+-- Learners can accept only their own live offer, before the deadline. This records acceptance;
+-- course access still requires the separate verified payment/free-course fulfilment workflow.
+create or replace function public.accept_academy_admission_offer(p_offer_id uuid)
+returns jsonb language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_offer public.academy_admission_offers%rowtype;
+begin
+ if auth.uid() is null then raise exception 'Sign in is required'; end if;
+ select * into v_offer from public.academy_admission_offers where id=p_offer_id and user_id=auth.uid() for update;
+ if not found then raise exception 'Admission offer not found'; end if;
+ if v_offer.status<>'offered' then raise exception 'This offer is no longer awaiting acceptance'; end if;
+ if v_offer.expires_at<=now() then
+  update public.academy_admission_offers set status='expired',updated_at=now() where id=p_offer_id;
+  return jsonb_build_object('status','expired','message','The acceptance deadline has passed. Contact Academy admissions.');
+ end if;
+ update public.academy_admission_offers set status='accepted',accepted_at=now(),updated_at=now() where id=p_offer_id;
+ update public.academy_applications set offer_accepted_at=now(),updated_at=now() where id=v_offer.application_id and user_id=auth.uid();
+ insert into public.academy_application_events(application_id,actor_id,event_type,message,metadata)
+ values(v_offer.application_id,auth.uid(),'admission_offer_accepted','Learner accepted the admission offer.',jsonb_build_object('offer_id',p_offer_id,'accepted_at',now()));
+ insert into public.academy_audit_log(actor_id,application_id,action,details)
+ values(auth.uid(),v_offer.application_id,'admission_offer_accepted',jsonb_build_object('offer_id',p_offer_id));
+ return jsonb_build_object('status','accepted','message','Admission offer accepted. Complete any required payment and onboarding steps to activate course access.');
+end $$;
+revoke all on function public.accept_academy_admission_offer(uuid) from public,anon;
+grant execute on function public.accept_academy_admission_offer(uuid) to authenticated;
+
+-- Learner can confirm an invitation or request a reschedule; only admins can mark attendance/missed.
+create or replace function public.respond_to_academy_interview_invitation(p_invitation_id uuid,p_response text)
+returns jsonb language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_inv public.academy_interview_invitations%rowtype;
+begin
+ if auth.uid() is null then raise exception 'Sign in is required'; end if;
+ if p_response not in ('confirmed','reschedule_requested') then raise exception 'Unsupported response'; end if;
+ select * into v_inv from public.academy_interview_invitations where id=p_invitation_id and user_id=auth.uid() and published_at is not null for update;
+ if not found then raise exception 'Interview invitation not found'; end if;
+ if v_inv.status not in ('scheduled','confirmed') then raise exception 'This interview invitation can no longer be changed'; end if;
+ if v_inv.starts_at<=now() then raise exception 'The response window for this interview has closed'; end if;
+ update public.academy_interview_invitations set status=p_response,updated_at=now() where id=p_invitation_id;
+ insert into public.academy_application_events(application_id,actor_id,event_type,message,metadata)
+ values(v_inv.application_id,auth.uid(),'interview_invitation_response','Learner response: '||p_response,jsonb_build_object('invitation_id',p_invitation_id));
+ return jsonb_build_object('status',p_response);
+end $$;
+revoke all on function public.respond_to_academy_interview_invitation(uuid,text) from public,anon;
+grant execute on function public.respond_to_academy_interview_invitation(uuid,text) to authenticated;
