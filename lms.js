@@ -102,8 +102,7 @@ function course(sb,user){var s=Q.get('s');
    var act=h('div',{class:'hero2-cta'});
    if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enroll'}));
    else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
-   else if(c.price_ngn>0)act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Unlock course · ₦'+Number(c.price_ngn).toLocaleString('en-NG'),on:function(){checkout(sb,user,c,act)}}));
-   else act.appendChild(h('button',{class:'btn btn-primary',type:'button',text:'Enroll for free',on:function(){sb.from('enrolments').insert({user_id:user.id,course_id:c.id}).then(function(e){e.error?alert(e.error.message):location.reload()})}}));
+   else act.appendChild(h('a',{class:'btn btn-primary',href:'academy-apply.html?course='+encodeURIComponent(c.slug),text:'Apply for admission'}));
    main.appendChild(h('div',{class:'academy-course-detail-hero'},[h('div',{class:'academy-course-detail-copy'},[h('span',{class:'academy-eyebrow',text:(c.category_slug||'CREATORVERSE ACADEMY').replace(/[-_]/g,' ')}),h('span',{class:'chip2',text:c.level||'Beginner'}),h('h1',{text:c.title}),h('p',{class:'lead',text:c.description||''}),
     h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
     enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons completed ('+pct+'%)'})]):null,act]),
