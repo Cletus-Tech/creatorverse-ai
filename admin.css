@@ -102,3 +102,15 @@ body[data-page="admin"] .page{max-width:none;padding:0}
 .academy-interview-admin .academy-review-form .academy-admin-field:has(textarea),.academy-interview-admin .academy-review-form button,.academy-interview-admin .academy-review-form>div{grid-column:1/-1}
 .academy-interview-admin input,.academy-interview-admin select,.academy-interview-admin textarea{width:100%;max-width:100%;box-sizing:border-box}
 @media(max-width:700px){.academy-interview-admin .academy-review-form{grid-template-columns:1fr}}
+
+/* Academy lifecycle and learning analytics */
+.academy-offer-panel{display:grid;gap:12px;margin:18px 0;padding:18px;border:1px solid rgba(73,135,239,.28);border-radius:16px;background:linear-gradient(140deg,rgba(21,46,91,.46),rgba(10,20,40,.72))}
+.academy-offer-panel h4{margin:0;color:#eaf1ff}.academy-offer-panel .academy-admin-field{display:grid;gap:6px}
+.academy-progress-admin{display:grid;gap:18px}.academy-progress-list{display:grid;gap:14px}
+.academy-progress-card{padding:18px;border:1px solid rgba(105,145,220,.2);border-radius:16px;background:linear-gradient(135deg,rgba(17,34,68,.82),rgba(9,19,39,.9));min-width:0}
+.academy-progress-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.academy-progress-card-head strong{display:block;color:#eef4ff}.academy-progress-card-head small,.academy-progress-meta{color:#9eafce;font-size:.84rem}
+.academy-progress-inactivity{padding:6px 10px;border-radius:99px;font-size:.78rem;white-space:nowrap;background:rgba(35,150,110,.15);color:#8ce0bb}.academy-progress-inactivity.is-warning{background:rgba(225,157,48,.15);color:#ffd18b}.academy-progress-inactivity.is-overdue{background:rgba(218,82,94,.16);color:#ff9ca5}
+.academy-progress-meter{height:9px;border-radius:99px;background:#172747;overflow:hidden;margin:16px 0 8px}.academy-progress-meter span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#287bff,#56d4e8)}
+.academy-progress-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.academy-level-badge{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;color:#c8d8f7;font-size:.88rem}
+.academy-level-controls{display:grid;grid-template-columns:minmax(150px,1fr) auto minmax(180px,1.5fr) auto;align-items:end;gap:10px}.academy-level-controls label{display:grid;gap:5px;color:#aebfdd;font-size:.8rem}.academy-level-controls input[type=text],.academy-level-controls select{width:100%;min-width:0;box-sizing:border-box}.academy-level-controls label:has(input[type=checkbox]){display:flex;align-items:center;gap:7px}
+@media(max-width:720px){.academy-progress-card-head{display:grid}.academy-level-controls{grid-template-columns:1fr 1fr}.academy-level-controls>input,.academy-level-controls>button,.academy-level-controls>small{grid-column:1/-1}}
