@@ -91,3 +91,14 @@ body[data-page="admin"] .page{max-width:none;padding:0}
 .academy-diagnostic-item .row{display:flex;gap:7px;flex-wrap:wrap}
 .academy-diagnostic-item .btn{font-size:11px;padding:7px 10px}
 @media(max-width:900px){.academy-diagnostic-layout{grid-template-columns:1fr}}
+
+/* Academy interview planning */
+.academy-interview-admin{display:grid;gap:14px;margin:14px 0 20px}
+.academy-interview-card{padding:15px 16px;border:1px solid rgba(105,145,220,.22);border-radius:14px;background:linear-gradient(135deg,rgba(25,47,91,.48),rgba(12,23,47,.72));margin:8px 0}
+.academy-interview-card strong{display:block;color:#e8f0ff;text-transform:capitalize}
+.academy-interview-card p{margin:7px 0 0;color:#aabbd8;font-size:.88rem;overflow-wrap:anywhere}
+.academy-interview-admin .academy-review-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px;border:1px solid rgba(105,145,220,.2);border-radius:16px;background:rgba(9,20,43,.5)}
+.academy-interview-admin .academy-review-form .academy-admin-field{min-width:0}
+.academy-interview-admin .academy-review-form .academy-admin-field:has(textarea),.academy-interview-admin .academy-review-form button,.academy-interview-admin .academy-review-form>div{grid-column:1/-1}
+.academy-interview-admin input,.academy-interview-admin select,.academy-interview-admin textarea{width:100%;max-width:100%;box-sizing:border-box}
+@media(max-width:700px){.academy-interview-admin .academy-review-form{grid-template-columns:1fr}}
