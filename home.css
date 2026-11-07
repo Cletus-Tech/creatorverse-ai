@@ -1064,3 +1064,7 @@ html body .hero2 .hero2-in .founder-visual .founder-email-button svg{width:15px!
 .footer-social-links a[data-social="instagram"] img{filter:brightness(0) saturate(100%) invert(36%) sepia(88%) saturate(2674%) hue-rotate(292deg) brightness(101%) contrast(103%)!important}
 .hero2 .founder-social-links a[data-social="threads"] img,
 .footer-social-links a[data-social="threads"] img{filter:brightness(0) saturate(100%) invert(69%) sepia(58%) saturate(1834%) hue-rotate(177deg) brightness(101%) contrast(101%)!important}
+
+
+/* X social icon: clean white brand mark on the dark CreatorVerse background. */
+.hero2 .founder-social-links a[data-social="x"] img,.footer-social-links a[data-social="x"] img{filter:brightness(0) invert(1)!important}
