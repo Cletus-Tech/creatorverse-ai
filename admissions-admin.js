@@ -14,7 +14,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
  root.querySelector('[data-refresh]').addEventListener('click',load);search.addEventListener('input',draw);statusFilter.addEventListener('change',draw);
  function msg(text,bad){return el('p',{class:'academy-admin-message'+(bad?' is-error':''),text:text})}
  function load(){
-  sb.rpc('expire_academy_admission_offers').catch(function(){});
+  sb.rpc('expire_academy_admission_offers').catch(function(){});sb.rpc('expire_academy_interview_invitations').catch(function(){});
   list.textContent='Loading applications…';detail.textContent='Select an application to review.';
   Promise.all([sb.from('academy_applications').select('*').order('created_at',{ascending:false}).limit(300),sb.from('profiles').select('id,full_name,email'),sb.from('courses').select('id,title,price_ngn')]).then(function(rs){
    var err=rs.filter(function(x){return x.error})[0];if(err){list.textContent='Admissions schema is not available yet. Apply the reviewed migration 202611070002_academy_admissions_foundation.sql before enabling this workspace. Details: '+err.error.message;return}
