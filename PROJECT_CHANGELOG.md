@@ -233,3 +233,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Applications are created as drafts and submitted with a reference number plus a submission-history event. The form explicitly explains that an application does not itself grant course access.
 - Hardened the migration draft's data separation: private reviewer notes live in an admin-only table; diagnostic reviewer scores/feedback and interview metadata are not exposed to applicants through broad row reads.
 - These are source changes on `education-build`. The migration remains unapplied, and end-to-end testing against the live database has not been performed. No deployment or merge was made.
+
+
+## 2026-11-07 — Course diagnostic question authoring added
+
+- Extended Admin Portal → Admissions & Placement with a course-specific diagnostic question bank.
+- Admins can select a course, create/edit questions, choose response formats (long text, short text, URL or single choice), set target level, configure required/active state, publish/unpublish and delete questions.
+- Published active questions are loaded dynamically into the learner application form. Question responses are stored separately from reviewer scoring; diagnostic reviews are admin-only in the schema draft.
+- Added private diagnostic review storage in the migration draft so learner response reads do not expose staff scores or feedback.
+- Source-level JavaScript syntax checks passed for `academy-apply.js`, `admissions-admin.js`, `admin-shell.js` and `lms.js`. Database integration, browser interaction, mobile rendering and RLS behavior remain untested because the migration has not been applied.
