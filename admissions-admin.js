@@ -79,14 +79,22 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   function interviewMessage(t,bad){interviewBox.appendChild(msg(t,bad))}
   function loadInterviews(){
    interviewBox.textContent='Loading interview records…';
-   sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}).then(function(ir){
+   Promise.all([sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('application_id',x.id).order('starts_at',{ascending:false})]).then(function(pair){
     interviewBox.textContent='';
-    if(ir.error){interviewMessage('Interview workspace unavailable: '+ir.error.message,true);return}
-    var items=ir.data||[];
+    var ir=pair[0],iv=pair[1];if(ir.error||iv.error){interviewMessage('Interview workspace unavailable: '+((ir.error||iv.error).message),true);return}
+    var items=ir.data||[],invitations=iv.data||[];
     if(items.length)items.forEach(function(it){
      var title=(it.interview_type||'interview').replace(/_/g,' '),when=it.scheduled_start?new Date(it.scheduled_start).toLocaleString():'Not scheduled';
      var card=el('div',{class:'academy-interview-card'},[el('strong',{text:title+' · '+it.status}),el('p',{text:when+(it.timezone?' · '+it.timezone:'')}),el('p',{text:it.meeting_provider?(it.meeting_provider+' · '+(it.meeting_reference||'No meeting link/reference')):'No meeting details'}),el('p',{text:'Reviewer: '+(it.reviewer_id||'Unassigned')+' · Score: '+(it.score==null?'Not scored':it.score)})]);
      if(it.reviewer_notes)card.appendChild(el('p',{text:'Private reviewer notes: '+it.reviewer_notes}));
+     var invite=invitations.find(function(v){return v.interview_id===it.id});
+     if(invite){
+      card.appendChild(el('p',{text:'Learner invitation: '+invite.status.replace(/_/g,' ')}));
+      var attendance=el('select',{},['scheduled','confirmed','reschedule_requested','attended','missed','cancelled'].map(function(v){return el('option',{value:v,text:v.replace(/_/g,' ')})}));attendance.value=invite.status;
+      var mark=el('button',{class:'btn btn-outline',type:'button',text:'Update attendance'}),attNote=el('small');
+      mark.addEventListener('click',function(){mark.disabled=true;sb.from('academy_interview_invitations').update({status:attendance.value,updated_at:new Date().toISOString()}).eq('id',invite.id).then(function(z){if(z.error)throw z.error;return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'interview_attendance_updated',message:'Interview attendance: '+attendance.value,metadata:{invitation_id:invite.id}})}).then(function(z){if(z.error)throw z.error;attNote.textContent='Attendance status saved.';invite.status=attendance.value}).catch(function(e){attNote.textContent=e.message||String(e)}).finally(function(){mark.disabled=false})});
+      card.append(field('Attendance & appointment status',attendance),mark,attNote)
+     }
      interviewBox.appendChild(card)
     });
     var form=el('form',{class:'academy-review-form'}),kind=el('select',{},[['live','Live interview'],['recorded_video','Recorded video response'],['recorded_audio','Recorded audio response'],['alternative','Alternative assessment']].map(function(v){return el('option',{value:v[0],text:v[1]})}));
