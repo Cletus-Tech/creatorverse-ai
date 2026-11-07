@@ -314,3 +314,14 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Updated `admin.html` script cache-busting versions so browsers fetch the latest integrated admin modules rather than stale cached JavaScript.
 - JavaScript syntax checks passed for the modified runtime files. This is a source-level integration step, not proof of end-to-end database compatibility.
 - Live Supabase currently has no `academy_*` tables or functions. The two Academy migrations remain unapplied; a full SQL dependency/security review and safe migration execution are required before Academy data workflows can operate. Existing production data and the production branch remain untouched.
+
+
+## 2026-11-07 — Academy database integration completed
+
+- Applied `academy_admissions_foundation` and `academy_admission_lifecycle_learning_progress` to the existing live Supabase project as additive migrations. Existing users, profiles, courses, enrolments, lesson progress, certificates, and payment records were not rewritten.
+- Confirmed the 16 Academy tables and the learner activity summary view now exist with RLS enabled.
+- Confirmed the admission acceptance, interview response, lesson activity, and learner progression RPCs exist in the live database.
+- Sent a PostgREST schema-cache reload notification after the migrations.
+- Existing single admin shell continues to route Admissions & Placement and Learning Progress from the same `admin.html` dashboard and navigation. No separate Academy website was created.
+- Current preview deployment: `creatorverse-kjoo6qfbr-cletus-tech1.vercel.app`, branch `education-build`, commit `86783c487d14be22c16e62d92924cf3ffbee4758`, Vercel state READY.
+- Remaining verification: authenticated browser QA of admin workspaces and learner workflows; end-to-end payment/fulfilment, private interview media upload/playback, and scheduled background notification delivery remain separate follow-up work. Production code branch has not been merged or deployed.
