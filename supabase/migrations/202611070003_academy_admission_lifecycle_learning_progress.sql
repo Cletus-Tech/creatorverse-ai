@@ -412,12 +412,12 @@ create or replace function public.notify_academy_offer_changes()
 returns trigger language plpgsql security definer set search_path=pg_catalog,public
 as $$
 begin
- if tg_op='INSERT' and new.status='offered' then
+ if new.status='offered' and (tg_op='INSERT' or old.status is distinct from new.status or old.expires_at is distinct from new.expires_at) then
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,scheduled_for,dedupe_key)
-  values(new.user_id,'admission_offer','You have an Academy admission offer','Review your offer and accept it before the deadline shown in your Academy status page.',new.application_id,new.id,now(),'offer-issued:'||new.id::text)
+  values(new.user_id,'admission_offer','You have an Academy admission offer','Review your offer and accept it before the deadline shown in your Academy status page.',new.application_id,new.id,now(),'offer-issued:'||new.id::text||':'||new.issued_at::text)
   on conflict(dedupe_key) do nothing;
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,scheduled_for,dedupe_key)
-  values(new.user_id,'admission_offer','Your admission offer deadline is approaching','Your Academy admission offer is due to expire within 24 hours. Accept it before the displayed deadline.',new.application_id,new.id,greatest(now(),new.expires_at-interval '24 hours'),'offer-reminder:'||new.id::text)
+  values(new.user_id,'admission_offer','Your admission offer deadline is approaching','Your Academy admission offer is due to expire within 24 hours. Accept it before the displayed deadline.',new.application_id,new.id,greatest(now(),new.expires_at-interval '24 hours'),'offer-reminder:'||new.id::text||':'||new.expires_at::text)
   on conflict(dedupe_key) do nothing;
  elsif tg_op='UPDATE' and old.status is distinct from new.status then
   if new.status='accepted' then
@@ -434,22 +434,22 @@ begin
 end $$;
 revoke all on function public.notify_academy_offer_changes() from public,anon,authenticated;
 drop trigger if exists academy_notify_offer_changes on public.academy_admission_offers;
-create trigger academy_notify_offer_changes after insert or update of status on public.academy_admission_offers
+create trigger academy_notify_offer_changes after insert or update of status,expires_at,issued_at on public.academy_admission_offers
 for each row execute function public.notify_academy_offer_changes();
 
 create or replace function public.notify_academy_interview_changes()
 returns trigger language plpgsql security definer set search_path=pg_catalog,public
 as $$
 begin
- if new.published_at is not null and (tg_op='INSERT' or old.published_at is null) then
+ if new.published_at is not null and (tg_op='INSERT' or old.published_at is null or old.starts_at is distinct from new.starts_at) then
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
-  values(new.user_id,'interview_scheduled','A compulsory Academy interview has been scheduled','Your interview is scheduled for '||to_char(new.starts_at,'Dy, DD Mon YYYY HH24:MI')||' ('||new.timezone||'). Please attend on time. Open your Academy status page for details.',new.application_id,new.id,now(),'interview-issued:'||new.id::text)
+  values(new.user_id,'interview_scheduled','A compulsory Academy interview has been scheduled','Your interview is scheduled for '||to_char(new.starts_at,'Dy, DD Mon YYYY HH24:MI')||' ('||new.timezone||'). Please attend on time. Open your Academy status page for details.',new.application_id,new.id,now(),'interview-issued:'||new.id::text||':'||new.starts_at::text)
   on conflict(dedupe_key) do nothing;
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
-  values(new.user_id,'interview_reminder','Interview reminder — 24 hours','Your compulsory Academy interview is approaching. Please be ready at the scheduled time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '24 hours'),'interview-reminder-24h:'||new.id::text)
+  values(new.user_id,'interview_reminder','Interview reminder — 24 hours','Your compulsory Academy interview is approaching. Please be ready at the scheduled time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '24 hours'),'interview-reminder-24h:'||new.id::text||':'||new.starts_at::text)
   on conflict(dedupe_key) do nothing;
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
-  values(new.user_id,'interview_reminder','Interview reminder — 1 hour','Your compulsory Academy interview starts in about one hour. Please join on time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '1 hour'),'interview-reminder-1h:'||new.id::text)
+  values(new.user_id,'interview_reminder','Interview reminder — 1 hour','Your compulsory Academy interview starts in about one hour. Please join on time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '1 hour'),'interview-reminder-1h:'||new.id::text||':'||new.starts_at::text)
   on conflict(dedupe_key) do nothing;
  elsif tg_op='UPDATE' and old.status is distinct from new.status and new.status='missed' then
   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,dedupe_key)
@@ -460,7 +460,7 @@ begin
 end $$;
 revoke all on function public.notify_academy_interview_changes() from public,anon,authenticated;
 drop trigger if exists academy_notify_interview_changes on public.academy_interview_invitations;
-create trigger academy_notify_interview_changes after insert or update of published_at,status on public.academy_interview_invitations
+create trigger academy_notify_interview_changes after insert or update of published_at,status,starts_at on public.academy_interview_invitations
 for each row execute function public.notify_academy_interview_changes();
 
 -- Admin-triggered inactivity sweep. It creates one warning per learner/course/threshold/day.
