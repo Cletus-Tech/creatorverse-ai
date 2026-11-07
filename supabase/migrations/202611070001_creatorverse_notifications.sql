@@ -22,3 +22,37 @@ revoke all on function private.cv_notify_direct_message() from public,anon,authe
 drop trigger if exists cv_notify_on_direct_message on public.cv_direct_messages;
 create trigger cv_notify_on_direct_message after insert on public.cv_direct_messages for each row execute function private.cv_notify_direct_message();
 do $$ begin if exists(select 1 from pg_publication where pubname='supabase_realtime') and not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cv_notifications') then alter publication supabase_realtime add table public.cv_notifications; end if; end $$;
+
+-- Social activity notification triggers (follows, post likes, post comments)
+create or replace function private.cv_notify_new_follower()
+returns trigger language plpgsql security definer set search_path=public,pg_temp as $$
+declare actor_name text; actor_key text;
+begin
+ if new.follower_id=new.following_id then return new; end if;
+ select coalesce(nullif(full_name,''),nullif(username,''),'Someone'),coalesce(nullif(username,''),id::text) into actor_name,actor_key from public.profiles where id=new.follower_id;
+ insert into public.cv_notifications(user_id,actor_id,type,title,body,href,entity_type,entity_id) values(new.following_id,new.follower_id,'follow',coalesce(actor_name,'Someone')||' started following you','Visit their creator profile','profile.html?u='||actor_key,'profile',new.follower_id);
+ return new; end $$;
+revoke all on function private.cv_notify_new_follower() from public,anon,authenticated;
+drop trigger if exists cv_notify_on_new_follower on public.community_follows;
+create trigger cv_notify_on_new_follower after insert on public.community_follows for each row execute function private.cv_notify_new_follower();
+create or replace function private.cv_notify_post_like()
+returns trigger language plpgsql security definer set search_path=public,pg_temp as $$
+declare recipient uuid; actor_name text;
+begin select user_id into recipient from public.community_posts where id=new.post_id;
+if recipient is null or recipient=new.user_id then return new; end if;
+select coalesce(nullif(full_name,''),nullif(username,''),'Someone') into actor_name from public.profiles where id=new.user_id;
+insert into public.cv_notifications(user_id,actor_id,type,title,body,href,entity_type,entity_id) values(recipient,new.user_id,'like',coalesce(actor_name,'Someone')||' liked your post','Someone appreciated your community post','community.html','post',new.post_id); return new; end $$;
+revoke all on function private.cv_notify_post_like() from public,anon,authenticated;
+drop trigger if exists cv_notify_on_post_like on public.community_likes;
+create trigger cv_notify_on_post_like after insert on public.community_likes for each row execute function private.cv_notify_post_like();
+create or replace function private.cv_notify_post_comment()
+returns trigger language plpgsql security definer set search_path=public,pg_temp as $$
+declare recipient uuid; actor_name text; preview text;
+begin select user_id into recipient from public.community_posts where id=new.post_id;
+if recipient is null or recipient=new.user_id then return new; end if;
+select coalesce(nullif(full_name,''),nullif(username,''),'Someone') into actor_name from public.profiles where id=new.user_id;
+preview:=left(coalesce(new.body,'Commented on your post'),120);
+insert into public.cv_notifications(user_id,actor_id,type,title,body,href,entity_type,entity_id) values(recipient,new.user_id,'comment',coalesce(actor_name,'Someone')||' commented on your post',preview,'community.html','post',new.post_id); return new; end $$;
+revoke all on function private.cv_notify_post_comment() from public,anon,authenticated;
+drop trigger if exists cv_notify_on_post_comment on public.community_comments;
+create trigger cv_notify_on_post_comment after insert on public.community_comments for each row execute function private.cv_notify_post_comment();
