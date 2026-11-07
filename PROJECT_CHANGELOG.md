@@ -136,3 +136,10 @@ Status: **Committed to `main`; deployment and live browser QA pending.**
 - Existing super-admin accounts were assigned the gold badge. Admin Portal → Students exposes badge management to super admins; gold is reserved for the owner account.
 - Added badge indicators to public creator profiles, creator discovery and messaging.
 - Source syntax checks passed for the updated JavaScript files. Production deployment and real-device drag/tap/overlap testing remain pending.
+
+
+## 2026-11-07 — Social verification tick and loading gate repair
+- Replaced public badge text/diamond labels with one compact blue social-platform-style tick beside verified names.
+- Applied the icon to profile headers and follower lists, creator discovery, community post/comment authors, Connect conversations/search/stories, and student/admin identity surfaces.
+- Simplified Admin Portal → Students to No tick / Blue tick; legacy badge values display as the same blue tick.
+- Reworked the shared loading gate to wait for initial fetch/XHR activity to settle, wait for fonts and layout frames, and retain a bounded fallback timeout. The gate no longer relies on static text appearing stable while asynchronous page data is still loading.
