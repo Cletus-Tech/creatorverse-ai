@@ -272,3 +272,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - The lifecycle migration remains a **draft and has not been applied** to the live Supabase project. Existing accounts, enrolments, progress and certificates remain untouched. No production deployment or merge to `main` occurred.
 
 **Next:** complete secure server-side offer expiry/payment fulfilment and attendance enforcement, add notification delivery for admission deadlines and interview reminders, finish reviewer scoring/recording consent and retention, then test learner/admin permissions in an isolated environment before applying migrations.
+
+
+### Lifecycle monitoring refinements
+
+- Added learner-visible time remaining for each open admission acceptance window and stored the deadline timezone.
+- Added an applicant-specific interview join URL to the safe invitation record; meeting join links are visible only to the invited learner and authorised admins, while private reviewer notes and recording paths remain in the admin-only interview table.
+- Added admin-triggered expiry sweeps: expired admission offers are marked expired and past interview appointments without attendance confirmation are marked missed, with application event history. These sweeps run when the Admissions workspace loads; a scheduled background job is still future work.
+- Added database activity capture for lesson views (rate-limited per lesson), lesson completions/reopenings, quiz attempts and assignment submissions. Admin monitoring now displays weekly lesson completions, lesson visits, assessment submissions, last activity and inactivity bands.
+- Added server-side level evaluation using published admin thresholds for lesson completion, quiz average, submitted assignments and active study days. Admin overrides are respected; approval-required levels enter a review queue, and rejected requests can be resubmitted after further progress.
