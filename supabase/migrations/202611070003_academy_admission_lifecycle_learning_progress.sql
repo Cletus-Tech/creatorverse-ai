@@ -255,7 +255,7 @@ returns jsonb language plpgsql security definer set search_path=pg_catalog,publi
 as $$
 declare
  v_user uuid:=auth.uid(); v_total integer; v_done integer; v_pct numeric(5,2); v_days integer;
- v_quiz numeric(5,2); v_assignments integer; v_current text:='Beginner'; v_highest text:='Beginner';
+ v_quiz numeric(5,2); v_assignments integer; v_current text:='Beginner'; v_highest text:='Beginner'; v_override boolean:=false;
  v_rule public.academy_level_rules%rowtype; v_pending text;
 begin
  if v_user is null then raise exception 'Sign in is required'; end if;
@@ -266,16 +266,15 @@ begin
  select count(distinct occurred_at::date)::integer into v_days from public.academy_learning_activity where user_id=v_user and course_id=p_course_id;
  select coalesce(avg(qa.score),0)::numeric(5,2) into v_quiz from public.quiz_attempts qa join public.quizzes q on q.id=qa.quiz_id where qa.user_id=v_user and q.course_id=p_course_id;
  select count(*)::integer into v_assignments from public.submissions s join public.assignments a on a.id=s.assignment_id where s.user_id=v_user and a.course_id=p_course_id and s.status in ('submitted','graded');
- select current_level,highest_unlocked_level into v_current,v_highest from public.academy_learner_levels where user_id=v_user and course_id=p_course_id;
- v_current:=coalesce(v_current,'Beginner');v_highest:=coalesce(v_highest,'Beginner');
+ select current_level,highest_unlocked_level,admin_override into v_current,v_highest,v_override from public.academy_learner_levels where user_id=v_user and course_id=p_course_id;
+ v_current:=coalesce(v_current,'Beginner');v_highest:=coalesce(v_highest,'Beginner');v_override:=coalesce(v_override,false);
  select * into v_rule from public.academy_level_rules r where r.course_id=p_course_id and r.published=true and r.sequence_no>(select coalesce(max(x.sequence_no),0) from public.academy_level_rules x where x.course_id=p_course_id and x.level_name=v_highest)
  and r.min_completed_percent<=v_pct and r.min_active_days<=v_days and (r.min_quiz_average is null or v_quiz>=r.min_quiz_average) and v_assignments>=r.min_assignment_count
  order by r.sequence_no desc limit 1;
  insert into public.academy_learner_levels(user_id,course_id,current_level,highest_unlocked_level,progress_percent,completed_lessons,total_lessons,last_activity_at,last_evaluated_at,updated_at)
  values(v_user,p_course_id,v_current,v_highest,v_pct,v_done,v_total,now(),now(),now())
  on conflict(user_id,course_id) do update set progress_percent=excluded.progress_percent,completed_lessons=excluded.completed_lessons,total_lessons=excluded.total_lessons,last_activity_at=excluded.last_activity_at,last_evaluated_at=now(),updated_at=now();
- if found then null; end if;
- if v_rule.id is not null then
+ if v_rule.id is not null and not v_override then
   if v_rule.requires_admin_approval then
    insert into public.academy_level_unlock_requests(user_id,course_id,level_name,progress_percent)
    values(v_user,p_course_id,v_rule.level_name,v_pct) on conflict(user_id,course_id,level_name) do update set status='pending',progress_percent=excluded.progress_percent,requested_at=now() where public.academy_level_unlock_requests.status='rejected';
