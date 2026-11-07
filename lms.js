@@ -159,7 +159,7 @@ function lesson(sb,user){
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
  sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){var ro=p.data&&p.data.role;
   if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');
-  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div'),P8=h('div'),P9=h('div'),P10=h('div'),P11=h('div');window.CV_ASSESS_ADMIN.assess(P8);window.CV_ASSESS_ADMIN.certs(P9);window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);window.CV_CMS.homepageBackground(P10);window.CV_PAYMENTS_ADMIN.mount(P11,sb,user,ro);
-  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7,homepageBackground:P10,assess:P8,certs:P9,payments:P11})})}
+  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div'),P8=h('div'),P9=h('div'),P10=h('div'),P11=h('div'),P12=h('div');window.CV_ACADEMY_ADMIN.mount(P12,sb,user,ro);window.CV_ASSESS_ADMIN.assess(P8);window.CV_ASSESS_ADMIN.certs(P9);window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);window.CV_CMS.homepageBackground(P10);window.CV_PAYMENTS_ADMIN.mount(P11,sb,user,ro);
+  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7,homepageBackground:P10,assess:P8,certs:P9,payments:P11,admissions:P12})})}
 if(window.CV_SB)boot(window.CV_SB);else document.addEventListener('cv-ready',function(){boot(window.CV_SB)});
 })();
