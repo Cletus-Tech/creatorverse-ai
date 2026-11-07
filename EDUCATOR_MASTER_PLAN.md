@@ -106,3 +106,7 @@ Prefer official documentation, platform creator education, standards bodies, rep
 
 
 - YouTube Automation Stage 3 (Production, Editing and Publishing): drafted as three complete chapters, a finished-pilot assessment and Admin publishing checklist (2026-11-07).
+
+- YouTube Automation Stage 4: Analytics, Channel Management, Sustainable Growth and Monetisation — complete three-chapter stage, integrated capstone, marking protocol and Admin checklist; unique course hero and original workflow diagram (2026-11-07).
+- AI Content Creation Practical Stage 1: Foundations, Creative Direction and Responsible AI — complete three-chapter stage, capstone, marking protocol, unique hero and original workflow diagram (2026-11-07).
+- Visual learning requirement: every course uses its own topic-specific hero artwork and original diagrams/visual aids with descriptive alt text. Visuals must teach a concept, not merely decorate the page.
