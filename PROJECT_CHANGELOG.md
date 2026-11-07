@@ -281,3 +281,17 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Added admin-triggered expiry sweeps: expired admission offers are marked expired and past interview appointments without attendance confirmation are marked missed, with application event history. These sweeps run when the Admissions workspace loads; a scheduled background job is still future work.
 - Added database activity capture for lesson views (rate-limited per lesson), lesson completions/reopenings, quiz attempts and assignment submissions. Admin monitoring now displays weekly lesson completions, lesson visits, assessment submissions, last activity and inactivity bands.
 - Added server-side level evaluation using published admin thresholds for lesson completion, quiz average, submitted assignments and active study days. Admin overrides are respected; approval-required levels enter a review queue, and rejected requests can be resubmitted after further progress.
+
+
+## 2026-11-07 — Academy in-app notifications and learner retention alerts
+
+Status: **Implemented on `education-build`; migration remains a draft and has not been applied to the live Supabase project.**
+
+- Added the `academy_notifications` table to the additive Academy lifecycle migration, with learner-owned read access, column-limited `read_at` updates, administrator visibility, scheduled visibility and deduplication keys.
+- Added database-triggered in-app notices for new admission offers, approaching offer deadlines, accepted/expired offers, newly published interview invitations, 24-hour and 1-hour interview reminders, and missed interviews.
+- Added an administrator-only inactivity sweep that generates deduplicated learner alerts after 8 days and 15 days without recorded learning activity. The progress-monitor refresh invokes this sweep; a scheduled daily job is still a later infrastructure task.
+- Added the Notifications section to the learner Academy status page, including due-notification display, unread styling, action links and mark-as-read behavior.
+- Added a course reference to inactivity notifications so each warning can identify the relevant programme.
+- No email, SMS, browser push or mobile push delivery is claimed; this phase is in-app notification delivery only.
+- Verified JavaScript parsing for `academy-status.js`, `academy-progress-admin.js`, `admissions-admin.js` and `academy-apply.js`.
+- Database migration remains unapplied. SQL must still receive a full dependency, RLS, privilege and trigger review before any live application; then test notifications with learner/admin accounts and verify reminder timing and deduplication.
