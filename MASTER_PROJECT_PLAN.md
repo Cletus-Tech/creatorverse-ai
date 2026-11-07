@@ -235,3 +235,10 @@ Status: **Read-only audit complete on `education-build`; remediation pending.**
 - Unenrolled course CTAs now direct learners to apply instead of self-enrolling or entering payment checkout. Existing enrolled learners retain their continue-learning route.
 - Admin-only reviewer notes and sensitive interview/diagnostic review fields are separated from applicant-readable data in the migration draft.
 - Still pending: run the migration only after full review, secure transactional admission/payment fulfilment, interview consent/upload/signed playback, diagnostic scoring UI, and end-to-end RLS tests. No live database writes or deployment occurred.
+
+
+### Course-specific diagnostic authoring
+
+- Admissions admin now includes a course-specific question bank with question editing, response-type configuration, target level, required/active controls and publish/unpublish actions.
+- Learner application forms dynamically render published diagnostic prompts and save applicant responses. Diagnostic grading is separated into an admin-only review table to prevent staff scores and feedback from leaking through learner response reads.
+- JavaScript parse checks passed for the four changed application/admin/LMS scripts. Live database integration, RLS, browser and responsive QA remain pending; the migration is still unapplied.
