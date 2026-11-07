@@ -242,3 +242,17 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Published active questions are loaded dynamically into the learner application form. Question responses are stored separately from reviewer scoring; diagnostic reviews are admin-only in the schema draft.
 - Added private diagnostic review storage in the migration draft so learner response reads do not expose staff scores or feedback.
 - Source-level JavaScript syntax checks passed for `academy-apply.js`, `admissions-admin.js`, `admin-shell.js` and `lms.js`. Database integration, browser interaction, mobile rendering and RLS behavior remain untested because the migration has not been applied.
+
+
+## 2026-11-07 — Academy interview planning and evaluation workspace
+
+- Added an interview management panel to each application review record.
+- Administrators can create interview records for live, recorded-video, recorded-audio or alternative assessment; set workflow status; schedule start/end; record an IANA timezone; specify a meeting provider and reference; assign a reviewer; and capture a private score and reviewer evaluation.
+- Added validation for date/time order, scheduled-session start time and non-negative scores.
+- Interview records, reviewer notes, meeting references and evaluation remain in the admin-only `academy_interviews` table under the draft migration's administrator-only RLS policy. Interview metadata is not exposed to applicants in this phase.
+- Added an application event and audit-log record when an interview plan is created. The UI explicitly states that recording upload is not enabled and that no recording is shared.
+- Added responsive styling for the interview planning panel.
+- JavaScript syntax validation passed for `admissions-admin.js`. This is source-level validation only; browser interaction, database integration and RLS tests remain pending because the admissions migration has not been applied.
+- No database migration was applied, no existing student data was changed, and no production deployment or merge to `main` occurred.
+
+**Next:** applicant-visible interview invitations and application tracking, consent-led recording capture with private signed access and retention, diagnostic response review/scoring, then secure admission/payment fulfilment.
