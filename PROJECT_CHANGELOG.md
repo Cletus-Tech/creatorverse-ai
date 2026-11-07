@@ -174,3 +174,5 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Kept existing Facebook, WhatsApp, TikTok and YouTube defaults intact when their optional admin fields are blank.
 - Instagram and Threads open in a new tab with accessible labels; existing social channels remain available.
 - Production verification should confirm the footer on desktop/mobile and test changing a social URL in Admin → Founder Profile, saving, and refreshing a public page.
+
+- Follow-up hardening: added a small global `social-links.js` loader through `layout.js`, so admin-managed founder social URLs hydrate the footer on **every page**, not only pages that load the homepage/about content script. Blank admin fields preserve the existing default social URLs.
