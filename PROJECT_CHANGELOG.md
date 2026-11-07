@@ -204,3 +204,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Explicitly prohibited learner self-enrolment, direct learner academic-completion writes, client-side answer keys and self-claim certificate issuance.
 - This is a design milestone only. No production database schema/policies/functions/storage were changed, no production deployment was made, and no merge to `main` was made.
 - Next milestone: inspect the complete live schema, RLS policies, grants, triggers, RPC definitions, storage policies and existing learner records; prepare a compatibility-first migration plan that preserves all existing records.
+
+
+## 2026-11-07 — Existing Academy security audit completed
+
+- Added `ACADEMY_CURRENT_STATE_AUDIT.md` after a read-only review of the existing `education-build` frontend and connected Supabase schema.
+- Verified the current learner self-enrolment and lesson-progress write/delete policies, the existing quiz RPC limitations, and learner-callable `claim_certificate` SECURITY DEFINER pathway. These are remediation priorities before the new admission and assessment flow is enabled.
+- Recorded the current storage bucket inventory and specified a separate private bucket for recorded admissions interviews.
+- No database writes, role changes, record deletions, migrations, branch creation, production merge or deployment were performed.
+- Next: implement the admissions data model and admin/learner workflows additively on `education-build`, then replace unsafe access paths with tested server-authoritative policies and functions.
