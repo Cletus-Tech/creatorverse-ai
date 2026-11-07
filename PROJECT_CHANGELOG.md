@@ -223,3 +223,13 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - The admin workspace clearly keeps admission approval separate from enrolment/payment fulfilment; it does not grant course access.
 - Code is committed to `education-build` only. The migration has **not** been applied to the live Supabase project, and the new workspace will show a schema-not-ready message until the migration is reviewed and applied. No deployment, merge, account/role change or existing-record deletion occurred.
 - Remaining before learner launch: complete student application/diagnostic UI, private interview upload/playback policies and consent/retention flow, transactional decision/access RPCs, payment gate, and end-to-end security tests.
+
+
+## 2026-11-07 — Learner admissions application flow added
+
+- Added `academy-apply.html`, `academy-apply.js` and `academy-apply.css` for a responsive course-specific application experience.
+- Course detail CTAs for learners who are not already enrolled now route to **Apply for admission** rather than directly creating free enrolments or starting payment checkout.
+- The form captures applicant identity/contact, education and experience, portfolio, motivation, goals, proposed entry level, explicit application/privacy consent and published course-specific diagnostic responses.
+- Applications are created as drafts and submitted with a reference number plus a submission-history event. The form explicitly explains that an application does not itself grant course access.
+- Hardened the migration draft's data separation: private reviewer notes live in an admin-only table; diagnostic reviewer scores/feedback and interview metadata are not exposed to applicants through broad row reads.
+- These are source changes on `education-build`. The migration remains unapplied, and end-to-end testing against the live database has not been performed. No deployment or merge was made.
