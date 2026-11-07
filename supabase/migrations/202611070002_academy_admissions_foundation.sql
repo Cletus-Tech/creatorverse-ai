@@ -108,16 +108,28 @@ create table if not exists public.academy_diagnostic_responses (
  response_text text,
  response_url text,
  submitted_at timestamptz not null default now(),
- reviewer_score numeric(7,2),
- reviewer_feedback text,
- reviewed_by uuid references auth.users(id) on delete set null,
- reviewed_at timestamptz,
  unique(application_id,question_id)
 );
 create index if not exists academy_diagnostic_responses_app_idx on public.academy_diagnostic_responses(application_id);
+create table if not exists public.academy_diagnostic_reviews (
+ id uuid primary key default gen_random_uuid(),
+ application_id uuid not null references public.academy_applications(id) on delete cascade,
+ question_id uuid not null references public.academy_diagnostic_questions(id) on delete restrict,
+ reviewer_id uuid not null references auth.users(id) on delete restrict,
+ score numeric(7,2),
+ feedback text,
+ reviewed_at timestamptz not null default now(),
+ unique(application_id,question_id)
+);
+create index if not exists academy_diagnostic_reviews_app_idx on public.academy_diagnostic_reviews(application_id);
+alter table public.academy_diagnostic_reviews enable row level security;
+grant select,insert,update,delete on public.academy_diagnostic_reviews to authenticated;
+drop policy if exists "Admins manage diagnostic reviews" on public.academy_diagnostic_reviews;
+create policy "Admins manage diagnostic reviews" on public.academy_diagnostic_reviews for all to authenticated using(public.is_admin()) with check(public.is_admin());
 alter table public.academy_diagnostic_responses enable row level security;
 grant select,insert,update on public.academy_diagnostic_responses to authenticated;
 drop policy if exists "Applicants read own diagnostic responses" on public.academy_diagnostic_responses;
+create policy "Applicants read own diagnostic responses" on public.academy_diagnostic_responses for select to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid()));
 drop policy if exists "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses;
 create policy "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses for insert to authenticated with check(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status='draft'));
 drop policy if exists "Applicants update own draft diagnostic responses" on public.academy_diagnostic_responses;
