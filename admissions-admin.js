@@ -80,7 +80,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   function interviewMessage(t,bad){interviewBox.appendChild(msg(t,bad))}
   function loadInterviews(){
    interviewBox.textContent='Loading interview records…';
-   sb.rpc('expire_academy_interview_invitations').then(function(){return Promise.all([sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('application_id',x.id).order('starts_at',{ascending:false})])}).then(function(pair){
+   return sb.rpc('expire_academy_interview_invitations').then(function(){return Promise.all([sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('application_id',x.id).order('starts_at',{ascending:false})])}).then(function(pair){
     interviewBox.textContent='';
     var ir=pair[0],iv=pair[1];if(ir.error||iv.error){interviewMessage('Interview workspace unavailable: '+((ir.error||iv.error).message),true);return}
     var items=ir.data||[],invitations=iv.data||[];
