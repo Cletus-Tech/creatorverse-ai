@@ -14,6 +14,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
  root.querySelector('[data-refresh]').addEventListener('click',load);search.addEventListener('input',draw);statusFilter.addEventListener('change',draw);
  function msg(text,bad){return el('p',{class:'academy-admin-message'+(bad?' is-error':''),text:text})}
  function load(){
+  sb.rpc('expire_academy_admission_offers').catch(function(){});
   list.textContent='Loading applications…';detail.textContent='Select an application to review.';
   Promise.all([sb.from('academy_applications').select('*').order('created_at',{ascending:false}).limit(300),sb.from('profiles').select('id,full_name,email'),sb.from('courses').select('id,title,price_ngn')]).then(function(rs){
    var err=rs.filter(function(x){return x.error})[0];if(err){list.textContent='Admissions schema is not available yet. Apply the reviewed migration 202611070002_academy_admissions_foundation.sql before enabling this workspace. Details: '+err.error.message;return}
@@ -79,7 +80,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   function interviewMessage(t,bad){interviewBox.appendChild(msg(t,bad))}
   function loadInterviews(){
    interviewBox.textContent='Loading interview records…';
-   Promise.all([sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('application_id',x.id).order('starts_at',{ascending:false})]).then(function(pair){
+   sb.rpc('expire_academy_interview_invitations').then(function(){return Promise.all([sb.from('academy_interviews').select('*').eq('application_id',x.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('application_id',x.id).order('starts_at',{ascending:false})])}).then(function(pair){
     interviewBox.textContent='';
     var ir=pair[0],iv=pair[1];if(ir.error||iv.error){interviewMessage('Interview workspace unavailable: '+((ir.error||iv.error).message),true);return}
     var items=ir.data||[],invitations=iv.data||[];
@@ -115,7 +116,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
      sb.from('academy_interviews').insert(payload).select('id').single().then(function(w){
       if(w.error)throw w.error;
       if(!a||!b||!tz.value.trim())return w.data;
-      return sb.from('academy_interview_invitations').upsert({interview_id:w.data.id,application_id:x.id,user_id:x.user_id,interview_type:kind.value,status:'scheduled',starts_at:a.toISOString(),ends_at:b.toISOString(),timezone:tz.value.trim(),attendance_deadline:b.toISOString(),learner_instructions:'Please attend at the scheduled time. If you cannot attend, contact Academy support before the session.' ,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'interview_id'}).then(function(inv){if(inv.error)throw inv.error;return w.data});
+      return sb.from('academy_interview_invitations').upsert({interview_id:w.data.id,application_id:x.id,user_id:x.user_id,interview_type:kind.value,status:'scheduled',starts_at:a.toISOString(),ends_at:b.toISOString(),timezone:tz.value.trim(),attendance_deadline:b.toISOString(),meeting_join_url:meeting.value.trim()||null,learner_instructions:'Please attend at the scheduled time. If you cannot attend, contact Academy support before the session.' ,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'interview_id'}).then(function(inv){if(inv.error)throw inv.error;return w.data});
      }).then(function(w){
       return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'interview_updated',message:'Interview plan '+state.value,metadata:{interview_type:kind.value,scheduled_start:payload.scheduled_start,timezone:payload.timezone}});
      }).then(function(ev2){if(ev2.error)throw ev2.error;return sb.from('academy_audit_log').insert({actor_id:user.id,application_id:x.id,action:'interview_plan_created',details:{interview_type:kind.value,status:state.value,scheduled_start:payload.scheduled_start,reviewer_id:payload.reviewer_id}})})
@@ -125,7 +126,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
     })
    })
   }
-  loadInterviews();
+  loadInterviews().catch(function(err){interviewBox.textContent='Could not load interview records: '+(err.message||String(err))});
   detail.appendChild(el('p',{class:'academy-admin-footnote',text:'Interview links, reviewer evaluations and scheduling details are restricted to authorised administrators. Recording capture and private media upload will be enabled only after consent, retention and signed-access controls are implemented.'}))
  }
  function diagnostics(){
