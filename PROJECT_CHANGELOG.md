@@ -195,3 +195,133 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt all six CreatorVerse division cards with individual relevant imagery, stronger descriptions, feature lists and a consistent image-led layout. The Affiliate division now clearly communicates referral links, campaign tracking, conversions and commission statements.
 - Preserved current routes, live/in-development statuses, course filters, enrolment, progress, pricing, lesson curriculum and admin controls. No course/module/lesson structure or payment behavior was altered.
 - Database verification completed: all eight course thumbnails and all seven category images are populated. Inspect course and division pages on desktop and mobile before production promotion.
+
+
+## 2026-11-07 — Academy admissions and academic systems blueprint
+
+- Added `ACADEMY_ADMISSIONS_PLACEMENT_ASSESSMENT_SPEC.md` on the private `education-build` branch.
+- Defined application statuses and admin decisions, the free-vs-paid access gate, five placement levels, course-specific diagnostics, recorded interview consent/privacy controls, provider-neutral live interview requirements, server-authoritative lesson completion and CBT, practical grading, admin certificate issuance/revocation, notifications and audit.
+- Explicitly prohibited learner self-enrolment, direct learner academic-completion writes, client-side answer keys and self-claim certificate issuance.
+- This is a design milestone only. No production database schema/policies/functions/storage were changed, no production deployment was made, and no merge to `main` was made.
+- Next milestone: inspect the complete live schema, RLS policies, grants, triggers, RPC definitions, storage policies and existing learner records; prepare a compatibility-first migration plan that preserves all existing records.
+
+
+## 2026-11-07 — Existing Academy security audit completed
+
+- Added `ACADEMY_CURRENT_STATE_AUDIT.md` after a read-only review of the existing `education-build` frontend and connected Supabase schema.
+- Verified the current learner self-enrolment and lesson-progress write/delete policies, the existing quiz RPC limitations, and learner-callable `claim_certificate` SECURITY DEFINER pathway. These are remediation priorities before the new admission and assessment flow is enabled.
+- Recorded the current storage bucket inventory and specified a separate private bucket for recorded admissions interviews.
+- No database writes, role changes, record deletions, migrations, branch creation, production merge or deployment were performed.
+- Next: implement the admissions data model and admin/learner workflows additively on `education-build`, then replace unsafe access paths with tested server-authoritative policies and functions.
+
+
+## 2026-11-07 — Academy admissions workspace foundation added
+
+- Added an additive SQL migration draft at `supabase/migrations/202611070002_academy_admissions_foundation.sql` for applications, application history, course-specific diagnostic questions/responses, interview metadata, five-level placement and an Academy audit log.
+- The migration preserves existing users and academic records and defines row-level access for applicants and admins. It creates a dedicated **private** `academy-interviews` Storage bucket; object upload/playback policies remain intentionally unconfigured until secure signed-URL authorisation is implemented.
+- Added `admissions-admin.js` and integrated **Admin Portal → Admissions & Placement** into the existing admin navigation. The first workspace version lists applications, filters by status/search, shows applicant/course information and lets admins record a review decision, confirmed level, rationale and internal note with event/audit records.
+- The admin workspace clearly keeps admission approval separate from enrolment/payment fulfilment; it does not grant course access.
+- Code is committed to `education-build` only. The migration has **not** been applied to the live Supabase project, and the new workspace will show a schema-not-ready message until the migration is reviewed and applied. No deployment, merge, account/role change or existing-record deletion occurred.
+- Remaining before learner launch: complete student application/diagnostic UI, private interview upload/playback policies and consent/retention flow, transactional decision/access RPCs, payment gate, and end-to-end security tests.
+
+
+## 2026-11-07 — Learner admissions application flow added
+
+- Added `academy-apply.html`, `academy-apply.js` and `academy-apply.css` for a responsive course-specific application experience.
+- Course detail CTAs for learners who are not already enrolled now route to **Apply for admission** rather than directly creating free enrolments or starting payment checkout.
+- The form captures applicant identity/contact, education and experience, portfolio, motivation, goals, proposed entry level, explicit application/privacy consent and published course-specific diagnostic responses.
+- Applications are created as drafts and submitted with a reference number plus a submission-history event. The form explicitly explains that an application does not itself grant course access.
+- Hardened the migration draft's data separation: private reviewer notes live in an admin-only table; diagnostic reviewer scores/feedback and interview metadata are not exposed to applicants through broad row reads.
+- These are source changes on `education-build`. The migration remains unapplied, and end-to-end testing against the live database has not been performed. No deployment or merge was made.
+
+
+## 2026-11-07 — Course diagnostic question authoring added
+
+- Extended Admin Portal → Admissions & Placement with a course-specific diagnostic question bank.
+- Admins can select a course, create/edit questions, choose response formats (long text, short text, URL or single choice), set target level, configure required/active state, publish/unpublish and delete questions.
+- Published active questions are loaded dynamically into the learner application form. Question responses are stored separately from reviewer scoring; diagnostic reviews are admin-only in the schema draft.
+- Added private diagnostic review storage in the migration draft so learner response reads do not expose staff scores or feedback.
+- Source-level JavaScript syntax checks passed for `academy-apply.js`, `admissions-admin.js`, `admin-shell.js` and `lms.js`. Database integration, browser interaction, mobile rendering and RLS behavior remain untested because the migration has not been applied.
+
+
+## 2026-11-07 — Academy interview planning and evaluation workspace
+
+- Added an interview management panel to each application review record.
+- Administrators can create interview records for live, recorded-video, recorded-audio or alternative assessment; set workflow status; schedule start/end; record an IANA timezone; specify a meeting provider and reference; assign a reviewer; and capture a private score and reviewer evaluation.
+- Added validation for date/time order, scheduled-session start time and non-negative scores.
+- Interview records, reviewer notes, meeting references and evaluation remain in the admin-only `academy_interviews` table under the draft migration's administrator-only RLS policy. Interview metadata is not exposed to applicants in this phase.
+- Added an application event and audit-log record when an interview plan is created. The UI explicitly states that recording upload is not enabled and that no recording is shared.
+- Added responsive styling for the interview planning panel.
+- JavaScript syntax validation passed for `admissions-admin.js`. This is source-level validation only; browser interaction, database integration and RLS tests remain pending because the admissions migration has not been applied.
+- No database migration was applied, no existing student data was changed, and no production deployment or merge to `main` occurred.
+
+**Next:** applicant-visible interview invitations and application tracking, consent-led recording capture with private signed access and retention, diagnostic response review/scoring, then secure admission/payment fulfilment.
+
+
+## 2026-11-07 — Admission acceptance windows, mandatory interview appointments and learning progression
+
+- Added an additive lifecycle migration draft: `supabase/migrations/202611070003_academy_admission_lifecycle_learning_progress.sql`. It adds time-limited admission offers, learner-visible interview invitations, append-only lesson activity events, admin-configurable level rules, learner level snapshots and level-unlock approval requests.
+- Admin admissions review now includes an admission-offer composer with a required future acceptance deadline, stored with the administrator's timezone. Issuing an offer records the deadline, changes the application to `approved_pending_payment`, and appends an application event and audit entry. The offer does not itself grant course access.
+- Scheduled interviews now require a start time, end time and timezone. When an invitation is published, the learner receives an appointment with exact start/end times, attendance instructions and a response window. Learners can confirm attendance or request rescheduling before the start; admins can mark the appointment attended, missed or cancelled.
+- Added a learner-facing `academy-status.html` timeline for admission offers, acceptance deadlines, interview appointments, attendance responses and enrolled-course progress. Linked it from the student dashboard.
+- Added the Admin > Learning Progress workspace. It reports completion percentage, completed/total lessons, last activity, inactivity bands and weekly lesson pace. Administrators can set a learner's current level with an audited reason.
+- Added configurable progression thresholds per course and level: lesson completion percentage, optional quiz average, submitted assignments, active study days, publication state and whether administrator approval is required. When a learner completes a lesson, the app requests a server-side evaluation. Automatic rules can unlock levels; approval-required rules enter an administrator review queue. Learner status page also refreshes the evaluation.
+- Added restricted server-side RPCs for accepting a learner's own offer before its deadline, responding to their own future interview invitation, and recalculating their own enrolled-course level. Course access remains separate and requires the verified payment/free-course fulfilment workflow.
+- Added a database trigger draft to record lesson completion/reopening activity and support monitoring without trusting browser-submitted timestamps.
+- JavaScript parse checks are required for all changed scripts; no browser interaction, SQL execution, RLS integration test or payment fulfilment test has been performed yet.
+- The lifecycle migration remains a **draft and has not been applied** to the live Supabase project. Existing accounts, enrolments, progress and certificates remain untouched. No production deployment or merge to `main` occurred.
+
+**Next:** complete secure server-side offer expiry/payment fulfilment and attendance enforcement, add notification delivery for admission deadlines and interview reminders, finish reviewer scoring/recording consent and retention, then test learner/admin permissions in an isolated environment before applying migrations.
+
+
+### Lifecycle monitoring refinements
+
+- Added learner-visible time remaining for each open admission acceptance window and stored the deadline timezone.
+- Added an applicant-specific interview join URL to the safe invitation record; meeting join links are visible only to the invited learner and authorised admins, while private reviewer notes and recording paths remain in the admin-only interview table.
+- Added admin-triggered expiry sweeps: expired admission offers are marked expired and past interview appointments without attendance confirmation are marked missed, with application event history. These sweeps run when the Admissions workspace loads; a scheduled background job is still future work.
+- Added database activity capture for lesson views (rate-limited per lesson), lesson completions/reopenings, quiz attempts and assignment submissions. Admin monitoring now displays weekly lesson completions, lesson visits, assessment submissions, last activity and inactivity bands.
+- Added server-side level evaluation using published admin thresholds for lesson completion, quiz average, submitted assignments and active study days. Admin overrides are respected; approval-required levels enter a review queue, and rejected requests can be resubmitted after further progress.
+
+
+## 2026-11-07 — Academy in-app notifications and learner retention alerts
+
+Status: **Implemented on `education-build`; migration remains a draft and has not been applied to the live Supabase project.**
+
+- Added the `academy_notifications` table to the additive Academy lifecycle migration, with learner-owned read access, column-limited `read_at` updates, administrator visibility, scheduled visibility and deduplication keys.
+- Added database-triggered in-app notices for new admission offers, approaching offer deadlines, accepted/expired offers, newly published interview invitations, 24-hour and 1-hour interview reminders, and missed interviews.
+- Added an administrator-only inactivity sweep that generates deduplicated learner alerts after 8 days and 15 days without recorded learning activity. The progress-monitor refresh invokes this sweep; a scheduled daily job is still a later infrastructure task.
+- Added the Notifications section to the learner Academy status page, including due-notification display, unread styling, action links and mark-as-read behavior.
+- Added a course reference to inactivity notifications so each warning can identify the relevant programme.
+- No email, SMS, browser push or mobile push delivery is claimed; this phase is in-app notification delivery only.
+- Verified JavaScript parsing for `academy-status.js`, `academy-progress-admin.js`, `admissions-admin.js` and `academy-apply.js`.
+- Database migration remains unapplied. SQL must still receive a full dependency, RLS, privilege and trigger review before any live application; then test notifications with learner/admin accounts and verify reminder timing and deduplication.
+
+
+## 2026-11-07 — Learner pace and progression enforcement improvements
+
+- Learner Academy status now displays completed lessons, weekly lesson-completion pace, active study days over the last 30 days, current/highest level and the next published level's configured milestone thresholds.
+- The lifecycle migration draft now recalculates progression immediately after learner lesson completions and learner quiz/assignment submissions, so admin monitoring is not dependent only on a learner opening the status page.
+- The evaluator remains subject to the existing configured rule thresholds and admin-approval workflow. This is still a draft implementation until the migration is reviewed and safely applied in an isolated/staging environment.
+- JavaScript syntax validation passed for the learner status, learning progress admin, admissions admin and application scripts.
+- No live schema changes, account changes, data deletion, merge or deployment occurred.
+
+
+## 2026-11-07 — Unified CreatorVerse administrator control board
+
+- Confirmed the Academy Admissions & Placement and Learning Progress workspaces are modules inside the existing `admin.html` control board, not separate applications or sites.
+- Kept all changes on the existing `education-build` integration branch; the single administrator navigation routes to Admissions and Learning Progress alongside existing homepage, media, courses, students, assessments, certificates and payments workspaces.
+- Fixed Supabase RPC thenable handling in admissions, learner progress and lesson activity paths by normalizing RPC calls through `Promise.resolve` before attaching `.catch` handlers.
+- Updated `admin.html` script cache-busting versions so browsers fetch the latest integrated admin modules rather than stale cached JavaScript.
+- JavaScript syntax checks passed for the modified runtime files. This is a source-level integration step, not proof of end-to-end database compatibility.
+- Live Supabase currently has no `academy_*` tables or functions. The two Academy migrations remain unapplied; a full SQL dependency/security review and safe migration execution are required before Academy data workflows can operate. Existing production data and the production branch remain untouched.
+
+
+## 2026-11-07 — Academy database integration completed
+
+- Applied `academy_admissions_foundation` and `academy_admission_lifecycle_learning_progress` to the existing live Supabase project as additive migrations. Existing users, profiles, courses, enrolments, lesson progress, certificates, and payment records were not rewritten.
+- Confirmed the 16 Academy tables and the learner activity summary view now exist with RLS enabled.
+- Confirmed the admission acceptance, interview response, lesson activity, and learner progression RPCs exist in the live database.
+- Sent a PostgREST schema-cache reload notification after the migrations.
+- Existing single admin shell continues to route Admissions & Placement and Learning Progress from the same `admin.html` dashboard and navigation. No separate Academy website was created.
+- Current preview deployment: `creatorverse-kjoo6qfbr-cletus-tech1.vercel.app`, branch `education-build`, commit `86783c487d14be22c16e62d92924cf3ffbee4758`, Vercel state READY.
+- Remaining verification: authenticated browser QA of admin workspaces and learner workflows; end-to-end payment/fulfilment, private interview media upload/playback, and scheduled background notification delivery remain separate follow-up work. Production code branch has not been merged or deployed.
