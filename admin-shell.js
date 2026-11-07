@@ -34,7 +34,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
  var who=h('span',{class:'adm-who'}),top=h('header',{class:'adm-top'},[h('button',{class:'adm-burger',type:'button','aria-label':'Menu',on:function(){open(true)}},[ico(IC.menu)]),h('strong',{id:'adm-title',text:'Dashboard'}),h('span',{class:'sp'}),h('a',{class:'btn btn-outline',href:'index.html',text:'View website'}),who,
   h('button',{class:'btn btn-outline',type:'button',on:function(){sb.auth.signOut().then(function(){location.href='index.html'})}},[ico(IC.out),h('span',{text:'Log out'})])]);
  root.appendChild(h('div',{class:'adm'},[side,back,h('div',{class:'adm-main'},[top,view])]));
- sb.from('profiles').select('full_name').eq('id',user.id).maybeSingle().then(function(r){me.name=(r.data&&r.data.full_name)||user.email;who.textContent=me.name+' · '+role.replace('_',' ')});
+ sb.from('profiles').select('full_name,verified_badge').eq('id',user.id).maybeSingle().then(function(r){me.name=(r.data&&r.data.full_name)||user.email;who.textContent=me.name+' · '+role.replace('_',' ');var tick=window.CV_BADGE_ICON&&window.CV_BADGE_ICON(r.data||{});if(tick)who.appendChild(tick)});
  function pane(p,note){view.textContent='';if(note)view.appendChild(h('div',{class:'note',text:note}));view.appendChild(p)}
  function route(){var id=(location.hash||'#dashboard').slice(1);if(!links[id])id='dashboard';if(id===cur)return;cur=id;Object.keys(links).forEach(function(k){links[k].classList.toggle('on',k===id)});
   var label=links[id].querySelector('span').textContent;document.getElementById('adm-title').textContent=label;view.textContent='';
