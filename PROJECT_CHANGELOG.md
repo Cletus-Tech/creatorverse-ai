@@ -213,3 +213,13 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Recorded the current storage bucket inventory and specified a separate private bucket for recorded admissions interviews.
 - No database writes, role changes, record deletions, migrations, branch creation, production merge or deployment were performed.
 - Next: implement the admissions data model and admin/learner workflows additively on `education-build`, then replace unsafe access paths with tested server-authoritative policies and functions.
+
+
+## 2026-11-07 — Academy admissions workspace foundation added
+
+- Added an additive SQL migration draft at `supabase/migrations/202611070002_academy_admissions_foundation.sql` for applications, application history, course-specific diagnostic questions/responses, interview metadata, five-level placement and an Academy audit log.
+- The migration preserves existing users and academic records and defines row-level access for applicants and admins. It creates a dedicated **private** `academy-interviews` Storage bucket; object upload/playback policies remain intentionally unconfigured until secure signed-URL authorisation is implemented.
+- Added `admissions-admin.js` and integrated **Admin Portal → Admissions & Placement** into the existing admin navigation. The first workspace version lists applications, filters by status/search, shows applicant/course information and lets admins record a review decision, confirmed level, rationale and internal note with event/audit records.
+- The admin workspace clearly keeps admission approval separate from enrolment/payment fulfilment; it does not grant course access.
+- Code is committed to `education-build` only. The migration has **not** been applied to the live Supabase project, and the new workspace will show a schema-not-ready message until the migration is reviewed and applied. No deployment, merge, account/role change or existing-record deletion occurred.
+- Remaining before learner launch: complete student application/diagnostic UI, private interview upload/playback policies and consent/retention flow, transactional decision/access RPCs, payment gate, and end-to-end security tests.
