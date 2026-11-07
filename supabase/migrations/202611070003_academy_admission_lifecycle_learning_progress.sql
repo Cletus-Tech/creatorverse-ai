@@ -379,3 +379,123 @@ for each row execute function public.track_academy_assessment_activity();
 drop trigger if exists academy_track_assignment_submission on public.submissions;
 create trigger academy_track_assignment_submission after insert on public.submissions
 for each row execute function public.track_academy_assessment_activity();
+
+
+-- In-app Academy notifications. Scheduled items become visible when scheduled_for is reached.
+create table if not exists public.academy_notifications (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references auth.users(id) on delete cascade,
+ notification_type text not null check(notification_type in ('admission_offer','admission_accepted','admission_expired','interview_scheduled','interview_reminder','interview_missed','inactivity_warning','inactivity_overdue','level_unlocked','level_review')),
+ title text not null,
+ body text not null,
+ action_url text not null default '/academy-status.html',
+ related_application_id uuid references public.academy_applications(id) on delete set null,
+ related_offer_id uuid references public.academy_admission_offers(id) on delete cascade,
+ related_interview_id uuid references public.academy_interview_invitations(id) on delete cascade,
+ scheduled_for timestamptz not null default now(),
+ read_at timestamptz,
+ dedupe_key text not null unique,
+ created_at timestamptz not null default now()
+);
+create index if not exists academy_notifications_user_feed_idx on public.academy_notifications(user_id,scheduled_for desc,created_at desc);
+alter table public.academy_notifications enable row level security;
+revoke all on public.academy_notifications from anon,authenticated;
+grant select on public.academy_notifications to authenticated;
+grant update(read_at) on public.academy_notifications to authenticated;
+drop policy if exists "Learners read own Academy notifications" on public.academy_notifications;
+create policy "Learners read own Academy notifications" on public.academy_notifications for select to authenticated using(user_id=auth.uid() or public.is_admin());
+drop policy if exists "Learners mark own Academy notifications read" on public.academy_notifications;
+create policy "Learners mark own Academy notifications read" on public.academy_notifications for update to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
+
+create or replace function public.notify_academy_offer_changes()
+returns trigger language plpgsql security definer set search_path=pg_catalog,public
+as $$
+begin
+ if tg_op='INSERT' and new.status='offered' then
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,scheduled_for,dedupe_key)
+  values(new.user_id,'admission_offer','You have an Academy admission offer','Review your offer and accept it before the deadline shown in your Academy status page.',new.application_id,new.id,now(),'offer-issued:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,scheduled_for,dedupe_key)
+  values(new.user_id,'admission_offer','Your admission offer deadline is approaching','Your Academy admission offer is due to expire within 24 hours. Accept it before the displayed deadline.',new.application_id,new.id,greatest(now(),new.expires_at-interval '24 hours'),'offer-reminder:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+ elsif tg_op='UPDATE' and old.status is distinct from new.status then
+  if new.status='accepted' then
+   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,dedupe_key)
+   values(new.user_id,'admission_accepted','Admission offer accepted','Your acceptance has been recorded. Complete any required payment and onboarding to activate course access.',new.application_id,new.id,'offer-accepted:'||new.id::text)
+   on conflict(dedupe_key) do nothing;
+  elsif new.status='expired' then
+   insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_offer_id,dedupe_key)
+   values(new.user_id,'admission_expired','Admission offer expired','The acceptance deadline has passed. Contact Academy admissions if you need assistance.',new.application_id,new.id,'offer-expired:'||new.id::text)
+   on conflict(dedupe_key) do nothing;
+  end if;
+ end if;
+ return new;
+end $$;
+revoke all on function public.notify_academy_offer_changes() from public,anon,authenticated;
+drop trigger if exists academy_notify_offer_changes on public.academy_admission_offers;
+create trigger academy_notify_offer_changes after insert or update of status on public.academy_admission_offers
+for each row execute function public.notify_academy_offer_changes();
+
+create or replace function public.notify_academy_interview_changes()
+returns trigger language plpgsql security definer set search_path=pg_catalog,public
+as $$
+begin
+ if new.published_at is not null and (tg_op='INSERT' or old.published_at is null) then
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
+  values(new.user_id,'interview_scheduled','A compulsory Academy interview has been scheduled','Your interview is scheduled for '||to_char(new.starts_at,'Dy, DD Mon YYYY HH24:MI')||' ('||new.timezone||'). Please attend on time. Open your Academy status page for details.',new.application_id,new.id,now(),'interview-issued:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
+  values(new.user_id,'interview_reminder','Interview reminder — 24 hours','Your compulsory Academy interview is approaching. Please be ready at the scheduled time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '24 hours'),'interview-reminder-24h:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,scheduled_for,dedupe_key)
+  values(new.user_id,'interview_reminder','Interview reminder — 1 hour','Your compulsory Academy interview starts in about one hour. Please join on time.',new.application_id,new.id,greatest(now(),new.starts_at-interval '1 hour'),'interview-reminder-1h:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+ elsif tg_op='UPDATE' and old.status is distinct from new.status and new.status='missed' then
+  insert into public.academy_notifications(user_id,notification_type,title,body,related_application_id,related_interview_id,dedupe_key)
+  values(new.user_id,'interview_missed','Academy interview marked missed','Our records show that the scheduled interview was missed. Contact Academy admissions to discuss the next step.',new.application_id,new.id,'interview-missed:'||new.id::text)
+  on conflict(dedupe_key) do nothing;
+ end if;
+ return new;
+end $$;
+revoke all on function public.notify_academy_interview_changes() from public,anon,authenticated;
+drop trigger if exists academy_notify_interview_changes on public.academy_interview_invitations;
+create trigger academy_notify_interview_changes after insert or update of published_at,status on public.academy_interview_invitations
+for each row execute function public.notify_academy_interview_changes();
+
+-- Admin-triggered inactivity sweep. It creates one warning per learner/course/threshold/day.
+-- A scheduled daily job can be connected later; no pg_cron dependency is assumed here.
+create or replace function public.notify_academy_inactive_learners()
+returns integer language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_count integer;
+begin
+ if auth.uid() is null or not public.is_admin() then raise exception 'Administrator access required'; end if;
+ with latest as (
+  select e.user_id,e.course_id,e.created_at,
+   greatest(e.created_at,coalesce(max(a.occurred_at),e.created_at),coalesce(max(lp.completed_at),e.created_at)) as last_activity
+  from public.enrolments e
+  left join public.academy_learning_activity a on a.user_id=e.user_id and a.course_id=e.course_id
+  left join public.modules m on m.course_id=e.course_id
+  left join public.lessons l on l.module_id=m.id
+  left join public.lesson_progress lp on lp.user_id=e.user_id and lp.lesson_id=l.id
+  group by e.user_id,e.course_id,e.created_at
+ ), due as (
+  select *,floor(extract(epoch from (now()-last_activity))/86400)::integer as inactive_days from latest
+ )
+ insert into public.academy_notifications(user_id,notification_type,title,body,related_interview_id,scheduled_for,dedupe_key,action_url)
+ select user_id,
+  case when inactive_days>=15 then 'inactivity_overdue' else 'inactivity_warning' end,
+  case when inactive_days>=15 then 'Your Academy learning is overdue' else 'Your Academy learning needs attention' end,
+  'You have not recorded learning activity for '||inactive_days||' days in your enrolled course. Sign in, continue your next lesson, or contact your instructor if you need help.',
+  null,now(),
+  'inactivity:'||user_id::text||':'||course_id::text||':'||case when inactive_days>=15 then 'overdue' else 'warning' end||':'||current_date::text,
+  '/student.html'
+ from due
+ where inactive_days>=8
+ on conflict(dedupe_key) do nothing;
+ get diagnostics v_count=row_count;
+ return v_count;
+end $$;
+revoke all on function public.notify_academy_inactive_learners() from public,anon;
+grant execute on function public.notify_academy_inactive_learners() to authenticated;
+
