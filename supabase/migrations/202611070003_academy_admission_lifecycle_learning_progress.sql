@@ -93,12 +93,14 @@ begin
    insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
    values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
    on conflict do nothing;
+   if auth.uid()=new.user_id then perform public.refresh_academy_learner_level(v_course); end if;
   end if;
  elsif tg_op='UPDATE' then
   if old.completed_at is null and new.completed_at is not null then
    insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
    values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
    on conflict do nothing;
+   if auth.uid()=new.user_id then perform public.refresh_academy_learner_level(v_course); end if;
   elsif old.completed_at is not null and new.completed_at is null then
    insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
    values(new.user_id,v_course,new.lesson_id,'lesson_reopened',new.user_id::text||':'||new.lesson_id::text||':'||extract(epoch from clock_timestamp())::text);
@@ -369,6 +371,7 @@ begin
  if v_course is not null then
   insert into public.academy_learning_activity(user_id,course_id,activity_type,source_record_id,metadata)
   values(new.user_id,v_course,v_type,new.id::text,jsonb_build_object('record_id',new.id));
+  if auth.uid()=new.user_id then perform public.refresh_academy_learner_level(v_course); end if;
  end if;
  return new;
 end $$;
