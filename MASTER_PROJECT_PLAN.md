@@ -140,7 +140,7 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 ## 2026-11-07 — Messaging badges and site notification centre
 
 - Added a persistent `cv_notifications` inbox with per-user RLS, unread state and Realtime publication support.
-- New direct messages create a notification for the other conversation participant through a database trigger.
+- New direct messages, new followers, post likes and post comments create recipient notifications through private database triggers; self-actions are excluded.
 - Added a standard outline-SVG bell control in the right-side account/navigation area, separate from Home/Divisions/Explore navigation.
 - Added exact unread direct-message counts to desktop Messages and mobile bottom navigation, refreshing from the canonical conversation/message tables via Realtime and a 30-second fallback.
 - Added dropdown preview, mark-all-read action and full Notifications page. Additional event types can reuse this notification table.
