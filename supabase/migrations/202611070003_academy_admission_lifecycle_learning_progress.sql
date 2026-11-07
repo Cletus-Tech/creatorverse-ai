@@ -335,3 +335,47 @@ begin
 end $$;
 revoke all on function public.expire_academy_interview_invitations() from public,anon;
 grant execute on function public.expire_academy_interview_invitations() to authenticated;
+
+
+-- Record lesson opens and assessment submissions as learning activity.
+create or replace function public.record_academy_lesson_view(p_lesson_id uuid)
+returns boolean language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_course uuid; v_user uuid:=auth.uid();
+begin
+ if v_user is null then raise exception 'Sign in is required'; end if;
+ select m.course_id into v_course from public.lessons l join public.modules m on m.id=l.module_id where l.id=p_lesson_id;
+ if v_course is null or not exists(select 1 from public.enrolments where user_id=v_user and course_id=v_course) then raise exception 'You are not enrolled in this course'; end if;
+ if exists(select 1 from public.academy_learning_activity where user_id=v_user and course_id=v_course and lesson_id=p_lesson_id and activity_type='lesson_viewed' and occurred_at>now()-interval '5 minutes') then return false; end if;
+ insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type)
+ values(v_user,v_course,p_lesson_id,'lesson_viewed');
+ return true;
+end $$;
+revoke all on function public.record_academy_lesson_view(uuid) from public,anon;
+grant execute on function public.record_academy_lesson_view(uuid) to authenticated;
+
+create or replace function public.track_academy_assessment_activity()
+returns trigger language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_course uuid; v_type text;
+begin
+ if tg_table_name='quiz_attempts' then
+  select course_id into v_course from public.quizzes where id=new.quiz_id;
+  v_type:='quiz_submitted';
+ else
+  select course_id into v_course from public.assignments where id=new.assignment_id;
+  v_type:='assignment_submitted';
+ end if;
+ if v_course is not null then
+  insert into public.academy_learning_activity(user_id,course_id,activity_type,source_record_id,metadata)
+  values(new.user_id,v_course,v_type,new.id::text,jsonb_build_object('record_id',new.id));
+ end if;
+ return new;
+end $$;
+revoke all on function public.track_academy_assessment_activity() from public,anon,authenticated;
+drop trigger if exists academy_track_quiz_attempt on public.quiz_attempts;
+create trigger academy_track_quiz_attempt after insert on public.quiz_attempts
+for each row execute function public.track_academy_assessment_activity();
+drop trigger if exists academy_track_assignment_submission on public.submissions;
+create trigger academy_track_assignment_submission after insert on public.submissions
+for each row execute function public.track_academy_assessment_activity();
