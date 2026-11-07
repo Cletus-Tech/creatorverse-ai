@@ -1057,3 +1057,10 @@ html body .hero2 .hero2-in .founder-visual .founder-email-button svg{width:15px!
 .footer-social-links a svg{width:19px;height:19px;display:block}
 .footer-social-links a[data-social="email"]{display:inline-flex;align-items:center;justify-content:center}
 @media(max-width:900px){.hero2 .founder-visual{max-width:100%;gap:10px}.hero2 .founder-social-links{gap:8px}}
+
+
+/* Brand colours for Instagram and Threads icons in both homepage and footer. */
+.hero2 .founder-social-links a[data-social="instagram"] img,
+.footer-social-links a[data-social="instagram"] img{filter:brightness(0) saturate(100%) invert(36%) sepia(88%) saturate(2674%) hue-rotate(292deg) brightness(101%) contrast(103%)!important}
+.hero2 .founder-social-links a[data-social="threads"] img,
+.footer-social-links a[data-social="threads"] img{filter:brightness(0) saturate(100%) invert(69%) sepia(58%) saturate(1834%) hue-rotate(177deg) brightness(101%) contrast(101%)!important}
