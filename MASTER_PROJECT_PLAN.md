@@ -135,3 +135,13 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - Shared account navigation now uses the profile record for the signed-in display name and avatar, with auth metadata as fallback. Student dashboard identity also hydrates from `profiles`, preventing stale auth metadata from overriding the latest profile picture.
 - The floating assistant receives a self-contained responsive style sheet so its bot launcher and panel remain visible; the greeting dissolves after six seconds and also dismisses immediately on tap. The launcher remains draggable and its position persists per browser.
 - Follow-on platform-wide audit remains required: standardize every profile/avatar read on the canonical `profiles` record, verify all cross-page action destinations and repair dead/placeholder controls, and test the owner identity and assistant on desktop/mobile.
+
+
+## 2026-11-07 — Messaging badges and site notification centre
+
+- Added a persistent `cv_notifications` inbox with per-user RLS, unread state and Realtime publication support.
+- New direct messages create a notification for the other conversation participant through a database trigger.
+- Added a standard outline-SVG bell control in the right-side account/navigation area, separate from Home/Divisions/Explore navigation.
+- Added exact unread direct-message counts to desktop Messages and mobile bottom navigation, refreshing from the canonical conversation/message tables via Realtime and a 30-second fallback.
+- Added dropdown preview, mark-all-read action and full Notifications page. Additional event types can reuse this notification table.
+- Two-account live QA remains required for incoming messages, unread count and read-state verification.
