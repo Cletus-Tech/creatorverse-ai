@@ -41,7 +41,7 @@ create policy "Academy applicants read own applications" on public.academy_appli
 drop policy if exists "Academy applicants create drafts" on public.academy_applications;
 create policy "Academy applicants create drafts" on public.academy_applications for insert to authenticated with check(user_id=auth.uid() and status='draft');
 drop policy if exists "Academy applicants update own drafts" on public.academy_applications;
-create policy "Academy applicants update own drafts" on public.academy_applications for update to authenticated using(user_id=auth.uid() and status='draft') with check(user_id=auth.uid() and status='draft');
+create policy "Academy applicants update own drafts" on public.academy_applications for update to authenticated using(user_id=auth.uid() and status='draft') with check(user_id=auth.uid() and status in ('draft','submitted'));
 drop policy if exists "Academy admins manage applications" on public.academy_applications;
 create policy "Academy admins manage applications" on public.academy_applications for all to authenticated using(public.is_admin()) with check(public.is_admin());
 
@@ -61,6 +61,8 @@ alter table public.academy_application_events enable row level security;
 grant select,insert on public.academy_application_events to authenticated;
 drop policy if exists "Applicants read application events" on public.academy_application_events;
 create policy "Applicants read application events" on public.academy_application_events for select to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and (a.user_id=auth.uid() or public.is_admin())));
+drop policy if exists "Applicants append submission event" on public.academy_application_events;
+create policy "Applicants append submission event" on public.academy_application_events for insert to authenticated with check(actor_id=auth.uid() and event_type='submitted' and exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status='submitted'));
 drop policy if exists "Admins manage application events" on public.academy_application_events;
 create policy "Admins manage application events" on public.academy_application_events for all to authenticated using(public.is_admin()) with check(public.is_admin());
 
