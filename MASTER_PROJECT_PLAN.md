@@ -126,3 +126,12 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - Admin Portal → Students uses a simple No tick / Blue tick control. Legacy non-empty badge values are normalized visually to the same blue tick.
 - The tick appears beside names on public profiles, creator discovery, community posts and comments, Connect conversations/search/stories, and the student/admin identity views.
 - Replaced the page-loader text-stability heuristic with a shared network-idle gate so the footer and page shell remain hidden until initial data requests settle; the loader has a bounded safety timeout.
+
+
+## 2026-11-07 — Platform identity and consistency work
+
+- The platform owner is the single account ID `07760888-cd28-47ab-82de-e1f3757a8e2d` (the CreatorVerse owner account), distinct from ordinary administrators and other super admins.
+- Owner identity uses a dedicated gold verification shield and gold name accent wherever shared identity components render; ordinary verified accounts retain the blue social tick. No public tier wording is added beside names.
+- Shared account navigation now uses the profile record for the signed-in display name and avatar, with auth metadata as fallback. Student dashboard identity also hydrates from `profiles`, preventing stale auth metadata from overriding the latest profile picture.
+- The floating assistant receives a self-contained responsive style sheet so its bot launcher and panel remain visible; the greeting dissolves after six seconds and also dismisses immediately on tap. The launcher remains draggable and its position persists per browser.
+- Follow-on platform-wide audit remains required: standardize every profile/avatar read on the canonical `profiles` record, verify all cross-page action destinations and repair dead/placeholder controls, and test the owner identity and assistant on desktop/mobile.
