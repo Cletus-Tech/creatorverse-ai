@@ -242,3 +242,17 @@ Status: **Read-only audit complete on `education-build`; remediation pending.**
 - Admissions admin now includes a course-specific question bank with question editing, response-type configuration, target level, required/active controls and publish/unpublish actions.
 - Learner application forms dynamically render published diagnostic prompts and save applicant responses. Diagnostic grading is separated into an admin-only review table to prevent staff scores and feedback from leaking through learner response reads.
 - JavaScript parse checks passed for the four changed application/admin/LMS scripts. Live database integration, RLS, browser and responsive QA remain pending; the migration is still unapplied.
+
+
+## 2026-11-07 — Academy interview planning and evaluation workspace
+
+- Added an interview management panel to each application review record.
+- Administrators can create interview records for live, recorded-video, recorded-audio or alternative assessment; set workflow status; schedule start/end; record an IANA timezone; specify a meeting provider and reference; assign a reviewer; and capture a private score and reviewer evaluation.
+- Added validation for date/time order, scheduled-session start time and non-negative scores.
+- Interview records, reviewer notes, meeting references and evaluation remain in the admin-only `academy_interviews` table under the draft migration's administrator-only RLS policy. Interview metadata is not exposed to applicants in this phase.
+- Added an application event and audit-log record when an interview plan is created. The UI explicitly states that recording upload is not enabled and that no recording is shared.
+- Added responsive styling for the interview planning panel.
+- JavaScript syntax validation passed for `admissions-admin.js`. This is source-level validation only; browser interaction, database integration and RLS tests remain pending because the admissions migration has not been applied.
+- No database migration was applied, no existing student data was changed, and no production deployment or merge to `main` occurred.
+
+**Next:** applicant-visible interview invitations and application tracking, consent-led recording capture with private signed access and retention, diagnostic response review/scoring, then secure admission/payment fulfilment.
