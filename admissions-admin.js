@@ -4,7 +4,7 @@ var levels=['Beginner','Foundation','Intermediate','Advanced','Professional'];
 var statuses=['draft','submitted','under_review','more_information_requested','approved_pending_payment','approved','rejected','withdrawn'];
 window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
  var root=el('div',{class:'academy-admissions-admin'});host.appendChild(root);
- var selected=null,rows=[],profiles={},courses={},statusFilter=el('select',{},statuses.map(function(s){return el('option',{value:s,text:s.replace(/_/g,' ')})}));
+ var selected=null,rows=[],profiles={},courses={},statusFilter=el('select',{},[el('option',{value:'all',text:'All application statuses'})].concat(statuses.map(function(s){return el('option',{value:s,text:s.replace(/_/g,' ')})})));
  var search=el('input',{type:'search',placeholder:'Search application number, learner or course…'});
  var list=el('div',{class:'academy-app-list'}),detail=el('section',{class:'academy-app-detail'});
  root.appendChild(el('div',{class:'academy-admin-head'},[el('div',{},[el('span',{class:'academy-eyebrow',text:'CREATORVERSE ACADEMY'}),el('h2',{text:'Admissions & Placement'}),el('p',{text:'Review applications, assess readiness, assign levels and manage interview stages.'})]),el('button',{class:'btn btn-outline',type:'button',text:'Refresh',onclick:'', 'data-refresh':'1'})]));
