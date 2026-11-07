@@ -17,22 +17,19 @@ var CK='<path d="M20 6 9 17l-5-5"/>',PL='<polygon points="6 3 20 12 6 21 6 3"/>'
 
 function courseImage(c){
  if(c&&c.thumbnail_url)return c.thumbnail_url;
- var s=((c&&c.title)||'').toLowerCase()+' '+((c&&c.category_slug)||'').toLowerCase();
- var map=[
-  [/artificial intelligence|\bai\b|machine learning|prompt/,'photo-1677442136019-21780ecad995'],
-  [/graphic|design|illustrat|photoshop|canva/,'photo-1626785774573-4b799315345d'],
-  [/web|coding|program|developer|javascript|software/,'photo-1498050108023-c5249f4df085'],
-  [/video|film|editing|motion|animation/,'photo-1574717024653-61fd2cf4d44d'],
-  [/market|social media|marketing|seo|brand/,'photo-1557838923-2985c318be48'],
-  [/business|entrepreneur|startup|finance/,'photo-1556761175-b413da4baf72'],
-  [/photo|photography|camera/,'photo-1516035069371-29a1b244cc32'],
-  [/content|creator|youtube|writing/,'photo-1492619375914-88005aa9e8fb']
- ];
- var id='photo-1516321318423-f06f85e504b3';
- for(var i=0;i<map.length;i++){if(map[i][0].test(s)){id=map[i][1];break}}
- return 'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1100&q=85';
+ var images={
+  'youtube-automation-foundations':'photo-1492619375914-88005aa9e8fb',
+  'ai-content-creation-practical':'photo-1677442136019-21780ecad995',
+  'tiktok-growth-monetization':'photo-1611162616475-46b635cb6868',
+  'prompt-engineering-mastery':'photo-1555949963-aa79dcee981c',
+  'ai-graphic-design-studio':'photo-1626785774573-4b799315345d',
+  'digital-business-launchpad':'photo-1556761175-b413da4baf72',
+  'algorithm-niche-research-lab':'photo-1460925895917-afdab827c52f',
+  '3d-animations-qnnp':'photo-1618005182384-a83a8bd57fbe'
+ };
+ var id=images[(c&&c.slug)||'']||'photo-1521737711867-e3b97375f902';
+ return 'https://images.unsplash.com/'+id+'?auto=format&fit=crop&w=1400&q=88';
 }
-
 function nl(c){return(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0)}
 function ccard(c){
  var n=nl(c),img=courseImage(c),cat=c.category_slug||'Featured learning';
@@ -67,7 +64,7 @@ function courses(sb){
    ])
   ]),
   h('div',{class:'academy-catalogue-visual'},[
-   h('img',{src:'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85',alt:'Learners collaborating on a creative project',loading:'eager'}),
+   h('img',{src:'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=88',alt:'Learners collaborating on a creative project',loading:'eager'}),
    h('span',{class:'academy-visual-caption',text:'YOUR NEXT CHAPTER STARTS HERE'})
   ])
  ]);

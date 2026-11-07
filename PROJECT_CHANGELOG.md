@@ -184,3 +184,14 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Added the public contact email `cletustech25@gmail.com` beneath the homepage founder social icons and in the global footer.
 - Added the contact email and WhatsApp URL field to Admin Portal → Founder Profile; non-empty admin-managed social URLs and email hydrate the homepage/footer while preserving public defaults when fields are blank.
 - Email links use `mailto:`. Visual desktop/mobile verification remains pending.
+
+
+## 2026-11-07 — Academy and ecosystem image-led redesign
+
+- Reworked the Academy catalogue and course detail presentation with a richer, colourful, image-first layout, responsive cards, stronger hierarchy, clearer course metadata and refined hover/focus treatment.
+- Assigned a distinct course-specific cover image to all eight published Academy courses, including the preserved 3D Animation course. Covers are saved in the existing `courses.thumbnail_url` column, keeping them editable in Admin Portal → Courses.
+- Populated the seven published learning-category `image_url` values so the Learn category grid and category detail pages have relevant visual artwork.
+- Replaced broad keyword-based course image fallbacks with an explicit slug-to-image map to prevent unrelated courses from sharing a generic cover.
+- Rebuilt all six CreatorVerse division cards with individual relevant imagery, stronger descriptions, feature lists and a consistent image-led layout. The Affiliate division now clearly communicates referral links, campaign tracking, conversions and commission statements.
+- Preserved current routes, live/in-development statuses, course filters, enrolment, progress, pricing, lesson curriculum and admin controls. No course/module/lesson structure or payment behavior was altered.
+- Database verification completed: all eight course thumbnails and all seven category images are populated. Inspect course and division pages on desktop and mobile before production promotion.

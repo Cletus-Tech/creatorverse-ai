@@ -179,3 +179,14 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Architecture: WebRTC media; authenticated room membership and short-lived join tokens; Supabase Realtime for room signaling/presence and persistent class metadata. Use a TURN relay for NAT traversal. For multi-person classes, use an SFU/media server (e.g. LiveKit) rather than a browser mesh that becomes unreliable as participants increase. Do not claim production-ready calling until TURN/SFU infrastructure, secrets, access controls and multi-device testing are configured.
 - Keep direct messaging and stories intact. Link call actions from existing CreatorVerse Connect conversations; expose group classrooms through a dedicated Live Classes area and role-appropriate create controls.
 - Current commit changes are source updates only. Production deployment and visual QA must be confirmed separately; test founder icon row and Email mailto action on phone and desktop, plus footer button and dynamic admin-managed email.
+
+
+## 2026-11-07 — Academy and ecosystem image-led redesign
+
+- Academy catalogue and course detail pages receive a polished, colourful, responsive visual refresh while preserving search, category filters, published-course loading, featured ordering, pricing, enrolment, progress, curriculum and assessment flows.
+- Every published course has its own distinct topic-specific cover image stored in the existing admin-managed `courses.thumbnail_url` field: YouTube Automation, AI Content Creation, TikTok Growth & Monetisation, Prompt Engineering, AI Graphic Design, Digital Business, Algorithm & Niche Research, and 3D Animation.
+- Every Academy learning category receives a corresponding relevant image in `categories.image_url`, so the Learn discovery tiles and category detail pages are image-led as well.
+- Course detail pages reuse the matching course cover; fallback cover selection is keyed by course slug rather than broad keyword matching, preventing unrelated courses from sharing a generic image.
+- Rebuilt the six-division page as an image-led ecosystem showcase. Academy, Community, Marketplace, Affiliate, Realty and Business each have a distinct visual, descriptive copy, feature list, status and existing destination/availability behavior. Affiliate highlights referral links, campaign tracking, conversions and commission statements.
+- No course, module, lesson, enrolment, pricing, authentication or payment records were changed. Course images remain editable through the existing Admin Portal → Courses controls; category images are stored in the existing categories table.
+- QA: database image URLs written and verified for all seven learning categories and all eight course records; browser rendering must be checked before production release. Source-level syntax and responsive visual QA required on the preview.
