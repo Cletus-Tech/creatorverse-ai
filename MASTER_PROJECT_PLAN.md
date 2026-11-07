@@ -190,3 +190,16 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt the six-division page as an image-led ecosystem showcase. Academy, Community, Marketplace, Affiliate, Realty and Business each have a distinct visual, descriptive copy, feature list, status and existing destination/availability behavior. Affiliate highlights referral links, campaign tracking, conversions and commission statements.
 - No course, module, lesson, enrolment, pricing, authentication or payment records were changed. Course images remain editable through the existing Admin Portal → Courses controls; category images are stored in the existing categories table.
 - QA: database image URLs written and verified for all seven learning categories and all eight course records; browser rendering must be checked before production release. Source-level syntax and responsive visual QA required on the preview.
+
+
+## 2026-11-07 — Academy admissions, placement, examinations and certification architecture
+
+Status: **Architecture specification drafted on `education-build`; implementation and QA pending. No production database change or deployment.**
+
+- Added `ACADEMY_ADMISSIONS_PLACEMENT_ASSESSMENT_SPEC.md` as the governing design for application-based admissions, five-level placement, diagnostics, recorded/live interviews, secure CBT, practical grading, progression and admin-issued certificates.
+- Application submission never creates enrolment; free courses require admission approval, paid courses require admission approval plus verified payment.
+- Placement levels are Beginner, Foundation, Intermediate, Advanced and Professional. A learner's selection is advisory; the academy assigns the final level from course-specific evidence.
+- Recorded interviews require explicit camera/microphone permission, visible recording controls, preview/rerecord, consent records, private storage, signed playback access, retention and an alternative assessment path.
+- Academic completion, exam scoring and certificate issuance must be server-authoritative; direct learner writes and self-claim certificate issuance are prohibited.
+- Preserve all existing enrolments, lesson progress, quiz attempts, submissions and certificates during any later additive migration.
+- Next: complete read-only schema/RLS/function/storage/data audit, then prepare a non-destructive migration and implementation plan. Do not apply to production or deploy until explicit release approval.
