@@ -153,3 +153,12 @@ Status: **Committed to `main`; deployment and live browser QA pending.**
 - Fixed the student dashboard identity source: it now hydrates display name, avatar and verification state from `profiles`, avoiding stale `user_metadata.avatar_url` when the profile has since changed.
 - Rebuilt the floating assistant stylesheet with its missing launcher/panel positioning and responsive layout. The welcome message continues to fade after six seconds or immediately when tapped; the bot button remains independently available.
 - Remaining work: full cross-page profile/avatar unification, systematic broken-link/button destination audit, and authenticated mobile/desktop end-to-end QA.
+
+
+## 2026-11-07 — Message unread badge and notification centre
+
+- Created `public.cv_notifications` with per-user RLS and Realtime publication registration.
+- Added a private-schema trigger that creates a recipient notification for each new direct message.
+- Added a clean SVG bell and dropdown in the right-side site header, away from the Home/Divisions navigation.
+- Added exact unread-message badges to desktop and mobile Messages navigation using `cv_conversations` and `cv_direct_messages.read_at`.
+- Added `notifications.html`, unread notification counts, live refresh and mark-all-read support. Two-account QA remains outstanding.
