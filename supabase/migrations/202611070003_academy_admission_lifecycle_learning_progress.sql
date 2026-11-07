@@ -292,3 +292,47 @@ revoke all on function public.refresh_academy_learner_level(uuid) from public,an
 grant execute on function public.refresh_academy_learner_level(uuid) to authenticated;
 
 alter table public.academy_admission_offers add column if not exists expires_timezone text;
+
+alter table public.academy_interview_invitations add column if not exists meeting_join_url text;
+
+-- Admin-triggered lifecycle sweeps. The admin workspace calls these when reviewing admissions;
+-- a scheduled database job can be added later for fully automatic background expiry.
+create or replace function public.expire_academy_admission_offers()
+returns integer language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_count integer;
+begin
+ if auth.uid() is null or not public.is_admin() then raise exception 'Administrator access required'; end if;
+ with expired as (
+  update public.academy_admission_offers set status='expired',updated_at=now()
+  where status='offered' and expires_at<=now()
+  returning id,application_id
+ )
+ insert into public.academy_application_events(application_id,actor_id,event_type,message,metadata)
+ select application_id,auth.uid(),'admission_offer_expired','Admission acceptance deadline passed.',jsonb_build_object('offer_id',id)
+ from expired;
+ get diagnostics v_count=row_count;
+ return v_count;
+end $$;
+revoke all on function public.expire_academy_admission_offers() from public,anon;
+grant execute on function public.expire_academy_admission_offers() to authenticated;
+
+create or replace function public.expire_academy_interview_invitations()
+returns integer language plpgsql security definer set search_path=pg_catalog,public
+as $$
+declare v_count integer;
+begin
+ if auth.uid() is null or not public.is_admin() then raise exception 'Administrator access required'; end if;
+ with missed as (
+  update public.academy_interview_invitations set status='missed',updated_at=now()
+  where status in ('scheduled','confirmed') and ends_at<=now()
+  returning id,application_id,interview_id
+ )
+ insert into public.academy_application_events(application_id,actor_id,event_type,message,metadata)
+ select application_id,auth.uid(),'interview_marked_missed','Interview appointment ended without attendance confirmation.',jsonb_build_object('invitation_id',id,'interview_id',interview_id)
+ from missed;
+ get diagnostics v_count=row_count;
+ return v_count;
+end $$;
+revoke all on function public.expire_academy_interview_invitations() from public,anon;
+grant execute on function public.expire_academy_interview_invitations() to authenticated;
