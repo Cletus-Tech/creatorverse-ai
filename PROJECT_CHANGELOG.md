@@ -195,3 +195,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt all six CreatorVerse division cards with individual relevant imagery, stronger descriptions, feature lists and a consistent image-led layout. The Affiliate division now clearly communicates referral links, campaign tracking, conversions and commission statements.
 - Preserved current routes, live/in-development statuses, course filters, enrolment, progress, pricing, lesson curriculum and admin controls. No course/module/lesson structure or payment behavior was altered.
 - Database verification completed: all eight course thumbnails and all seven category images are populated. Inspect course and division pages on desktop and mobile before production promotion.
+
+
+## 2026-11-07 — Educator Curriculum admin workspace draft
+
+- Added Admin Portal → Educator Curriculum on `education-build` with draft CRUD, course association, hierarchy, status, ordering, recycle-bin restore and revision restore.
+- Added a proposed RLS-protected Supabase migration with automatic before/after revision records. It remains unapplied pending review.
+- Wired `educator-admin.js` into `admin.html`, mounted the editor from `lms.js`, and added navigation/routing in `admin-shell.js`.
+- Existing live curriculum remains managed through Admin Portal → Courses. Draft workspace does not publish to learners.
+- No deployment was triggered; migration and browser QA remain pending.

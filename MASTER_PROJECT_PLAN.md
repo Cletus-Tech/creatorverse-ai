@@ -190,3 +190,12 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt the six-division page as an image-led ecosystem showcase. Academy, Community, Marketplace, Affiliate, Realty and Business each have a distinct visual, descriptive copy, feature list, status and existing destination/availability behavior. Affiliate highlights referral links, campaign tracking, conversions and commission statements.
 - No course, module, lesson, enrolment, pricing, authentication or payment records were changed. Course images remain editable through the existing Admin Portal → Courses controls; category images are stored in the existing categories table.
 - QA: database image URLs written and verified for all seven learning categories and all eight course records; browser rendering must be checked before production release. Source-level syntax and responsive visual QA required on the preview.
+
+
+## 2026-11-07 — Educator curriculum admin controls (draft)
+
+- Added a separate Admin Portal → Educator Curriculum authoring workspace on `education-build`, distinct from student-facing live courses.
+- Admins can create, edit, classify and link curriculum course outlines, stages, lessons, resources and assessments; edit full Markdown teaching content and learning outcomes; set status and sequence; move removed items to a recycle bin; restore them; and inspect/restore recorded revisions.
+- Existing Admin Portal → Courses remains the control surface for live course metadata, stages/modules, lessons, teaching content, videos and downloadable resources.
+- Added a proposed Supabase migration for private admin-only draft storage and automatic revision history. It is a branch file only and has not been applied to production.
+- No student-facing content or live deployment was changed.
