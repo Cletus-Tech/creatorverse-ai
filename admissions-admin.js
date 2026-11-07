@@ -58,7 +58,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
    if(!offerExpiry.value){offerFeedback.textContent='Choose an acceptance deadline.';return}
    var expiry=new Date(offerExpiry.value);if(!Number.isFinite(expiry.getTime())||expiry<=new Date()){offerFeedback.textContent='The acceptance deadline must be in the future.';return}
    issueOffer.disabled=true;offerFeedback.textContent='Issuing offer…';
-   sb.from('academy_admission_offers').upsert({application_id:x.id,user_id:x.user_id,course_id:x.course_id,status:'offered',issued_at:new Date().toISOString(),expires_at:expiry.toISOString(),offer_message:offerText.value.trim()||null,issued_by:user.id,updated_at:new Date().toISOString()},{onConflict:'application_id'}).select('id').single()
+   sb.from('academy_admission_offers').upsert({application_id:x.id,user_id:x.user_id,course_id:x.course_id,status:'offered',issued_at:new Date().toISOString(),expires_at:expiry.toISOString(),expires_timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',offer_message:offerText.value.trim()||null,issued_by:user.id,updated_at:new Date().toISOString()},{onConflict:'application_id'}).select('id').single()
     .then(function(z){if(z.error)throw z.error;return sb.from('academy_applications').update({status:'approved_pending_payment',offer_issued_at:new Date().toISOString(),offer_expires_at:expiry.toISOString(),updated_at:new Date().toISOString()}).eq('id',x.id)})
     .then(function(z){if(z.error)throw z.error;return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'admission_offer_issued',from_status:x.status,to_status:'approved_pending_payment',message:'Admission offer issued. Acceptance deadline: '+expiry.toISOString()})})
     .then(function(z){if(z.error)throw z.error;return sb.from('academy_audit_log').insert({actor_id:user.id,application_id:x.id,action:'admission_offer_issued',details:{expires_at:expiry.toISOString()}})})
@@ -108,7 +108,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
      var a=start.value?new Date(start.value):null,b=end.value?new Date(end.value):null;
      if(a&&isNaN(a.getTime())||b&&isNaN(b.getTime())){feedback.textContent='Enter a valid date and time.';return}
      if(a&&b&&b<=a){feedback.textContent='Interview end must be after its start.';return}
-     if(state.value==='scheduled'&&!a){feedback.textContent='A scheduled interview needs a start time.';return}
+     if(state.value==='scheduled'&&(!a||!b||!tz.value.trim())){feedback.textContent='A scheduled interview needs a start time, end time and timezone so the learner receives a complete appointment.';return}
      if(score.value!==''&&(Number(score.value)<0||!Number.isFinite(Number(score.value)))){feedback.textContent='Enter a valid non-negative score.';return}
      saveInterview.disabled=true;feedback.textContent='Saving interview…';
      var payload={application_id:x.id,interview_type:kind.value,status:state.value,scheduled_start:a?a.toISOString():null,scheduled_end:b?b.toISOString():null,timezone:tz.value.trim()||null,meeting_provider:provider.value.trim()||null,meeting_reference:meeting.value.trim()||null,reviewer_id:reviewer.value||null,score:score.value===''?null:Number(score.value),reviewer_notes:notes.value.trim()||null,updated_at:new Date().toISOString()};
