@@ -27,7 +27,6 @@ create table if not exists public.academy_applications (
  reviewed_at timestamptz,
  reviewed_by uuid references auth.users(id) on delete set null,
  decision_reason text,
- admin_note text,
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
 );
@@ -56,6 +55,19 @@ create table if not exists public.academy_application_events (
  metadata jsonb not null default '{}'::jsonb,
  created_at timestamptz not null default now()
 );
+create table if not exists public.academy_application_private_notes (
+ id uuid primary key default gen_random_uuid(),
+ application_id uuid not null references public.academy_applications(id) on delete cascade,
+ author_id uuid not null references auth.users(id) on delete restrict,
+ note text not null,
+ created_at timestamptz not null default now()
+);
+create index if not exists academy_application_private_notes_app_idx on public.academy_application_private_notes(application_id,created_at desc);
+alter table public.academy_application_private_notes enable row level security;
+grant select,insert on public.academy_application_private_notes to authenticated;
+drop policy if exists "Admins manage private application notes" on public.academy_application_private_notes;
+create policy "Admins manage private application notes" on public.academy_application_private_notes for all to authenticated using(public.is_admin()) with check(public.is_admin());
+
 create index if not exists academy_application_events_app_idx on public.academy_application_events(application_id,created_at desc);
 alter table public.academy_application_events enable row level security;
 grant select,insert on public.academy_application_events to authenticated;
@@ -106,7 +118,6 @@ create index if not exists academy_diagnostic_responses_app_idx on public.academ
 alter table public.academy_diagnostic_responses enable row level security;
 grant select,insert,update on public.academy_diagnostic_responses to authenticated;
 drop policy if exists "Applicants read own diagnostic responses" on public.academy_diagnostic_responses;
-create policy "Applicants read own diagnostic responses" on public.academy_diagnostic_responses for select to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and (a.user_id=auth.uid() or public.is_admin())));
 drop policy if exists "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses;
 create policy "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses for insert to authenticated with check(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status in ('draft','submitted','more_information_requested')));
 drop policy if exists "Applicants update own draft diagnostic responses" on public.academy_diagnostic_responses;
@@ -141,7 +152,6 @@ create index if not exists academy_interviews_app_idx on public.academy_intervie
 alter table public.academy_interviews enable row level security;
 grant select,insert,update on public.academy_interviews to authenticated;
 drop policy if exists "Applicants read own interview metadata" on public.academy_interviews;
-create policy "Applicants read own interview metadata" on public.academy_interviews for select to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and (a.user_id=auth.uid() or public.is_admin())));
 drop policy if exists "Admins manage interviews" on public.academy_interviews;
 create policy "Admins manage interviews" on public.academy_interviews for all to authenticated using(public.is_admin()) with check(public.is_admin());
 
