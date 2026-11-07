@@ -8,6 +8,7 @@ window.CV_ACADEMY_PROGRESS={mount:function(host,sb,user){
  filters.append(term,filter);root.append(stats,rulesPanel,unlockPanel,filters,list);head.querySelector('button').addEventListener('click',load);term.addEventListener('input',draw);filter.addEventListener('change',draw);
  var records=[],profiles={},courses={},levelsByKey={};
  function message(t,bad){list.appendChild(el('p',{class:'academy-admin-message'+(bad?' is-error':''),text:t}))}
+ function field(label,node){return el('label',{class:'academy-admin-field'},[el('span',{text:label}),node])}
  function load(){
   list.textContent='Loading learner activity…';
   Promise.all([
