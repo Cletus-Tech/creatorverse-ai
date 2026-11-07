@@ -114,3 +114,14 @@ body[data-page="admin"] .page{max-width:none;padding:0}
 .academy-progress-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.academy-level-badge{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;color:#c8d8f7;font-size:.88rem}
 .academy-level-controls{display:grid;grid-template-columns:minmax(150px,1fr) auto minmax(180px,1.5fr) auto;align-items:end;gap:10px}.academy-level-controls label{display:grid;gap:5px;color:#aebfdd;font-size:.8rem}.academy-level-controls input[type=text],.academy-level-controls select{width:100%;min-width:0;box-sizing:border-box}.academy-level-controls label:has(input[type=checkbox]){display:flex;align-items:center;gap:7px}
 @media(max-width:720px){.academy-progress-card-head{display:grid}.academy-level-controls{grid-template-columns:1fr 1fr}.academy-level-controls>input,.academy-level-controls>button,.academy-level-controls>small{grid-column:1/-1}}
+
+.academy-progress-rules,.academy-progress-unlocks{padding:18px;border:1px solid rgba(105,145,220,.2);border-radius:16px;background:rgba(10,22,46,.72);display:grid;gap:12px}
+.academy-progress-rules h3,.academy-progress-unlocks h3{margin:0;color:#eaf1ff}
+.academy-progress-rules .academy-review-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.academy-progress-rules .academy-review-form label{min-width:0}
+.academy-progress-rules input,.academy-progress-rules select{width:100%;min-width:0;box-sizing:border-box}
+.academy-rule-list{display:flex;flex-wrap:wrap;gap:8px}.academy-rule-chip{border:1px solid rgba(90,144,240,.3);border-radius:99px;padding:8px 12px;background:rgba(36,75,139,.25);color:#c8dcff}
+.academy-unlock-request{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border-radius:12px;background:rgba(20,40,76,.65);border:1px solid rgba(105,145,220,.18)}
+.academy-unlock-request strong{width:100%;color:#edf4ff}.academy-unlock-request span{color:#aebfdb;font-size:.88rem}.academy-unlock-request input{flex:1;min-width:150px}
+@media(max-width:760px){.academy-progress-rules .academy-review-form{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.academy-progress-rules .academy-review-form{grid-template-columns:1fr}}
