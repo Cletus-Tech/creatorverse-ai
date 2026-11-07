@@ -156,10 +156,32 @@ function lesson(sb,user){
    else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)throw e.error;return sb.rpc('refresh_academy_learner_level',{p_course_id:cid})}).then(function(){location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)}).catch(function(e){alert('Your lesson was saved, but your level progress could not refresh yet: '+(e.message||String(e)))})}}));
    if(i<flat.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i+1],text:'Next →'}));
    main.appendChild(h('div',{class:'academy-lesson-layout'},[col,side]))})})}
-function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
- sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){var ro=p.data&&p.data.role;
-  if(ro!=='admin'&&ro!=='super_admin')return note('Administrators only.');
-  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div'),P8=h('div'),P9=h('div'),P10=h('div'),P11=h('div'),P12=h('div');window.CV_ACADEMY_ADMIN.mount(P12,sb,user,ro);window.CV_ASSESS_ADMIN.assess(P8);window.CV_ASSESS_ADMIN.certs(P9);window.CV_COURSES(P1);window.CV_CMS.media(P2);window.CV_CMS.site(P3);window.CV_CMS.homepage(P4);window.CV_CMS.founder(P5);window.CV_CMS.video(P6);window.CV_CMS.categories(P7);window.CV_CMS.homepageBackground(P10);window.CV_PAYMENTS_ADMIN.mount(P11,sb,user,ro);
-  window.CV_SHELL.mount(sb,user,ro,{courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7,homepageBackground:P10,assess:P8,certs:P9,payments:P11,admissions:P12})})}
+function admin(sb,user){
+ head('Admin');
+ if(!user){location.href='login.html';return}
+ var loading=h('p',{class:'pmeta',text:'Checking administrator access…'});main.appendChild(loading);
+ sb.from('profiles').select('role').eq('id',user.id).maybeSingle().then(function(p){
+  if(p.error){head('Admin dashboard unavailable');note('Your administrator profile could not be loaded: '+p.error.message);return}
+  var ro=p.data&&p.data.role;
+  if(ro!=='admin'&&ro!=='super_admin'){head('Access restricted');note('Administrators only. Sign in with an administrator account.');return}
+  var P1=h('div'),P2=h('div'),P3=h('div'),P4=h('div'),P5=h('div'),P6=h('div'),P7=h('div'),P8=h('div'),P9=h('div'),P10=h('div'),P11=h('div'),P12=h('div');
+  var panes={courses:P1,media:P2,settings:P3,homepage:P4,founder:P5,video:P6,categories:P7,assess:P8,certs:P9,payments:P11,admissions:P12,homepageBackground:P10};
+  if(!window.CV_SHELL||typeof window.CV_SHELL.mount!=='function'){head('Admin dashboard unavailable');note('The admin interface script did not load. Refresh the page or try again later.');return}
+  window.CV_SHELL.mount(sb,user,ro,panes);
+  function safe(label,host,fn){try{if(typeof fn!=='function')throw new Error(label+' module did not load.');fn(host)}catch(e){console.error('CreatorVerse admin module:',label,e);host.appendChild(h('div',{class:'note',text:label+' could not load: '+(e.message||String(e))}))}}
+  safe('Admissions',P12,function(host){if(!window.CV_ACADEMY_ADMIN||typeof window.CV_ACADEMY_ADMIN.mount!=='function')throw new Error('Admissions module is unavailable.');window.CV_ACADEMY_ADMIN.mount(host,sb,user,ro)});
+  safe('Assessments',P8,function(host){if(!window.CV_ASSESS_ADMIN)throw new Error('Assessment module is unavailable.');window.CV_ASSESS_ADMIN.assess(host)});
+  safe('Certificates',P9,function(host){if(!window.CV_ASSESS_ADMIN)throw new Error('Certificate module is unavailable.');window.CV_ASSESS_ADMIN.certs(host)});
+  safe('Courses',P1,window.CV_COURSES);
+  safe('Media library',P2,function(host){window.CV_CMS.media(host)});
+  safe('Site settings',P3,function(host){window.CV_CMS.site(host)});
+  safe('Homepage manager',P4,function(host){window.CV_CMS.homepage(host)});
+  safe('Founder profile',P5,function(host){window.CV_CMS.founder(host)});
+  safe('Introduction video',P6,function(host){window.CV_CMS.video(host)});
+  safe('Categories',P7,function(host){window.CV_CMS.categories(host)});
+  safe('Homepage background',P10,function(host){window.CV_CMS.homepageBackground(host)});
+  safe('Payments',P11,function(host){if(!window.CV_PAYMENTS_ADMIN)throw new Error('Payments module is unavailable.');window.CV_PAYMENTS_ADMIN.mount(host,sb,user,ro)});
+ }).catch(function(e){console.error('CreatorVerse admin initialization failed:',e);head('Admin dashboard unavailable');note('The dashboard could not finish loading: '+(e.message||String(e)))})
+}
 if(window.CV_SB)boot(window.CV_SB);else document.addEventListener('cv-ready',function(){boot(window.CV_SB)});
 })();
