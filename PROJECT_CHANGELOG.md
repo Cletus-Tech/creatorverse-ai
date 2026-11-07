@@ -143,3 +143,13 @@ Status: **Committed to `main`; deployment and live browser QA pending.**
 - Applied the icon to profile headers and follower lists, creator discovery, community post/comment authors, Connect conversations/search/stories, and student/admin identity surfaces.
 - Simplified Admin Portal → Students to No tick / Blue tick; legacy badge values display as the same blue tick.
 - Reworked the shared loading gate to wait for initial fetch/XHR activity to settle, wait for fonts and layout frames, and retain a bounded fallback timeout. The gate no longer relies on static text appearing stable while asynchronous page data is still loading.
+
+
+## 2026-11-07 — Owner identity, shared profile rendering and assistant visibility
+
+- Identified the CreatorVerse owner account by its unique profile ID, rather than applying owner styling to every `super_admin`.
+- Added a distinct gold owner verification shield/name accent while preserving the blue verification mark for other verified users.
+- Updated the signed-in account menu to render the canonical profile name and avatar (with auth metadata fallback), and prevented the Messages & Stories menu item from being relabelled as Dashboard.
+- Fixed the student dashboard identity source: it now hydrates display name, avatar and verification state from `profiles`, avoiding stale `user_metadata.avatar_url` when the profile has since changed.
+- Rebuilt the floating assistant stylesheet with its missing launcher/panel positioning and responsive layout. The welcome message continues to fade after six seconds or immediately when tapped; the bot button remains independently available.
+- Remaining work: full cross-page profile/avatar unification, systematic broken-link/button destination audit, and authenticated mobile/desktop end-to-end QA.
