@@ -293,3 +293,12 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Notification RLS is learner-owned, and learner updates are limited to the `read_at` column. Admins can inspect the feed.
 - Push/email/SMS delivery, notification preferences, and scheduled background execution remain future work.
 - Next: review the complete Academy migration set and function grants, implement trusted admission/payment fulfilment, then run role-based database and browser tests in an isolated environment before production.
+
+
+## 2026-11-07 — Learner pace and progression enforcement improvements
+
+- Learner Academy status now displays completed lessons, weekly lesson-completion pace, active study days over the last 30 days, current/highest level and the next published level's configured milestone thresholds.
+- The lifecycle migration draft now recalculates progression immediately after learner lesson completions and learner quiz/assignment submissions, so admin monitoring is not dependent only on a learner opening the status page.
+- The evaluator remains subject to the existing configured rule thresholds and admin-approval workflow. This is still a draft implementation until the migration is reviewed and safely applied in an isolated/staging environment.
+- JavaScript syntax validation passed for the learner status, learning progress admin, admissions admin and application scripts.
+- No live schema changes, account changes, data deletion, merge or deployment occurred.
