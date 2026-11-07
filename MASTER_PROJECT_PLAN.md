@@ -215,3 +215,13 @@ Status: **Read-only audit complete on `education-build`; remediation pending.**
 - Recorded admissions media must be isolated in a dedicated private storage bucket; current public media buckets are not suitable.
 - Preserve all registered accounts, profiles, roles and existing academic records. Implement additive schema and audited replacement workflows; do not clear historical records.
 - Continue implementation on the existing `education-build` branch and connected project only after reviewing each migration. Do not create another Supabase branch, merge to `main`, or deploy before owner approval.
+
+
+## 2026-11-07 — Admissions & Placement foundation implementation
+
+- Implementation started on the existing `education-build` branch and existing Supabase project; no additional branch/project was created.
+- Added a compatibility-first, additive migration draft for Academy applications, status history, diagnostics, interview metadata, placement decisions and admin audit records. The draft preserves existing authentication and academic data.
+- Added the first responsive Admissions & Placement admin workspace and wired it into the existing admin shell. Admins can search/filter applications, inspect submitted profile/evidence fields and record a status/level review with rationale and audit history.
+- Admission decisions do not automatically create enrolments. A later trusted fulfilment workflow must verify free-course approval or paid-course approval plus confirmed payment before access is granted.
+- The migration is not yet applied. Private interview bucket object policies and secure signed-URL handling are deliberately pending; the private bucket alone is not a complete upload/playback workflow.
+- Next: build the learner application and course-specific diagnostic flow, then secure interview handling and server-authoritative admission/payment fulfilment. Continue preserving all existing accounts, roles and academic records. No merge/deployment until release approval.
