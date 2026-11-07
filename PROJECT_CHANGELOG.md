@@ -162,3 +162,15 @@ Status: **Committed to `main`; deployment and live browser QA pending.**
 - Added a clean SVG bell and dropdown in the right-side site header, away from the Home/Divisions navigation.
 - Added exact unread-message badges to desktop and mobile Messages navigation using `cv_conversations` and `cv_direct_messages.read_at`.
 - Added `notifications.html`, unread notification counts, live refresh and mark-all-read support. Two-account QA remains outstanding.
+
+
+## 2026-11-07 — Instagram and Threads social access
+
+Status: **Implemented on `main`; production deployment and browser QA pending.**
+
+- Added the official Cletus Tech Instagram profile (`https://www.instagram.com/cletus_tech/`) and Threads profile (`https://www.threads.com/@cletustech_ai`) to the global CreatorVerse footer social links.
+- Added Instagram and Threads to the Founder Profile social-link editor in the admin portal.
+- Connected footer social links to the admin-managed `founder` record in `site_content`, so non-empty changes made in the admin portal override the footer defaults on public pages.
+- Kept existing Facebook, WhatsApp, TikTok and YouTube defaults intact when their optional admin fields are blank.
+- Instagram and Threads open in a new tab with accessible labels; existing social channels remain available.
+- Production verification should confirm the footer on desktop/mobile and test changing a social URL in Admin → Founder Profile, saving, and refreshing a public page.
