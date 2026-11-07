@@ -55,6 +55,37 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   });
   detail.appendChild(el('p',{class:'academy-admin-footnote',text:'Recorded interviews, diagnostic scoring, scheduling and admission fulfilment will appear here as their secure workflows are completed. Do not share interview recordings through public media links.'}))
  }
+ function diagnostics(){
+  var box=el('section',{class:'academy-diagnostics-admin'});root.appendChild(box);
+  box.appendChild(el('div',{class:'academy-admin-section-title'},[el('div',{},[el('span',{class:'academy-eyebrow',text:'QUESTION BANK'}),el('h3',{text:'Course diagnostics'}),el('p',{text:'Create and publish course-specific admission questions. Only published questions appear on the learner application.'})])]));
+  var courseSelect=el('select',{}),questionList=el('div',{class:'academy-diagnostic-list'}),editor=el('form',{class:'academy-diagnostic-editor'});
+  var prompt=el('textarea',{rows:'3',placeholder:'Write a clear diagnostic question or practical prompt…'}),type=el('select',{},[['long_text','Long written response'],['short_text','Short response'],['url','Portfolio / URL'],['single_choice','Single choice']].map(function(x){return el('option',{value:x[0],text:x[1]})})),level=el('select',{},[el('option',{value:'',text:'Any level'})].concat(levels.map(function(x){return el('option',{value:x,text:x})}))),options=el('textarea',{rows:'3',placeholder:'For single choice, enter one option per line'}),required=el('input',{type:'checkbox',checked:'checked'}),active=el('input',{type:'checkbox',checked:'checked'}),published=el('input',{type:'checkbox'}),save=el('button',{class:'btn btn-primary',type:'submit',text:'Add diagnostic question'}),feedback=el('div');
+  editor.append(field('Course',courseSelect),field('Question prompt',prompt),field('Response format',type),field('Target level',level),field('Choice options (one per line)',options),field('Required',required),field('Active',active),field('Published',published),save,feedback);
+  box.append(courseSelect.parentNode?document.createDocumentFragment():document.createDocumentFragment());
+  box.appendChild(el('div',{class:'academy-diagnostic-layout'},[editor,questionList]));
+  var editing=null;
+  function reset(){editing=null;prompt.value='';type.value='long_text';level.value='';options.value='';required.checked=true;active.checked=true;published.checked=false;save.textContent='Add diagnostic question';feedback.textContent=''}
+  function refresh(){
+   questionList.textContent='Loading questions…';if(!courseSelect.value){questionList.textContent='Select a course to manage its questions.';return}
+   sb.from('academy_diagnostic_questions').select('*').eq('course_id',courseSelect.value).order('position').then(function(r){questionList.textContent='';if(r.error){questionList.appendChild(msg(r.error.message,true));return}var qs=r.data||[];if(!qs.length){questionList.appendChild(msg('No diagnostic questions for this course yet.'));return}
+    qs.forEach(function(q){var card=el('div',{class:'academy-diagnostic-item'},[el('strong',{text:q.prompt}),el('small',{text:q.response_type.replace('_',' ')+' · '+(q.target_level||'Any level')+' · '+(q.required?'Required':'Optional')}),el('span',{class:'academy-status '+(q.published?'status-approved':'status-draft'),text:q.published?'Published':'Draft'})]);
+     var actions=el('div',{class:'row'}),edit=el('button',{class:'btn btn-outline',type:'button',text:'Edit'}),toggle=el('button',{class:'btn btn-outline',type:'button',text:q.published?'Unpublish':'Publish'}),del=el('button',{class:'btn btn-outline',type:'button',text:'Delete'});
+     edit.addEventListener('click',function(){editing=q.id;prompt.value=q.prompt;type.value=q.response_type;level.value=q.target_level||'';options.value=(q.options||[]).map(function(x){return typeof x==='string'?x:x.label||x.value}).join('\n');required.checked=q.required;active.checked=q.active;published.checked=q.published;save.textContent='Save question';feedback.textContent='Editing question';editor.scrollIntoView({behavior:'smooth',block:'center'})});
+     toggle.addEventListener('click',function(){sb.from('academy_diagnostic_questions').update({published:!q.published}).eq('id',q.id).then(function(x){if(x.error)alert(x.error.message);refresh()})});
+     del.addEventListener('click',function(){if(confirm('Delete this diagnostic question? Existing responses may prevent deletion.'))sb.from('academy_diagnostic_questions').delete().eq('id',q.id).then(function(x){if(x.error)alert(x.error.message);refresh()})});
+     actions.append(edit,toggle,del);card.appendChild(actions);questionList.appendChild(card)
+    })
+   })
+  }
+  sb.from('courses').select('id,title').order('title').then(function(r){if(r.error){feedback.textContent=r.error.message;return}(r.data||[]).forEach(function(x){courseSelect.appendChild(el('option',{value:x.id,text:x.title}))});refresh()});
+  courseSelect.addEventListener('change',refresh);
+  editor.addEventListener('submit',function(e){e.preventDefault();if(!courseSelect.value||!prompt.value.trim())return;var opts=type.value==='single_choice'?options.value.split('\n').map(function(x){return x.trim()}).filter(Boolean):[];if(type.value==='single_choice'&&opts.length<2){feedback.textContent='Add at least two answer options.';return}
+   var payload={course_id:courseSelect.value,prompt:prompt.value.trim(),response_type:type.value,target_level:level.value||null,options:opts,required:required.checked,active:active.checked,published:published.checked};
+   if(editing)sb.from('academy_diagnostic_questions').update(payload).eq('id',editing).then(function(x){feedback.textContent=x.error?x.error.message:'Question saved.';if(!x.error){reset();refresh()}})
+   else sb.from('academy_diagnostic_questions').insert(payload).then(function(x){feedback.textContent=x.error?x.error.message:'Question added.';if(!x.error){reset();refresh()}})
+  })
+ }
+ diagnostics();
  load()
 }}
 })();
