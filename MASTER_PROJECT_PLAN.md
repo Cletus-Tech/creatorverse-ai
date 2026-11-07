@@ -167,3 +167,15 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Added the public contact email `cletustech25@gmail.com` beneath the homepage founder social icons and in the global footer.
 - Added the contact email and WhatsApp URL field to Admin Portal → Founder Profile; non-empty admin-managed social URLs and email hydrate the homepage/footer while preserving public defaults when fields are blank.
 - Email links use `mailto:`. Visual desktop/mobile verification remains pending.
+
+
+## 2026-11-07 — Homepage founder contact correction and native live classrooms
+
+- Corrected the homepage founder contact action: remove the visible email-address text and show a compact Email button that opens the visitor's mail app using the founder email configured in the Founder Profile (fallback: cletustech25@gmail.com).
+- Restore the founder social links to a single compact horizontal icon row beneath the founder portrait. Preserve the existing social profiles and their order; do not add a card, oval, vertical icon stack or redesign the founder section.
+- Corrected the global footer contact action to a button labelled Email us, opening mailto:cletustech25@gmail.com; do not print the raw email address as the button label.
+- Native CreatorVerse live communication is distinct from Zoom: build in-app one-to-one audio/video calls and temporary group live-class rooms. Hosts create a room, set its title and optional schedule, generate a shareable CreatorVerse join link, invite selected users/groups, and start/end the session. Students join within CreatorVerse without Zoom or an external meeting account.
+- Live room controls: camera/microphone permissions, mute/unmute, camera on/off, participant list, host moderation (mute/remove/close room), join/leave notifications, and class/session history. Responsive mobile-first interface.
+- Architecture: WebRTC media; authenticated room membership and short-lived join tokens; Supabase Realtime for room signaling/presence and persistent class metadata. Use a TURN relay for NAT traversal. For multi-person classes, use an SFU/media server (e.g. LiveKit) rather than a browser mesh that becomes unreliable as participants increase. Do not claim production-ready calling until TURN/SFU infrastructure, secrets, access controls and multi-device testing are configured.
+- Keep direct messaging and stories intact. Link call actions from existing CreatorVerse Connect conversations; expose group classrooms through a dedicated Live Classes area and role-appropriate create controls.
+- Current commit changes are source updates only. Production deployment and visual QA must be confirmed separately; test founder icon row and Email mailto action on phone and desktop, plus footer button and dynamic admin-managed email.
