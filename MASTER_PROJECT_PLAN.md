@@ -225,3 +225,13 @@ Status: **Read-only audit complete on `education-build`; remediation pending.**
 - Admission decisions do not automatically create enrolments. A later trusted fulfilment workflow must verify free-course approval or paid-course approval plus confirmed payment before access is granted.
 - The migration is not yet applied. Private interview bucket object policies and secure signed-URL handling are deliberately pending; the private bucket alone is not a complete upload/playback workflow.
 - Next: build the learner application and course-specific diagnostic flow, then secure interview handling and server-authoritative admission/payment fulfilment. Continue preserving all existing accounts, roles and academic records. No merge/deployment until release approval.
+
+
+### Learner admissions application flow — implementation added
+
+- New course-specific learner application page with account email binding, personal/background details, proposed level, portfolio, goals and consent capture.
+- Published diagnostic questions render dynamically by course and support text, short-text, URL and single-choice responses.
+- Submission creates/updates a draft, stores diagnostic responses, changes the application to submitted and writes an application event/reference number.
+- Unenrolled course CTAs now direct learners to apply instead of self-enrolling or entering payment checkout. Existing enrolled learners retain their continue-learning route.
+- Admin-only reviewer notes and sensitive interview/diagnostic review fields are separated from applicant-readable data in the migration draft.
+- Still pending: run the migration only after full review, secure transactional admission/payment fulfilment, interview consent/upload/signed playback, diagnostic scoring UI, and end-to-end RLS tests. No live database writes or deployment occurred.
