@@ -190,3 +190,13 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Rebuilt the six-division page as an image-led ecosystem showcase. Academy, Community, Marketplace, Affiliate, Realty and Business each have a distinct visual, descriptive copy, feature list, status and existing destination/availability behavior. Affiliate highlights referral links, campaign tracking, conversions and commission statements.
 - No course, module, lesson, enrolment, pricing, authentication or payment records were changed. Course images remain editable through the existing Admin Portal → Courses controls; category images are stored in the existing categories table.
 - QA: database image URLs written and verified for all seven learning categories and all eight course records; browser rendering must be checked before production release. Source-level syntax and responsive visual QA required on the preview.
+
+
+## 2026-11-07 — Admin Control Centre foundations (pre-commit)
+
+- Database-backed division CMS with six seeded, image-specific divisions; admin editing, ordering, publication controls, recycle-bin soft deletion and revision restore.
+- Public division cards now load from the published Supabase records instead of hardcoded card markup.
+- Added persistent before/after revision snapshots for division changes and for categories, courses, modules, lessons and site_content mutations.
+- Added a role-checked recovery RPC for the supported content tables. It reverses an insert by deleting that inserted content row, and restores the prior snapshot for update/delete revisions. Referential-integrity conflicts fail safely rather than deleting dependent student records.
+- Added an Admin Portal Content Recovery view. This is scoped to editable CMS/learning content, not private messages, student identity/authentication data, payment secrets or external financial transactions. Homepage draft/publish history remains managed by its existing version system.
+- Source changes are prepared for one atomic commit; deployment and browser verification follow after the commit.
