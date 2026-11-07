@@ -281,3 +281,15 @@ Status: **Read-only audit complete on `education-build`; remediation pending.**
 - Added admin-triggered expiry sweeps: expired admission offers are marked expired and past interview appointments without attendance confirmation are marked missed, with application event history. These sweeps run when the Admissions workspace loads; a scheduled background job is still future work.
 - Added database activity capture for lesson views (rate-limited per lesson), lesson completions/reopenings, quiz attempts and assignment submissions. Admin monitoring now displays weekly lesson completions, lesson visits, assessment submissions, last activity and inactivity bands.
 - Added server-side level evaluation using published admin thresholds for lesson completion, quiz average, submitted assignments and active study days. Admin overrides are respected; approval-required levels enter a review queue, and rejected requests can be resubmitted after further progress.
+
+
+## 2026-11-07 — Academy notifications and retention workflow
+
+Status: **Source implementation committed to `education-build`; no database migration applied and no production deployment.**
+
+- Learner Academy status page now includes an in-app notifications feed for admission, interview and learning updates, with unread/read state and action links.
+- Admission and interview database triggers queue immediate notifications and scheduled reminders (24-hour admission deadline reminder; 24-hour and 1-hour interview reminders). Scheduled reminders become visible when their `scheduled_for` time arrives; a background scheduler/worker is still required for reliable delivery without the learner opening the page.
+- The administrator Learning Progress refresh runs an inactivity sweep and queues warnings at 8+ days and overdue alerts at 15+ days. This is currently administrator-triggered, not a fully automatic daily cron.
+- Notification RLS is learner-owned, and learner updates are limited to the `read_at` column. Admins can inspect the feed.
+- Push/email/SMS delivery, notification preferences, and scheduled background execution remain future work.
+- Next: review the complete Academy migration set and function grants, implement trusted admission/payment fulfilment, then run role-based database and browser tests in an isolated environment before production.
