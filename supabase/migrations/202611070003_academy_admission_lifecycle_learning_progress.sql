@@ -286,3 +286,5 @@ begin
 end $$;
 revoke all on function public.refresh_academy_learner_level(uuid) from public,anon;
 grant execute on function public.refresh_academy_learner_level(uuid) to authenticated;
+
+alter table public.academy_admission_offers add column if not exists expires_timezone text;
