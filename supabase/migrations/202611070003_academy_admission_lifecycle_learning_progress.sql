@@ -392,6 +392,7 @@ create table if not exists public.academy_notifications (
  related_application_id uuid references public.academy_applications(id) on delete set null,
  related_offer_id uuid references public.academy_admission_offers(id) on delete cascade,
  related_interview_id uuid references public.academy_interview_invitations(id) on delete cascade,
+ related_course_id uuid references public.courses(id) on delete set null,
  scheduled_for timestamptz not null default now(),
  read_at timestamptz,
  dedupe_key text not null unique,
@@ -482,12 +483,12 @@ begin
  ), due as (
   select *,floor(extract(epoch from (now()-last_activity))/86400)::integer as inactive_days from latest
  )
- insert into public.academy_notifications(user_id,notification_type,title,body,related_interview_id,scheduled_for,dedupe_key,action_url)
+ insert into public.academy_notifications(user_id,notification_type,title,body,related_course_id,scheduled_for,dedupe_key,action_url)
  select user_id,
   case when inactive_days>=15 then 'inactivity_overdue' else 'inactivity_warning' end,
   case when inactive_days>=15 then 'Your Academy learning is overdue' else 'Your Academy learning needs attention' end,
   'You have not recorded learning activity for '||inactive_days||' days in your enrolled course. Sign in, continue your next lesson, or contact your instructor if you need help.',
-  null,now(),
+  course_id,now(),
   'inactivity:'||user_id::text||':'||course_id::text||':'||case when inactive_days>=15 then 'overdue' else 'warning' end||':'||current_date::text,
   '/student.html'
  from due
