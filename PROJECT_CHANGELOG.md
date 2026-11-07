@@ -176,3 +176,11 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - Production verification should confirm the footer on desktop/mobile and test changing a social URL in Admin → Founder Profile, saving, and refreshing a public page.
 
 - Follow-up hardening: added a small global `social-links.js` loader through `layout.js`, so admin-managed founder social URLs hydrate the footer on **every page**, not only pages that load the homepage/about content script. Blank admin fields preserve the existing default social URLs.
+
+
+## 2026-11-07 — Founder social row and contact email
+
+- Expanded the homepage founder portrait's social row to include Facebook, YouTube, TikTok, WhatsApp Channel, Instagram and Threads, positioned directly beneath the founder image.
+- Added the public contact email `cletustech25@gmail.com` beneath the homepage founder social icons and in the global footer.
+- Added the contact email and WhatsApp URL field to Admin Portal → Founder Profile; non-empty admin-managed social URLs and email hydrate the homepage/footer while preserving public defaults when fields are blank.
+- Email links use `mailto:`. Visual desktop/mobile verification remains pending.
