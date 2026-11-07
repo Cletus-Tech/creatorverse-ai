@@ -45,6 +45,27 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   var note=el('textarea',{rows:'3',placeholder:'Internal reviewer notes (visible to admins only)'});
   form.append(field('Application decision',st),field('Confirmed placement level',lv),field('Placement rationale',rationale),field('Internal reviewer note',note));
   var save=el('button',{class:'btn btn-primary',type:'submit',text:'Save review'}),feedback=el('div');form.append(save,feedback);detail.appendChild(el('h4',{text:'Review & placement'}));detail.appendChild(form);
+  var offerPanel=el('section',{class:'academy-offer-panel'}),offerExpiry=el('input',{type:'datetime-local'}),offerText=el('textarea',{rows:'3',placeholder:'Welcome message, next steps, acceptance instructions…'}),offerFeedback=el('div');
+  offerPanel.appendChild(el('h4',{text:'Admission offer & acceptance window'}));
+  offerPanel.appendChild(el('p',{class:'academy-admin-footnote',text:'Set a firm deadline. The learner must accept before it expires. Expiry and acceptance enforcement will be completed by the secure server workflow; this panel records and publishes the offer only.'}));
+  offerPanel.append(field('Acceptance deadline (local admin time)',offerExpiry),field('Offer message',offerText));
+  var issueOffer=el('button',{class:'btn btn-primary',type:'button',text:'Issue admission offer'});offerPanel.append(issueOffer,offerFeedback);detail.appendChild(offerPanel);
+  sb.from('academy_admission_offers').select('*').eq('application_id',x.id).order('created_at',{ascending:false}).limit(1).maybeSingle().then(function(o){
+   if(o.error){offerFeedback.textContent='Offer records unavailable until lifecycle migration is applied.';return}
+   if(o.data){offerExpiry.value=o.data.expires_at?new Date(new Date(o.data.expires_at).getTime()-new Date(o.data.expires_at).getTimezoneOffset()*60000).toISOString().slice(0,16):'';offerText.value=o.data.offer_message||'';offerFeedback.textContent='Current offer: '+o.data.status+' · deadline '+new Date(o.data.expires_at).toLocaleString()}
+  });
+  issueOffer.addEventListener('click',function(){
+   if(!offerExpiry.value){offerFeedback.textContent='Choose an acceptance deadline.';return}
+   var expiry=new Date(offerExpiry.value);if(!Number.isFinite(expiry.getTime())||expiry<=new Date()){offerFeedback.textContent='The acceptance deadline must be in the future.';return}
+   issueOffer.disabled=true;offerFeedback.textContent='Issuing offer…';
+   sb.from('academy_admission_offers').upsert({application_id:x.id,user_id:x.user_id,course_id:x.course_id,status:'offered',issued_at:new Date().toISOString(),expires_at:expiry.toISOString(),offer_message:offerText.value.trim()||null,issued_by:user.id,updated_at:new Date().toISOString()},{onConflict:'application_id'}).select('id').single()
+    .then(function(z){if(z.error)throw z.error;return sb.from('academy_applications').update({status:'approved_pending_payment',offer_issued_at:new Date().toISOString(),offer_expires_at:expiry.toISOString(),updated_at:new Date().toISOString()}).eq('id',x.id)})
+    .then(function(z){if(z.error)throw z.error;return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'admission_offer_issued',from_status:x.status,to_status:'approved_pending_payment',message:'Admission offer issued. Acceptance deadline: '+expiry.toISOString()})})
+    .then(function(z){if(z.error)throw z.error;return sb.from('academy_audit_log').insert({actor_id:user.id,application_id:x.id,action:'admission_offer_issued',details:{expires_at:expiry.toISOString()}})})
+    .then(function(z){if(z.error)throw z.error;offerFeedback.textContent='Offer recorded. Learner acceptance and expiry enforcement require the secure lifecycle backend before this can grant access.';load()})
+    .catch(function(err){offerFeedback.textContent=err.message||String(err)})
+    .finally(function(){issueOffer.disabled=false})
+  });
   form.addEventListener('submit',function(e){e.preventDefault();save.disabled=true;feedback.textContent='Saving review…';
    var patch={status:st.value,reviewed_by:user.id,reviewed_at:new Date().toISOString(),decision_reason:rationale.value.trim()||null,updated_at:new Date().toISOString()};
    sb.from('academy_applications').update(patch).eq('id',x.id).then(function(a){if(a.error)throw a.error;
@@ -85,6 +106,9 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
      var payload={application_id:x.id,interview_type:kind.value,status:state.value,scheduled_start:a?a.toISOString():null,scheduled_end:b?b.toISOString():null,timezone:tz.value.trim()||null,meeting_provider:provider.value.trim()||null,meeting_reference:meeting.value.trim()||null,reviewer_id:reviewer.value||null,score:score.value===''?null:Number(score.value),reviewer_notes:notes.value.trim()||null,updated_at:new Date().toISOString()};
      sb.from('academy_interviews').insert(payload).select('id').single().then(function(w){
       if(w.error)throw w.error;
+      if(!a||!b||!tz.value.trim())return w.data;
+      return sb.from('academy_interview_invitations').upsert({interview_id:w.data.id,application_id:x.id,user_id:x.user_id,interview_type:kind.value,status:'scheduled',starts_at:a.toISOString(),ends_at:b.toISOString(),timezone:tz.value.trim(),attendance_deadline:b.toISOString(),learner_instructions:'Please attend at the scheduled time. If you cannot attend, contact Academy support before the session.' ,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'interview_id'}).then(function(inv){if(inv.error)throw inv.error;return w.data});
+     }).then(function(w){
       return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'interview_updated',message:'Interview plan '+state.value,metadata:{interview_type:kind.value,scheduled_start:payload.scheduled_start,timezone:payload.timezone}});
      }).then(function(ev2){if(ev2.error)throw ev2.error;return sb.from('academy_audit_log').insert({actor_id:user.id,application_id:x.id,action:'interview_plan_created',details:{interview_type:kind.value,status:state.value,scheduled_start:payload.scheduled_start,reviewer_id:payload.reviewer_id}})})
      .then(function(audit){if(audit.error)throw audit.error;feedback.textContent='Interview plan saved. No recording has been uploaded or shared.';loadInterviews()})
