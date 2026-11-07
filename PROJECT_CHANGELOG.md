@@ -256,3 +256,19 @@ Status: **Implemented on `main`; production deployment and browser QA pending.**
 - No database migration was applied, no existing student data was changed, and no production deployment or merge to `main` occurred.
 
 **Next:** applicant-visible interview invitations and application tracking, consent-led recording capture with private signed access and retention, diagnostic response review/scoring, then secure admission/payment fulfilment.
+
+
+## 2026-11-07 — Admission acceptance windows, mandatory interview appointments and learning progression
+
+- Added an additive lifecycle migration draft: `supabase/migrations/202611070003_academy_admission_lifecycle_learning_progress.sql`. It adds time-limited admission offers, learner-visible interview invitations, append-only lesson activity events, admin-configurable level rules, learner level snapshots and level-unlock approval requests.
+- Admin admissions review now includes an admission-offer composer with a required future acceptance deadline, stored with the administrator's timezone. Issuing an offer records the deadline, changes the application to `approved_pending_payment`, and appends an application event and audit entry. The offer does not itself grant course access.
+- Scheduled interviews now require a start time, end time and timezone. When an invitation is published, the learner receives an appointment with exact start/end times, attendance instructions and a response window. Learners can confirm attendance or request rescheduling before the start; admins can mark the appointment attended, missed or cancelled.
+- Added a learner-facing `academy-status.html` timeline for admission offers, acceptance deadlines, interview appointments, attendance responses and enrolled-course progress. Linked it from the student dashboard.
+- Added the Admin > Learning Progress workspace. It reports completion percentage, completed/total lessons, last activity, inactivity bands and weekly lesson pace. Administrators can set a learner's current level with an audited reason.
+- Added configurable progression thresholds per course and level: lesson completion percentage, optional quiz average, submitted assignments, active study days, publication state and whether administrator approval is required. When a learner completes a lesson, the app requests a server-side evaluation. Automatic rules can unlock levels; approval-required rules enter an administrator review queue. Learner status page also refreshes the evaluation.
+- Added restricted server-side RPCs for accepting a learner's own offer before its deadline, responding to their own future interview invitation, and recalculating their own enrolled-course level. Course access remains separate and requires the verified payment/free-course fulfilment workflow.
+- Added a database trigger draft to record lesson completion/reopening activity and support monitoring without trusting browser-submitted timestamps.
+- JavaScript parse checks are required for all changed scripts; no browser interaction, SQL execution, RLS integration test or payment fulfilment test has been performed yet.
+- The lifecycle migration remains a **draft and has not been applied** to the live Supabase project. Existing accounts, enrolments, progress and certificates remain untouched. No production deployment or merge to `main` occurred.
+
+**Next:** complete secure server-side offer expiry/payment fulfilment and attendance enforcement, add notification delivery for admission deadlines and interview reminders, finish reviewer scoring/recording consent and retention, then test learner/admin permissions in an isolated environment before applying migrations.
