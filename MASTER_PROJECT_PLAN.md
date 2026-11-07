@@ -121,9 +121,8 @@ Status: **Seeded in Supabase; admin-managed; production page verification pendin
 - QA: Supabase schema and curriculum counts verified; `course-admin.js` and `lms.js` JavaScript syntax checks passed. Full browser/device and enrolment/progress flow testing remains outstanding.
 
 
-## Verification badges and compact assistant (2026-11-06)
-- The floating CreatorVerse assistant is being reduced to a compact circular bot-face launcher with drag positioning, saved placement and a one-time welcome introduction per browser session.
-- The assistant remains page-aware and opens the existing chat panel; the launcher is designed to take less space on mobile.
-- Added `profiles.verified_badge` values `none`, `blue`, `green`, and `gold`. Badge changes are restricted by a database trigger to super admins; the gold owner badge is reserved for the signed-in super-admin account.
-- Admin Portal → Students now includes verification badge controls for super admins. Blue and green are available for other users; gold is reserved for the owner.
-- Profile, creator discovery and messaging surfaces show verification indicators. Full end-to-end browser QA and production deployment confirmation remain pending.
+## Social verification tick and compact assistant (2026-11-07)
+- Verification is displayed as a small blue social-platform-style tick immediately beside the verified person's name; no "Verified", "Gold Verified" or tier wording is displayed publicly.
+- Admin Portal → Students uses a simple No tick / Blue tick control. Legacy non-empty badge values are normalized visually to the same blue tick.
+- The tick appears beside names on public profiles, creator discovery, community posts and comments, Connect conversations/search/stories, and the student/admin identity views.
+- Replaced the page-loader text-stability heuristic with a shared network-idle gate so the footer and page shell remain hidden until initial data requests settle; the loader has a bounded safety timeout.
