@@ -1044,3 +1044,16 @@ html body .hero2 .hero2-in .founder-visual .founder-social-links a img{display:b
 html body .hero2 .hero2-in .founder-visual .founder-email-button{display:inline-flex!important;position:static!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:auto!important;height:auto!important;min-height:34px!important;margin:2px auto 0!important;padding:7px 14px!important;border:1px solid rgba(130,190,255,.4)!important;border-radius:999px!important;background:rgba(19,65,120,.55)!important;color:#eaf4ff!important;font:600 12px Inter,sans-serif!important;text-decoration:none!important}
 html body .hero2 .hero2-in .founder-visual .founder-email-button svg{width:15px!important;height:15px!important}
 @media(max-width:560px){html body .hero2 .hero2-in .founder-visual .portrait{width:min(100%,300px)!important;max-width:300px!important}html body .hero2 .hero2-in .founder-visual .founder-social-links{gap:9px!important}html body .hero2 .hero2-in .founder-visual .founder-social-links a{flex-basis:30px!important;width:30px!important;height:30px!important;min-width:30px!important;max-width:30px!important}html body .hero2 .hero2-in .founder-visual .founder-social-links a img{width:19px!important;height:19px!important}}
+
+
+/* Social links: plain, consistent icon row; no card, pill, panel or extra button layer. */
+.hero2 .founder-visual{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;overflow:visible}
+.hero2 .founder-visual .portrait{flex:0 1 auto;margin-left:auto;margin-right:auto}
+.hero2 .founder-social-links{position:relative;z-index:5;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;width:auto;max-width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.hero2 .founder-social-links a{width:34px;height:34px;flex:0 0 34px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:#fff;overflow:hidden;transition:background .2s,transform .2s}
+.hero2 .founder-social-links a img{display:block;width:19px;height:19px;object-fit:contain;filter:brightness(0) invert(1)}
+.hero2 .founder-social-links a svg{display:block;width:19px;height:19px}
+.hero2 .founder-social-links a:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.footer-social-links a svg{width:19px;height:19px;display:block}
+.footer-social-links a[data-social="email"]{display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:900px){.hero2 .founder-visual{max-width:100%;gap:10px}.hero2 .founder-social-links{gap:8px}}
