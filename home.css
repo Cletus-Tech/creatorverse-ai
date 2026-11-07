@@ -1017,3 +1017,16 @@ html.cv-loading,html.cv-loading body{background:#050916!important}
  .cv-division-card h3{font-size:13px!important}
  .cv-division-card p{font-size:9.5px!important}
 }
+
+
+/* Founder homepage contact correction: preserve the familiar icon row and add one email action. */
+.hero2 .founder-visual{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:10px!important;width:100%!important;max-width:100%!important}
+.hero2 .founder-visual .portrait{flex:0 1 auto!important;width:min(100%,460px)!important;max-width:460px!important}
+.hero2 .founder-social-follow{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:auto!important;max-width:100%!important;flex:0 0 auto!important;margin:0 auto 8px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
+.hero2 .founder-social-links{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;flex-wrap:wrap!important;gap:12px!important;width:auto!important}
+.hero2 .founder-social-links a{display:inline-flex!important;width:34px!important;height:34px!important;align-items:center!important;justify-content:center!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important}
+.hero2 .founder-social-links a img{width:21px!important;height:21px!important;object-fit:contain!important}
+.founder-email-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;margin-top:4px;padding:8px 15px;border:1px solid rgba(130,190,255,.35);border-radius:999px;background:rgba(19,65,120,.38);color:#eaf4ff;text-decoration:none;font:600 12px Inter,sans-serif;transition:background .2s,border-color .2s,transform .2s}
+.founder-email-button svg{width:16px;height:16px;flex:0 0 16px}
+.founder-email-button:hover{background:rgba(35,105,180,.55);border-color:rgba(140,215,255,.7);transform:translateY(-1px)}
+@media(max-width:560px){.hero2 .founder-visual{gap:8px!important}.hero2 .founder-visual .portrait{width:min(100%,360px)!important}.hero2 .founder-social-links{gap:10px!important}.hero2 .founder-social-links a{width:30px!important;height:30px!important}.hero2 .founder-social-links a img{width:19px!important;height:19px!important}}
