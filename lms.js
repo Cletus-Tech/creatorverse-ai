@@ -152,7 +152,7 @@ function lesson(sb,user){
    var row=h('div',{class:'row'});col.appendChild(row);
    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
    if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
-   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)return alert(e.error.message);location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)})}}));
+   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('lesson_progress').upsert({user_id:user.id,lesson_id:l.id},{onConflict:'user_id,lesson_id'}).then(function(e){if(e.error)throw e.error;return sb.rpc('refresh_academy_learner_level',{p_course_id:cid})}).then(function(){location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)}).catch(function(e){alert('Your lesson was saved, but your level progress could not refresh yet: '+(e.message||String(e)))})}}));
    if(i<flat.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i+1],text:'Next →'}));
    main.appendChild(h('div',{class:'academy-lesson-layout'},[col,side]))})})}
 function admin(sb,user){var main;head('Admin');if(!user){location.href='login.html';return}
