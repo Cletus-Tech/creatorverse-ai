@@ -11,7 +11,7 @@ window.CV_ACADEMY_PROGRESS={mount:function(host,sb,user){
  function field(label,node){return el('label',{class:'academy-admin-field'},[el('span',{text:label}),node])}
  function load(){
   list.textContent='Loading learner activity…';
-  sb.rpc('notify_academy_inactive_learners').catch(function(){});
+  Promise.resolve(sb.rpc('notify_academy_inactive_learners')).catch(function(){});
   Promise.all([
    sb.from('enrolments').select('user_id,course_id,created_at'),
    sb.from('profiles').select('id,full_name,email,avatar_url'),
