@@ -95,3 +95,11 @@ Prefer official documentation, platform creator education, standards bodies, rep
 4. Rebuild the 3D Animation curriculum without destroying enrolment/progress history.
 5. Run academic QA for coverage, sequencing, assessment alignment, accessibility, factual accuracy and duplication.
 6. Only after explicit approval, migrate reviewed drafts into the Admin Portal. Until then, no publishing or deployment.
+
+
+## Curriculum development progress — 2026-11-07
+
+- YouTube Automation Stage 1: drafted as three complete chapters with assignments, marking criteria, answer keys and official resources.
+- YouTube Automation Stage 2: drafted as three complete chapters plus an integrated research-to-script portfolio assessment.
+- Every unit must be manageable in the Admin Portal: course/stage/lesson association, content, outcomes, exercises, assessments, answers, rubrics, media, references, status, ordering and revision history must be editable by authorised admins. Draft approval must never silently publish to students.
+- These are private branch drafts. The Educator Curriculum admin UI and proposed database migration still require migration review and end-to-end QA before operational use. No deployment or production database change is authorised by this curriculum work.
