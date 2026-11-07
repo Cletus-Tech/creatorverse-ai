@@ -304,3 +304,13 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - The evaluator remains subject to the existing configured rule thresholds and admin-approval workflow. This is still a draft implementation until the migration is reviewed and safely applied in an isolated/staging environment.
 - JavaScript syntax validation passed for the learner status, learning progress admin, admissions admin and application scripts.
 - No live schema changes, account changes, data deletion, merge or deployment occurred.
+
+
+## 2026-11-07 — Unified CreatorVerse administrator control board
+
+- Confirmed the Academy Admissions & Placement and Learning Progress workspaces are modules inside the existing `admin.html` control board, not separate applications or sites.
+- Kept all changes on the existing `education-build` integration branch; the single administrator navigation routes to Admissions and Learning Progress alongside existing homepage, media, courses, students, assessments, certificates and payments workspaces.
+- Fixed Supabase RPC thenable handling in admissions, learner progress and lesson activity paths by normalizing RPC calls through `Promise.resolve` before attaching `.catch` handlers.
+- Updated `admin.html` script cache-busting versions so browsers fetch the latest integrated admin modules rather than stale cached JavaScript.
+- JavaScript syntax checks passed for the modified runtime files. This is a source-level integration step, not proof of end-to-end database compatibility.
+- Live Supabase currently has no `academy_*` tables or functions. The two Academy migrations remain unapplied; a full SQL dependency/security review and safe migration execution are required before Academy data workflows can operate. Existing production data and the production branch remain untouched.
