@@ -88,17 +88,21 @@ declare v_course uuid;
 begin
  select m.course_id into v_course from public.lessons l join public.modules m on m.id=l.module_id where l.id=new.lesson_id;
  if v_course is null then return new; end if;
- if tg_op='INSERT' and new.completed_at is not null then
-  insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
-  values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
-  on conflict do nothing;
- elsif tg_op='UPDATE' and old.completed_at is null and new.completed_at is not null then
-  insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
-  values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
-  on conflict do nothing;
- elsif tg_op='UPDATE' and old.completed_at is not null and new.completed_at is null then
-  insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
-  values(new.user_id,v_course,new.lesson_id,'lesson_reopened',new.user_id::text||':'||new.lesson_id::text||':'||extract(epoch from clock_timestamp())::text);
+ if tg_op='INSERT' then
+  if new.completed_at is not null then
+   insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
+   values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
+   on conflict do nothing;
+  end if;
+ elsif tg_op='UPDATE' then
+  if old.completed_at is null and new.completed_at is not null then
+   insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
+   values(new.user_id,v_course,new.lesson_id,'lesson_completed',new.user_id::text||':'||new.lesson_id::text)
+   on conflict do nothing;
+  elsif old.completed_at is not null and new.completed_at is null then
+   insert into public.academy_learning_activity(user_id,course_id,lesson_id,activity_type,source_record_id)
+   values(new.user_id,v_course,new.lesson_id,'lesson_reopened',new.user_id::text||':'||new.lesson_id::text||':'||extract(epoch from clock_timestamp())::text);
+  end if;
  end if;
  return new;
 end $$;
@@ -274,7 +278,7 @@ begin
  if v_rule.id is not null then
   if v_rule.requires_admin_approval then
    insert into public.academy_level_unlock_requests(user_id,course_id,level_name,progress_percent)
-   values(v_user,p_course_id,v_rule.level_name,v_pct) on conflict(user_id,course_id,level_name) do nothing;
+   values(v_user,p_course_id,v_rule.level_name,v_pct) on conflict(user_id,course_id,level_name) do update set status='pending',progress_percent=excluded.progress_percent,requested_at=now() where public.academy_level_unlock_requests.status='rejected';
    v_pending:=v_rule.level_name;
   else
    update public.academy_learner_levels set current_level=v_rule.level_name,highest_unlocked_level=v_rule.level_name,updated_at=now() where user_id=v_user and course_id=p_course_id;
