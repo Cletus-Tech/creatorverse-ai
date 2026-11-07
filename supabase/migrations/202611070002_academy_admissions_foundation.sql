@@ -109,6 +109,8 @@ drop policy if exists "Applicants read own diagnostic responses" on public.acade
 create policy "Applicants read own diagnostic responses" on public.academy_diagnostic_responses for select to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and (a.user_id=auth.uid() or public.is_admin())));
 drop policy if exists "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses;
 create policy "Applicants submit own diagnostic responses" on public.academy_diagnostic_responses for insert to authenticated with check(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status in ('draft','submitted','more_information_requested')));
+drop policy if exists "Applicants update own draft diagnostic responses" on public.academy_diagnostic_responses;
+create policy "Applicants update own draft diagnostic responses" on public.academy_diagnostic_responses for update to authenticated using(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status='draft')) with check(exists(select 1 from public.academy_applications a where a.id=application_id and a.user_id=auth.uid() and a.status='draft'));
 drop policy if exists "Admins manage diagnostic responses" on public.academy_diagnostic_responses;
 create policy "Admins manage diagnostic responses" on public.academy_diagnostic_responses for all to authenticated using(public.is_admin()) with check(public.is_admin());
 
