@@ -103,3 +103,6 @@ Prefer official documentation, platform creator education, standards bodies, rep
 - YouTube Automation Stage 2: drafted as three complete chapters plus an integrated research-to-script portfolio assessment.
 - Every unit must be manageable in the Admin Portal: course/stage/lesson association, content, outcomes, exercises, assessments, answers, rubrics, media, references, status, ordering and revision history must be editable by authorised admins. Draft approval must never silently publish to students.
 - These are private branch drafts. The Educator Curriculum admin UI and proposed database migration still require migration review and end-to-end QA before operational use. No deployment or production database change is authorised by this curriculum work.
+
+
+- YouTube Automation Stage 3 (Production, Editing and Publishing): drafted as three complete chapters, a finished-pilot assessment and Admin publishing checklist (2026-11-07).
