@@ -203,3 +203,15 @@ Status: **Architecture specification drafted on `education-build`; implementatio
 - Academic completion, exam scoring and certificate issuance must be server-authoritative; direct learner writes and self-claim certificate issuance are prohibited.
 - Preserve all existing enrolments, lesson progress, quiz attempts, submissions and certificates during any later additive migration.
 - Next: complete read-only schema/RLS/function/storage/data audit, then prepare a non-destructive migration and implementation plan. Do not apply to production or deploy until explicit release approval.
+
+
+## 2026-11-07 — Verified current-state audit and implementation priorities
+
+Status: **Read-only audit complete on `education-build`; remediation pending.**
+
+- See `ACADEMY_CURRENT_STATE_AUDIT.md` for the verified current frontend/database inventory and security findings.
+- Current admin portal already provides course, module/lesson, quiz/assignment, submission grading and certificate panels, but has no complete Admissions & Placement workspace.
+- Critical gaps: direct learner self-enrolment for free courses, learner-controlled lesson-progress insert/delete, no server-issued exam session with timer/attempt limits, and a learner-callable certificate-claim RPC.
+- Recorded admissions media must be isolated in a dedicated private storage bucket; current public media buckets are not suitable.
+- Preserve all registered accounts, profiles, roles and existing academic records. Implement additive schema and audited replacement workflows; do not clear historical records.
+- Continue implementation on the existing `education-build` branch and connected project only after reviewing each migration. Do not create another Supabase branch, merge to `main`, or deploy before owner approval.
