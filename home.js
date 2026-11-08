@@ -103,7 +103,7 @@ function landingSections(){
    h('h2',{text:'Ready to turn your interest into real skills?'}),
    h('p',{text:'Apply to join a guided learning pathway. Your application, placement review, admission offer and interview updates stay connected to your learner account.'}),
    h('div',{class:'cv-admissions-entry-actions'},[
-    btn('Apply for admission','academy-apply.html','btn-primary'),
+    btn('Choose a course & apply','academy-apply.html','btn-primary'),
     btn('Check application status','academy-status.html','btn-outline')
    ])
   ]),
