@@ -97,12 +97,14 @@ function courses(sb){
 function course(sb,user){var s=Q.get('s');
  sb.from('courses').select('*,modules(id,title,position,description,duration_text,stage_number,lessons(id,title,position,estimated_minutes,chapter_number,topic_outline))').eq('slug',s||'').maybeSingle().then(function(r){
   if(!r.data)return head('Course not found');var c=r.data,mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});main.textContent='';
-  Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id):{data:[]},user?sb.from('lesson_progress').select('lesson_id'):{data:[]}]).then(function(x){
-   var enrolled=x[0].data&&x[0].data.length>0,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
+  Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id):{data:[]},user?sb.from('lesson_progress').select('lesson_id'):{data:[]},user?sb.from('academy_applications').select('id,status').eq('course_id',c.id).eq('user_id',user.id).in('status',['approved_pending_payment','approved']).order('created_at',{ascending:false}).limit(1).maybeSingle():{data:null}]).then(function(x){
+   var enrolled=x[0].data&&x[0].data.length>0,application=x[2]&&x[2].data,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
    var act=h('div',{class:'hero2-cta'});
    if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enroll'}));
    else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
-   else act.appendChild(h('a',{class:'btn btn-primary',href:'academy-apply.html?course='+encodeURIComponent(c.slug),text:'Apply for admission'}));
+   else if(application&&application.status==='approved_pending_payment'){var payBtn=h('button',{class:'btn btn-primary',type:'button',text:'Complete payment to unlock course'}),payHost=h('div',{class:'academy-payment-checkout'});payBtn.addEventListener('click',function(){payBtn.disabled=true;payBtn.textContent='Opening secure payment options…';checkout(sb,user,c,payHost);setTimeout(function(){payBtn.remove()},0)});act.append(payBtn,payHost)}
+   else if(application&&application.status==='approved'){act.appendChild(h('span',{class:'chip2',text:'Admission approved — activating your learning access'}))}
+   else act.appendChild(h('a',{class:'btn btn-primary',href:'academy-apply.html?course='+encodeURIComponent(c.slug),text:application?'View application status':'Apply for admission'}));
    main.appendChild(h('div',{class:'academy-course-detail-hero'},[h('div',{class:'academy-course-detail-copy'},[h('span',{class:'academy-eyebrow',text:(c.category_slug||'CREATORVERSE ACADEMY').replace(/[-_]/g,' ')}),h('span',{class:'chip2',text:c.level||'Beginner'}),h('h1',{text:c.title}),h('p',{class:'lead',text:c.description||''}),
     h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
     enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons completed ('+pct+'%)'})]):null,act]),
