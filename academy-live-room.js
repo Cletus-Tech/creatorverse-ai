@@ -32,7 +32,6 @@ function render(interview){
  });
  mute.addEventListener('click',function(){var t=localStream&&localStream.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;mute.textContent=t.enabled?'Mute microphone':'Unmute microphone'});
  camera.addEventListener('click',function(){var t=localStream&&localStream.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;camera.textContent=t.enabled?'Turn camera off':'Turn camera on'});
- leave.addEventListener('click,',function(){});
  leave.addEventListener('click',function(){send({kind:'leave'});cleanup();status('You have left the interview room.')});
  function cleanup(){if(channel){sb.removeChannel(channel);channel=null}if(pc){pc.close();pc=null}if(localStream){localStream.getTracks().forEach(function(t){t.stop()});localStream=null}join.disabled=false;mute.disabled=true;camera.disabled=true;leave.disabled=true}
  window.addEventListener('beforeunload',cleanup);
