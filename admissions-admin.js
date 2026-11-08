@@ -43,8 +43,26 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
   var form=el('form',{class:'academy-review-form'}),st=el('select',{},statuses.map(function(s){return el('option',{value:s,text:s.replace(/_/g,' ')})}));st.value=x.status;
   var lv=el('select',{},levels.map(function(s){return el('option',{value:s,text:s})}));lv.value=x.proposed_level||'Beginner';
   var rationale=el('textarea',{rows:'3',placeholder:'Placement rationale — required when confirming a level'});
+  var rationalePreset=el('select',{},[
+   el('option',{value:'',text:'Quick rationale templates…'}),
+   el('option',{value:'Applicant meets the published entry requirements for the selected level.',text:'Meets entry requirements'}),
+   el('option',{value:'Applicant should begin at foundation level to strengthen core skills before progressing.',text:'Recommend foundation level'}),
+   el('option',{value:'Applicant demonstrates strong prior experience and portfolio evidence.',text:'Strong experience and portfolio'}),
+   el('option',{value:'Additional evidence is required before a final placement decision can be made.',text:'More evidence required'}),
+   el('option',{value:'Applicant should complete the diagnostic assessment before placement is confirmed.',text:'Diagnostic assessment required'})
+  ]);
+  rationalePreset.addEventListener('change',function(){if(rationalePreset.value)rationale.value=rationalePreset.value});
   var note=el('textarea',{rows:'3',placeholder:'Internal reviewer notes (visible to admins only)'});
-  form.append(field('Application decision',st),field('Confirmed placement level',lv),field('Placement rationale',rationale),field('Internal reviewer note',note));
+  var notePreset=el('select',{},[
+   el('option',{value:'',text:'Quick internal note templates…'}),
+   el('option',{value:'Reviewed applicant details and course diagnostic responses.',text:'Application and diagnostic reviewed'}),
+   el('option',{value:'Contact applicant to clarify prior experience and portfolio evidence.',text:'Follow up on experience / portfolio'}),
+   el('option',{value:'Awaiting interview assessment before final placement.',text:'Awaiting interview assessment'}),
+   el('option',{value:'Applicant information is complete. Ready for placement decision.',text:'Information complete'}),
+   el('option',{value:'Hold review until missing information is submitted.',text:'Hold pending information'})
+  ]);
+  notePreset.addEventListener('change',function(){if(notePreset.value)note.value=notePreset.value});
+  form.append(field('Application decision',st),field('Confirmed placement level',lv),field('Rationale template',rationalePreset),field('Placement rationale — editable',rationale),field('Internal note template',notePreset),field('Internal reviewer note — editable',note));
   var save=el('button',{class:'btn btn-primary',type:'submit',text:'Save review'}),feedback=el('div');form.append(save,feedback);detail.appendChild(el('h4',{text:'Review & placement'}));detail.appendChild(form);
   var offerPanel=el('section',{class:'academy-offer-panel'}),offerExpiry=el('input',{type:'datetime-local'}),offerText=el('textarea',{rows:'3',placeholder:'Welcome message, next steps, acceptance instructions…'}),offerFeedback=el('div');
   offerPanel.appendChild(el('h4',{text:'Admission offer & acceptance window'}));
