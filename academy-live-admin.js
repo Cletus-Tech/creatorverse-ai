@@ -13,7 +13,7 @@ window.CV_ACADEMY_LIVE_ADMIN={mount:function(host,sb,user,role){
   box.append(el('p',{class:'cv-live-admin-topic',text:r.topic||'Interview topic not set'}));
   var when=r.scheduled_start?new Date(r.scheduled_start).toLocaleString():'Time not scheduled';
   box.append(el('div',{class:'cv-live-admin-meta'},[el('span',{text:'Scheduled: '+when}),el('span',{text:'Interviewer: '+(r.reviewer_name||'Not assigned')}),el('span',{text:'Applicant response: '+(r.invitation_status||'not confirmed').replace(/_/g,' ')})]));
-  var actions=el('div',{class:'cv-live-admin-actions'}),join=el('a',{class:'btn btn-primary',href:'academy-live-room.html?interview='+encodeURIComponent(r.interview_id),text:'Join live room'}),workspace=el('a',{class:'btn btn-outline',href:'academy-interviewer.html?interview='+encodeURIComponent(r.interview_id),text:'Open review workspace'}),ring=el('button',{type:'button',class:'btn btn-call',text:'Ring applicant · Join now'}),feedback=el('small',{class:'cv-live-admin-feedback'});
+  var actions=el('div',{class:'cv-live-admin-actions'}),join=el('a',{class:'btn btn-primary',href:'academy-live-room.html?interview='+encodeURIComponent(r.interview_id),text:'Join live room'}),workspace=el('a',{class:'btn btn-outline',href:'academy-interviewer.html?interview='+encodeURIComponent(r.interview_id),text:'Open review workspace'}),ring=el('button',{type:'button',class:'btn btn-call',text:'Ring applicant'}),feedback=el('small',{class:'cv-live-admin-feedback'});
   actions.append(join,ring,workspace);box.append(actions,feedback);
   ring.addEventListener('click',async function(){
    ring.disabled=true;feedback.textContent='Calling applicant…';
