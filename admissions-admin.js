@@ -16,7 +16,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
  function load(){
   Promise.resolve(sb.rpc('expire_academy_admission_offers')).catch(function(){});Promise.resolve(sb.rpc('expire_academy_interview_invitations')).catch(function(){});
   list.textContent='Loading applications…';detail.textContent='Select an application to review.';
-  Promise.all([sb.from('academy_applications').select('*').order('created_at',{ascending:false}).limit(300),sb.from('profiles').select('id,full_name,email'),sb.from('courses').select('id,title,price_ngn')]).then(function(rs){
+  Promise.all([sb.from('academy_applications').select('*').order('created_at',{ascending:false}).limit(300),sb.from('profiles').select('id,full_name,email,role'),sb.from('courses').select('id,title,price_ngn')]).then(function(rs){
    var err=rs.filter(function(x){return x.error})[0];if(err){list.textContent='Admissions schema is not available yet. Apply the reviewed migration 202611070002_academy_admissions_foundation.sql before enabling this workspace. Details: '+err.error.message;return}
    rows=rs[0].data||[];profiles={};courses={};(rs[1].data||[]).forEach(function(x){profiles[x.id]=x});(rs[2].data||[]).forEach(function(x){courses[x.id]=x});
    var counts={};statuses.forEach(function(s){counts[s]=rows.filter(function(x){return x.status===s}).length});
@@ -86,8 +86,9 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
     var items=ir.data||[],invitations=iv.data||[];
     if(items.length)items.forEach(function(it){
      var title=(it.interview_type||'interview').replace(/_/g,' '),when=it.scheduled_start?new Date(it.scheduled_start).toLocaleString():'Not scheduled';
-     var card=el('div',{class:'academy-interview-card'},[el('strong',{text:title+' · '+it.status}),el('p',{text:when+(it.timezone?' · '+it.timezone:'')}),el('p',{text:it.meeting_provider?(it.meeting_provider+' · '+(it.meeting_reference||'No meeting link/reference')):'No meeting details'}),el('p',{text:'Reviewer: '+(it.reviewer_id||'Unassigned')+' · Score: '+(it.score==null?'Not scored':it.score)})]);
+     var card=el('div',{class:'academy-interview-card'},[el('strong',{text:title+' · '+it.status}),el('p',{text:when+(it.timezone?' · '+it.timezone:'')}),el('p',{text:'Topic: '+(it.topic||'Not set')}),el('p',{text:'Reviewer: '+((profiles[it.reviewer_id]&&(profiles[it.reviewer_id].full_name||profiles[it.reviewer_id].email))||'Unassigned')+' · Score: '+(it.score==null?'Not scored':it.score)})]);
      if(it.reviewer_notes)card.appendChild(el('p',{text:'Private reviewer notes: '+it.reviewer_notes}));
+     card.appendChild(el('a',{class:'btn btn-outline',href:'academy-interviewer.html?interview='+encodeURIComponent(it.id),text:'Open interviewer workspace'}));
      var invite=invitations.find(function(v){return v.interview_id===it.id});
      if(invite){
       card.appendChild(el('p',{text:'Learner invitation: '+invite.status.replace(/_/g,' ')}));
@@ -98,36 +99,38 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
      }
      interviewBox.appendChild(card)
     });
-    var form=el('form',{class:'academy-review-form'}),kind=el('select',{},[['live','Live interview'],['recorded_video','Recorded video response'],['recorded_audio','Recorded audio response'],['alternative','Alternative assessment']].map(function(v){return el('option',{value:v[0],text:v[1]})}));
+    var form=el('form',{class:'academy-review-form'}),kind=el('select',{},[['recorded_audio','Audio defence'],['recorded_video','Audiovisual defence'],['live','Live interview']].map(function(v){return el('option',{value:v[0],text:v[1]})}));
     var state=el('select',{},['pending','scheduled','in_progress','submitted','completed','cancelled','declined'].map(function(v){return el('option',{value:v,text:v.replace(/_/g,' ')})}));
-    var start=el('input',{type:'datetime-local'}),end=el('input',{type:'datetime-local'}),tz=el('input',{type:'text',placeholder:'e.g. Africa/Lagos'}),provider=el('input',{type:'text',placeholder:'Google Meet, Zoom, phone…'}),meeting=el('input',{type:'url',placeholder:'Private meeting link or reference URL'}),reviewer=el('select',{}),score=el('input',{type:'number',min:'0',step:'0.5',placeholder:'Score'}),notes=el('textarea',{rows:'3',placeholder:'Private interviewer evaluation and observations'}),feedback=el('div');
+    var topic=el('input',{type:'text',placeholder:'Enter the defence topic or interview subject'}),instructions=el('textarea',{rows:'4',placeholder:'Explain exactly what the applicant must do, how to submit and what to prepare…'}),prep=el('input',{type:'number',min:'0',max:'3600',value:'0'}),duration=el('input',{type:'number',min:'30',max:'7200',value:'600'}),criteria=el('textarea',{rows:'3',placeholder:'One assessment criterion per line'}),start=el('input',{type:'datetime-local'}),end=el('input',{type:'datetime-local'}),tz=el('input',{type:'text',placeholder:'e.g. Africa/Lagos'}),reviewer=el('select',{}),score=el('input',{type:'number',min:'0',max:'100',step:'0.5',placeholder:'Score'}),notes=el('textarea',{rows:'3',placeholder:'Private interviewer evaluation and observations'}),feedback=el('div');
     reviewer.appendChild(el('option',{value:'',text:'Unassigned reviewer'}));
-    (Object.keys(profiles).map(function(id){return profiles[id]})).forEach(function(p){reviewer.appendChild(el('option',{value:p.id,text:p.full_name||p.email||p.id}))});
-    form.append(field('Interview type',kind),field('Workflow status',state),field('Start date & time',start),field('End date & time',end),field('Timezone (IANA)',tz),field('Meeting provider',provider),field('Meeting link / reference (restricted admin access)',meeting),field('Assigned reviewer',reviewer),field('Evaluation score',score),field('Private reviewer evaluation',notes));
+    (Object.keys(profiles).map(function(id){return profiles[id]})).filter(function(p){return ['super_admin','admin','creator'].includes(p.role)}).forEach(function(p){reviewer.appendChild(el('option',{value:p.id,text:(p.full_name||p.email||p.id)+' · '+p.role}))});
+    form.append(field('Required interview format',kind),field('Workflow status',state),field('Defence topic / interview subject',topic),field('Applicant instructions',instructions),field('Preparation time (seconds)',prep),field('Maximum response / session duration (seconds)',duration),field('Assessment criteria (one per line)',criteria),field('Opens / scheduled start',start),field('Submission deadline / scheduled end',end),field('Timezone (IANA)',tz),field('Assigned interviewer / reviewer',reviewer),field('Evaluation score (0–100)',score),field('Private reviewer evaluation',notes));
     var saveInterview=el('button',{class:'btn btn-primary',type:'submit',text:'Save interview plan'});form.append(saveInterview,feedback);interviewBox.appendChild(form);
     form.addEventListener('submit',function(ev){ev.preventDefault();
      var a=start.value?new Date(start.value):null,b=end.value?new Date(end.value):null;
      if(a&&isNaN(a.getTime())||b&&isNaN(b.getTime())){feedback.textContent='Enter a valid date and time.';return}
      if(a&&b&&b<=a){feedback.textContent='Interview end must be after its start.';return}
-     if(state.value==='scheduled'&&(!a||!b||!tz.value.trim())){feedback.textContent='A scheduled interview needs a start time, end time and timezone so the learner receives a complete appointment.';return}
-     if(score.value!==''&&(Number(score.value)<0||!Number.isFinite(Number(score.value)))){feedback.textContent='Enter a valid non-negative score.';return}
+     if(!topic.value.trim()){feedback.textContent='Enter the topic or subject the applicant must complete.';return}
+     if(!instructions.value.trim()){feedback.textContent='Enter clear applicant instructions.';return}
+     if(!a||!b||!tz.value.trim()){feedback.textContent='Set an opening/start time, a deadline/end time and an IANA timezone.';return}
+     if(Number(prep.value)<0||Number(prep.value)>3600||Number(duration.value)<30||Number(duration.value)>7200){feedback.textContent='Preparation must be 0–3600 seconds and duration 30–7200 seconds.';return}
+     if(score.value!==''&&(Number(score.value)<0||Number(score.value)>100||!Number.isFinite(Number(score.value)))){feedback.textContent='Enter a score from 0 to 100.';return}
      saveInterview.disabled=true;feedback.textContent='Saving interview…';
-     var payload={application_id:x.id,interview_type:kind.value,status:state.value,scheduled_start:a?a.toISOString():null,scheduled_end:b?b.toISOString():null,timezone:tz.value.trim()||null,meeting_provider:provider.value.trim()||null,meeting_reference:meeting.value.trim()||null,reviewer_id:reviewer.value||null,score:score.value===''?null:Number(score.value),reviewer_notes:notes.value.trim()||null,updated_at:new Date().toISOString()};
+     var rubric=criteria.value.split('\\n').map(function(v){return v.trim()}).filter(Boolean);var promptData={topic:topic.value.trim(),instructions:instructions.value.trim(),preparation_seconds:Number(prep.value)||0,max_duration_seconds:Number(duration.value)||600,assessment_criteria:rubric,round_number:items.length+1};var payload={application_id:x.id,interview_type:kind.value,status:state.value,prompt_snapshot:promptData,topic:promptData.topic,instructions:promptData.instructions,preparation_seconds:promptData.preparation_seconds,max_duration_seconds:promptData.max_duration_seconds,assessment_criteria:rubric,round_number:promptData.round_number,consent_required:true,scheduled_start:a.toISOString(),scheduled_end:b.toISOString(),timezone:tz.value.trim(),meeting_provider:null,meeting_reference:null,reviewer_id:reviewer.value||null,score:score.value===''?null:Number(score.value),reviewer_notes:notes.value.trim()||null,updated_at:new Date().toISOString()};
      sb.from('academy_interviews').insert(payload).select('id').single().then(function(w){
       if(w.error)throw w.error;
-      if(!a||!b||!tz.value.trim())return w.data;
-      return sb.from('academy_interview_invitations').upsert({interview_id:w.data.id,application_id:x.id,user_id:x.user_id,interview_type:kind.value,status:'scheduled',starts_at:a.toISOString(),ends_at:b.toISOString(),timezone:tz.value.trim(),attendance_deadline:b.toISOString(),meeting_join_url:meeting.value.trim()||null,learner_instructions:'Please attend at the scheduled time. If you cannot attend, contact Academy support before the session.' ,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'interview_id'}).then(function(inv){if(inv.error)throw inv.error;return w.data});
+      return sb.from('academy_interview_invitations').upsert({interview_id:w.data.id,application_id:x.id,user_id:x.user_id,interview_type:kind.value,status:'scheduled',starts_at:a.toISOString(),ends_at:b.toISOString(),timezone:tz.value.trim(),attendance_deadline:b.toISOString(),response_due_at:b.toISOString(),meeting_join_url:null,learner_instructions:promptData.instructions,published_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'interview_id'}).then(function(inv){if(inv.error)throw inv.error;return w.data});
      }).then(function(w){
       return sb.from('academy_application_events').insert({application_id:x.id,actor_id:user.id,event_type:'interview_updated',message:'Interview plan '+state.value,metadata:{interview_type:kind.value,scheduled_start:payload.scheduled_start,timezone:payload.timezone}});
      }).then(function(ev2){if(ev2.error)throw ev2.error;return sb.from('academy_audit_log').insert({actor_id:user.id,application_id:x.id,action:'interview_plan_created',details:{interview_type:kind.value,status:state.value,scheduled_start:payload.scheduled_start,reviewer_id:payload.reviewer_id}})})
-     .then(function(audit){if(audit.error)throw audit.error;feedback.textContent='Interview plan saved. No recording has been uploaded or shared.';loadInterviews()})
+     .then(function(audit){if(audit.error)throw audit.error;feedback.textContent='Interview assignment published. The applicant will receive the topic, instructions and deadline in CreatorVerse.';loadInterviews()})
      .catch(function(err){feedback.textContent=err.message||String(err);feedback.className='academy-admin-message is-error'})
      .finally(function(){saveInterview.disabled=false})
     })
    })
   }
   loadInterviews().catch(function(err){interviewBox.textContent='Could not load interview records: '+(err.message||String(err))});
-  detail.appendChild(el('p',{class:'academy-admin-footnote',text:'Interview links, reviewer evaluations and scheduling details are restricted to authorised administrators. Recording capture and private media upload will be enabled only after consent, retention and signed-access controls are implemented.'}))
+  detail.appendChild(el('p',{class:'academy-admin-footnote',text:'Applicant recordings are stored in the private Academy bucket. Reviewers can open only interviews assigned to their account. Live interviews will use the secure in-app room; external meeting links are not used.'}))
  }
  function diagnostics(){
   var box=el('section',{class:'academy-diagnostics-admin'});root.appendChild(box);
