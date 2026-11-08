@@ -31,6 +31,7 @@ function render(){
    start.disabled=true;status.textContent='Requesting device permission…';
    stream=await navigator.mediaDevices.getUserMedia(video?{audio:true,video:{facingMode:'user'}}:{audio:true});
    if(video){preview.srcObject=stream;preview.muted=true;await preview.play().catch(function(){})}
+   if(!window.MediaRecorder){status.textContent='This browser does not support secure in-page recording. Please use an updated Chrome or Edge browser.';start.disabled=false;stopTracks();return}
    var candidates=video?['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']:['audio/webm;codecs=opus','audio/webm','audio/mp4'];
    var mime=candidates.find(function(m){return window.MediaRecorder&&MediaRecorder.isTypeSupported(m)})||'';
    recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);chunks=[];startedAt=Date.now();
@@ -43,13 +44,13 @@ function render(){
  submit.addEventListener('click',async function(){
   if(!blob){status.textContent='Record your response first.';return}
   if(!consent.checked){status.textContent='Please confirm recording consent before submitting.';return}
-  var seconds=Math.max(1,Math.round((Date.now()-startedAt)/1000));if(seconds>(interview.max_duration_seconds||600)+3){status.textContent='The recording exceeds the maximum duration.';return}
+  var seconds=Math.max(1,Math.round((Date.now()-startedAt)/1000));if(seconds>(interview.max_duration_seconds||600)+3){status.textContent='The recording exceeds the maximum duration.';return}if(blob.size>104857600){status.textContent='This recording is larger than the 100 MB upload limit. Record a shorter response or reduce the video resolution.';return}
   submit.disabled=true;status.textContent='Uploading your private recording…';
   try{
    var ext=blob.type.indexOf('mp4')>-1?'mp4':'webm',path=id+'/'+user.id+'/'+Date.now()+'.'+ext;
-   var up=await sb.storage.from('academy-interviews').upload(path,blob,{contentType:blob.type,upsert:false});if(up.error)throw up.error;
+   var up=await sb.storage.from('academy-interviews').upload(path,blob,{contentType:(blob.type||'application/octet-stream').split(';')[0],upsert:false});if(up.error)throw up.error;
    status.textContent='Finalising your submission…';
-   var result=await sb.rpc('submit_academy_interview_response',{p_interview_id:id,p_media_path:path,p_duration_seconds:seconds,p_consent:true});if(result.error)throw result.error;
+   var result=await sb.rpc('submit_academy_interview_response',{p_interview_id:id,p_media_path:path,p_duration_seconds:seconds,p_consent:true});if(result.error){await sb.storage.from('academy-interviews').remove([path]);throw result.error}
    rec.textContent='';rec.appendChild(el('h2',{text:'Defence submitted'}));rec.appendChild(el('p',{text:'Your recording has been uploaded securely. The assigned interviewer will review it and your admission status will update when a decision is made.'}));rec.appendChild(el('a',{class:'btn btn-primary',href:'academy-status.html',text:'Return to admission status'}));
   }catch(e){status.textContent=e.message||'Unable to submit your recording. Please try again.';submit.disabled=false}
  });
@@ -59,9 +60,9 @@ async function boot(){
  if(!sb){message('CreatorVerse is still loading. Refresh this page.');return}
  var auth=await sb.auth.getUser();user=auth.data&&auth.data.user;if(!user){host.textContent='';host.appendChild(el('a',{class:'btn btn-primary',href:'login.html',text:'Sign in to continue'}));return}
  if(!id){message('This interview link is incomplete.',true);return}
- var pair=await Promise.all([sb.from('academy_interviews').select('*').eq('id',id).maybeSingle(),sb.from('academy_interview_invitations').select('*').eq('interview_id',id).eq('user_id',user.id).not('published_at','is',null).maybeSingle()]);
- if(pair[0].error||pair[1].error||!pair[0].data||!pair[1].data){message('This interview is unavailable or is not assigned to your account.',true);return}
- interview=pair[0].data;invitation=pair[1].data;render()
+ var brief=await sb.rpc('get_my_academy_interview_details',{p_interview_id:id});
+ if(brief.error||!brief.data||!brief.data.interview||!brief.data.invitation){message('This interview is unavailable or is not assigned to your account.',true);return}
+ interview=brief.data.interview;invitation=brief.data.invitation;render()
 }
 if(window.CV_SB)boot().catch(function(e){message(e.message||String(e),true)});else document.addEventListener('cv-ready',function(){sb=window.CV_SB;boot().catch(function(e){message(e.message||String(e),true)})},{once:true});
 })();
