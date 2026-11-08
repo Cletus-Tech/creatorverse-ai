@@ -38,7 +38,7 @@ function render(interview){
 }
 async function boot(){if(!sb){host.textContent='CreatorVerse is still loading.';return}var a=await sb.auth.getUser();user=a.data&&a.data.user;if(!user){host.textContent='';host.appendChild(el('a',{href:'login.html',class:'btn btn-primary',text:'Sign in to continue'}));return}if(!id){host.textContent='This room link is incomplete.';return}
  var access=await sb.rpc('can_access_academy_interview',{p_interview_id:id});if(access.error||!access.data){host.textContent='You do not have permission to enter this interview room.';return}
- var r=await sb.from('academy_interviews').select('*').eq('id',id).maybeSingle();if(r.error||!r.data||r.data.interview_type!=='live'){host.textContent='This live interview is unavailable.';return}
- var profile=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();interviewer=r.data.reviewer_id===user.id||!!(profile.data&&['admin','super_admin'].includes(profile.data.role));render(r.data)}
+ var r=await sb.from('academy_interviews').select('id,interview_type,reviewer_id,topic').eq('id',id).maybeSingle();var interview=r.data;if(!interview){var brief=await sb.rpc('get_my_academy_interview_details',{p_interview_id:id});if(brief.error||!brief.data){host.textContent='This live interview is unavailable.';return}interview=brief.data.interview}if(r.error||!interview||interview.interview_type!=='live'){host.textContent='This live interview is unavailable.';return}
+ var profile=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();interviewer=interview.reviewer_id===user.id||!!(profile.data&&['admin','super_admin'].includes(profile.data.role));render(interview)}
 if(window.CV_SB)boot().catch(function(e){host.textContent=e.message||String(e)});else document.addEventListener('cv-ready',function(){sb=window.CV_SB;boot().catch(function(e){host.textContent=e.message||String(e)})},{once:true});
 })();
