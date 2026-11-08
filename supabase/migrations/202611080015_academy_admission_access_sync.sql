@@ -142,3 +142,14 @@ where lc.status='ringing' and exists(
  select 1 from public.academy_interviews i join public.academy_admission_offers o on o.application_id=i.application_id
  where i.id=lc.interview_id and o.status='accepted'
 );
+
+-- Enable authenticated, RLS-governed realtime updates for connected portal views.
+do $$
+declare t text;
+begin
+ foreach t in array array['academy_applications','academy_admission_offers','academy_interview_invitations','enrolments','payment_orders'] loop
+   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=t) then
+     execute format('alter publication supabase_realtime add table public.%I',t);
+   end if;
+ end loop;
+end $$;
