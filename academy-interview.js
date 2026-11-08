@@ -27,6 +27,7 @@ function render(){
  var rec=el('section',{class:'cv-interview-panel'},[el('h2',{text:'Record your defence'}),el('p',{text:video?'Record a clear video with your face and voice. Keep your device steady and speak clearly.':'Record your explanation in a quiet place and speak clearly.'}),consentWrap,preview,timer,actions,status]);
  host.appendChild(rec);
  start.addEventListener('click',async function(){
+  var now=Date.now(),opens=new Date(invitation.starts_at).getTime(),closes=new Date(invitation.ends_at).getTime();if(now<opens||now>closes){status.textContent=now<opens?'This assignment is not open yet. It opens '+new Date(opens).toLocaleString()+'.':'The submission deadline has passed.';return}
   try{
    start.disabled=true;status.textContent='Requesting device permission…';
    stream=await navigator.mediaDevices.getUserMedia(video?{audio:true,video:{facingMode:'user'}}:{audio:true});
