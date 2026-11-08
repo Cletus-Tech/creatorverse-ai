@@ -3,7 +3,7 @@
 function el(t,a,k){var n=document.createElement(t);Object.keys(a||{}).forEach(function(x){if(x==='text')n.textContent=a[x];else n.setAttribute(x,a[x])});(k||[]).forEach(function(c){if(c)n.appendChild(c)});return n}
 window.CV_ACADEMY_LIVE_ADMIN={mount:function(host,sb,user,role){
  var root=el('section',{class:'cv-live-admin'});host.appendChild(root);
- var items=[],status=el('p',{class:'cv-live-admin-status',text:'Loading live interviews…'}),list=el('div',{class:'cv-live-admin-list'}),refresh=el('button',{type:'button',class:'btn btn-outline',text:'Refresh'});
+ var items=[],reviewers={},status=el('p',{class:'cv-live-admin-status',text:'Loading live interviews…'}),list=el('div',{class:'cv-live-admin-list'}),refresh=el('button',{type:'button',class:'btn btn-outline',text:'Refresh'});
  root.append(el('div',{class:'cv-live-admin-hero'},[el('span',{class:'academy-eyebrow',text:'CREATORVERSE ACADEMY · LIVE CONTROL ROOM'}),el('h1',{text:'Live interviews'}),el('p',{text:'Find every scheduled live interview, ring the applicant, and join the same private room from this dashboard.'}),refresh]),status,list);
  refresh.addEventListener('click',load);
  function card(r){
@@ -27,6 +27,7 @@ window.CV_ACADEMY_LIVE_ADMIN={mount:function(host,sb,user,role){
   refresh.disabled=true;status.textContent='Loading live interviews…';list.textContent='';
   try{var z=await sb.rpc('get_my_academy_interview_assignments');if(z.error)throw z.error;
    items=(z.data||[]).filter(function(r){return r.interview_type==='live'});
+   var ids=Array.from(new Set(items.map(function(r){return r.reviewer_id}).filter(Boolean)));if(ids.length){var pr=await sb.from('profiles').select('id,full_name,email').in('id',ids);if(!pr.error)(pr.data||[]).forEach(function(p){reviewers[p.id]=p.full_name||p.email||'Assigned interviewer'})}items.forEach(function(r){r.reviewer_name=reviewers[r.reviewer_id]||'Not assigned'});
    if(!items.length){status.textContent='No live interviews are currently assigned or scheduled.';return}
    items.sort(function(a,b){var x=new Date(a.scheduled_start||0).getTime(),y=new Date(b.scheduled_start||0).getTime();return x-y});
    status.textContent=items.length+' live interview'+(items.length===1?'':'s')+' found. Select Join live room to enter, or ring the applicant first.';
