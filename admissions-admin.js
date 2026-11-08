@@ -91,7 +91,7 @@ window.CV_ACADEMY_ADMIN={mount:function(host,sb,user,role){
      card.appendChild(el('a',{class:'btn btn-outline',href:'academy-interviewer.html?interview='+encodeURIComponent(it.id),text:'Open interviewer workspace'}));
      if(it.interview_type==='live'){
       card.appendChild(el('a',{class:'btn btn-primary',href:'academy-live-room.html?interview='+encodeURIComponent(it.id),text:'Join live interview room'}));
-      var callBtn=el('button',{class:'btn btn-call',type:'button',text:'Ring applicant · Join now'}),callFeedback=el('small',{class:'cv-live-admin-feedback'});
+      var callBtn=el('button',{class:'btn btn-call',type:'button',text:'Ring applicant'}),callFeedback=el('small',{class:'cv-live-admin-feedback'});
       callBtn.addEventListener('click',async function(){callBtn.disabled=true;callFeedback.textContent='Calling applicant…';try{var call=await sb.rpc('ring_academy_live_interview',{p_interview_id:it.id});if(call.error)throw call.error;callFeedback.textContent=call.data&&call.data.already_ringing?'Applicant is already being rung.':'Call sent. The applicant will see an incoming-call alert and can join the room.'}catch(err){callFeedback.textContent=err.message||String(err)}finally{callBtn.disabled=false}});
       card.append(callBtn,callFeedback)
      }
