@@ -24,7 +24,7 @@ function initials(n){return(n||'S').trim().split(/\s+/).slice(0,2).map(function(
 function progress(p){var w=el('div',{class:'cv-progress'});w.appendChild(el('span',{style:'width:'+Math.max(0,Math.min(100,p))+'%'}));return w}
 function note(target,msg,type){target.textContent=msg;target.className='cv-feedback '+(type||'')}
 window.CV_DASH=function(sb,session,X){
- var user=session.user,meta=user.user_metadata||{},display=meta.full_name||'',avatar=meta.avatar_url||'',main=document.getElementById('content');
+ var user=session.user,meta=user.user_metadata||{},display=meta.full_name||'',avatar=meta.avatar_url||'',main=document.getElementById('content');if(sb.channel){var academySync=sb.channel('student-academy-sync-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'enrolments',filter:'user_id=eq.'+user.id},function(){location.reload()}).on('postgres_changes',{event:'*',schema:'public',table:'academy_applications',filter:'user_id=eq.'+user.id},function(){location.reload()}).subscribe();}
  main.className='page cv-student';main.innerHTML='';
  var shell=el('div',{class:'cv-dash-shell'});
  var side=el('aside',{class:'cv-dash-side'});
