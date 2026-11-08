@@ -11,7 +11,7 @@ function embed(u){if(!u)return null;var m=u.match(/(?:youtu\.be\/|youtube\.com\/
 function sorted(a){return (a||[]).slice().sort(function(x,y){return x.position-y.position})}
 function boot(sb){
  sb.auth.getSession().then(function(r){var user=r.data.session&&r.data.session.user;
-  if(pg==='courses')courses(sb);else if(pg==='course')course(sb,user);else if(pg==='lesson')lesson(sb,user);else admin(sb,user)})}
+  if(user&&pg==='course'&&sb.channel){sb.channel('course-admission-sync-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'academy_applications',filter:'user_id=eq.'+user.id},function(){location.reload()}).on('postgres_changes',{event:'*',schema:'public',table:'academy_admission_offers',filter:'user_id=eq.'+user.id},function(){location.reload()}).on('postgres_changes',{event:'*',schema:'public',table:'enrolments',filter:'user_id=eq.'+user.id},function(){location.reload()}).on('postgres_changes',{event:'*',schema:'public',table:'payment_orders',filter:'user_id=eq.'+user.id},function(){location.reload()}).subscribe()}if(pg==='courses')courses(sb);else if(pg==='course')course(sb,user);else if(pg==='lesson')lesson(sb,user);else admin(sb,user)})}
 function ico(p){var s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','2');s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');s.innerHTML=p;return s}
 var CK='<path d="M20 6 9 17l-5-5"/>',PL='<polygon points="6 3 20 12 6 21 6 3"/>';
 
