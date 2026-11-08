@@ -21,3 +21,10 @@
 .academy-apply-success h2{font:700 25px 'Space Grotesk',sans-serif}
 .academy-apply-success p{color:#b5c5df;line-height:1.7}
 @media(max-width:760px){.academy-apply-hero{grid-template-columns:1fr;padding:22px}.academy-apply-hero img{height:180px}.academy-apply-form{padding:18px}.academy-apply-grid{grid-template-columns:1fr}}
+
+.academy-apply-course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:24px}
+.academy-apply-course-option{display:flex;flex-direction:column;gap:10px;min-width:0;padding:18px;border:1px solid rgba(140,165,210,.2);border-radius:16px;background:linear-gradient(145deg,#0c1a35,#080f21);color:#edf3ff}
+.academy-apply-course-option img{width:100%;height:150px;object-fit:cover;border-radius:12px}
+.academy-apply-course-option h2{font:700 19px 'Space Grotesk',sans-serif;margin:4px 0}
+.academy-apply-course-option p{color:#aabbd9;line-height:1.6;font-size:13px;flex:1}
+.academy-apply-course-option .btn{align-self:flex-start}
