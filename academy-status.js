@@ -4,9 +4,32 @@ var host=document.getElementById('content');
 function card(title,sub){return el('section',{class:'academy-status-card'},[el('div',{class:'academy-status-card-head'},[el('h2',{text:title}),sub?el('p',{text:sub}):null])])}
 function boot(sb){sb.auth.getUser().then(function(r){var user=r.data&&r.data.user;if(!user){host.textContent='';host.appendChild(el('a',{href:'login.html',class:'btn btn-primary',text:'Sign in to view your Academy status'}));return}
  host.textContent='';host.className='page academy-status-page';host.appendChild(el('div',{class:'academy-status-hero'},[el('span',{class:'academy-eyebrow',text:'CREATORVERSE ACADEMY'}),el('h1',{text:'Your admission & learning timeline'}),el('p',{text:'Keep an eye on your admission deadline, interview schedule, course progress and next steps.'})]));
- var notifications=card('Academy notifications','Important updates, deadlines, interview reminders and learning alerts.');var offers=card('Admission offers','An offer must be accepted before its deadline. Acceptance does not bypass required payment or onboarding.');var interviews=card('Interview schedule','Your interview appointment is time-bound. Confirm that you will attend, or request a reschedule before the session begins.');var progress=card('Learning progress','Your completed lessons and current learning level.');host.append(notifications,offers,interviews,progress);
- Promise.all([sb.from('academy_admission_offers').select('*').eq('user_id',user.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('user_id',user.id).not('published_at','is',null).order('starts_at',{ascending:true}),sb.from('enrolments').select('course_id,created_at,courses(id,title,modules(id,lessons(id)))'),sb.from('lesson_progress').select('lesson_id,completed_at'),sb.from('academy_learner_levels').select('course_id,current_level,highest_unlocked_level,progress_percent'),sb.from('academy_notifications').select('id,notification_type,title,body,action_url,scheduled_for,read_at,created_at').lte('scheduled_for',new Date().toISOString()).order('created_at',{ascending:false}).limit(30),sb.from('academy_learning_activity').select('course_id,activity_type,occurred_at').order('occurred_at',{ascending:false}).limit(1000),sb.from('academy_level_rules').select('course_id,level_name,sequence_no,min_completed_percent,min_quiz_average,min_assignment_count,min_active_days,published').eq('published',true).order('sequence_no')]).then(function(rs){
+ var applications=card('My applications','Track each application reference, review decision and the latest admissions activity.');var notifications=card('Academy notifications','Important updates, deadlines, interview reminders and learning alerts.');var offers=card('Admission offers','An offer must be accepted before its deadline. Acceptance does not bypass required payment or onboarding.');var interviews=card('Interview schedule','Your interview appointment is time-bound. Confirm that you will attend, or request a reschedule before the session begins.');var progress=card('Learning progress','Your completed lessons and current learning level.');host.append(applications,notifications,offers,interviews,progress);
+ Promise.all([sb.from('academy_admission_offers').select('*').eq('user_id',user.id).order('created_at',{ascending:false}),sb.from('academy_interview_invitations').select('*').eq('user_id',user.id).not('published_at','is',null).order('starts_at',{ascending:true}),sb.from('enrolments').select('course_id,created_at,courses(id,title,modules(id,lessons(id)))'),sb.from('lesson_progress').select('lesson_id,completed_at'),sb.from('academy_learner_levels').select('course_id,current_level,highest_unlocked_level,progress_percent'),sb.from('academy_notifications').select('id,notification_type,title,body,action_url,scheduled_for,read_at,created_at').lte('scheduled_for',new Date().toISOString()).order('created_at',{ascending:false}).limit(30),sb.from('academy_learning_activity').select('course_id,activity_type,occurred_at').order('occurred_at',{ascending:false}).limit(1000),sb.from('academy_level_rules').select('course_id,level_name,sequence_no,min_completed_percent,min_quiz_average,min_assignment_count,min_active_days,published').eq('published',true).order('sequence_no'),sb.from('academy_applications').select('id,application_no,course_id,status,submitted_at,reviewed_at,decision_reason,created_at,courses(title)').eq('user_id',user.id).order('created_at',{ascending:false}),sb.from('academy_application_events').select('application_id,event_type,from_status,to_status,message,created_at').order('created_at',{ascending:false}).limit(150)]).then(function(rs){
  var bad=rs.find(function(x){return x.error});if(bad){host.appendChild(el('p',{class:'academy-status-alert',text:'Some Academy information is still being prepared. '+bad.error.message}));}
+ var appRows=(rs[8]&&rs[8].data)||[],eventRows=(rs[9]&&rs[9].data)||[];
+ if(rs[8]&&rs[8].error){applications.appendChild(el('p',{class:'academy-status-alert',text:'Application tracking is temporarily unavailable: '+rs[8].error.message}));}
+ appRows.forEach(function(a){
+  var timeline=eventRows.filter(function(v){return v.application_id===a.id;}).slice(0,8);
+  var box=el('article',{class:'academy-status-item'},[
+   el('strong',{text:(a.courses&&a.courses.title)||'Academy application'}),
+   el('span',{class:'academy-status-pill',text:(a.status||'submitted').replace(/_/g,' ')}),
+   el('p',{text:'Reference: '+a.application_no}),
+   el('small',{text:'Submitted: '+(a.submitted_at?new Date(a.submitted_at).toLocaleString():'Not submitted')})
+  ]);
+  if(a.decision_reason)box.appendChild(el('p',{text:a.decision_reason}));
+  if(timeline.length){
+   var log=el('div',{class:'academy-status-timeline'});
+   timeline.slice().reverse().forEach(function(v){log.appendChild(el('div',{class:'academy-status-timeline-event'},[
+    el('strong',{text:(v.event_type||'update').replace(/_/g,' ')}),
+    el('p',{text:v.message||((v.from_status||'')+' → '+(v.to_status||''))}),
+    el('small',{text:new Date(v.created_at).toLocaleString()})
+   ]));});
+   box.appendChild(log);
+  }else box.appendChild(el('p',{class:'academy-status-muted',text:'Your application has been received. Updates will appear here as the review progresses.'}));
+  applications.appendChild(box);
+ });
+ if(!appRows.length)applications.appendChild(el('p',{class:'academy-status-muted',text:'You have not submitted an Academy application yet.'}));
  var noticeRows=(rs[5]&&rs[5].data)||[];
  if(rs[5]&&rs[5].error){notifications.appendChild(el('p',{class:'academy-status-muted',text:'Notifications will appear here when the Academy notification migration is enabled.'}));}
  noticeRows.forEach(function(n){
