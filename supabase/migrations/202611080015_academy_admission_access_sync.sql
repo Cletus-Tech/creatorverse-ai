@@ -127,7 +127,7 @@ update public.academy_applications a set status='approved',
 from public.academy_admission_offers o join public.courses c on c.id=o.course_id
 where o.application_id=a.id and o.status='accepted' and coalesce(c.price_ngn,0)<=0;
 
-update public.academy_interview_invitations i set status='cancelled',updated_at=now()
+update public.academy_interview_invitations i set status='cancelled',published_at=null,updated_at=now()
 from public.academy_admission_offers o
 where o.application_id=i.application_id and o.status='accepted'
 and i.status not in ('cancelled','declined');
