@@ -13,6 +13,8 @@ create index if not exists academy_live_calls_recipient_active_idx on public.aca
 create unique index if not exists academy_live_calls_one_active_per_interview on public.academy_live_calls(interview_id) where status='ringing';
 alter table public.academy_live_calls enable row level security;
 revoke all on public.academy_live_calls from anon,authenticated;
+drop policy if exists "No direct client access to Academy live calls" on public.academy_live_calls;
+create policy "No direct client access to Academy live calls" on public.academy_live_calls for all to authenticated using (false) with check (false);
 
 create or replace function public.ring_academy_live_interview(p_interview_id uuid)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,public as $$
