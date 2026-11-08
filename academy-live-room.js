@@ -6,7 +6,7 @@ function send(payload){if(channel)channel.send({type:'broadcast',event:'signal',
 async function drain(){for(var c of pendingCandidates){try{await pc.addIceCandidate(c)}catch(e){console.warn(e)}}pendingCandidates=[]}
 async function makeOffer(){if(offered||!interviewer)return;offered=true;var offer=await pc.createOffer();await pc.setLocalDescription(offer);send({kind:'offer',sdp:pc.localDescription})}
 async function signal(p){if(!p||p.from===user.id)return;try{
- if(p.kind==='ready'){if(interviewer)await makeOffer()}
+ if(p.kind==='ready'){if(interviewer)await makeOffer();else send({kind:'ready'})}
  else if(p.kind==='offer'){await pc.setRemoteDescription(new RTCSessionDescription(p.sdp));await drain();var answer=await pc.createAnswer();await pc.setLocalDescription(answer);send({kind:'answer',sdp:pc.localDescription});status('Connecting your camera and microphone…')}
  else if(p.kind==='answer'){await pc.setRemoteDescription(new RTCSessionDescription(p.sdp));await drain()}
  else if(p.kind==='candidate'){var c=new RTCIceCandidate(p.candidate);if(pc.remoteDescription)await pc.addIceCandidate(c);else pendingCandidates.push(c)}
