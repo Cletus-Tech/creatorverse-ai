@@ -345,3 +345,10 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Refined the personal dashboard welcome area, statistics, course cards, section spacing and compact-screen layout without changing learning, admission, assessment or certificate permissions.
 - Refined the admin workspace sidebar, top bar, overview cards, data-entry controls and responsive layouts while preserving existing admin capabilities and role restrictions.
 - This is the first visual-usability pass; continue with page-by-page review and real-device testing before calling the interface redesign complete.
+
+
+## Page-by-page usability refinement — 9 November 2026
+- Added `ux-page-polish.css`, loaded centrally by `layout.js` so course discovery, course detail, lesson player, quizzes, creator profiles, messages/stories, and the public homepage receive consistent usability improvements.
+- Improved learning catalogue search/filter controls, course card readability, module/lesson navigation, lesson content width and video presentation, assessment answer affordances, profile forms, messaging bubbles/composer, and small-screen layouts.
+- Added responsive refinements for phones and tablets while preserving existing learning, assessment, profile, messaging, admission, and admin workflows.
+- This pass is a CSS-level usability improvement. It does not constitute authenticated end-to-end testing or a full component redesign.
