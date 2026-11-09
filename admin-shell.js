@@ -108,53 +108,46 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   loadRecent()
  }
  function engagement(){
-  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[
-    h('h1',{text:'Student engagement monitor'}),
-    h('p',{text:'Track course learning activity, identify learners who may need support, and set engagement expectations for each course.'})
-  ])]));
-  view.appendChild(h('div',{class:'note',text:'This is an online learning engagement monitor, not proof of physical classroom attendance or live-session presence. Status is calculated from recorded lesson views and lesson completions only.'}));
-  var metrics=h('div',{class:'stats4'}),filters=h('div',{class:'filter-row'}),search=h('input',{type:'search',placeholder:'Search student, email or course…'}),statusFilter=h('select',{},[
-    ['all','All engagement statuses'],['inactive','Inactive'],['below_target','Below weekly target'],['not_started','No recorded activity'],['on_track','On track']
-  ].map(function(x){return h('option',{value:x[0],text:x[1]})])),courseFilter=h('select',{},[h('option',{value:'all',text:'All courses'})]),status=h('p',{class:'pmeta',text:'Loading engagement data…'}),list=h('div',{class:'stack'}),records=[];
-  filters.append(search,statusFilter,courseFilter);view.append(metrics,filters,status,list);
-  function metric(label,value,sub){metrics.appendChild(h('div',{class:'stat'},[h('strong',{text:String(value)}),h('span',{text:label}),sub?h('small',{text:sub}):null]))}
-  function labelState(v){return ({on_track:'On track',below_target:'Below weekly target',inactive:'Inactive',not_started:'Not started'})[v]||v}
+  var hero=h('div',{class:'dash-hero'}),heroInner=h('div',{});heroInner.appendChild(h('h1',{text:'Student engagement monitor'}));heroInner.appendChild(h('p',{text:'Track course learning activity, identify learners who may need support, and set engagement expectations for each course.'}));hero.appendChild(heroInner);view.appendChild(hero);
+  view.appendChild(h('div',{class:'note',text:'This monitors online learning engagement, not physical classroom attendance or live-session presence. Status uses recorded lesson views and lesson completions only.'}));
+  var metrics=h('div',{class:'stats4'}),filters=h('div',{class:'filter-row'}),search=h('input',{type:'search',placeholder:'Search student, email or course…'}),statusFilter=h('select',{}),courseFilter=h('select',{}),status=h('p',{class:'pmeta',text:'Loading engagement data…'}),list=h('div',{class:'stack'}),records=[];
+  [['all','All statuses'],['inactive','Inactive'],['below_target','Below weekly target'],['not_started','No recorded activity'],['on_track','On track']].forEach(function(x){statusFilter.appendChild(h('option',{value:x[0],text:x[1]}))});
+  courseFilter.appendChild(h('option',{value:'all',text:'All courses'}));filters.append(search,statusFilter,courseFilter);view.append(metrics,filters,status,list);
+  function metric(label,value){var card=h('div',{class:'stat'});card.appendChild(h('strong',{text:String(value)}));card.appendChild(h('span',{text:label}));metrics.appendChild(card)}
+  function stateName(v){var names={on_track:'On track',below_target:'Below weekly target',inactive:'Inactive',not_started:'Not started'};return names[v]||v}
   function draw(){
-    list.textContent='';
-    var term=search.value.trim().toLowerCase(),st=statusFilter.value,co=courseFilter.value,shown=records.filter(function(x){
-      return (co==='all'||x.course_id===co) && (st==='all'||x.status===st) &&
-        (!term||((x.full_name||'')+' '+(x.email||'')+' '+(x.course_title||'')).toLowerCase().indexOf(term)>-1);
-    });
+    list.textContent='';var term=search.value.trim().toLowerCase(),st=statusFilter.value,co=courseFilter.value;
+    var shown=records.filter(function(x){var hay=((x.full_name||'')+' '+(x.email||'')+' '+(x.course_title||'')).toLowerCase();return(co==='all'||x.course_id===co)&&(st==='all'||x.status===st)&&(!term||hay.indexOf(term)>-1)});
     status.textContent=shown.length+' of '+records.length+' enrolled learner-course records shown.';
     if(!shown.length){list.appendChild(h('div',{class:'panel'},[h('p',{text:'No learners match the selected filters.'})]));return}
-    var groups={};shown.forEach(function(x){(groups[x.course_id]||(groups[x.course_id]=[])).push(x)});
+    var groups={};shown.forEach(function(x){if(!groups[x.course_id])groups[x.course_id]=[];groups[x.course_id].push(x)});
     Object.keys(groups).forEach(function(cid){
-      var course=groups[cid],meta=course[0],box=h('section',{class:'panel'}),head=h('div',{class:'two'});
-      box.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h3',{text:meta.course_title}),h('p',{class:'pmeta',text:course.length+' enrolled learner'+(course.length===1?'':'s')})])]));
-      var min=h('input',{type:'number',min:'0',max:'50',value:String(meta.min_events_per_week),class:'engagement-number'}),days=h('input',{type:'number',min:'1',max:'90',value:String(meta.inactivity_days),class:'engagement-number'}),save=h('button',{type:'button',class:'btn btn-outline',text:'Save course expectations'}),msg=h('small',{class:'pmeta'});
+      var learners=groups[cid],first=learners[0],box=h('section',{class:'panel'});
+      box.appendChild(h('h3',{text:first.course_title}));
+      box.appendChild(h('p',{class:'pmeta',text:learners.length+' enrolled learners'}));
+      var weekly=h('input',{type:'number',min:'0',max:'50',value:String(first.min_events_per_week)}),inactive=h('input',{type:'number',min:'1',max:'90',value:String(first.inactivity_days)}),save=h('button',{type:'button',class:'btn btn-outline',text:'Save course expectations'}),msg=h('small',{class:'pmeta'});
+      var settings=h('div',{class:'two'}),a=h('article',{class:'panel'}),b=h('article',{class:'panel'});
+      a.appendChild(h('label',{text:'Minimum learning events per week'}));a.appendChild(weekly);a.appendChild(h('small',{class:'pmeta',text:'Lesson views or lesson completions.'}));
+      b.appendChild(h('label',{text:'Inactive after (days)'}));b.appendChild(inactive);b.appendChild(h('small',{class:'pmeta',text:'No recorded learning event for this many days.'}));
+      settings.append(a,b);box.appendChild(settings);
       save.addEventListener('click',function(){
-        var mv=Number(min.value),dv=Number(days.value);
-        if(!Number.isInteger(mv)||mv<0||mv>50||!Number.isInteger(dv)||dv<1||dv>90){msg.textContent='Weekly target must be 0–50 events; inactivity must be 1–90 days.';return}
+        var mv=Number(weekly.value),dv=Number(inactive.value);
+        if(!Number.isInteger(mv)||mv<0||mv>50||!Number.isInteger(dv)||dv<1||dv>90){msg.textContent='Weekly target must be 0–50; inactivity must be 1–90 days.';return}
         save.disabled=true;msg.textContent='Saving…';
         sb.rpc('admin_set_course_engagement_policy',{p_course_id:cid,p_min_events_per_week:mv,p_inactivity_days:dv}).then(function(r){
           save.disabled=false;if(r.error){msg.textContent='Could not save: '+r.error.message;return}
-          course.forEach(function(x){x.min_events_per_week=mv;x.inactivity_days=dv});
+          learners.forEach(function(x){x.min_events_per_week=mv;x.inactivity_days=dv});
           msg.textContent='Course expectations saved.';draw();
-        })
+        });
       });
-      box.appendChild(h('div',{class:'two'},[
-        h('article',{class:'panel'},[h('label',{text:'Minimum learning events per week'}),min,h('small',{class:'pmeta',text:'Lesson views or lesson completions.'})]),
-        h('article',{class:'panel'},[h('label',{text:'Inactive after (days)'}),days,h('small',{class:'pmeta',text:'No recorded learning event for this many days.'})])
-      ]));
       box.append(save,msg);
-      course.forEach(function(x){
+      learners.forEach(function(x){
+        var row=h('article',{class:'trow student-performance'}),one=h('span',{}),two=h('span',{}),three=h('span',{});
+        one.appendChild(h('strong',{text:x.full_name||'Student'}));one.appendChild(h('small',{text:x.email||''}));
+        two.appendChild(h('strong',{text:stateName(x.status)}));two.appendChild(h('small',{text:String(x.events_7d||0)+' events in 7 days · '+String(x.lessons_completed||0)+' lessons completed'}));
         var last=x.last_activity?new Date(x.last_activity).toLocaleString():'No recorded activity';
-        var chip=h('span',{class:'chip',text:labelState(x.status)});
-        box.appendChild(h('article',{class:'trow student-performance'},[
-          h('span',{},[h('strong',{text:x.full_name||'Student'}),h('small',{text:x.email||''})]),
-          h('span',{},[chip,h('small',{text:String(x.events_7d||0)+' events in last 7 days · '+String(x.lessons_completed||0)+' lessons completed'})]),
-          h('span',{},[h('small',{text:'Last activity: '+last}),h('small',{text:'Lesson views this week: '+String(x.lesson_views_7d||0)+' · Course lessons: '+String(x.total_lessons||0)})])
-        ]));
+        three.appendChild(h('small',{text:'Last activity: '+last}));three.appendChild(h('small',{text:'Lesson views this week: '+String(x.lesson_views_7d||0)+' · Course lessons: '+String(x.total_lessons||0)}));
+        row.append(one,two,three);box.appendChild(row);
       });
       list.appendChild(box);
     });
@@ -162,20 +155,17 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   [search,statusFilter,courseFilter].forEach(function(el){el.addEventListener(el===search?'input':'change',draw)});
   sb.rpc('admin_get_engagement_overview').then(function(r){
     if(r.error){status.textContent='Engagement data could not load: '+r.error.message;return}
-    var data=r.data||{},courses=data.courses||[];
-    records=[];courseFilter.textContent='';courseFilter.appendChild(h('option',{value:'all',text:'All courses'}));
-    var total=0,active=0,below=0,inactive=0,notStarted=0;
+    var data=r.data||{},courses=data.courses||[];records=[];
+    courseFilter.textContent='';courseFilter.appendChild(h('option',{value:'all',text:'All courses'}));
+    var total=0,onTrack=0,below=0,inactiveCount=0,notStarted=0;
     courses.forEach(function(c){
-      var learners=c.learners||[];
-      if(learners.length)courseFilter.appendChild(h('option',{value:c.course_id,text:c.course_title}));
-      learners.forEach(function(x){x.course_id=c.course_id;x.course_title=c.course_title;x.min_events_per_week=c.min_events_per_week;x.inactivity_days=c.inactivity_days;records.push(x);total++;if(x.status==='on_track')active++;else if(x.status==='below_target')below++;else if(x.status==='inactive')inactive++;else notStarted++});
+      var learners=c.learners||[];if(learners.length)courseFilter.appendChild(h('option',{value:c.course_id,text:c.course_title}));
+      learners.forEach(function(x){x.course_id=c.course_id;x.course_title=c.course_title;x.min_events_per_week=c.min_events_per_week;x.inactivity_days=c.inactivity_days;records.push(x);total++;if(x.status==='on_track')onTrack++;else if(x.status==='below_target')below++;else if(x.status==='inactive')inactiveCount++;else notStarted++});
     });
-    metrics.textContent='';
-    metric('Enrolled learner records',total);metric('On track',active);metric('Below weekly target',below);metric('Inactive',inactive);metric('Not started',notStarted);
-    draw();
+    metrics.textContent='';metric('Enrolled learner records',total);metric('On track',onTrack);metric('Below weekly target',below);metric('Inactive',inactiveCount);metric('Not started',notStarted);draw();
   }).catch(function(e){status.textContent='Engagement data could not load: '+e.message});
 }
- function analytics(){
+function analytics(){
   view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Academy performance'}),h('p',{text:'Live learning activity, admissions, course progress and student review readiness.'})])]));
   var metrics=h('div',{class:'stats4'}),courses=h('div',{class:'panel'}),perf=h('div',{class:'panel'}),status=h('p',{class:'pmeta',text:'Loading live Academy analytics…'}),search=h('input',{type:'search',placeholder:'Filter by student, email or course…'}),onlyInactive=h('input',{type:'checkbox'}),onlyReady=h('input',{type:'checkbox'}),rows=[];
   view.appendChild(metrics);view.appendChild(h('div',{class:'two'},[courses,h('div',{class:'panel'},[h('h3',{text:'How to read performance'}),h('p',{text:'Completion is based on completed lessons divided by all lessons in the enrolled course.'}),h('p',{text:'Quiz readiness requires a passed attempt for every quiz. Assignment readiness requires every assignment to be submitted and graded.'}),h('p',{text:'Certificate review readiness is only a review flag. It never issues a certificate automatically.'}),h('p',{class:'pmeta',text:'Inactive means no recorded lesson, quiz or assignment activity for more than 14 days.'})])])); 
