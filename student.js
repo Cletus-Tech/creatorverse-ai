@@ -30,7 +30,7 @@ window.CV_DASH=function(sb,session,X){
  var side=el('aside',{class:'cv-dash-side'});
  side.appendChild(el('a',{class:'cv-side-brand',href:'index.html',text:'CreatorVerse AI'}));
  side.appendChild(el('div',{class:'cv-side-label',text:'LEARNING SPACE'}));
- [['Overview','#overview'],['My learning','#learning'],['Achievements','#achievements'],['Profile settings','#profile']].forEach(function(x,i){side.appendChild(el('a',{class:'cv-side-link'+(!i?' active':''),href:x[1],text:x[0]}))});
+ [['Overview','#overview'],['Engagement','#engagement'],['My learning','#learning'],['Achievements','#achievements'],['Profile settings','#profile']].forEach(function(x,i){side.appendChild(el('a',{class:'cv-side-link'+(!i?' active':''),href:x[1],text:x[0]}))});
  side.appendChild(el('a',{class:'cv-side-link',href:'academy-status.html',text:'Academy status & interviews'}));side.appendChild(el('a',{class:'cv-side-link cv-side-explore',href:'courses.html',text:'Explore courses'}));
  side.appendChild(el('div',{class:'cv-side-bottom'},[el('div',{class:'cv-side-mini',text:'Your learning journey, one lesson at a time.'}),el('button',{class:'cv-logout',type:'button',text:'Sign out'})]));
  var area=el('div',{class:'cv-dash-area'});
@@ -56,6 +56,46 @@ window.CV_DASH=function(sb,session,X){
  var courses=enrol.map(function(e){var c=e.courses,lessons=[];sorted(c.modules).forEach(function(m){sorted(m.lessons).forEach(function(l){lessons.push(l)})});var completed=lessons.filter(function(l){return done[l.id]}).length;return{course:c,total:lessons.length,completed:completed,pct:lessons.length?Math.round(completed/lessons.length*100):0,next:lessons.filter(function(l){return !done[l.id]})[0]||lessons[0]||null}});
  var total=courses.reduce(function(a,c){return a+c.total},0),complete=courses.reduce(function(a,c){return a+c.completed},0),pct=total?Math.round(complete/total*100):0;
  stats.appendChild(stat('Enrolled courses',courses.length,'Your active learning paths'));stats.appendChild(stat('Lessons completed',complete,'Keep your momentum'));stats.appendChild(stat('Overall progress',pct+'%','Across your enrolled courses'));body.appendChild(stats);
+  var engagement=el('section',{id:'engagement',class:'cv-section cv-engagement-section'});
+  engagement.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'YOUR LEARNING RHYTHM'}),el('h2',{text:'Engagement & weekly goals'}),el('p',{text:'See your learning activity and the expectations set by your Academy administrators.'})])]));
+  var engagementState=el('div',{class:'cv-engagement-loading',text:'Loading your engagement report…'});
+  engagement.appendChild(engagementState);body.appendChild(engagement);
+  function engagementMessage(state){
+    return ({on_track:'You are meeting your current learning target. Keep your momentum going.',
+      below_target:'You are below your weekly learning target. Set aside some time to continue a lesson this week.',
+      inactive:'Your learning has been quiet for a while. Return to your course and pick up where you stopped.',
+      not_started:'You have not started a lesson in this course yet. Begin your first lesson to start building your learning record.'})[state]||'Keep making progress in your course.';
+  }
+  function engagementLabel(state){return ({on_track:'On track',below_target:'Below weekly target',inactive:'Needs attention',not_started:'Not started'})[state]||state}
+  sb.rpc('student_get_my_engagement').then(function(r){
+    if(r.error){engagementState.className='cv-engagement-empty';engagementState.textContent='Your engagement report is temporarily unavailable. Please refresh the page later.';return}
+    var report=r.data||{},items=report.courses||[];
+    engagementState.textContent='';
+    if(!items.length){engagementState.className='cv-engagement-empty';engagementState.textContent='Your course engagement report will appear here when you have an active enrolment.';return}
+    engagementState.className='cv-engagement-grid';
+    items.forEach(function(item){
+      var card=el('article',{class:'cv-engagement-card'});
+      var head=el('div',{class:'cv-engagement-card-head'});
+      head.appendChild(el('div',{},[el('span',{class:'cv-engagement-overline',text:'COURSE ENGAGEMENT'}),el('h3',{text:item.course_title||'Your course'})]));
+      head.appendChild(el('span',{class:'cv-engagement-status '+(item.status||''),text:engagementLabel(item.status)}));
+      card.appendChild(head);
+      card.appendChild(el('p',{class:'cv-engagement-message',text:engagementMessage(item.status)}));
+      var target=Number(item.min_events_per_week)||0,events=Number(item.events_7d)||0,weekly=target?Math.min(100,Math.round(events/target*100)):100;
+      var goal=el('div',{class:'cv-engagement-goal'});
+      goal.appendChild(el('div',{class:'cv-engagement-goal-copy'},[el('strong',{text:'Weekly learning activity'}),el('span',{text:events+' / '+target+' activities'})]));
+      var track=el('div',{class:'cv-engagement-track'});track.appendChild(el('span',{style:'width:'+weekly+'%'}));goal.appendChild(track);
+      goal.appendChild(el('small',{text:'Your Academy-set target is '+target+' learning activities every 7 days.'}));card.appendChild(goal);
+      var details=el('div',{class:'cv-engagement-details'});
+      details.appendChild(el('div',{},[el('strong',{text:String(item.lessons_completed||0)+' / '+String(item.total_lessons||0)}),el('small',{text:'Lessons completed'})]));
+      details.appendChild(el('div',{},[el('strong',{text:String(item.lesson_views_7d||0)}),el('small',{text:'Lesson views this week'})]));
+      var last=item.last_activity?new Date(item.last_activity).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No activity yet';
+      details.appendChild(el('div',{},[el('strong',{text:last}),el('small',{text:'Last learning activity'})]));
+      card.appendChild(details);
+      var action=el('a',{class:'cv-engagement-link',href:item.course_slug?'course.html?s='+encodeURIComponent(item.course_slug):'courses.html',text:item.status==='on_track'?'Continue learning':'Open my course'});
+      card.appendChild(action);engagementState.appendChild(card);
+    });
+  }).catch(function(){engagementState.className='cv-engagement-empty';engagementState.textContent='Your engagement report is temporarily unavailable. Please refresh the page later.'});
+
  body.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'PICK UP WHERE YOU LEFT OFF'}),el('h2',{text:'Continue learning'})]),el('a',{href:'courses.html',class:'cv-text-link',text:'Browse courses →'})]));
  if(!courses.length){body.appendChild(el('div',{class:'cv-empty'},[el('div',{class:'cv-empty-icon',text:'＋'}),el('h3',{text:'Your learning journey starts here'}),el('p',{text:'Explore the course library and enrol in a learning path to see your progress here.'}),el('a',{class:'cv-hero-btn',href:'courses.html',text:'Explore courses'})]))}
  else{var next=courses.filter(function(c){return c.next&&c.pct<100})[0]||courses[0];var card=el('article',{class:'cv-continue-card'},[next.course.thumbnail_url?el('img',{class:'cv-course-cover',src:next.course.thumbnail_url,alt:''}):el('div',{class:'cv-course-cover cv-course-placeholder',text:'CV'}),el('div',{class:'cv-continue-info'},[el('span',{class:'cv-course-tag',text:'YOUR CURRENT COURSE'}),el('h3',{text:next.course.title}),el('p',{text:next.next?(next.pct===100?'You have completed this course. Revisit a lesson anytime.':'Next lesson: '+next.next.title):'Course lessons are being prepared.'}),progress(next.pct),el('div',{class:'cv-course-meta'},[el('span',{text:next.completed+' of '+next.total+' lessons completed'}),el('strong',{text:next.pct+'%'})]),next.next?el('a',{class:'cv-hero-btn',href:'lesson.html?l='+encodeURIComponent(next.next.id),text:next.pct===100?'Review course':'Continue lesson'}):null])]);body.appendChild(card);
