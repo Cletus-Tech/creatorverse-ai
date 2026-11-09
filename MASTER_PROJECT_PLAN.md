@@ -312,3 +312,14 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Updated `admin.html` script cache-busting versions so browsers fetch the latest integrated admin modules rather than stale cached JavaScript.
 - JavaScript syntax checks passed for the modified runtime files. This is a source-level integration step, not proof of end-to-end database compatibility.
 - Live Supabase currently has no `academy_*` tables or functions. The two Academy migrations remain unapplied; a full SQL dependency/security review and safe migration execution are required before Academy data workflows can operate. Existing production data and the production branch remain untouched.
+
+
+## 2026-11-09 — Student-facing engagement goals and alerts
+
+- Added the student portal Engagement section to the unified `dashboard.html` experience, with per-course engagement status, weekly activity target/progress, lesson views, completed lessons, last activity and a direct course link.
+- Added `student_get_my_engagement()`, which derives a signed-in student's report only from their own enrolments and recorded learning activity; students cannot change administrator-set course targets.
+- Added a private alert-state table and deduplicated in-app engagement notifications. A status change can generate a notification, with a seven-day reminder cooldown while a warning remains active.
+- Added student-facing guidance for on-track, below-target, inactive and not-started states. The UI explicitly describes learning engagement, not verified physical attendance.
+- Applied the database schema/function changes to the existing Supabase project and verified the RPC using an authenticated student context. The test ran inside a rolled-back transaction so it did not create a test notification or persist test alert state.
+- Added migration `supabase/migrations/202611090050_student_engagement_portal.sql`; updated student dashboard asset cache versions. Existing student records and enrolments were preserved.
+- JavaScript syntax validation passed. Browser end-to-end testing as a real student remains outstanding.
