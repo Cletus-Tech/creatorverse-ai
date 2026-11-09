@@ -324,3 +324,32 @@ body[data-page="courses"] .academy-catalogue{padding-top:108px!important;padding
 @media(max-width:950px){.academy-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.academy-course-image{height:210px}}
 @media(max-width:700px){body[data-page="courses"] .academy-catalogue{padding:92px 15px 65px!important}.academy-catalogue-hero{grid-template-columns:1fr;min-height:0;border-radius:23px}.academy-catalogue-copy{padding:29px 23px 23px}.academy-catalogue-copy h1{font-size:clamp(39px,11vw,53px);letter-spacing:-2px}.academy-catalogue-visual{min-height:245px;height:245px}.academy-library-tools{display:block;margin:48px 0 20px}.academy-search-wrap{margin-top:19px}.academy-course-grid{grid-template-columns:1fr;gap:17px}.academy-course-image{height:230px}.academy-course-content{padding:19px}.academy-course-content>p{min-height:0}.academy-course-detail-hero{grid-template-columns:1fr;gap:23px;padding:24px 20px;border-radius:22px}.academy-detail-cover{height:235px;grid-row:1}.academy-course-detail-copy h1{font-size:36px}.academy-section-title{font-size:24px!important;margin-top:34px!important}}
 @media(prefers-reduced-motion:reduce){.academy-course-card,.academy-course-image img{transition:none}}
+
+
+/* Student engagement goals and guidance */
+.cv-engagement-section{scroll-margin-top:28px}
+.cv-engagement-loading,.cv-engagement-empty{padding:22px;border:1px solid rgba(130,166,224,.16);border-radius:15px;background:rgba(15,29,53,.72);color:#91a8ca;font-size:12px;line-height:1.7}
+.cv-engagement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cv-engagement-card{min-width:0;padding:21px;border:1px solid rgba(125,165,230,.18);border-radius:17px;background:linear-gradient(145deg,rgba(20,38,69,.96),rgba(11,23,43,.96));box-shadow:0 16px 38px rgba(0,0,0,.15)}
+.cv-engagement-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cv-engagement-overline{display:block;margin-bottom:7px;color:#7796c5;font-size:9px;font-weight:800;letter-spacing:1.4px}
+.cv-engagement-card h3{margin:0;color:#f1f6ff;font:700 17px 'Space Grotesk',sans-serif;line-height:1.35}
+.cv-engagement-status{display:inline-flex;align-items:center;flex:none;padding:7px 10px;border:1px solid rgba(130,160,210,.2);border-radius:99px;background:rgba(116,145,190,.1);color:#c5d5ee;font-size:9px;font-weight:800;letter-spacing:.2px}
+.cv-engagement-status.on_track{border-color:rgba(77,207,157,.25);background:rgba(42,177,125,.12);color:#79e3b8}
+.cv-engagement-status.below_target{border-color:rgba(255,190,96,.25);background:rgba(220,150,55,.12);color:#ffd18c}
+.cv-engagement-status.inactive,.cv-engagement-status.not_started{border-color:rgba(255,125,143,.24);background:rgba(205,78,103,.12);color:#ffabb7}
+.cv-engagement-message{min-height:40px;margin:15px 0;color:#aabbd5;font-size:11px;line-height:1.7}
+.cv-engagement-goal{padding:14px;border:1px solid rgba(118,157,221,.13);border-radius:12px;background:rgba(5,14,29,.36)}
+.cv-engagement-goal-copy{display:flex;justify-content:space-between;gap:10px;color:#e4edff;font-size:10px}
+.cv-engagement-goal-copy span{color:#a6c8ff;font-weight:800}
+.cv-engagement-track{height:6px;margin:11px 0 8px;overflow:hidden;border-radius:99px;background:rgba(136,162,205,.16)}
+.cv-engagement-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#48baff,#667aff);transition:width .3s ease}
+.cv-engagement-goal small{color:#7189ad;font-size:9px;line-height:1.5}
+.cv-engagement-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:15px 0}
+.cv-engagement-details>div{min-width:0;padding:10px 9px;border:1px solid rgba(125,165,230,.1);border-radius:10px;background:rgba(255,255,255,.025)}
+.cv-engagement-details strong{display:block;overflow-wrap:anywhere;color:#eaf2ff;font:700 14px 'Space Grotesk',sans-serif}
+.cv-engagement-details small{display:block;margin-top:5px;color:#7f96b9;font-size:9px;line-height:1.4}
+.cv-engagement-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 13px;border:1px solid rgba(100,170,255,.25);border-radius:9px;background:rgba(54,125,228,.12);color:#91c8ff;font-size:10px;font-weight:800}
+.cv-engagement-link:hover{background:rgba(54,125,228,.22);color:#fff}
+@media(max-width:900px){.cv-engagement-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.cv-engagement-card{padding:16px}.cv-engagement-card-head{align-items:flex-start;flex-direction:column}.cv-engagement-details{gap:6px}.cv-engagement-details>div{padding:9px 7px}.cv-engagement-details strong{font-size:12px}.cv-engagement-details small{font-size:8px}}
