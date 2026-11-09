@@ -121,7 +121,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    filtered.forEach(function(x){
     var pct=Number(x.completion_percent||0),bar=h('div',{class:'progress-track'},[h('span',{style:'width:'+Math.max(0,Math.min(100,pct))+'%'})]);
     var flags=[x.inactive_14d?'Inactive 14+ days':'Active recently',x.certificate_review_ready?'Ready for admin review':'Requirements pending'];
-    var detail='Lessons '+x.completed_lessons+'/'+x.total_lessons+' · Quizzes passed '+x.passed_quizzes+'/'+x.total_quizzes+' · Assignments graded '+x.graded_assignments+'/'+x.total_assignments;
+    var detail='Lessons '+x.completed_lessons+'/'+x.total_lessons+' · Lesson views '+(x.lesson_views||0)+' · Quizzes passed '+x.passed_quizzes+'/'+x.total_quizzes+' · Assignments graded '+x.graded_assignments+'/'+x.total_assignments;
     table.appendChild(h('article',{class:'trow student-performance'},[
       h('span',{},[h('strong',{text:x.full_name||'Student'}),h('small',{text:x.email||''}),h('small',{text:x.course_title})]),
       h('span',{},[h('strong',{text:pct+'%'}),bar,h('small',{text:detail})]),
@@ -134,9 +134,9 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    if(res[0].error||res[1].error){status.textContent='Analytics could not load: '+((res[0].error||res[1].error).message||'Unknown error');return}
    var a=res[0].data||{};rows=Array.isArray(res[1].data)?res[1].data:[];
    metric('Registered students',a.students);metric('Course enrolments',a.enrolments);metric('Active learners · 7 days',a.active_7d);metric('Inactive enrolments · 14+ days',a.inactive_14d);
-   metric('Applications awaiting review',a.applications_pending);metric('Approved applications',a.applications_approved);metric('Certificates issued',a.certificates_issued);metric('Lessons completed · 30 days',a.lessons_completed_30d);
+   metric('Applications awaiting review',a.applications_pending);metric('Approved applications',a.applications_approved);metric('Certificates issued',a.certificates_issued);metric('Lessons completed · 30 days',a.lessons_completed_30d);metric('Lesson views · 30 days',a.lesson_views_30d);metric('Learning events · 30 days',a.learning_events_30d);metric('Assignments awaiting grading',a.pending_assignment_reviews);
    courses.textContent='';courses.appendChild(h('h3',{text:'Published course performance'}));
-   (a.course_performance||[]).forEach(function(c){var n=Number(c.total_lessons||0),done=Number(c.completed_lessons||0),pct=n?Math.round(done/n*100):0;courses.appendChild(h('div',{class:'course-metric'},[h('strong',{text:c.title}),h('small',{text:c.enrolments+' enrolments · '+done+'/'+n+' lesson completions · '+c.quizzes+' quizzes · '+c.assignments+' assignments'}),h('div',{class:'progress-track'},[h('span',{style:'width:'+pct+'%'})])]))});
+   (a.course_performance||[]).forEach(function(c){var n=Number(c.total_lessons||0),done=Number(c.completed_lessons||0),pct=n?Math.round(done/n*100):0;courses.appendChild(h('div',{class:'course-metric'},[h('strong',{text:c.title}),h('small',{text:c.enrolments+' enrolments · '+(c.active_learners_7d||0)+' active this week · '+done+'/'+n+' lesson completions · '+c.quizzes+' quizzes · '+c.assignments+' assignments'}),h('div',{class:'progress-track'},[h('span',{style:'width:'+pct+'%'})])]))});
    if(!(a.course_performance||[]).length)courses.appendChild(h('p',{text:'No published courses yet.'}));
    draw()
   }).catch(function(e){status.textContent='Analytics could not load: '+e.message})
