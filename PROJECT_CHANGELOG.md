@@ -344,3 +344,9 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Added student schedule view and time-window-limited check-in RPC.
 - Added admin counts for enrolled, checked-in and missed learners; missed status is not inferred from lesson activity.
 - Added RLS-protected session/check-in tables with direct client access revoked.
+
+## 2026-11-09 — Student intervention and follow-up
+- Added secure student intervention records with optional course association and deadline.
+- Added admin issue/review/resolve workflow within the student's academic record.
+- Added student portal inbox for intervention notices and student responses.
+- Kept private admin notes separate; interventions do not automatically suspend accounts or revoke enrolments.
