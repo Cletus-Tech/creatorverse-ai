@@ -183,6 +183,33 @@ window.CV_SHELL={mount:function(sb,user,role,P){
       section('Recent learning activity',d.recent_activity,'No learning activity events recorded.',function(x){
         return h('article',{class:'trow'},[h('strong',{text:(x.activity_type||'activity').replace(/_/g,' ')}),h('small',{text:x.course_title||'Course'}),h('small',{text:date(x.occurred_at)})])
       });
+      detail.appendChild(h('h3',{text:'Academic actions & private notes'}));
+      var actionType=h('select',{}),actionTitle=h('input',{type:'text',placeholder:'Action title (e.g. Attendance warning)'}),actionBody=h('textarea',{rows:'4',placeholder:'Record the reason, guidance given, or follow-up required…'}),actionCourse=h('select',{});
+      [['academic_warning','Academic warning'],['private_note','Private administrator note'],['commendation','Commendation'],['progression_review','Progression review']].forEach(function(v){actionType.appendChild(h('option',{value:v[0],text:v[1]}))});
+      actionCourse.appendChild(h('option',{value:'',text:'General student record'}));
+      (d.courses||[]).forEach(function(c){actionCourse.appendChild(h('option',{value:c.course_id,text:c.course_title}))});
+      var saveAction=h('button',{type:'button',class:'btn btn-primary',text:'Save academic record'});
+      saveAction.addEventListener('click',function(){
+        if(!actionTitle.value.trim()||!actionBody.value.trim()){alert('Enter an action title and details.');return}
+        saveAction.disabled=true;saveAction.textContent='Saving…';
+        sb.rpc('admin_add_student_action',{p_student_id:p.id,p_course_id:actionCourse.value||null,p_action_type:actionType.value,p_title:actionTitle.value.trim(),p_body:actionBody.value.trim()}).then(function(v){
+          saveAction.disabled=false;saveAction.textContent='Save academic record';
+          if(v.error){alert(v.error.message);return}
+          actionTitle.value='';actionBody.value='';loadActions();
+        })
+      });
+      detail.appendChild(h('article',{class:'panel'},[h('label',{text:'Record type'}),actionType,h('label',{text:'Related course'}),actionCourse,h('label',{text:'Title'}),actionTitle,h('label',{text:'Details'}),actionBody,saveAction]));
+      var actionHistory=h('div',{class:'stack'});detail.appendChild(actionHistory);
+      function loadActions(){
+        actionHistory.textContent='Loading audit history…';
+        sb.rpc('admin_list_student_actions',{p_student_id:p.id}).then(function(v){
+          actionHistory.textContent='';
+          if(v.error){actionHistory.appendChild(h('p',{class:'note',text:v.error.message}));return}
+          if(!v.data||!v.data.length){actionHistory.appendChild(h('p',{class:'pmeta',text:'No administrator actions recorded yet.'}));return}
+          v.data.forEach(function(a){actionHistory.appendChild(h('article',{class:'panel'},[h('strong',{text:(a.action_type||'note').replace(/_/g,' ')+' · '+a.title}),h('p',{text:a.body}),h('small',{class:'pmeta',text:(a.course_title||'General record')+' · '+date(a.created_at)+' · Recorded by '+(a.created_by_name||'Administrator')})]))})
+        })
+      }
+      loadActions();
       detail.scrollIntoView({behavior:'smooth',block:'start'});
     }).catch(function(e){detail.textContent='Could not load student record: '+e.message})
   }
