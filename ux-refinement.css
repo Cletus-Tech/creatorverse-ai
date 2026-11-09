@@ -1,0 +1,128 @@
+/* CreatorVerse AI — unified usability and visual refinement layer
+   Shared across the public platform, personal dashboard and admin workspace.
+   Keeps existing page structure and workflows intact; improves clarity, hierarchy,
+   contrast, responsive behaviour, focus states and touch targets. */
+:root{
+  --cv-ink:#071326;--cv-panel:#0c1b33;--cv-panel-2:#102440;
+  --cv-line:rgba(151,181,225,.17);--cv-muted:#9aacc8;
+  --cv-blue:#62b4ff;--cv-blue-strong:#347ff0;--cv-wine:#9b527a;
+  --cv-radius:16px;--cv-shadow:0 18px 48px rgba(0,0,0,.22);
+}
+html{scroll-padding-top:92px}
+body{font-family:Inter,system-ui,sans-serif;text-rendering:optimizeLegibility}
+button,a,input,select,textarea{touch-action:manipulation}
+button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--cv-blue)!important;outline-offset:3px!important}
+::selection{background:rgba(77,153,255,.34);color:#fff}
+.btn,.btn-primary,.btn-outline,.btn-ghost{min-height:42px}
+.panel,.card,.qcard,.academy-admin-stat,.academy-app-card,.academy-app-detail{border-color:var(--cv-line)}
+/* Public platform shell */
+.nav{padding-top:15px;padding-bottom:15px;background:rgba(5,13,29,.72);border-bottom-color:rgba(151,181,225,.1)}
+.nav.scrolled{padding-top:11px;padding-bottom:11px;background:rgba(5,13,29,.92)}
+.nav-center{gap:clamp(15px,2.2vw,30px);font-size:13px}
+.nav-center a,.mobile-menu-links a{transition:color .18s ease,background .18s ease}
+.nav-right{gap:10px}
+.account-trigger,.cv-notification-trigger,.menu-btn{min-height:42px}
+.page{padding-top:clamp(100px,11vw,132px)}
+.page>h1{letter-spacing:-.045em;line-height:1.1}
+.page>p{line-height:1.75}
+.footer{border-top:1px solid rgba(151,181,225,.12)}
+.footer-in{gap:clamp(22px,4vw,54px)}
+.footer a{transition:color .18s ease}
+.footer a:hover{color:#8ecaff}
+/* General content surfaces */
+.card,.panel,.community-card,.pin-card,.msg-panel,.cv-settings-card{
+  border-radius:var(--cv-radius);box-shadow:0 12px 32px rgba(0,0,0,.13)
+}
+input,select,textarea{border-radius:10px}
+input::placeholder,textarea::placeholder{color:#8195b5}
+.btn,.btn-primary,.btn-outline,.btn-ghost{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}
+.btn-primary:hover,.btn-outline:hover,.btn-ghost:hover{transform:translateY(-1px)}
+/* Personal dashboard — calmer hierarchy, clearer navigation and better mobile ergonomics */
+body[data-page="dashboard"]{background:#07101f}
+body[data-page="dashboard"] .cv-dash-shell{background:radial-gradient(ellipse at 75% 0%,rgba(54,128,230,.13),transparent 35%),#07101f}
+body[data-page="dashboard"] .cv-dash-side{background:rgba(8,18,35,.96);border-right-color:var(--cv-line)}
+body[data-page="dashboard"] .cv-side-link{min-height:43px;border:1px solid transparent}
+body[data-page="dashboard"] .cv-side-link.active{border-color:rgba(91,169,255,.18);background:linear-gradient(100deg,rgba(53,126,228,.25),rgba(53,126,228,.07));box-shadow:inset 3px 0 #62b4ff}
+body[data-page="dashboard"] .cv-dash-top{position:sticky;top:0;z-index:30;background:rgba(8,18,35,.94);backdrop-filter:blur(16px);border-bottom-color:var(--cv-line)}
+body[data-page="dashboard"] .cv-dash-content{max-width:1500px}
+body[data-page="dashboard"] .cv-welcome{min-height:215px;border-radius:20px;background:linear-gradient(112deg,#102a4a 0%,#16477a 58%,#382b63 100%);box-shadow:0 22px 60px rgba(0,0,0,.2)}
+body[data-page="dashboard"] .cv-welcome h1{letter-spacing:-.045em;line-height:1.12}
+body[data-page="dashboard"] .cv-stat{background:linear-gradient(145deg,#122642,#0d1b31);border-color:var(--cv-line);transition:transform .18s,border-color .18s}
+body[data-page="dashboard"] .cv-stat:hover{transform:translateY(-2px);border-color:rgba(98,180,255,.36)}
+body[data-page="dashboard"] .cv-stat-value{font-size:clamp(22px,2.2vw,29px)}
+body[data-page="dashboard"] .cv-section{scroll-margin-top:90px}
+body[data-page="dashboard"] .cv-section-heading{align-items:center}
+body[data-page="dashboard"] .cv-section-heading h2{letter-spacing:-.035em}
+body[data-page="dashboard"] .cv-continue-card,body[data-page="dashboard"] .cv-settings-card{border-color:var(--cv-line);box-shadow:var(--cv-shadow)}
+body[data-page="dashboard"] .cv-course-card{border-color:var(--cv-line);box-shadow:0 10px 28px rgba(0,0,0,.14)}
+body[data-page="dashboard"] .cv-course-card:hover{transform:translateY(-3px);border-color:rgba(98,180,255,.48)}
+body[data-page="dashboard"] .cv-course-cover{background:#132a49}
+body[data-page="dashboard"] .cv-field input,body[data-page="dashboard"] .cv-field select,body[data-page="dashboard"] .cv-field textarea{min-height:44px;border-color:rgba(143,174,222,.26);font-size:14px}
+body[data-page="dashboard"] .cv-field input:focus,body[data-page="dashboard"] .cv-field select:focus,body[data-page="dashboard"] .cv-field textarea:focus{border-color:#62b4ff;box-shadow:0 0 0 3px rgba(98,180,255,.13)}
+body[data-page="dashboard"] .cv-hero-btn,body[data-page="dashboard"] .cv-secondary-btn{min-height:44px;font-size:13px}
+body[data-page="dashboard"] .cv-empty{border-color:rgba(119,161,222,.32);background:rgba(16,31,56,.72)}
+/* Admin portal — consistent navigation, readable work surfaces and forms */
+body[data-page="admin"]{background:#07101f;color:#edf4ff}
+body[data-page="admin"] .adm{background:#07101f;grid-template-columns:252px minmax(0,1fr)}
+body[data-page="admin"] .adm-side{background:#08172d;border-right-color:var(--cv-line);padding:20px 13px}
+body[data-page="admin"] .adm-brand{padding-bottom:25px}
+body[data-page="admin"] .adm-link{min-height:43px;font-size:13px;border:1px solid transparent;transition:background .18s,border-color .18s,color .18s}
+body[data-page="admin"] .adm-link.on{background:linear-gradient(105deg,#286fce,#194da3);box-shadow:0 8px 22px rgba(31,100,205,.18);border-color:rgba(129,190,255,.2)}
+body[data-page="admin"] .adm-link:hover:not(.on){background:rgba(67,133,220,.12);border-color:rgba(129,190,255,.1)}
+body[data-page="admin"] .adm-top{min-height:64px;padding:11px clamp(14px,2.4vw,30px);background:rgba(7,17,34,.94);border-bottom-color:var(--cv-line);backdrop-filter:blur(18px)}
+body[data-page="admin"] .adm-top strong{font-size:17px}
+body[data-page="admin"] .adm-view{width:100%;max-width:1500px;padding:clamp(18px,2.8vw,34px)}
+body[data-page="admin"] .adm-view h1{font-size:clamp(24px,2.4vw,32px);letter-spacing:-.035em;margin-bottom:7px}
+body[data-page="admin"] .adm-view>p{font-size:13px;line-height:1.7}
+body[data-page="admin"] .qcard,body[data-page="admin"] .adm-view .panel{background:linear-gradient(145deg,rgba(17,39,68,.94),rgba(10,25,46,.96));border-color:var(--cv-line);border-radius:15px}
+body[data-page="admin"] .qcard{min-height:132px;padding:19px;transition:transform .18s,border-color .18s,box-shadow .18s}
+body[data-page="admin"] .qcard:hover{transform:translateY(-2px);border-color:rgba(98,180,255,.45);box-shadow:0 14px 32px rgba(0,0,0,.2)}
+body[data-page="admin"] .stats4{gap:13px}
+body[data-page="admin"] .two{gap:18px}
+body[data-page="admin"] .adm-view input:not([type=checkbox]):not([type=radio]),body[data-page="admin"] .adm-view select,body[data-page="admin"] .adm-view textarea{min-height:42px;border:1px solid rgba(143,174,222,.24);border-radius:10px;background:#091a31;color:#eef4ff;padding:10px 12px;font:inherit}
+body[data-page="admin"] .adm-view textarea{min-height:100px}
+body[data-page="admin"] .adm-view input:focus,body[data-page="admin"] .adm-view select:focus,body[data-page="admin"] .adm-view textarea:focus{border-color:#62b4ff;box-shadow:0 0 0 3px rgba(98,180,255,.12)}
+body[data-page="admin"] .adm-view .btn{min-height:40px;border-radius:9px}
+body[data-page="admin"] .adm-view table{border-collapse:collapse}
+body[data-page="admin"] .adm-view th{color:#a9c3e6}
+body[data-page="admin"] .adm-view td,body[data-page="admin"] .adm-view th{padding:10px 9px;border-bottom:1px solid rgba(151,181,225,.12);vertical-align:top}
+body[data-page="admin"] .academy-admin-head{border-radius:18px;box-shadow:var(--cv-shadow)}
+body[data-page="admin"] .academy-admin-stat{background:linear-gradient(145deg,#122642,#0b1a30)}
+body[data-page="admin"] .academy-app-card{transition:border-color .18s,background .18s}
+body[data-page="admin"] .academy-app-card:hover,body[data-page="admin"] .academy-app-card.active{border-color:#62b4ff;background:#102544}
+body[data-page="admin"] .adm-back{backdrop-filter:blur(3px)}
+/* Small-screen behaviour: horizontal nav remains scrollable, controls stay tappable. */
+@media(max-width:900px){
+ body[data-page="admin"] .adm{grid-template-columns:minmax(0,1fr)}
+ body[data-page="admin"] .adm-view{padding:18px 14px 34px}
+ body[data-page="admin"] .adm-top{position:sticky;top:0}
+ body[data-page="admin"] .stats4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ body[data-page="dashboard"] .cv-dash-side{position:sticky;top:58px;z-index:25;gap:5px;padding:8px 10px;background:rgba(8,18,35,.97);scrollbar-width:thin}
+ body[data-page="dashboard"] .cv-side-link{font-size:10px;padding:8px 10px;min-height:38px}
+ body[data-page="dashboard"] .cv-dash-content{padding:16px 13px calc(32px + env(safe-area-inset-bottom))}
+ body[data-page="dashboard"] .cv-welcome{min-height:190px;padding:21px 17px;border-radius:17px}
+ body[data-page="dashboard"] .cv-welcome p{max-width:100%;line-height:1.6}
+ body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body[data-page="dashboard"] .cv-stat{min-height:100px}
+ body[data-page="dashboard"] .cv-section{margin-top:29px}
+ body[data-page="dashboard"] .cv-course-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ body[data-page="dashboard"] .cv-course-card-body{padding:12px}
+ body[data-page="dashboard"] .cv-course-card h3{font-size:13px}
+ body[data-page="dashboard"] .cv-course-card-body p{font-size:10px}
+ body[data-page="dashboard"] .cv-course-thumb{height:108px}
+ body[data-page="dashboard"] .cv-activity-list{padding:5px 12px}
+ body[data-page="admin"] .adm-top{gap:8px;padding:9px 11px}
+ body[data-page="admin"] .adm-top strong{font-size:14px}
+ body[data-page="admin"] .adm-view .panel{padding:14px}
+ body[data-page="admin"] .stats4{gap:8px}
+ body[data-page="admin"] .qcard{padding:13px;min-height:118px}
+}
+@media(max-width:380px){
+ body[data-page="dashboard"] .cv-course-grid{grid-template-columns:1fr}
+ body[data-page="dashboard"] .cv-welcome-art{display:none}
+ body[data-page="dashboard"] .cv-stat-value{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
