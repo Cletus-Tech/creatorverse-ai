@@ -16,7 +16,7 @@ var IC={dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7
  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
  help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',arrow:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'};
 var NAV=[[['dashboard','Dashboard'],['homepage','Homepage Manager'],['background','3D Background'],['founder','Founder Profile'],['video','Introduction Video'],['media','Media Library']],
- [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['admissions','Admissions & Placement'],['liveinterviews','Live Interviews'],['progress','Learning Progress'],['quizzes','Quizzes & Assignments'],['certificates','Certificates']],
+ [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['engagement','Engagement Monitor'],['admissions','Admissions & Placement'],['liveinterviews','Live Interviews'],['progress','Learning Progress'],['quizzes','Quizzes & Assignments'],['certificates','Certificates']],
  [['payments','Payments'],['analytics','Analytics'],['notifications','Notifications','Soon'],['settings','Settings'],['help','Help & Support']]];
 var SOON={};
 function day(d){return d.toISOString().slice(0,10)}
@@ -38,7 +38,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
  function pane(p,note){view.textContent='';if(note)view.appendChild(h('div',{class:'note',text:note}));view.appendChild(p)}
  function route(){var id=(location.hash||'#dashboard').slice(1);if(!links[id])id='dashboard';if(id===cur)return;cur=id;Object.keys(links).forEach(function(k){links[k].classList.toggle('on',k===id)});
   var label=links[id].querySelector('span').textContent;document.getElementById('adm-title').textContent=label;view.textContent='';
-  if(id==='dashboard')dash();else if(id==='analytics')analytics();else if(id==='students')students();else if(id==='help')help();
+  if(id==='dashboard')dash();else if(id==='analytics')analytics();else if(id==='students')students();else if(id==='engagement')engagement();else if(id==='help')help();
   else if(id==='homepage')pane(P.homepage);else if(id==='background')pane(P.homepageBackground);else if(id==='founder')pane(P.founder);else if(id==='video')pane(P.video);else if(id==='categories')pane(P.categories);else if(id==='admissions')pane(P.admissions);else if(id==='liveinterviews'){if(window.CV_ACADEMY_LIVE_ADMIN)window.CV_ACADEMY_LIVE_ADMIN.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Live interview control room is loading. Refresh the page.'}));}else if(id==='progress'){view.textContent='';if(window.CV_ACADEMY_PROGRESS)window.CV_ACADEMY_PROGRESS.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Learning monitor is loading. Refresh the page.'}));}else if(id==='quizzes')pane(P.assess);else if(id==='certificates')pane(P.certs);else if(id==='notifications')notifications();
   else if(id==='payments'){if(P.payments)pane(P.payments);else view.appendChild(h('div',{class:'note',text:'Payment administration is loading. Refresh this page if it does not appear.'}));}else if(id==='media')pane(P.media);else if(id==='settings')pane(P.settings,'Announcement banner and About page text.');
   else if(id==='courses')pane(P.courses);else if(id==='modules'||id==='lessons')pane(P.courses,'Modules and lessons are managed inside each course. Open a course below to add or remove them. Use Up and Down to reorder.');
@@ -107,6 +107,74 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   function loadRecent(){recent.textContent='';recent.appendChild(h('h3',{text:'Recently sent announcements'}));sb.rpc('admin_list_recent_announcements').then(function(r){if(r.error){recent.appendChild(h('p',{text:'Could not load announcement history: '+r.error.message}));return}var rows=r.data||[];rows.forEach(function(x){recent.appendChild(h('article',{class:'panel'},[h('strong',{text:x.title}),h('p',{text:x.body}),h('small',{class:'pmeta',text:new Date(x.created_at).toLocaleString()+' · Sent to '+x.recipient_count+' student account'+(Number(x.recipient_count)===1?'':'s')+' · '+(x.href||'notifications.html')})]))});if(!rows.length)recent.appendChild(h('p',{text:'No announcements sent from this account yet.'}))})}
   loadRecent()
  }
+ function engagement(){
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[
+    h('h1',{text:'Student engagement monitor'}),
+    h('p',{text:'Track course learning activity, identify learners who may need support, and set engagement expectations for each course.'})
+  ])]));
+  view.appendChild(h('div',{class:'note',text:'This is an online learning engagement monitor, not proof of physical classroom attendance or live-session presence. Status is calculated from recorded lesson views and lesson completions only.'}));
+  var metrics=h('div',{class:'stats4'}),filters=h('div',{class:'filter-row'}),search=h('input',{type:'search',placeholder:'Search student, email or course…'}),statusFilter=h('select',{},[
+    ['all','All engagement statuses'],['inactive','Inactive'],['below_target','Below weekly target'],['not_started','No recorded activity'],['on_track','On track']
+  ].map(function(x){return h('option',{value:x[0],text:x[1]})])),courseFilter=h('select',{},[h('option',{value:'all',text:'All courses'})]),status=h('p',{class:'pmeta',text:'Loading engagement data…'}),list=h('div',{class:'stack'}),records=[];
+  filters.append(search,statusFilter,courseFilter);view.append(metrics,filters,status,list);
+  function metric(label,value,sub){metrics.appendChild(h('div',{class:'stat'},[h('strong',{text:String(value)}),h('span',{text:label}),sub?h('small',{text:sub}):null]))}
+  function labelState(v){return ({on_track:'On track',below_target:'Below weekly target',inactive:'Inactive',not_started:'Not started'})[v]||v}
+  function draw(){
+    list.textContent='';
+    var term=search.value.trim().toLowerCase(),st=statusFilter.value,co=courseFilter.value,shown=records.filter(function(x){
+      return (co==='all'||x.course_id===co) && (st==='all'||x.status===st) &&
+        (!term||((x.full_name||'')+' '+(x.email||'')+' '+(x.course_title||'')).toLowerCase().indexOf(term)>-1);
+    });
+    status.textContent=shown.length+' of '+records.length+' enrolled learner-course records shown.';
+    if(!shown.length){list.appendChild(h('div',{class:'panel'},[h('p',{text:'No learners match the selected filters.'})]));return}
+    var groups={};shown.forEach(function(x){(groups[x.course_id]||(groups[x.course_id]=[])).push(x)});
+    Object.keys(groups).forEach(function(cid){
+      var course=groups[cid],meta=course[0],box=h('section',{class:'panel'}),head=h('div',{class:'two'});
+      box.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h3',{text:meta.course_title}),h('p',{class:'pmeta',text:course.length+' enrolled learner'+(course.length===1?'':'s')})])]));
+      var min=h('input',{type:'number',min:'0',max:'50',value:String(meta.min_events_per_week),class:'engagement-number'}),days=h('input',{type:'number',min:'1',max:'90',value:String(meta.inactivity_days),class:'engagement-number'}),save=h('button',{type:'button',class:'btn btn-outline',text:'Save course expectations'}),msg=h('small',{class:'pmeta'});
+      save.addEventListener('click',function(){
+        var mv=Number(min.value),dv=Number(days.value);
+        if(!Number.isInteger(mv)||mv<0||mv>50||!Number.isInteger(dv)||dv<1||dv>90){msg.textContent='Weekly target must be 0–50 events; inactivity must be 1–90 days.';return}
+        save.disabled=true;msg.textContent='Saving…';
+        sb.rpc('admin_set_course_engagement_policy',{p_course_id:cid,p_min_events_per_week:mv,p_inactivity_days:dv}).then(function(r){
+          save.disabled=false;if(r.error){msg.textContent='Could not save: '+r.error.message;return}
+          course.forEach(function(x){x.min_events_per_week=mv;x.inactivity_days=dv});
+          msg.textContent='Course expectations saved.';draw();
+        })
+      });
+      box.appendChild(h('div',{class:'two'},[
+        h('article',{class:'panel'},[h('label',{text:'Minimum learning events per week'}),min,h('small',{class:'pmeta',text:'Lesson views or lesson completions.'})]),
+        h('article',{class:'panel'},[h('label',{text:'Inactive after (days)'}),days,h('small',{class:'pmeta',text:'No recorded learning event for this many days.'})])
+      ]));
+      box.append(save,msg);
+      course.forEach(function(x){
+        var last=x.last_activity?new Date(x.last_activity).toLocaleString():'No recorded activity';
+        var chip=h('span',{class:'chip',text:labelState(x.status)});
+        box.appendChild(h('article',{class:'trow student-performance'},[
+          h('span',{},[h('strong',{text:x.full_name||'Student'}),h('small',{text:x.email||''})]),
+          h('span',{},[chip,h('small',{text:String(x.events_7d||0)+' events in last 7 days · '+String(x.lessons_completed||0)+' lessons completed'})]),
+          h('span',{},[h('small',{text:'Last activity: '+last}),h('small',{text:'Lesson views this week: '+String(x.lesson_views_7d||0)+' · Course lessons: '+String(x.total_lessons||0)})])
+        ]));
+      });
+      list.appendChild(box);
+    });
+  }
+  [search,statusFilter,courseFilter].forEach(function(el){el.addEventListener(el===search?'input':'change',draw)});
+  sb.rpc('admin_get_engagement_overview').then(function(r){
+    if(r.error){status.textContent='Engagement data could not load: '+r.error.message;return}
+    var data=r.data||{},courses=data.courses||[];
+    records=[];courseFilter.textContent='';courseFilter.appendChild(h('option',{value:'all',text:'All courses'}));
+    var total=0,active=0,below=0,inactive=0,notStarted=0;
+    courses.forEach(function(c){
+      var learners=c.learners||[];
+      if(learners.length)courseFilter.appendChild(h('option',{value:c.course_id,text:c.course_title}));
+      learners.forEach(function(x){x.course_id=c.course_id;x.course_title=c.course_title;x.min_events_per_week=c.min_events_per_week;x.inactivity_days=c.inactivity_days;records.push(x);total++;if(x.status==='on_track')active++;else if(x.status==='below_target')below++;else if(x.status==='inactive')inactive++;else notStarted++});
+    });
+    metrics.textContent='';
+    metric('Enrolled learner records',total);metric('On track',active);metric('Below weekly target',below);metric('Inactive',inactive);metric('Not started',notStarted);
+    draw();
+  }).catch(function(e){status.textContent='Engagement data could not load: '+e.message});
+}
  function analytics(){
   view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Academy performance'}),h('p',{text:'Live learning activity, admissions, course progress and student review readiness.'})])]));
   var metrics=h('div',{class:'stats4'}),courses=h('div',{class:'panel'}),perf=h('div',{class:'panel'}),status=h('p',{class:'pmeta',text:'Loading live Academy analytics…'}),search=h('input',{type:'search',placeholder:'Filter by student, email or course…'}),onlyInactive=h('input',{type:'checkbox'}),onlyReady=h('input',{type:'checkbox'}),rows=[];
