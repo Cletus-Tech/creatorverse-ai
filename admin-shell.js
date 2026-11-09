@@ -107,11 +107,40 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   function loadRecent(){recent.textContent='';recent.appendChild(h('h3',{text:'Recently sent announcements'}));sb.rpc('admin_list_recent_announcements').then(function(r){if(r.error){recent.appendChild(h('p',{text:'Could not load announcement history: '+r.error.message}));return}var rows=r.data||[];rows.forEach(function(x){recent.appendChild(h('article',{class:'panel'},[h('strong',{text:x.title}),h('p',{text:x.body}),h('small',{class:'pmeta',text:new Date(x.created_at).toLocaleString()+' · Sent to '+x.recipient_count+' student account'+(Number(x.recipient_count)===1?'':'s')+' · '+(x.href||'notifications.html')})]))});if(!rows.length)recent.appendChild(h('p',{text:'No announcements sent from this account yet.'}))})}
   loadRecent()
  }
- function analytics(){var since=new Date(Date.now()-30*864e5).toISOString(),g=h('div',{class:'two'});view.appendChild(g);
-  Promise.all([sb.from('profiles').select('created_at').gte('created_at',since),sb.from('enrolments').select('created_at').gte('created_at',since),sb.from('lesson_progress').select('completed_at').gte('completed_at',since)]).then(function(r){
-   g.appendChild(chart('New registrations',r[0].data||[],(r[0].data||[]).length));g.appendChild(chart('New enrolments',r[1].data||[],(r[1].data||[]).length));
-   g.appendChild(chart('Lessons completed',(r[2].data||[]).map(function(x){return{created_at:x.completed_at}}),(r[2].data||[]).length))});
-  view.appendChild(h('p',{class:'pmeta',text:'Revenue, completion rates and content performance arrive with later stages. Only real recorded data is shown.'}))}
+ function analytics(){
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Academy performance'}),h('p',{text:'Live learning activity, admissions, course progress and student review readiness.'})])]));
+  var metrics=h('div',{class:'stats4'}),courses=h('div',{class:'panel'}),perf=h('div',{class:'panel'}),status=h('p',{class:'pmeta',text:'Loading live Academy analytics…'}),search=h('input',{type:'search',placeholder:'Filter by student, email or course…'}),onlyInactive=h('input',{type:'checkbox'}),onlyReady=h('input',{type:'checkbox'}),rows=[];
+  view.appendChild(metrics);view.appendChild(h('div',{class:'two'},[courses,h('div',{class:'panel'},[h('h3',{text:'How to read performance'}),h('p',{text:'Completion is based on completed lessons divided by all lessons in the enrolled course.'}),h('p',{text:'Quiz readiness requires a passed attempt for every quiz. Assignment readiness requires every assignment to be submitted and graded.'}),h('p',{text:'Certificate review readiness is only a review flag. It never issues a certificate automatically.'}),h('p',{class:'pmeta',text:'Inactive means no recorded lesson, quiz or assignment activity for more than 14 days.'})])])); 
+  var filters=h('div',{class:'filter-row'},[search,h('label',{},[onlyInactive,h('span',{text:'Inactive 14+ days'})]),h('label',{},[onlyReady,h('span',{text:'Ready for admin review'})])]);
+  perf.appendChild(h('h3',{text:'Student performance by course'}));perf.appendChild(filters);perf.appendChild(status);var table=h('div',{class:'tbl'});perf.appendChild(table);view.appendChild(perf);
+  function metric(label,value,sub){metrics.appendChild(h('div',{class:'stat'},[h('strong',{text:String(value==null?0:value)}),h('span',{text:label}),sub?h('small',{text:sub}):null]))}
+  function draw(){
+   table.textContent='';var term=search.value.trim().toLowerCase(),filtered=rows.filter(function(x){var text=(x.full_name||'')+' '+(x.email||'')+' '+(x.course_title||'');return(!term||text.toLowerCase().indexOf(term)>-1)&&(!onlyInactive.checked||x.inactive_14d)&&(!onlyReady.checked||x.certificate_review_ready)});
+   status.textContent=filtered.length+' of '+rows.length+' enrolled student-course records shown.';
+   if(!filtered.length){table.appendChild(h('p',{text:'No student records match these filters.'}));return}
+   filtered.forEach(function(x){
+    var pct=Number(x.completion_percent||0),bar=h('div',{class:'progress-track'},[h('span',{style:'width:'+Math.max(0,Math.min(100,pct))+'%'})]);
+    var flags=[x.inactive_14d?'Inactive 14+ days':'Active recently',x.certificate_review_ready?'Ready for admin review':'Requirements pending'];
+    var detail='Lessons '+x.completed_lessons+'/'+x.total_lessons+' · Quizzes passed '+x.passed_quizzes+'/'+x.total_quizzes+' · Assignments graded '+x.graded_assignments+'/'+x.total_assignments;
+    table.appendChild(h('article',{class:'trow student-performance'},[
+      h('span',{},[h('strong',{text:x.full_name||'Student'}),h('small',{text:x.email||''}),h('small',{text:x.course_title})]),
+      h('span',{},[h('strong',{text:pct+'%'}),bar,h('small',{text:detail})]),
+      h('span',{},[h('small',{text:flags.join(' · ')}),h('small',{text:'Last activity: '+(x.last_activity?ago(x.last_activity):'No activity')})])
+    ]))
+   })
+  }
+  [search,onlyInactive,onlyReady].forEach(function(el){el.addEventListener(el===search?'input':'change',draw)});
+  Promise.all([sb.rpc('admin_get_academy_analytics'),sb.rpc('admin_get_student_performance',{p_limit:500})]).then(function(res){
+   if(res[0].error||res[1].error){status.textContent='Analytics could not load: '+((res[0].error||res[1].error).message||'Unknown error');return}
+   var a=res[0].data||{};rows=Array.isArray(res[1].data)?res[1].data:[];
+   metric('Registered students',a.students);metric('Course enrolments',a.enrolments);metric('Active learners · 7 days',a.active_7d);metric('Inactive enrolments · 14+ days',a.inactive_14d);
+   metric('Applications awaiting review',a.applications_pending);metric('Approved applications',a.applications_approved);metric('Certificates issued',a.certificates_issued);metric('Lessons completed · 30 days',a.lessons_completed_30d);
+   courses.textContent='';courses.appendChild(h('h3',{text:'Published course performance'}));
+   (a.course_performance||[]).forEach(function(c){var n=Number(c.total_lessons||0),done=Number(c.completed_lessons||0),pct=n?Math.round(done/n*100):0;courses.appendChild(h('div',{class:'course-metric'},[h('strong',{text:c.title}),h('small',{text:c.enrolments+' enrolments · '+done+'/'+n+' lesson completions · '+c.quizzes+' quizzes · '+c.assignments+' assignments'}),h('div',{class:'progress-track'},[h('span',{style:'width:'+pct+'%'})])]))});
+   if(!(a.course_performance||[]).length)courses.appendChild(h('p',{text:'No published courses yet.'}));
+   draw()
+  }).catch(function(e){status.textContent='Analytics could not load: '+e.message})
+ }
  function students(){var q=h('input',{type:'search',placeholder:'Search name or email…'}),tb=h('div',{class:'tbl'}),rows=[];view.appendChild(q);view.appendChild(tb);
   Promise.all([sb.from('profiles').select('id,full_name,email,role,verified_badge,created_at').order('created_at',{ascending:false}).limit(300),sb.from('enrolments').select('user_id')]).then(function(r){var ec={};(r[1].data||[]).forEach(function(e){ec[e.user_id]=(ec[e.user_id]||0)+1});rows=r[0].data||[];draw()
    function draw(){tb.textContent='';var t=q.value.trim().toLowerCase(),l=rows.filter(function(p){return!t||((p.full_name||'')+' '+(p.email||'')).toLowerCase().indexOf(t)>-1});if(!l.length)return tb.appendChild(h('p',{text:rows.length?'No matches.':'No users yet.'}));
