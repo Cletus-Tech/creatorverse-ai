@@ -336,3 +336,5 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Applied the database schema/function changes to the existing Supabase project and verified the RPC using an authenticated student context. The test ran inside a rolled-back transaction so it did not create a test notification or persist test alert state.
 - Added migration `supabase/migrations/202611090050_student_engagement_portal.sql`; updated student dashboard asset cache versions. Existing student records and enrolments were preserved.
 - JavaScript syntax validation passed. Browser end-to-end testing as a real student remains outstanding.
+
+- Added realtime refresh hooks for a student's own learning activity and lesson-progress changes, and enabled those tables in the existing Supabase Realtime publication. The student report refreshes when learning records change in another tab/device.
