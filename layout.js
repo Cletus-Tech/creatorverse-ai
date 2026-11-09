@@ -1,5 +1,6 @@
 (function(){
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
+var ux=document.createElement('link');ux.rel='stylesheet';ux.href='ux-refinement.css?v=20261109-ui-refresh1';document.head.appendChild(ux);
 if(f==='category.html')f='learn.html';
 var fav=document.querySelector('link[rel~="icon"]');if(!fav){fav=document.createElement('link');fav.rel='icon';fav.type='image/svg+xml';fav.href='assets/creatorverse-mark.svg';document.head.appendChild(fav);}
 var L=[['Home','index.html'],['Divisions','divisions.html'],['Courses','courses.html'],['Learning Paths','learn.html'],['About','about.html'],['Community','community.html'],['AI Assistant','ai.html']];
