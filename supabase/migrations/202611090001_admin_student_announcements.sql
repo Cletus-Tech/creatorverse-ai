@@ -34,3 +34,20 @@ begin
 end $$;
 revoke all on function public.admin_broadcast_notification(text,text,text,text,uuid) from public,anon;
 grant execute on function public.admin_broadcast_notification(text,text,text,text,uuid) to authenticated;
+
+create or replace function public.admin_list_recent_announcements()
+returns table(title text,body text,href text,created_at timestamptz,recipient_count bigint)
+language plpgsql security definer set search_path=pg_catalog,public
+as $$
+begin
+ if auth.uid() is null or not public.is_admin() then raise exception 'Only authorized administrators can view announcement history'; end if;
+ return query
+ select n.title,n.body,n.href,n.created_at,count(*)::bigint
+ from public.cv_notifications n
+ where n.type='announcement' and n.actor_id=auth.uid()
+ group by n.title,n.body,n.href,n.created_at
+ order by n.created_at desc
+ limit 20;
+end $$;
+revoke all on function public.admin_list_recent_announcements() from public,anon;
+grant execute on function public.admin_list_recent_announcements() to authenticated;
