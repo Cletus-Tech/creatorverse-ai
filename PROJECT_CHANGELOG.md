@@ -350,3 +350,11 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Added admin issue/review/resolve workflow within the student's academic record.
 - Added student portal inbox for intervention notices and student responses.
 - Kept private admin notes separate; interventions do not automatically suspend accounts or revoke enrolments.
+
+
+## 2026-11-09 — Unified interface usability refinement
+- Added `ux-refinement.css` as a shared visual refinement layer, injected by `layout.js` across the public platform, personal dashboard and admin portal.
+- Improved navigation clarity, card hierarchy, focus states, button and form sizing, contrast, responsive behaviour and mobile touch targets.
+- Refined dashboard welcome/stat/course surfaces and admin navigation, overview cards, forms and mobile workspace presentation.
+- Preserved existing business logic, admission decisions, course access, assessment rules, role permissions and administrator-only certificate issuance.
+- Validation status: source changes committed to `main`; production deployment and authenticated browser/device QA are still pending.
