@@ -18,7 +18,7 @@ var IC={dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7
 var NAV=[[['dashboard','Dashboard'],['homepage','Homepage Manager'],['background','3D Background'],['founder','Founder Profile'],['video','Introduction Video'],['media','Media Library']],
  [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['admissions','Admissions & Placement'],['liveinterviews','Live Interviews'],['progress','Learning Progress'],['quizzes','Quizzes & Assignments'],['certificates','Certificates']],
  [['payments','Payments'],['analytics','Analytics'],['notifications','Notifications','Soon'],['settings','Settings'],['help','Help & Support']]];
-var SOON={notifications:'Notifications and announcements (a later stage)'};
+var SOON={};
 function day(d){return d.toISOString().slice(0,10)}
 function chart(title,rows,total){var days=[],i,m={};for(i=29;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(day(d))}days.forEach(function(d){m[d]=0});rows.forEach(function(r){var k=day(new Date(r.created_at));if(k in m)m[k]++});
  var vals=days.map(function(d){return m[d]}),mx=Math.max.apply(null,vals.concat([1])),NS='http://www.w3.org/2000/svg',s=document.createElementNS(NS,'svg');s.setAttribute('viewBox','0 0 300 100');s.setAttribute('class','bars');
@@ -39,7 +39,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
  function route(){var id=(location.hash||'#dashboard').slice(1);if(!links[id])id='dashboard';if(id===cur)return;cur=id;Object.keys(links).forEach(function(k){links[k].classList.toggle('on',k===id)});
   var label=links[id].querySelector('span').textContent;document.getElementById('adm-title').textContent=label;view.textContent='';
   if(id==='dashboard')dash();else if(id==='analytics')analytics();else if(id==='students')students();else if(id==='help')help();
-  else if(id==='homepage')pane(P.homepage);else if(id==='background')pane(P.homepageBackground);else if(id==='founder')pane(P.founder);else if(id==='video')pane(P.video);else if(id==='categories')pane(P.categories);else if(id==='admissions')pane(P.admissions);else if(id==='liveinterviews'){if(window.CV_ACADEMY_LIVE_ADMIN)window.CV_ACADEMY_LIVE_ADMIN.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Live interview control room is loading. Refresh the page.'}));}else if(id==='progress'){view.textContent='';if(window.CV_ACADEMY_PROGRESS)window.CV_ACADEMY_PROGRESS.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Learning monitor is loading. Refresh the page.'}));}else if(id==='quizzes')pane(P.assess);else if(id==='certificates')pane(P.certs);
+  else if(id==='homepage')pane(P.homepage);else if(id==='background')pane(P.homepageBackground);else if(id==='founder')pane(P.founder);else if(id==='video')pane(P.video);else if(id==='categories')pane(P.categories);else if(id==='admissions')pane(P.admissions);else if(id==='liveinterviews'){if(window.CV_ACADEMY_LIVE_ADMIN)window.CV_ACADEMY_LIVE_ADMIN.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Live interview control room is loading. Refresh the page.'}));}else if(id==='progress'){view.textContent='';if(window.CV_ACADEMY_PROGRESS)window.CV_ACADEMY_PROGRESS.mount(view,sb,user,role);else view.appendChild(h('div',{class:'note',text:'Learning monitor is loading. Refresh the page.'}));}else if(id==='quizzes')pane(P.assess);else if(id==='certificates')pane(P.certs);else if(id==='notifications')notifications();
   else if(id==='payments'){if(P.payments)pane(P.payments);else view.appendChild(h('div',{class:'note',text:'Payment administration is loading. Refresh this page if it does not appear.'}));}else if(id==='media')pane(P.media);else if(id==='settings')pane(P.settings,'Announcement banner and About page text.');
   else if(id==='courses')pane(P.courses);else if(id==='modules'||id==='lessons')pane(P.courses,'Modules and lessons are managed inside each course. Open a course below to add or remove them. Use Up and Down to reorder.');
   else view.appendChild(h('div',{class:'panel'},[h('h3',{text:label}),h('p',{text:'This feature is not built yet. Planned: '+SOON[id]+'.'}),h('p',{class:'pmeta',text:'Nothing on this page is placeholder data.'})]))}
@@ -76,6 +76,36 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    })
   }
   filter.addEventListener('change',load);load()
+ }
+ function notifications(){
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student announcements'}),h('p',{text:'Send important updates directly to the CreatorVerse notification centre. Messages appear in each recipient’s Notifications page and unread badge.'})])]));
+  var title=h('input',{type:'text',maxlength:'120',placeholder:'Announcement title',required:''});
+  var body=h('textarea',{rows:'5',maxlength:'2000',placeholder:'Write a clear message for students…',required:''});
+  var audience=h('select',{},[h('option',{value:'all_students',text:'All registered students'}),h('option',{value:'course_students',text:'Students enrolled in one course'})]);
+  var course=h('select',{},[h('option',{value:'',text:'Choose a course…'})]);
+  var href=h('input',{type:'text',value:'notifications.html',placeholder:'Internal page link, e.g. academy-status.html'});
+  var status=h('div',{class:'msg'}),recent=h('div',{class:'panel'});
+  var form=h('form',{class:'panel'},[
+   h('h3',{text:'Compose announcement'}),
+   h('label',{class:'field'},[h('span',{text:'Title'}),title]),
+   h('label',{class:'field'},[h('span',{text:'Message'}),body]),
+   h('label',{class:'field'},[h('span',{text:'Audience'}),audience]),
+   h('label',{class:'field'},[h('span',{text:'Course (only for course audience)'}),course]),
+   h('label',{class:'field'},[h('span',{text:'Open this internal page when tapped (optional)'}),href]),
+   h('p',{class:'pmeta',text:'This sends an in-app notification. It does not send email or SMS.'}),
+   h('button',{class:'btn btn-primary',type:'submit',text:'Send announcement'}),
+   status
+  ]);
+  view.appendChild(form);view.appendChild(recent);
+  sb.from('courses').select('id,title').eq('published',true).order('title').then(function(r){(r.data||[]).forEach(function(c){course.appendChild(h('option',{value:c.id,text:c.title}))})});
+  function toggle(){course.disabled=audience.value!=='course_students';}audience.addEventListener('change',toggle);toggle();
+  form.addEventListener('submit',function(e){e.preventDefault();if(audience.value==='course_students'&&!course.value){status.textContent='Select the course first.';status.className='msg err';return}
+   if(!confirm('Send this announcement to '+(audience.value==='all_students'?'all registered students':'students enrolled in the selected course')+'?'))return;
+   var submit=form.querySelector('button[type="submit"]');submit.disabled=true;status.textContent='Sending announcement…';status.className='msg';
+   sb.rpc('admin_broadcast_notification',{p_title:title.value.trim(),p_body:body.value.trim(),p_href:href.value.trim()||'notifications.html',p_audience:audience.value,p_course_id:course.value||null}).then(function(r){submit.disabled=false;if(r.error){status.textContent=r.error.message;status.className='msg err';return}var n=(r.data&&r.data.sent)||0;status.textContent='Announcement sent to '+n+' student account'+(n===1?'':'s')+'.';status.className='msg ok';title.value='';body.value='';loadRecent()})
+  });
+  function loadRecent(){recent.textContent='';recent.appendChild(h('h3',{text:'Recently sent announcements'}));sb.from('cv_notifications').select('title,body,href,created_at').eq('type','announcement').eq('actor_id',user.id).order('created_at',{ascending:false}).limit(20).then(function(r){if(r.error){recent.appendChild(h('p',{text:'Could not load announcement history: '+r.error.message}));return}var seen={};(r.data||[]).forEach(function(x){var key=x.title+'|'+x.body+'|'+x.created_at.slice(0,16);if(seen[key])return;seen[key]=true;recent.appendChild(h('article',{class:'panel'},[h('strong',{text:x.title}),h('p',{text:x.body}),h('small',{class:'pmeta',text:new Date(x.created_at).toLocaleString()+' · '+(x.href||'notifications.html')})]))});if(!Object.keys(seen).length)recent.appendChild(h('p',{text:'No announcements sent from this account yet.'}))})}
+  loadRecent()
  }
  function analytics(){var since=new Date(Date.now()-30*864e5).toISOString(),g=h('div',{class:'two'});view.appendChild(g);
   Promise.all([sb.from('profiles').select('created_at').gte('created_at',since),sb.from('enrolments').select('created_at').gte('created_at',since),sb.from('lesson_progress').select('completed_at').gte('completed_at',since)]).then(function(r){
