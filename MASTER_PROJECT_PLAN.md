@@ -337,3 +337,11 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Each notice records the concern, support message and required next step. Private administrator notes remain separate from student-facing interventions.
 - Students can read notices and submit a response from their dashboard. Administrators can review responses and resolve the follow-up.
 - Intervention records are private and accessed through authenticated, role-checked RPCs; no automatic account suspension or course removal occurs.
+
+
+## User interface and usability refinement — 9 November 2026
+- Added a shared `ux-refinement.css` layer loaded by the common layout across the public platform, personal dashboard and admin portal.
+- Standardised navigation, interaction states, focus visibility, button and form sizing, surface hierarchy, card spacing, contrast and mobile touch behaviour.
+- Refined the personal dashboard welcome area, statistics, course cards, section spacing and compact-screen layout without changing learning, admission, assessment or certificate permissions.
+- Refined the admin workspace sidebar, top bar, overview cards, data-entry controls and responsive layouts while preserving existing admin capabilities and role restrictions.
+- This is the first visual-usability pass; continue with page-by-page review and real-device testing before calling the interface redesign complete.
