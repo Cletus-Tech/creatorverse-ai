@@ -325,3 +325,9 @@ Status: **Source implementation committed to `education-build`; no database migr
 - JavaScript syntax validation passed. Browser end-to-end testing as a real student remains outstanding.
 
 - Added realtime refresh hooks for a student's own learning activity and lesson-progress changes, and enabled those tables in the existing Supabase Realtime publication. The student report refreshes when learning records change in another tab/device.
+
+## Scheduled Learning Sessions & Check-ins
+- Admins can schedule timed learning sessions against a course, with a start/end window and instructions.
+- Enrolled students see upcoming/open/completed/missed sessions in their dashboard and can check in only while the session window is open.
+- Missed status is derived only after a scheduled session ends without a check-in; lesson views and general inactivity are not attendance.
+- Admin session overview reports enrolled, checked-in, and missed counts. This is a learning-session record, not physical classroom attendance verification.
