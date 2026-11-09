@@ -331,3 +331,9 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Enrolled students see upcoming/open/completed/missed sessions in their dashboard and can check in only while the session window is open.
 - Missed status is derived only after a scheduled session ends without a check-in; lesson views and general inactivity are not attendance.
 - Admin session overview reports enrolled, checked-in, and missed counts. This is a learning-session record, not physical classroom attendance verification.
+
+## Student Intervention & Follow-up
+- Administrators can issue student-visible intervention notices from the individual academic record, optionally linked to an enrolled course and follow-up deadline.
+- Each notice records the concern, support message and required next step. Private administrator notes remain separate from student-facing interventions.
+- Students can read notices and submit a response from their dashboard. Administrators can review responses and resolve the follow-up.
+- Intervention records are private and accessed through authenticated, role-checked RPCs; no automatic account suspension or course removal occurs.
