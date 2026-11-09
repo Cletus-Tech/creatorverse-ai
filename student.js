@@ -96,6 +96,26 @@ window.CV_DASH=function(sb,session,X){
     });
   }).catch(function(){engagementState.className='cv-engagement-empty';engagementState.textContent='Your engagement report is temporarily unavailable. Please refresh the page later.'});
 
+
+ var sessionsSection=el('section',{class:'cv-section cv-session-section'});
+ sessionsSection.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'ACADEMY SCHEDULE'}),el('h2',{text:'Scheduled learning sessions'}),el('p',{text:'Check in during a scheduled session to record your attendance. A missed session is recorded only when its time window has ended without a check-in.'})])]));
+ var sessionsList=el('div',{class:'cv-engagement-loading',text:'Loading your schedule…'});sessionsSection.appendChild(sessionsList);body.appendChild(sessionsSection);
+ sb.rpc('student_get_my_learning_sessions').then(function(r){
+  sessionsList.textContent='';var rows=r.data||[];
+  if(r.error){sessionsList.className='cv-engagement-empty';sessionsList.textContent='Your schedule is temporarily unavailable.';return}
+  if(!rows.length){sessionsList.className='cv-engagement-empty';sessionsList.textContent='There are no scheduled learning sessions for your enrolled courses yet.';return}
+  sessionsList.className='cv-engagement-grid';
+  rows.forEach(function(x){var card=el('article',{class:'cv-engagement-card'}),state={upcoming:'Upcoming',open:'Open for check-in',checked_in:'Checked in',missed:'Missed'}[x.status]||x.status;
+   card.appendChild(el('div',{class:'cv-engagement-card-head'},[el('div',{},[el('span',{class:'cv-engagement-overline',text:x.course_title||'Course'}),el('h3',{text:x.title})]),el('span',{class:'cv-engagement-status '+x.status,text:state})]));
+   if(x.description)card.appendChild(el('p',{class:'cv-engagement-message',text:x.description}));
+   card.appendChild(el('p',{class:'cv-muted',text:new Date(x.starts_at).toLocaleString()+' – '+new Date(x.ends_at).toLocaleString()}));
+   if(x.status==='open'){var btn=el('button',{class:'cv-hero-btn',type:'button',text:'Check in now'}),msg=el('small',{class:'cv-muted'});btn.addEventListener('click',function(){btn.disabled=true;msg.textContent='Recording check-in…';sb.rpc('student_check_in_learning_session',{p_session_id:x.id}).then(function(z){if(z.error){btn.disabled=false;msg.textContent=z.error.message;return}msg.textContent='Your check-in has been recorded.';btn.textContent='Checked in';btn.disabled=true;location.reload()})});card.append(btn,msg)}
+   if(x.status==='checked_in')card.appendChild(el('small',{class:'cv-muted',text:'Checked in '+new Date(x.checked_in_at).toLocaleString()}));
+   if(x.status==='missed')card.appendChild(el('small',{class:'cv-muted',text:'This session ended without a recorded check-in. Contact your Academy administrator if you believe this is incorrect.'}));
+   sessionsList.appendChild(card);
+  });
+ }).catch(function(){sessionsList.className='cv-engagement-empty';sessionsList.textContent='Your schedule is temporarily unavailable.'});
+
  body.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'PICK UP WHERE YOU LEFT OFF'}),el('h2',{text:'Continue learning'})]),el('a',{href:'courses.html',class:'cv-text-link',text:'Browse courses →'})]));
  if(!courses.length){body.appendChild(el('div',{class:'cv-empty'},[el('div',{class:'cv-empty-icon',text:'＋'}),el('h3',{text:'Your learning journey starts here'}),el('p',{text:'Explore the course library and enrol in a learning path to see your progress here.'}),el('a',{class:'cv-hero-btn',href:'courses.html',text:'Explore courses'})]))}
  else{var next=courses.filter(function(c){return c.next&&c.pct<100})[0]||courses[0];var card=el('article',{class:'cv-continue-card'},[next.course.thumbnail_url?el('img',{class:'cv-course-cover',src:next.course.thumbnail_url,alt:''}):el('div',{class:'cv-course-cover cv-course-placeholder',text:'CV'}),el('div',{class:'cv-continue-info'},[el('span',{class:'cv-course-tag',text:'YOUR CURRENT COURSE'}),el('h3',{text:next.course.title}),el('p',{text:next.next?(next.pct===100?'You have completed this course. Revisit a lesson anytime.':'Next lesson: '+next.next.title):'Course lessons are being prepared.'}),progress(next.pct),el('div',{class:'cv-course-meta'},[el('span',{text:next.completed+' of '+next.total+' lessons completed'}),el('strong',{text:next.pct+'%'})]),next.next?el('a',{class:'cv-hero-btn',href:'lesson.html?l='+encodeURIComponent(next.next.id),text:next.pct===100?'Review course':'Continue lesson'}):null])]);body.appendChild(card);
