@@ -1,0 +1,108 @@
+/* CreatorVerse page-by-page usability pass: learning, profile, communications and admissions. */
+:root{--cv-focus:#75c1ff;--cv-border:rgba(139,174,224,.2);--cv-surface:rgba(13,29,53,.9)}
+/* Public home and discovery */
+body.home .hero2-in{max-width:1320px}
+body.home .hero2 h1{max-width:780px;line-height:1.02;letter-spacing:-.045em}
+body.home .hero2 .lead{max-width:620px;line-height:1.75}
+body.home .hero2-cta{gap:12px;flex-wrap:wrap}
+body.home .hero2-cta .btn{min-height:46px}
+body.home .sec{scroll-margin-top:90px}
+body.home .sec-head{gap:14px}
+body.home .course-card,body.home .cat-card,body.home .info-card{overflow:hidden}
+body.home .course-card:focus-within,body.home .cat-card:focus-within{outline:2px solid var(--cv-focus);outline-offset:3px}
+body[data-page="courses"] .academy-catalogue{padding-top:8px}
+.academy-catalogue-hero{border-radius:22px;overflow:hidden}
+.academy-library-tools{position:relative}
+.academy-search-wrap{min-height:48px}
+.academy-search-wrap input{min-height:44px}
+.academy-filter-row{gap:9px;flex-wrap:wrap}
+.academy-filter{min-height:38px;padding:9px 13px}
+.academy-course-card{border-radius:16px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.13)}
+.academy-course-content{padding:17px}
+.academy-course-content h3{line-height:1.25;letter-spacing:-.02em}
+.academy-course-link{min-height:40px}
+.academy-course-detail-hero{border-radius:20px;overflow:hidden}
+.academy-module{border:1px solid var(--cv-border);border-radius:13px;overflow:hidden;background:rgba(11,26,48,.75)}
+.academy-module summary{padding:16px 18px;cursor:pointer}
+.academy-lesson-list li{padding:0}
+.academy-lesson-list a{display:flex;align-items:center;gap:10px;min-height:46px;padding:10px 15px}
+.academy-lesson-list a:hover{background:rgba(80,150,235,.1)}
+/* Lesson environment: prioritise the teaching material and keep course outline accessible. */
+body[data-page="lesson"] #content.page,body[data-page="course"] #content.page{max-width:1440px}
+.academy-lesson-layout{align-items:start;gap:22px}
+.academy-lesson-main{min-width:0;border:1px solid var(--cv-border);border-radius:18px;background:rgba(10,24,44,.72);padding:clamp(16px,2.5vw,28px)}
+.academy-lesson-main h1{font-size:clamp(25px,3vw,38px);line-height:1.12;letter-spacing:-.04em}
+.academy-lesson-main p{line-height:1.8}
+.academy-lesson-video{overflow:hidden;border-radius:14px;background:#030914}
+.academy-lesson-video iframe,.academy-lesson-video video{display:block;width:100%;aspect-ratio:16/9;border:0}
+.academy-lesson-sidebar{position:sticky;top:92px;max-height:calc(100vh - 110px);overflow:auto;border:1px solid var(--cv-border);border-radius:16px;background:rgba(9,22,41,.92);padding:15px}
+.academy-lesson-sidebar h2,.academy-lesson-sidebar h3{font-size:15px}
+.academy-lesson-sidebar a{border-radius:9px}
+.academy-lesson-sidebar a:hover{background:rgba(83,151,230,.12)}
+/* Assessments: legible question cards and unambiguous answer controls. */
+.qbox{max-width:none;border-color:var(--cv-border);background:rgba(12,27,49,.7);padding:clamp(15px,2vw,22px)}
+.qbox legend{line-height:1.55}
+.qbox label{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;margin:6px 0;border:1px solid rgba(139,174,224,.13);border-radius:10px;cursor:pointer}
+.qbox label:has(input:checked){border-color:rgba(98,180,255,.65);background:rgba(57,126,213,.13)}
+.qbox input{flex:0 0 auto;margin-top:3px;accent-color:#62b4ff}
+.grade-box{border:1px solid var(--cv-border);border-radius:14px;padding:17px;background:rgba(12,27,49,.8)}
+/* Profile: profile card, avatar, forms and action buttons. */
+.profile-page{padding-top:clamp(100px,11vw,130px)}
+.profile-cover{border:1px solid var(--cv-border);border-bottom:0}
+.profile-head{box-shadow:0 18px 45px rgba(0,0,0,.16)}
+.profile-head h1,.profile-name{letter-spacing:-.035em}
+.profile-head input,.profile-head textarea,.profile-head select,.profile-page input,.profile-page textarea,.profile-page select{max-width:100%;min-height:43px;border-radius:10px}
+.profile-page button,.profile-page .btn{min-height:41px}
+.profile-page .profile-section,.profile-page .profile-card{border-color:var(--cv-border);border-radius:15px}
+.profile-loading,.profile-error{border:1px dashed var(--cv-border);border-radius:14px;background:rgba(12,27,49,.55)}
+/* Messages: focus on conversations, readable bubbles and mobile composition. */
+body[data-page="messages"] .cv-messages-page{padding-top:clamp(100px,11vw,128px)}
+.msg-welcome{border-radius:20px;padding:clamp(20px,3vw,34px)}
+.msg-welcome h1{letter-spacing:-.04em;line-height:1.08}
+.msg-workspace{border-color:var(--cv-border);border-radius:17px;overflow:hidden}
+.msg-inbox,.msg-chat{min-width:0}
+.msg-conversation{min-height:66px;border-radius:10px}
+.msg-conversation-copy strong{line-height:1.4}
+.msg-bubble{max-width:min(78%,620px);line-height:1.65;overflow-wrap:anywhere}
+.msg-composer{gap:9px}
+.msg-composer textarea{min-height:46px;max-height:140px;border-radius:12px}
+.msg-composer button{min-width:44px;min-height:44px;border-radius:12px}
+.msg-search input{min-height:42px}
+.msg-modal-card{max-height:calc(100dvh - 30px);overflow:auto}
+.msg-field-label input,.msg-field-label textarea{min-height:43px;border-radius:10px}
+.msg-primary-btn{min-height:43px}
+@media(max-width:850px){
+ .academy-lesson-layout{grid-template-columns:minmax(0,1fr)}
+ .academy-lesson-sidebar{position:static;max-height:none;order:2}
+ .academy-lesson-main{order:1}
+}
+@media(max-width:700px){
+ body.home .hero2-in{padding-left:20px;padding-right:20px}
+ body.home .hero2 h1{font-size:clamp(37px,10vw,54px)}
+ body.home .hero2-cta{align-items:stretch}
+ body.home .hero2-cta .btn{flex:1 1 145px;justify-content:center}
+ .academy-catalogue-hero{border-radius:16px}
+ .academy-course-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+ .academy-course-content{padding:12px}
+ .academy-course-content h3{font-size:14px}
+ .academy-course-content>p{font-size:11px;line-height:1.55}
+ .academy-course-detail-hero{border-radius:15px}
+ .academy-lesson-main{padding:15px;border-radius:14px}
+ .academy-lesson-sidebar{padding:12px}
+ .profile-page{padding:94px 14px 55px}
+ .profile-cover{height:175px;border-radius:16px 16px 0 0}
+ .profile-head{padding-left:17px;padding-right:17px;border-radius:0 0 16px 16px}
+ .profile-avatar{width:94px;height:94px;margin-top:-45px}
+ body[data-page="messages"] .cv-messages-page{padding:94px 12px 55px}
+ .msg-welcome{padding:20px 17px;border-radius:16px}
+ .msg-workspace{border-radius:13px}
+ .msg-bubble{max-width:88%}
+ .msg-chat-head{gap:8px}
+ .msg-chat-actions{gap:5px}
+}
+@media(max-width:420px){
+ .academy-course-grid{grid-template-columns:1fr}
+ .academy-course-image{height:190px}
+ .msg-composer{padding:9px}
+ .msg-composer textarea{font-size:16px}
+}
