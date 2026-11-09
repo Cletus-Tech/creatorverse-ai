@@ -338,3 +338,9 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - JavaScript syntax validation passed. Browser end-to-end testing as a real student remains outstanding.
 
 - Added realtime refresh hooks for a student's own learning activity and lesson-progress changes, and enabled those tables in the existing Supabase Realtime publication. The student report refreshes when learning records change in another tab/device.
+
+## 2026-11-09 — Scheduled learning check-ins
+- Added secure course-linked session scheduling for administrators.
+- Added student schedule view and time-window-limited check-in RPC.
+- Added admin counts for enrolled, checked-in and missed learners; missed status is not inferred from lesson activity.
+- Added RLS-protected session/check-in tables with direct client access revoked.
