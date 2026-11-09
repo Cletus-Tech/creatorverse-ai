@@ -358,3 +358,11 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Refined dashboard welcome/stat/course surfaces and admin navigation, overview cards, forms and mobile workspace presentation.
 - Preserved existing business logic, admission decisions, course access, assessment rules, role permissions and administrator-only certificate issuance.
 - Validation status: source changes committed to `main`; production deployment and authenticated browser/device QA are still pending.
+
+
+## 2026-11-09 — Page-by-page interface polish
+- Added `ux-page-polish.css` and loaded it through the shared `layout.js` shell.
+- Refined homepage/discovery hierarchy, course catalogue filters and cards, course modules, lesson player/sidebar, quiz question controls, creator profile surfaces, and messages/stories composer and conversation readability.
+- Added tablet/mobile adaptations for learning, profile and messaging pages.
+- No application permissions, admission rules, student progression, certificate controls or database workflows were changed.
+- Validation status: source files committed to `main`; production deployment and authenticated browser/device QA pending.
