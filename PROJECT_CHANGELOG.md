@@ -325,3 +325,14 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Existing single admin shell continues to route Admissions & Placement and Learning Progress from the same `admin.html` dashboard and navigation. No separate Academy website was created.
 - Current preview deployment: `creatorverse-kjoo6qfbr-cletus-tech1.vercel.app`, branch `education-build`, commit `86783c487d14be22c16e62d92924cf3ffbee4758`, Vercel state READY.
 - Remaining verification: authenticated browser QA of admin workspaces and learner workflows; end-to-end payment/fulfilment, private interview media upload/playback, and scheduled background notification delivery remain separate follow-up work. Production code branch has not been merged or deployed.
+
+
+## 2026-11-09 — Student-facing engagement goals and alerts
+
+- Added the student portal Engagement section to the unified `dashboard.html` experience, with per-course engagement status, weekly activity target/progress, lesson views, completed lessons, last activity and a direct course link.
+- Added `student_get_my_engagement()`, which derives a signed-in student's report only from their own enrolments and recorded learning activity; students cannot change administrator-set course targets.
+- Added a private alert-state table and deduplicated in-app engagement notifications. A status change can generate a notification, with a seven-day reminder cooldown while a warning remains active.
+- Added student-facing guidance for on-track, below-target, inactive and not-started states. The UI explicitly describes learning engagement, not verified physical attendance.
+- Applied the database schema/function changes to the existing Supabase project and verified the RPC using an authenticated student context. The test ran inside a rolled-back transaction so it did not create a test notification or persist test alert state.
+- Added migration `supabase/migrations/202611090050_student_engagement_portal.sql`; updated student dashboard asset cache versions. Existing student records and enrolments were preserved.
+- JavaScript syntax validation passed. Browser end-to-end testing as a real student remains outstanding.
