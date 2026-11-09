@@ -141,16 +141,70 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    draw()
   }).catch(function(e){status.textContent='Analytics could not load: '+e.message})
  }
- function students(){var q=h('input',{type:'search',placeholder:'Search name or email…'}),tb=h('div',{class:'tbl'}),rows=[],perfRows=[];view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student management'}),h('p',{text:'Search learners and open their course-by-course academic record.'})])]));view.appendChild(q);view.appendChild(tb);var detail=h('div',{class:'panel'});view.appendChild(detail);function showStudent(p){detail.textContent='';detail.appendChild(h('h3',{text:(p.full_name||'Student')+' · Academic record'}));detail.appendChild(h('p',{text:p.email||''}));var matches=perfRows.filter(function(x){return x.user_id===p.id});if(!matches.length){detail.appendChild(h('p',{text:'No course enrolment or performance record is available for this student.'}));return}matches.forEach(function(x){detail.appendChild(h('article',{class:'panel'},[h('strong',{text:x.course_title}),h('p',{text:'Course completion: '+x.completion_percent+'% ('+x.completed_lessons+'/'+x.total_lessons+' lessons)'}),h('p',{text:'Lesson views: '+(x.lesson_views||0)+' · Quiz passed: '+x.passed_quizzes+'/'+x.total_quizzes+' · Average quiz score: '+(x.average_quiz_score==null?'—':x.average_quiz_score)}),h('p',{text:'Assignments submitted: '+x.submitted_assignments+'/'+x.total_assignments+' · Graded: '+x.graded_assignments+'/'+x.total_assignments}),h('p',{text:'Last activity: '+(x.last_activity?new Date(x.last_activity).toLocaleString():'No activity')+' · '+(x.inactive_14d?'Inactive 14+ days':'Active recently')}),h('p',{class:'pmeta',text:x.certificate_review_ready?'Requirements met — administrator review only.':'Academic requirements still pending.'})]))})}
-  Promise.all([sb.from('profiles').select('id,full_name,email,role,verified_badge,created_at').order('created_at',{ascending:false}).limit(300),sb.from('enrolments').select('user_id'),sb.rpc('admin_get_student_performance',{p_limit:500})]).then(function(r){if(!r[2].error&&Array.isArray(r[2].data))perfRows=r[2].data;var ec={};(r[1].data||[]).forEach(function(e){ec[e.user_id]=(ec[e.user_id]||0)+1});rows=r[0].data||[];draw()
-   function draw(){tb.textContent='';var t=q.value.trim().toLowerCase(),l=rows.filter(function(p){return!t||((p.full_name||'')+' '+(p.email||'')).toLowerCase().indexOf(t)>-1});if(!l.length)return tb.appendChild(h('p',{text:rows.length?'No matches.':'No users yet.'}));
-    l.forEach(function(p){var sel=h('select',{'aria-label':'Role'},['student','creator','instructor','moderator','admin','super_admin'].map(function(x){return h('option',{value:x,text:x.replace('_',' ')})}));sel.value=p.role;if(role!=='super_admin'||p.id===user.id)sel.disabled=true;
-     var badge=h('select',{'aria-label':'Verification tick'});[['none','No tick'],['blue','Blue tick']].forEach(function(x){badge.appendChild(h('option',{value:x[0],text:x[1]}))});badge.value=p.verified_badge&&p.verified_badge!=='none'?'blue':'none';if(role!=='super_admin'||p.id===user.id)badge.disabled=true;
-     badge.addEventListener('change',function(){sb.from('profiles').update({verified_badge:badge.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);badge.value=p.verified_badge||'none'}else p.verified_badge=badge.value})});
-     sel.addEventListener('change',function(){sb.from('profiles').update({role:sel.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);sel.value=p.role}else p.role=sel.value})});
-     var name=h('strong',{text:p.full_name||'(no name)'},window.CV_BADGE_ICON&&window.CV_BADGE_ICON(p)?[window.CV_BADGE_ICON(p)]:[]);name.style.cursor='pointer';name.title='Open academic record';name.addEventListener('click',function(){showStudent(p);detail.scrollIntoView({behavior:'smooth',block:'start'})});tb.appendChild(h('div',{class:'trow'},[h('span',{},[name,h('small',{text:p.email||''})]),h('small',{text:(ec[p.id]||0)+' enrolled'}),h('small',{text:new Date(p.created_at).toLocaleDateString()}),sel,badge]))})}
-   q.addEventListener('input',draw)});
-  if(role!=='super_admin')view.insertBefore(h('div',{class:'note',text:'Only a super admin can change roles and assign or remove the blue verification tick.'}),q)}
+ function students(){
+  var q=h('input',{type:'search',placeholder:'Search name or email…'}),tb=h('div',{class:'tbl'}),rows=[],detail=h('div',{class:'panel'});
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student management'}),h('p',{text:'Open a learner’s complete Academy record: admissions, course performance, level reviews, assignments and recent learning activity.'})])]));
+  view.appendChild(q);view.appendChild(tb);view.appendChild(detail);
+  function section(title,items,empty,render){
+    detail.appendChild(h('h3',{text:title}));
+    if(!items||!items.length){detail.appendChild(h('p',{class:'pmeta',text:empty}));return}
+    items.forEach(function(x){detail.appendChild(render(x))})
+  }
+  function date(v){return v?new Date(v).toLocaleString():'—'}
+  function showStudent(p){
+    detail.textContent='';
+    detail.appendChild(h('h2',{text:(p.full_name||'Student')+' · Academic record'}));
+    detail.appendChild(h('p',{text:p.email||''}));
+    detail.appendChild(h('p',{class:'pmeta',text:'Loading the student’s secure administrative record…'}));
+    sb.rpc('admin_get_student_record',{p_user_id:p.id}).then(function(r){
+      detail.textContent='';
+      if(r.error){detail.appendChild(h('p',{class:'note',text:'Could not load this student record: '+r.error.message}));return}
+      var d=r.data||{},profile=d.profile||{};
+      detail.appendChild(h('div',{class:'two'},[
+        h('article',{class:'panel'},[h('strong',{text:profile.full_name||'Student'}),h('p',{text:profile.email||'No email'}),h('small',{text:'Account created '+date(profile.created_at)}),h('p',{class:'pmeta',text:'Role: '+(profile.role||'student')+' · Username: '+(profile.username||'—')})]),
+        h('article',{class:'panel'},[h('strong',{text:'Profile details'}),h('p',{text:'Location: '+(profile.location||'Not provided')}),h('p',{text:'Website: '+(profile.website_url||'Not provided')}),h('p',{text:'Bio: '+(profile.bio||'Not provided')}),h('p',{text:'Status: '+(profile.status_text||'—')})])
+      ]));
+      section('Admission history',d.applications,'No Academy applications found.',function(a){
+        return h('article',{class:'panel'},[h('strong',{text:(a.course_title||'Course')+' · '+(a.status||'unknown').replace(/_/g,' ')}),h('p',{text:'Application '+(a.application_no||'—')+' · Submitted '+date(a.submitted_at)}),h('p',{text:'Education: '+(a.education_level||'—')+' · Occupation: '+(a.occupation||'—')}),h('p',{text:'Prior experience: '+(a.prior_experience||'—')}),h('p',{text:'Learning goals: '+(a.learning_goals||'—')}),a.portfolio_url?h('p',{},[h('a',{href:a.portfolio_url,target:'_blank',rel:'noopener',text:'Open portfolio'})]):null,a.decision_reason?h('p',{text:'Admin decision: '+a.decision_reason}):null,h('small',{class:'pmeta',text:'Reviewed: '+date(a.reviewed_at)+' · Offer accepted: '+date(a.offer_accepted_at)+' · Cohort: '+(a.admission_cohort||'—')})])
+      });
+      section('Course performance',d.courses,'No course enrolments found.',function(x){
+        var pct=Number(x.completion_percent||0);
+        return h('article',{class:'panel'},[h('strong',{text:x.course_title||'Course'}),h('p',{text:'Completion: '+pct+'% · Lessons: '+x.completed_lessons+'/'+x.total_lessons}),h('div',{class:'progress-track'},[h('span',{style:'width:'+Math.max(0,Math.min(100,pct))+'%'})]),h('p',{text:'Lesson views: '+(x.lesson_views||0)+' · Quizzes passed: '+x.passed_quizzes+'/'+x.total_quizzes+' · Average quiz score: '+(x.average_quiz_score==null?'—':x.average_quiz_score)}),h('p',{text:'Assignments submitted: '+x.submitted_assignments+'/'+x.total_assignments+' · Graded: '+x.graded_assignments+'/'+x.total_assignments}),h('p',{text:'Last activity: '+date(x.last_activity)+' · '+(x.inactive_14d?'Inactive 14+ days':'Active recently')}),h('p',{class:'pmeta',text:x.certificate_review_ready?'All recorded requirements met — administrator review only; no automatic certificate.':'Course requirements are still pending.'})])
+      });
+      section('Learning levels',d.levels,'No level record has been created for this student.',function(x){
+        return h('article',{class:'panel'},[h('strong',{text:x.course_title||'Course'}),h('p',{text:'Current level: '+(x.current_level||'—')+' · Highest unlocked: '+(x.highest_unlocked_level||'—')}),h('p',{text:'Level progress: '+(x.progress_percent||0)+'% · Lessons: '+(x.completed_lessons||0)+'/'+(x.total_lessons||0)}),h('p',{class:'pmeta',text:'Admin override: '+(x.admin_override?'Yes':'No')+' · Note: '+(x.admin_note||'None')})])
+      });
+      section('Level unlock requests',d.level_requests,'No level unlock requests.',function(x){
+        return h('article',{class:'panel'},[h('strong',{text:x.course_title+' · '+x.level_name}),h('p',{text:'Status: '+x.status+' · Progress at request: '+x.progress_percent+'%'}),h('p',{class:'pmeta',text:'Requested '+date(x.requested_at)+' · Reviewed '+date(x.reviewed_at)+' · '+(x.reviewer_note||'No reviewer note')})])
+      });
+      section('Assignment submissions',d.submissions,'No assignment submissions recorded.',function(x){
+        return h('article',{class:'panel'},[h('strong',{text:x.assignment_title||'Assignment'}),h('p',{text:x.course_title+' · Status: '+(x.status||'submitted')}),h('p',{text:'Grade: '+(x.grade==null?'Not graded':x.grade)+' · Submitted: '+date(x.submitted_at)+' · Graded: '+date(x.graded_at)}),h('p',{text:'Feedback: '+(x.feedback||'No feedback yet')})])
+      });
+      section('Recent learning activity',d.recent_activity,'No learning activity events recorded.',function(x){
+        return h('article',{class:'trow'},[h('strong',{text:(x.activity_type||'activity').replace(/_/g,' ')}),h('small',{text:x.course_title||'Course'}),h('small',{text:date(x.occurred_at)})])
+      });
+      detail.scrollIntoView({behavior:'smooth',block:'start'});
+    }).catch(function(e){detail.textContent='Could not load student record: '+e.message})
+  }
+  Promise.all([sb.from('profiles').select('id,full_name,email,role,verified_badge,created_at').eq('role','student').order('created_at',{ascending:false}).limit(500),sb.from('enrolments').select('user_id')]).then(function(r){
+    var ec={};(r[1].data||[]).forEach(function(e){ec[e.user_id]=(ec[e.user_id]||0)+1});rows=r[0].data||[];draw();
+    function draw(){
+      tb.textContent='';var term=q.value.trim().toLowerCase(),list=rows.filter(function(p){return!term||((p.full_name||'')+' '+(p.email||'')).toLowerCase().indexOf(term)>-1});
+      if(!list.length){tb.appendChild(h('p',{text:rows.length?'No matching students.':'No student accounts found.'}));return}
+      list.forEach(function(p){
+        var sel=h('select',{'aria-label':'Role'},['student','creator','instructor','moderator','admin','super_admin'].map(function(x){return h('option',{value:x,text:x.replace('_',' ')})}));
+        sel.value=p.role;if(role!=='super_admin'||p.id===user.id)sel.disabled=true;
+        var badge=h('select',{'aria-label':'Verification tick'});[['none','No tick'],['blue','Blue tick']].forEach(function(x){badge.appendChild(h('option',{value:x[0],text:x[1]}))});badge.value=p.verified_badge&&p.verified_badge!=='none'?'blue':'none';if(role!=='super_admin'||p.id===user.id)badge.disabled=true;
+        badge.addEventListener('change',function(){sb.from('profiles').update({verified_badge:badge.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);badge.value=p.verified_badge||'none'}else p.verified_badge=badge.value})});
+        sel.addEventListener('change',function(){sb.from('profiles').update({role:sel.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);sel.value=p.role}else p.role=sel.value})});
+        var name=h('button',{type:'button',class:'btn btn-outline',text:p.full_name||'(no name)',on:function(){showStudent(p)}});
+        tb.appendChild(h('div',{class:'trow'},[h('span',{},[name,h('small',{text:p.email||''})]),h('small',{text:(ec[p.id]||0)+' enrolled'}),h('small',{text:new Date(p.created_at).toLocaleDateString()}),sel,badge]));
+      })
+    }
+    q.addEventListener('input',draw);
+  });
+  if(role!=='super_admin')view.insertBefore(h('div',{class:'note',text:'Only a super admin can change roles and assign or remove the blue verification tick.'}),q)
+ }
  function help(){view.appendChild(h('div',{class:'panel'},[h('h3',{text:'Quick guide'}),h('ul',{class:'guide'},['Homepage Manager: edit the hero, sections and videos. Save draft, Preview, then Publish.','Media Library: upload images and videos once, then pick them anywhere.','Courses: create a course, add modules and lessons, upload a flyer, then Publish.','Students: search learners. Only a super admin can change roles.','Settings: announcement banner and About page text.','If something saves with an error, make sure the SQL files were run in order (phase2, phase3, phase4, stage3, stage5).'].map(function(t){return h('li',{text:t})}))]))}
  window.addEventListener('hashchange',route);route()}};
 })();
