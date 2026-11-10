@@ -374,3 +374,13 @@ Status: **Implemented on `main`; production deployment pending.**
 - Updated the student dashboard's independent authentication gate to use the same mark and CreatorVerse wordmark.
 - Kept the mark as lightweight SVG rather than a large raster splash image so it remains crisp at favicon, navigation, mobile and admin sizes.
 - The shared loading gate continues to release on initial page readiness/network quiet, with a bounded timeout; reduced-motion preferences disable the logo float.
+
+## 2026-11-10 — Admin-managed brand and logo studio
+Status: **Implemented in code and initial configuration stored; production deployment pending.**
+
+- Added a dedicated Brand & Logo Studio section to the admin dashboard.
+- Administrators can upload or set the primary logo, optional light/dark variants and favicon using the existing CreatorVerse Media Library upload pipeline.
+- Editable brand name, tagline, navigation/footer visibility, loading-gate visibility, gate title/caption, animation style, loading mark size and glow.
+- Configuration is centrally stored in the existing `site_content` table under `creatorverse_brand`; the existing public-read/admin-write RLS policies are reused. No new database table or permission bypass was introduced.
+- Shared website runtime reads the centrally stored configuration and applies it to common logo placements. Uploaded assets are kept in the existing public media bucket.
+- Existing default logo remains the fallback if no custom logo is selected or a custom asset fails to load.
