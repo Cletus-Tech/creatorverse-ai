@@ -392,3 +392,11 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Added controls for brand name, tagline, navigation/footer placement, loading gate, gate copy, animation, logo size and glow.
 - Persisted configuration in `site_content.creatorverse_brand` using existing RLS protections and existing media upload tooling.
 - Updated the site runtime to apply the centrally managed settings to shared logo placements and the loading gate.
+
+
+## 2026-11-10 — New standalone 3D brand mark
+
+- Replaced `assets/creatorverse-mark.svg` with a polished transparent SVG emblem matching the approved direction: metallic blue C, burgundy play triangle, chrome orbital ribbon/open-book sweep and blue graduation cap with gold tassel.
+- Updated the live `site_content.creatorverse_brand` record to use the canonical SVG for the primary logo and favicon; increased the loading-gate logo size to 72px. Kept the separate site wordmark and tagline unchanged.
+- The artwork contains no text and scales cleanly for navigation, favicon, loading gate, footer and admin placements. Existing admin Brand & Logo Studio remains the control surface for replacing or configuring it.
+- Database update verified by read-back. Full authenticated visual QA is still required.
