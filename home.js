@@ -99,20 +99,18 @@ function landingSections(){
  grid.classList.add('cv-reveal');
  var admissions=h('section',{class:'cv-admissions-entry cv-reveal'},[
   h('div',{class:'cv-admissions-entry-copy'},[
-   h('span',{class:'cv-kicker',text:'CREATORVERSE ACADEMY · ADMISSIONS'}),
-   h('h2',{text:'Ready to turn your interest into real skills?'}),
-   h('p',{text:'Apply to join a guided learning pathway. Your application, placement review, admission offer and interview updates stay connected to your learner account.'}),
+   h('span',{class:'cv-kicker',text:'CREATORVERSE PARTNER NETWORK'}),
+   h('h2',{text:'Create, teach or showcase your work on CreatorVerse.'}),
+   h('p',{text:'This application is reserved for creators, instructors, teachers and exhibitors who want to contribute to the platform. Learners can simply choose a course, pay and begin learning—no admission interview required.'}),
    h('div',{class:'cv-admissions-entry-actions'},[
-    btn('Choose a course & apply','academy-apply.html','btn-primary'),
-    btn('Check application status','academy-status.html','btn-outline')
+    btn('Apply to become a creator','academy-apply.html','btn-primary'),
+    btn('Track creator application','academy-status.html','btn-outline')
    ])
   ]),
   h('div',{class:'cv-admissions-entry-art'},[
-   h('span',{class:'cv-admissions-orbit cv-orbit-a'}),
-   h('span',{class:'cv-admissions-orbit cv-orbit-b'}),
+   h('span',{class:'cv-admissions-orbit cv-orbit-a'}),h('span',{class:'cv-admissions-orbit cv-orbit-b'}),
    h('div',{class:'cv-admissions-entry-mark'},[ico(I.book)]),
-   h('strong',{text:'LEARN WITH DIRECTION'}),
-   h('small',{text:'Apply · Get placed · Progress'})
+   h('strong',{text:'BUILD WITH CREATORVERSE'}),h('small',{text:'Create · Teach · Exhibit'})
   ])
  ]);
  admissions.classList.add('is-visible');
