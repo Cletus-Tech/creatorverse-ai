@@ -95,26 +95,33 @@ function courses(sb){
  }).catch(function(){grid.appendChild(h('div',{class:'academy-empty',text:'Something went wrong while loading courses. Please try again.'}))});
 }
 function course(sb,user){var s=Q.get('s');
- sb.from('courses').select('*,modules(id,title,position,description,duration_text,stage_number,lessons(id,title,position,estimated_minutes,chapter_number,topic_outline))').eq('slug',s||'').maybeSingle().then(function(r){
+ sb.from('courses').select('*,modules(id,title,position,description,duration_text,stage_number,lessons(id,title,position,estimated_minutes,chapter_number,topic_outline))').eq('slug',s||'').eq('published',true).maybeSingle().then(function(r){
   if(!r.data)return head('Course not found');var c=r.data,mods=sorted(c.modules),all=[];mods.forEach(function(m){sorted(m.lessons).forEach(function(l){all.push(l)})});main.textContent='';
-  Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id):{data:[]},user?sb.from('lesson_progress').select('lesson_id'):{data:[]},user?sb.from('academy_applications').select('id,status').eq('course_id',c.id).eq('user_id',user.id).order('created_at',{ascending:false}).limit(1).maybeSingle():{data:null}]).then(function(x){
-   var enrolled=x[0].data&&x[0].data.length>0,application=x[2]&&x[2].data,done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
-   var act=h('div',{class:'hero2-cta'});
-   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to enroll'}));
+  Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id).maybeSingle():{data:null},user?sb.from('lesson_progress').select('lesson_id').eq('user_id',user.id):{data:[]}]).then(function(x){
+   var enrolled=!!(x[0].data),done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
+   var act=h('div',{class:'hero2-cta'}),payHost=h('div',{class:'academy-payment-checkout'});
+   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Sign in to get started'}));
    else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
-   else if(application&&application.status==='approved_pending_payment'){var payBtn=h('button',{class:'btn btn-primary',type:'button',text:'Complete payment to unlock course'}),payHost=h('div',{class:'academy-payment-checkout'});payBtn.addEventListener('click',function(){payBtn.disabled=true;payBtn.textContent='Opening secure payment options…';checkout(sb,user,c,payHost);setTimeout(function(){payBtn.remove()},0)});act.append(payBtn,payHost)}
-   else if(application&&application.status==='approved'){act.appendChild(h('span',{class:'chip2',text:'Admission approved — activating your learning access'}))}
-   else act.appendChild(h('a',{class:'btn btn-primary',href:'academy-apply.html?course='+encodeURIComponent(c.slug),text:application?'View application status':'Apply for admission'}));
+   else if(Number(c.price_ngn||0)<=0){
+    var free=h('button',{class:'btn btn-primary',type:'button',text:'Enrol for free'}),feedback=h('p',{class:'pmeta'});
+    act.append(free,feedback);free.addEventListener('click',function(){free.disabled=true;free.textContent='Activating access…';sb.from('enrolments').insert({user_id:user.id,course_id:c.id}).then(function(z){if(z.error)throw z.error;location.reload()}).catch(function(e){free.disabled=false;free.textContent='Enrol for free';feedback.textContent=e.message||'Could not activate this course. Please try again.'})})
+   }else{
+    var buy=h('button',{class:'btn btn-primary',type:'button',text:'Buy course · ₦'+Number(c.price_ngn).toLocaleString('en-NG')});
+    act.append(buy,payHost);buy.addEventListener('click',function(){buy.disabled=true;buy.textContent='Opening checkout…';checkout(sb,user,c,payHost);buy.textContent='Checkout options';})
+   }
    main.appendChild(h('div',{class:'academy-course-detail-hero'},[h('div',{class:'academy-course-detail-copy'},[h('span',{class:'academy-eyebrow',text:(c.category_slug||'CREATORVERSE ACADEMY').replace(/[-_]/g,' ')}),h('span',{class:'chip2',text:c.level||'Beginner'}),h('h1',{text:c.title}),h('p',{class:'lead',text:c.description||''}),
-    h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:c.price_ngn?'₦'+c.price_ngn:'Free'})]),
-    enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons completed ('+pct+'%)'})]):null,act]),
-    h('img',{class:'academy-detail-cover',src:courseImage(c),alt:c.title+' course cover',loading:'eager'})]));
-   var ol=(c.outcomes||'').split('\n').map(function(x){return x.trim()}).filter(Boolean),rq=(c.requirements||'').split('\n').map(function(x){return x.trim()}).filter(Boolean);
+    h('div',{class:'meta'},[all.length?h('span',{text:all.length+(all.length===1?' lesson':' lessons')}):null,c.duration_text?h('span',{text:c.duration_text}):null,h('span',{text:Number(c.price_ngn)>0?'₦'+Number(c.price_ngn).toLocaleString('en-NG'):'Free'})]),
+    enrolled?h('div',{},[bar2(pct),h('p',{class:'pmeta',text:d+' of '+all.length+' lessons verified complete ('+pct+'%)'})]):null,act]),h('img',{class:'academy-detail-cover',src:courseImage(c),alt:c.title+' course cover',loading:'eager'})]));
+   if(!enrolled&&user)main.appendChild(h('p',{class:'pmeta academy-purchase-note',text:Number(c.price_ngn)>0?'Purchase this course directly. Your learning access activates as soon as an administrator confirms your payment. No admission interview or application is required.':'This course is free. Enrol once to unlock the lessons immediately.'}));
+   var ol=(c.outcomes||'').split('\\n').map(function(x){return x.trim()}).filter(Boolean),rq=(c.requirements||'').split('\\n').map(function(x){return x.trim()}).filter(Boolean);
    if(ol.length){main.appendChild(h('h2',{class:'academy-section-title',text:'What you will learn'}));var u1=h('ul',{class:'academy-lesson-list'});ol.forEach(function(t){u1.appendChild(h('li',{},[h('span',{class:'outc'},[h('span',{class:'dot on'},[ico(CK)]),h('span',{text:t})])]))});main.appendChild(u1)}
    if(rq.length){main.appendChild(h('h2',{class:'academy-section-title',text:'What you need to get started'}));var u2=h('ul');rq.forEach(function(t){u2.appendChild(h('li',{text:t}))});main.appendChild(u2)}
    main.appendChild(h('h2',{class:'academy-section-title',text:'Course curriculum'}));if(!mods.length)note('No lessons have been added yet.');
-   mods.forEach(function(m,i){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title+(l.estimated_minutes?' · '+l.estimated_minutes+' min':'')})])]))});
-    main.appendChild(h('details',{class:'academy-module',open:''},[h('summary',{text:(m.stage_number?'Stage '+m.stage_number+' · ':'')+m.title+' · '+(m.lessons||[]).length+' chapters'+(m.duration_text?' · '+m.duration_text:'')}),m.description?h('p',{class:'pmeta',text:m.description}):null,ul]))});window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));})})}
+   mods.forEach(function(m){var ul=h('ul',{class:'clist'});sorted(m.lessons).forEach(function(l){ul.appendChild(h('li',{},[h('a',{href:'lesson.html?l='+l.id},[h('span',{class:'dot'+(done[l.id]?' on':'')},[done[l.id]?ico(CK):null]),h('span',{text:l.title+(l.estimated_minutes?' · '+l.estimated_minutes+' min':'')})])]))});main.appendChild(h('details',{class:'academy-module',open:''},[h('summary',{text:(m.stage_number?'Stage '+m.stage_number+' · ':'')+m.title+' · '+(m.lessons||[]).length+' chapters'+(m.duration_text?' · '+m.duration_text:'')}),m.description?h('p',{class:'pmeta',text:m.description}):null,ul]))});
+   window.CV_ASSESS&&main.appendChild(window.CV_ASSESS.courseBlock(sb,user,c,enrolled,all,done));
+  })
+ })
+}
 function checkout(sb,user,c,host){
  host.textContent='';host.appendChild(h('p',{class:'pmeta',text:'Loading available payment methods…'}));
  sb.from('payment_settings').select('*').eq('id',true).maybeSingle().then(function(r){
@@ -155,7 +162,7 @@ function lesson(sb,user){
    var row=h('div',{class:'row'});col.appendChild(row);
    if(i>0)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i-1],text:'← Previous'}));
    if(!user)row.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Log in to track progress'}));
-   else row.appendChild(h('button',{class:'btn btn-primary',type:'button',text:done[l.id]?'Completed ✓':'Mark as completed',on:function(){if(done[l.id])return;sb.from('lesson_progress').insert({user_id:user.id,lesson_id:l.id}).then(function(e){if(e.error)throw e.error;return sb.rpc('refresh_academy_learner_level',{p_course_id:cid})}).then(function(){location.href=i<flat.length-1?'lesson.html?l='+flat[i+1]:'course.html?s='+encodeURIComponent(c.slug)}).catch(function(e){alert('Your lesson was saved, but your level progress could not refresh yet: '+(e.message||String(e)))})}}));
+   else row.appendChild(h('span',{class:'pmeta',text:done[l.id]?'Completion verified by the Academy.':'Lesson completion is verified by the Academy team after review. You can move through the lessons, but cannot mark a lesson complete yourself.'}));
    if(i<flat.length-1)row.appendChild(h('a',{class:'btn btn-outline',href:'lesson.html?l='+flat[i+1],text:'Next →'}));
    main.appendChild(h('div',{class:'academy-lesson-layout'},[col,side]))})})}
 function admin(sb,user){
