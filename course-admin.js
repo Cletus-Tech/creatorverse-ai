@@ -8,7 +8,7 @@ window.CV_COURSES=function(pane){sb=window.CV_SB;var root=h('div');pane.appendCh
   var nf=h('form',{class:'mini'},[h('input',{name:'t',placeholder:'New course title',required:''}),h('button',{class:'btn btn-primary',type:'submit',text:'Create course (draft)'})]);
   nf.addEventListener('submit',function(e){e.preventDefault();sb.from('courses').insert({title:nf.t.value.trim(),slug:slug(nf.t.value)}).select('id').maybeSingle().then(function(r){r.error?alert(r.error.message):edit(r.data.id)})});root.appendChild(nf);
   var box=h('div');root.appendChild(box);
-  sb.from('courses').select('*,modules(lessons(id))').order('created_at',{ascending:false}).then(function(r){var d=r.data||[];if(r.error)return box.appendChild(h('div',{class:'msg err',text:r.error.message}));if(!d.length)return box.appendChild(h('p',{text:'No courses yet. Create the first one above.'}));
+  sb.from('courses').select('*,modules(lessons(id))').neq('category_slug','internal').order('created_at',{ascending:false}).then(function(r){var d=r.data||[];if(r.error)return box.appendChild(h('div',{class:'msg err',text:r.error.message}));if(!d.length)return box.appendChild(h('p',{text:'No courses yet. Create the first one above.'}));
    d.forEach(function(c){var n=(c.modules||[]).reduce(function(a,m){return a+(m.lessons||[]).length},0);
     box.appendChild(h('div',{class:'panel crow2'},[c.thumbnail_url?h('img',{class:'thumb',src:c.thumbnail_url,alt:''}):null,h('div',{},[h('h3',{text:c.title}),
      h('p',{},[h('span',{class:'chip',text:c.published?'Published':'Draft'}),c.featured?h('span',{class:'chip',text:'Featured'}):null,h('span',{class:'chip',text:c.price_ngn?'₦'+c.price_ngn:'Free'}),h('span',{class:'chip',text:n+' lessons'})]),
