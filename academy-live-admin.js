@@ -4,7 +4,7 @@ function el(t,a,k){var n=document.createElement(t);Object.keys(a||{}).forEach(fu
 window.CV_ACADEMY_LIVE_ADMIN={mount:function(host,sb,user,role){
  var root=el('section',{class:'cv-live-admin'});host.appendChild(root);
  var items=[],reviewers={},status=el('p',{class:'cv-live-admin-status',text:'Loading live interviews…'}),list=el('div',{class:'cv-live-admin-list'}),refresh=el('button',{type:'button',class:'btn btn-outline',text:'Refresh'});
- root.append(el('div',{class:'cv-live-admin-hero'},[el('span',{class:'academy-eyebrow',text:'CREATORVERSE ACADEMY · LIVE CONTROL ROOM'}),el('h1',{text:'Live interviews'}),el('p',{text:'Find every scheduled live interview, ring the applicant, and join the same private room from this dashboard.'}),refresh]),status,list);
+ root.append(el('div',{class:'cv-live-admin-hero'},[el('span',{class:'academy-eyebrow',text:'CREATORVERSE PARTNER NETWORK · LIVE CONTROL ROOM'}),el('h1',{text:'Creator partner interviews'}),el('p',{text:'Manage live interviews for approved creator, instructor, teacher and exhibitor applicants. Ring the applicant and join the secure in-platform room.'}),refresh]),status,list);
  refresh.addEventListener('click',load);
  function card(r){
   var box=el('article',{class:'cv-live-admin-card'});
