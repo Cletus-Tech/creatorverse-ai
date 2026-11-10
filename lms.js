@@ -100,7 +100,7 @@ function course(sb,user){var s=Q.get('s');
   Promise.all([user?sb.from('enrolments').select('course_id').eq('course_id',c.id).maybeSingle():{data:null},user?sb.from('lesson_progress').select('lesson_id').eq('user_id',user.id):{data:[]}]).then(function(x){
    var enrolled=!!(x[0].data),done={};(x[1].data||[]).forEach(function(p){done[p.lesson_id]=1});var d=all.filter(function(l){return done[l.id]}).length,pct=all.length?Math.round(100*d/all.length):0;
    var act=h('div',{class:'hero2-cta'}),payHost=h('div',{class:'academy-payment-checkout'});
-   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html',text:'Sign in to get started'}));
+   if(!user)act.appendChild(h('a',{class:'btn btn-primary',href:'login.html?next='+encodeURIComponent('course.html?s='+encodeURIComponent(c.slug)),text:'Sign in to buy this course'}));
    else if(enrolled){var nx=all.filter(function(l){return !done[l.id]})[0]||all[0];if(nx)act.appendChild(h('a',{class:'btn btn-primary',href:'lesson.html?l='+nx.id,text:d?'Continue learning':'Start learning'}))}
    else if(Number(c.price_ngn||0)<=0){
     var free=h('button',{class:'btn btn-primary',type:'button',text:'Enrol for free'}),feedback=h('p',{class:'pmeta'});
