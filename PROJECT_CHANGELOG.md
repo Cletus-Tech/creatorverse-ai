@@ -378,3 +378,10 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Improved the official certificate verification display with a formal certificate-style layout. Certificates remain administrator-issued; the page does not generate, print or download certificates.
 - Added migration supabase/migrations/202611100010_creator_only_applications_direct_course_access.sql; applied additive database changes without deleting existing records.
 - Source-level JavaScript syntax validation passed. Full authenticated browser QA and live payment testing remain pending.
+
+## 2026-11-10 — 3D CreatorVerse identity and loading gate
+- Replaced the flat brand SVG with a dimensional metallic-blue SVG mark, preserving the established C/play/forward-arrow concept.
+- Added a shared brand stylesheet and wired it into the common site shell for consistent logo treatment across navigation, footer, favicon and loading gate.
+- Increased the shared gate's logo prominence and refined its progress indicator.
+- Updated the student dashboard's authentication gate to use the same brand lockup.
+- Kept the implementation vector-based and lightweight; no heavy video or WebGL loading animation was introduced.
