@@ -385,3 +385,10 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Increased the shared gate's logo prominence and refined its progress indicator.
 - Updated the student dashboard's authentication gate to use the same brand lockup.
 - Kept the implementation vector-based and lightweight; no heavy video or WebGL loading animation was introduced.
+
+## 2026-11-10 — Admin-managed brand and logo studio
+- Added Brand & Logo Studio to the admin navigation.
+- Added upload and URL controls for primary logo, optional light/dark logo variants, and favicon.
+- Added controls for brand name, tagline, navigation/footer placement, loading gate, gate copy, animation, logo size and glow.
+- Persisted configuration in `site_content.creatorverse_brand` using existing RLS protections and existing media upload tooling.
+- Updated the site runtime to apply the centrally managed settings to shared logo placements and the loading gate.
