@@ -48,12 +48,29 @@ function certificate(){var n=Q.get('n');main.textContent='';
  fetch(C.supabaseUrl+'/rest/v1/rpc/verify_certificate',{method:'POST',headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+C.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({p_no:n})}).then(function(r){return r.json()}).then(function(d){
   if(!d||!d.certificate_no){main.appendChild(h('h1',{text:'Certificate not found'}));main.appendChild(h('div',{class:'note',text:'No certificate matches that number. Check the number and try again.'}));main.appendChild(h('a',{class:'btn btn-outline',href:'certificate.html',text:'Try another number'}));return}
   var dt=new Date(d.issued_at).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
-  var card=h('section',{class:'panel certificate-verification'},[
+  var card=h('section',{class:'cv-certificate-wrap'},[
    h('div',{class:'vbar '+(d.revoked?'bad':'ok'),text:d.revoked?'This certificate has been revoked.':'Verified: this certificate is genuine.'}),
-   h('h1',{text:'Certificate verification record'}),
-   h('p',{class:'pmeta',text:'CreatorVerse Academy · Official verification'}),
-   h('dl',{},[h('dt',{text:'Certificate holder'}),h('dd',{text:d.student_name}),h('dt',{text:'Course completed'}),h('dd',{text:d.course_title}),h('dt',{text:'Date issued'}),h('dd',{text:dt}),h('dt',{text:'Certificate number'}),h('dd',{text:d.certificate_no})]),
-   h('p',{class:'pmeta',text:'This page confirms the certificate status only. Official certificate copies are controlled and supplied by CreatorVerse Academy administrators.'})
+   h('article',{class:'cv-certificate'+(d.revoked?' is-revoked':'' )},[
+    h('div',{class:'cv-cert-frame'},[
+     h('div',{class:'cv-cert-topline'},[h('span',{text:'CV'}),h('span',{text:'CREATORVERSE ACADEMY'})]),
+     h('div',{class:'cv-cert-brand'},[h('span',{class:'cv-cert-mark',text:'CV'}),h('span',{text:'CREATORVERSE'})]),
+     h('p',{class:'cv-cert-kicker',text:'OFFICIAL ACADEMY RECOGNITION'}),
+     h('h1',{text:'Certificate of Achievement'}),
+     h('p',{class:'cv-cert-intro',text:'This is to certify that'}),
+     h('h2',{class:'cv-cert-holder',text:d.student_name}),
+     h('p',{class:'cv-cert-copy',text:'has successfully completed the learning requirements for'}),
+     h('h3',{class:'cv-cert-course',text:d.course_title}),
+     h('p',{class:'cv-cert-copy',text:'and has been awarded this certificate in recognition of the knowledge, commitment and achievement demonstrated.'}),
+     h('div',{class:'cv-cert-footer'},[
+      h('div',{class:'cv-cert-signature'},[h('span',{text:'CreatorVerse Academy'}),h('small',{text:'Authorised Academy Office'})]),
+      h('div',{class:'cv-cert-seal'},[h('strong',{text:'CV'}),h('small',{text:'VERIFIED'})]),
+      h('div',{class:'cv-cert-date'},[h('strong',{text:dt}),h('small',{text:'Date of issue'})])
+     ]),
+     h('div',{class:'cv-cert-number'},[h('span',{text:'CERTIFICATE NUMBER'}),h('strong',{text:d.certificate_no}),h('span',{text:'Verify authenticity at creatorverse-ai.vercel.app/certificate.html'})])
+    ]),
+    d.revoked?h('div',{class:'cv-cert-revoked-overlay',text:'REVOKED'}):null
+   ]),
+   h('p',{class:'pmeta cv-cert-legal',text:'This official certificate is issued and controlled by CreatorVerse Academy administrators. This page is an authenticity record; it does not generate, download or print a certificate.'})
   ]);
   main.appendChild(card);
   main.appendChild(h('div',{class:'row noprint'},[h('a',{class:'btn btn-outline',href:'index.html',text:'Home'}),h('a',{class:'btn btn-outline',href:'certificate.html',text:'Verify another certificate'})]));
