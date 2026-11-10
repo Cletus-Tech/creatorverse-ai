@@ -3,6 +3,26 @@ function j(u){return fetch(u).then(function(r){return r.json()}).catch(function(
 var cfg=(await j('site.json'))||{},soc=cfg.socials||{};
 var CC=window.CV_CONFIG||{},sc={};
 if(CC.supabaseUrl&&CC.supabaseAnonKey){try{var rr=await fetch(CC.supabaseUrl+'/rest/v1/site_content?select=key,value',{headers:{apikey:CC.supabaseAnonKey,Authorization:'Bearer '+CC.supabaseAnonKey}});(await rr.json()).forEach(function(r){sc[r.key]=r.value})}catch(e){}}
+// Centralised, admin-managed CreatorVerse brand configuration.
+var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{}}catch(e){brand={}}
+(function(){
+ var primary=brand.logo_url||'assets/creatorverse-mark.svg',dark=brand.logo_dark_url||primary,light=brand.logo_light_url||primary;
+ document.querySelectorAll('.nav-left .logo-mark img,.footer-brand-lockup img,.adm-logo img,.cv-clean-mark,.cv-gate-brand img,#authLoader .cv-auth-brand img,.brand-row .logo-mark img').forEach(function(im){
+  var lightSurface=im.closest('.footer')||im.closest('.footer-brand-lockup');im.src=lightSurface?light:dark;im.onerror=function(){im.onerror=null;im.src=primary};
+  if(brand.logo_size){im.style.width=Math.max(28,Math.min(96,Number(brand.logo_size)))+'px';im.style.height=im.style.width}
+  if(brand.glow===false)im.style.filter='none';
+ });
+ if(brand.show_header===false)document.querySelectorAll('.nav-left .logo-mark').forEach(function(n){n.style.display='none'});
+ if(brand.show_footer===false)document.querySelectorAll('.footer-brand-lockup img').forEach(function(n){n.style.display='none'});
+ if(brand.show_gate===false){var gate=document.getElementById('cv-page-loader');if(gate)gate.style.display='none';var shared=document.querySelector('.cv-universal-gate');if(shared)shared.style.display='none'}
+ var title=brand.gate_title||brand.wordmark||'CREATORVERSE AI',caption=brand.gate_caption||'PREPARING YOUR EXPERIENCE';
+ document.querySelectorAll('.cv-clean-wordmark,.cv-gate-brand span,.cv-auth-brand span').forEach(function(n){n.textContent=title});
+ document.querySelectorAll('.cv-clean-status,.cv-gate-caption,.cv-auth-caption').forEach(function(n){if(n.classList.contains('cv-auth-caption'))n.textContent='Verifying your secure session…';else n.textContent=caption});
+ document.querySelectorAll('.brand-name').forEach(function(n){n.textContent=brand.wordmark||'CreatorVerse AI'});
+ document.querySelectorAll('.brand-sub').forEach(function(n){n.textContent=brand.tagline||'LEARN · CREATE · EARN · GROW'});
+ var favicon=brand.favicon_url||primary;document.querySelectorAll('link[rel~="icon"]').forEach(function(n){n.href=favicon});
+ var style=document.createElement('style');style.textContent='.cv-universal-gate .cv-gate-brand img,.cv-page-loader .cv-clean-mark{animation:'+(brand.gate_animation==='none'?'none':brand.gate_animation==='pulse'?'cvBrandPulse 2.2s ease-in-out infinite':'cvBrandFloat 2.8s ease-in-out infinite')+'!important} @keyframes cvBrandPulse{0%,100%{filter:drop-shadow(0 0 5px #3989ff44)}50%{filter:drop-shadow(0 0 20px #3989ffaa)}}';document.head.appendChild(style);
+})();
 if(sc.founder_photo)cfg.founderPhoto=sc.founder_photo;if(sc.intro_video)cfg.introVideo=sc.intro_video;
 if(sc.founder){try{var founderSettings=JSON.parse(sc.founder),founderSocials=founderSettings.socials||{};Object.keys(founderSocials).forEach(function(k){if(typeof founderSocials[k]==='string'&&founderSocials[k].trim())soc[k]=founderSocials[k].trim()})}catch(e){}}
 var hl=document.querySelector('.headline'),hs=document.querySelector('.sub');
