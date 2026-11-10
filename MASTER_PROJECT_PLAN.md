@@ -384,3 +384,12 @@ Status: **Implemented in code and initial configuration stored; production deplo
 - Configuration is centrally stored in the existing `site_content` table under `creatorverse_brand`; the existing public-read/admin-write RLS policies are reused. No new database table or permission bypass was introduced.
 - Shared website runtime reads the centrally stored configuration and applies it to common logo placements. Uploaded assets are kept in the existing public media bucket.
 - Existing default logo remains the fallback if no custom logo is selected or a custom asset fails to load.
+
+
+## 2026-11-10 — New 3D CreatorVerse emblem published
+
+- Recreated the approved standalone emblem as a lightweight, transparent, scalable SVG: metallic blue C, burgundy play symbol, silver motion ribbon/open-page detail and graduation cap with gold tassel.
+- Replaced the canonical `assets/creatorverse-mark.svg`, so existing shared layout, navigation, loader, authentication and admin logo references inherit the updated artwork without duplicating image assets.
+- Updated the `creatorverse_brand` configuration in Supabase to use the new canonical SVG as the primary logo and favicon, with a 72px loading-gate mark. Existing wordmark and tagline settings remain unchanged.
+- The logo is mark-only: no wordmark, tagline, banner, or loading-screen text is baked into the artwork. The website continues to render its text separately.
+- Source-level SVG and configuration checks completed. Visual QA on authenticated desktop/mobile pages remains outstanding.
