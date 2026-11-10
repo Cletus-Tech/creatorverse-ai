@@ -364,3 +364,13 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Kept certificate issuance administrator-only. The verification page now presents a more formal, responsive certificate design for records that have actually been issued; it remains an authenticity display, not a self-service certificate generator or print/download flow.
 - Live database changes were applied additively and recorded in supabase/migrations/202611100010_creator_only_applications_direct_course_access.sql. Existing course content, student profiles, payments, enrolments, certificates and historical applications were not deleted.
 - JavaScript syntax checks passed for the modified runtime files. Authenticated browser/device QA and a full payment-to-enrolment test remain outstanding; no claim of full end-to-end testing is made.
+
+## 2026-11-10 — Dimensional CreatorVerse brand and shared loading gate
+Status: **Implemented on `main`; production deployment pending.**
+
+- Reworked the canonical `assets/creatorverse-mark.svg` into a scalable dimensional metallic-blue CreatorVerse mark while retaining the existing C / play / forward-motion identity.
+- Added `brand-system.css` for consistent mark rendering, restrained glow, wordmark alignment and reduced-motion-safe loading animation.
+- Wired the shared brand stylesheet into `layout.js`, which supplies the same canonical mark to the public navigation, footer, favicon and universal loading gate.
+- Updated the student dashboard's independent authentication gate to use the same mark and CreatorVerse wordmark.
+- Kept the mark as lightweight SVG rather than a large raster splash image so it remains crisp at favicon, navigation, mobile and admin sizes.
+- The shared loading gate continues to release on initial page readiness/network quiet, with a bounded timeout; reduced-motion preferences disable the logo float.
