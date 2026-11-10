@@ -352,3 +352,15 @@ Status: **Source implementation committed to `education-build`; no database migr
 - Improved learning catalogue search/filter controls, course card readability, module/lesson navigation, lesson content width and video presentation, assessment answer affordances, profile forms, messaging bubbles/composer, and small-screen layouts.
 - Added responsive refinements for phones and tablets while preserving existing learning, assessment, profile, messaging, admission, and admin workflows.
 - This pass is a CSS-level usability improvement. It does not constitute authenticated end-to-end testing or a full component redesign.
+
+
+## 2026-11-10 — Creator-only applications and direct course purchasing
+
+- Reframed applications and interviews as a creator-partner pathway only: creators, instructors, teachers and exhibitors apply for permission to contribute to CreatorVerse. The application captures specialty, experience, portfolio and work-sample links.
+- Normal learners no longer need an application, admission review, admission offer or interview. Published courses are purchased directly from their course page; free courses can be enrolled in immediately. Paid-course access activates when the existing payment verification workflow confirms the payment.
+- Reworked the public application and status pages to handle creator-partner applications only. The unified admin workspace now lists those partner applications, supports review and practical interview assignments, and provides a separate server-checked action to grant the creator role only after approval and at least one completed, scored interview.
+- Preserved historic student application rows and payment/enrolment data. New student course applications are blocked by RLS; the internal partner application course is unpublished and is not shown in the public course library or regular course-management selectors.
+- Removed the learner-side Mark as completed action and revoked the learner's direct insert/delete policies on verified lesson progress. Administrators can now verify individual lesson completion through a role-checked RPC and the Learning Progress admin workspace.
+- Kept certificate issuance administrator-only. The verification page now presents a more formal, responsive certificate design for records that have actually been issued; it remains an authenticity display, not a self-service certificate generator or print/download flow.
+- Live database changes were applied additively and recorded in supabase/migrations/202611100010_creator_only_applications_direct_course_access.sql. Existing course content, student profiles, payments, enrolments, certificates and historical applications were not deleted.
+- JavaScript syntax checks passed for the modified runtime files. Authenticated browser/device QA and a full payment-to-enrolment test remain outstanding; no claim of full end-to-end testing is made.
