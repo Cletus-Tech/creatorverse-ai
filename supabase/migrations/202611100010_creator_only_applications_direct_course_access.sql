@@ -40,15 +40,10 @@ on public.academy_applications for insert to authenticated
 with check (
  user_id=auth.uid() and status='draft'
  and consented_at is not null and privacy_version is not null
- and (
-  (application_type='student' and exists(
-   select 1 from public.courses c where c.id=academy_applications.course_id and c.published=true
-  ))
-  or
-  (application_type in ('creator','instructor','teacher','exhibitor') and exists(
-   select 1 from public.courses c where c.id=academy_applications.course_id
-    and c.slug='creator-partner-application' and c.published=false
-  ))
+ and application_type in ('creator','instructor','teacher','exhibitor')
+ and exists(
+  select 1 from public.courses c where c.id=academy_applications.course_id
+   and c.slug='creator-partner-application' and c.published=false
  )
 );
 
