@@ -16,7 +16,7 @@ var IC={dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7
  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
  help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',arrow:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'};
 var NAV=[[['dashboard','Dashboard'],['homepage','Homepage Manager'],['background','3D Background'],['founder','Founder Profile'],['video','Introduction Video'],['media','Media Library']],
- [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['engagement','Engagement Monitor'],['admissions','Admissions & Placement'],['liveinterviews','Live Interviews'],['progress','Learning Progress'],['quizzes','Quizzes & Assignments'],['certificates','Certificates']],
+ [['courses','Courses'],['categories','Categories'],['modules','Modules'],['lessons','Lessons'],['students','Students'],['engagement','Engagement Monitor'],['admissions','Creator Applications'],['liveinterviews','Creator Interviews'],['progress','Learning Progress'],['quizzes','Quizzes & Assignments'],['certificates','Certificates']],
  [['payments','Payments'],['analytics','Analytics'],['notifications','Notifications','Soon'],['settings','Settings'],['help','Help & Support']]];
 var SOON={};
 function day(d){return d.toISOString().slice(0,10)}
