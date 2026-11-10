@@ -16,8 +16,8 @@ window.CV_ACADEMY_PROGRESS={mount:function(host,sb,user){
    sb.from('enrolments').select('user_id,course_id,created_at'),
    sb.from('profiles').select('id,full_name,email,avatar_url'),
    sb.from('courses').select('id,title'),
-   sb.from('modules').select('id,course_id'),
-   sb.from('lessons').select('id,module_id'),
+   sb.from('modules').select('id,course_id,title'),
+   sb.from('lessons').select('id,module_id,title'),
    sb.from('lesson_progress').select('user_id,lesson_id,completed_at'),
    sb.from('academy_learning_activity').select('user_id,course_id,activity_type,occurred_at,lesson_id').order('occurred_at',{ascending:false}).limit(5000),
    sb.from('academy_learner_levels').select('*'),
@@ -34,7 +34,7 @@ window.CV_ACADEMY_PROGRESS={mount:function(host,sb,user){
     var ls=lessons.filter(function(l){return lessonCourse[l.id]===e.course_id}),done=progress.filter(function(p){return p.user_id===e.user_id&&p.completed_at&&ls.some(function(l){return l.id===p.lesson_id})}),acts=activity.filter(function(a){return a.user_id===e.user_id&&a.course_id===e.course_id});
     var dates=acts.map(function(a){return new Date(a.occurred_at).getTime()}).concat(done.map(function(p){return new Date(p.completed_at).getTime()})).filter(Number.isFinite);
     var last=dates.length?new Date(Math.max.apply(null,dates)):null,days=last?Math.floor((Date.now()-last.getTime())/86400000):null,pr=levelsByKey[e.user_id+':'+e.course_id]||{};
-    var recent=acts.filter(function(a){return(Date.now()-new Date(a.occurred_at).getTime())<=7*86400000}),week=recent.filter(function(a){return a.activity_type==='lesson_completed'}).length,views=recent.filter(function(a){return a.activity_type==='lesson_viewed'}).length,assess=recent.filter(function(a){return a.activity_type==='quiz_submitted'||a.activity_type==='assignment_submitted'}).length;return{user_id:e.user_id,course_id:e.course_id,enrolled_at:e.created_at,completed:done.length,total:ls.length,pct:ls.length?Math.round(done.length/ls.length*100):0,last:last,days:days,weekly:week,views:views,assess:assess,level:pr.current_level||'Beginner',highest:pr.highest_unlocked_level||pr.current_level||'Beginner',override:!!pr.admin_override,progress:pr}
+    var recent=acts.filter(function(a){return(Date.now()-new Date(a.occurred_at).getTime())<=7*86400000}),week=recent.filter(function(a){return a.activity_type==='lesson_completed'}).length,views=recent.filter(function(a){return a.activity_type==='lesson_viewed'}).length,assess=recent.filter(function(a){return a.activity_type==='quiz_submitted'||a.activity_type==='assignment_submitted'}).length;return{user_id:e.user_id,course_id:e.course_id,enrolled_at:e.created_at,lessons:ls.map(function(l){return{id:l.id,title:l.title,completed:done.some(function(p){return p.lesson_id===l.id})}}),completed:done.length,total:ls.length,pct:ls.length?Math.round(done.length/ls.length*100):0,last:last,days:days,weekly:week,views:views,assess:assess,level:pr.current_level||'Beginner',highest:pr.highest_unlocked_level||pr.current_level||'Beginner',override:!!pr.admin_override,progress:pr}
    });
    var total=records.length,active=records.filter(function(r){return r.days!==null&&r.days<=7}).length,late=records.filter(function(r){return r.days===null||r.days>14}).length,avg=total?Math.round(records.reduce(function(a,r){return a+r.pct},0)/total):0;
    stats.textContent='';[['Enrolled learners',total],['Active this week',active],['Inactive 15+ days / no activity',late],['Average completion',avg+'%']].forEach(function(x){stats.appendChild(el('div',{class:'academy-admin-stat'},[el('strong',{text:String(x[1])}),el('span',{text:x[0]})]))});draw()
@@ -71,6 +71,11 @@ function renderRules(courseRows,ruleRows){
    card.appendChild(el('div',{class:'academy-progress-meter'},[el('span',{style:'width:'+r.pct+'%'})]));
    card.appendChild(el('div',{class:'academy-progress-meta'},[el('span',{text:r.completed+' / '+r.total+' lessons · '+r.pct+'% complete'}),el('span',{text:r.weekly+' lessons completed · '+r.views+' lesson visits · '+r.assess+' assessments (7 days)'}),el('span',{text:'Last activity: '+(r.last?r.last.toLocaleString():'Not recorded')})]));
    var badge=el('div',{class:'academy-level-badge'},[el('span',{text:'Current level: '+r.level}),el('span',{text:'Highest unlocked: '+r.highest})]);card.appendChild(badge);
+   var lessonReview=el('div',{class:'academy-level-controls'}),lessonSelect=el('select',{}),verifyBtn=el('button',{class:'btn btn-outline',type:'button',text:'Verify lesson completion'}),verifyFeedback=el('small');
+   r.lessons.forEach(function(l){lessonSelect.appendChild(el('option',{value:l.id,text:(l.completed?'✓ ':'')+l.title}))});
+   if(r.lessons.length){lessonReview.append(field('Administrator lesson verification',lessonSelect),verifyBtn,verifyFeedback);verifyBtn.addEventListener('click',function(){var chosen=r.lessons.find(function(l){return l.id===lessonSelect.value});if(!chosen)return;if(chosen.completed){verifyFeedback.textContent='This lesson is already verified complete.';return}if(!confirm('Verify this lesson as completed for '+(p.full_name||p.email||'this learner')+'?'))return;verifyBtn.disabled=true;verifyFeedback.textContent='Saving verified completion…';sb.rpc('admin_mark_lesson_completed',{p_user_id:r.user_id,p_lesson_id:chosen.id,p_completed:true}).then(function(z){if(z.error)throw z.error;verifyFeedback.textContent='Lesson completion verified by administrator.';load()}).catch(function(e){verifyFeedback.textContent=e.message||'Could not verify completion.';verifyBtn.disabled=false})})}
+   else lessonReview.appendChild(el('p',{class:'academy-admin-footnote',text:'No lessons are currently attached to this course.'}));
+   card.appendChild(lessonReview);
    var controls=el('div',{class:'academy-level-controls'}),select=el('select',{},levels.map(function(l){return el('option',{value:l,text:l})}));select.value=r.level;
    var override=el('input',{type:'checkbox'});override.checked=r.override;
    var note=el('input',{type:'text',placeholder:'Reason for manual level decision'});note.value=r.progress.admin_note||'';
