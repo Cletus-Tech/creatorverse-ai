@@ -7,7 +7,7 @@ function names(sb){return sb.from('profiles').select('id,full_name,email').then(
 window.CV_ASSESS_ADMIN={
  assess:function(pane){var sb=window.CV_SB,cid='',body=h('div'),sel=h('select',{});
   pane.appendChild(h('h2',{text:'Quizzes and assignments'}));pane.appendChild(h('p',{text:'Choose a course, then manage its quizzes, assignments and student submissions.'}));pane.appendChild(sel);pane.appendChild(body);
-  sb.from('courses').select('id,title').order('title').then(function(r){sel.appendChild(h('option',{value:'',text:'Choose a course…'}));(r.data||[]).forEach(function(c){sel.appendChild(h('option',{value:c.id,text:c.title}))})});
+  sb.from('courses').select('id,title').neq('category_slug','internal').order('title').then(function(r){sel.appendChild(h('option',{value:'',text:'Choose a course…'}));(r.data||[]).forEach(function(c){sel.appendChild(h('option',{value:c.id,text:c.title}))})});
   sel.addEventListener('change',function(){cid=sel.value;draw()});
   function draw(){body.textContent='';if(!cid)return;var qb=h('div'),ab=h('div'),sbx=h('div'),at=h('div');
    [h('h3',{class:'mod',text:'Quizzes'}),qb,h('h3',{class:'mod',text:'Assignments'}),ab,h('h3',{class:'mod',text:'Submissions to grade'}),sbx,h('h3',{class:'mod',text:'Quiz attempts'}),at].forEach(function(e){body.appendChild(e)});quizzes(qb);assigns(ab);subs(sbx);attempts(at)}
