@@ -181,4 +181,55 @@ begin
  execute v;
 end $$;
 
+
+-- Restrict reviewer/applicant table reads to partner applications as well.
+drop policy if exists "Assigned reviewers read their interviews" on public.academy_interviews;
+create policy "Assigned reviewers read creator interviews"
+on public.academy_interviews for select to authenticated
+using (
+ reviewer_id=auth.uid()
+ and exists(select 1 from public.academy_applications a
+  where a.id=academy_interviews.application_id
+   and a.application_type in ('creator','instructor','teacher','exhibitor'))
+);
+
+drop policy if exists "Assigned reviewers read their invitations" on public.academy_interview_invitations;
+create policy "Assigned reviewers read creator invitations"
+on public.academy_interview_invitations for select to authenticated
+using (
+ exists(select 1 from public.academy_interviews i
+  join public.academy_applications a on a.id=i.application_id
+  where i.id=academy_interview_invitations.interview_id
+   and i.reviewer_id=auth.uid()
+   and a.application_type in ('creator','instructor','teacher','exhibitor'))
+);
+
+drop policy if exists "Learners read own published interview invitations" on public.academy_interview_invitations;
+create policy "Creator applicants read own published interview invitations"
+on public.academy_interview_invitations for select to authenticated
+using (
+ (user_id=auth.uid() and published_at is not null and exists(
+  select 1 from public.academy_applications a
+  where a.id=academy_interview_invitations.application_id
+   and a.application_type in ('creator','instructor','teacher','exhibitor')
+ ))
+ or public.is_admin()
+);
+
+do $
+declare v text;
+begin
+ select pg_get_functiondef('public.get_my_active_academy_live_call()'::regprocedure) into v;
+ v:=replace(v,
+  'where c.recipient_id=auth.uid() and c.status=''ringing'' and c.expires_at>now()',
+  'where c.recipient_id=auth.uid() and c.status=''ringing'' and c.expires_at>now() and a.application_type in (''creator'',''instructor'',''teacher'',''exhibitor'')');
+ execute v;
+
+ select pg_get_functiondef('public.respond_academy_live_call(uuid,text)'::regprocedure) into v;
+ v:=replace(v,
+  'if not found or v.recipient_id<>auth.uid() then raise exception ''This call is not addressed to your account''; end if;',
+  'if not found or v.recipient_id<>auth.uid() then raise exception ''This call is not addressed to your account''; end if;' || E'\\n if not exists(select 1 from public.academy_interviews i join public.academy_applications a on a.id=i.application_id where i.id=v.interview_id and a.application_type in (''creator'',''instructor'',''teacher'',''exhibitor'')) then raise exception ''Live interview calls are reserved for CreatorVerse partner applicants''; end if;');
+ execute v;
+end $;
+
 notify pgrst,'reload schema';
