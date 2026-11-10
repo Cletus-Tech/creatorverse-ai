@@ -15,7 +15,7 @@ window.CV_ACADEMY_PROGRESS={mount:function(host,sb,user){
   Promise.all([
    sb.from('enrolments').select('user_id,course_id,created_at'),
    sb.from('profiles').select('id,full_name,email,avatar_url'),
-   sb.from('courses').select('id,title'),
+   sb.from('courses').select('id,title').neq('category_slug','internal'),
    sb.from('modules').select('id,course_id,title'),
    sb.from('lessons').select('id,module_id,title'),
    sb.from('lesson_progress').select('user_id,lesson_id,completed_at'),
