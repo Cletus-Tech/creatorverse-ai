@@ -366,3 +366,15 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Added tablet/mobile adaptations for learning, profile and messaging pages.
 - No application permissions, admission rules, student progression, certificate controls or database workflows were changed.
 - Validation status: source files committed to `main`; production deployment and authenticated browser/device QA pending.
+
+
+## 2026-11-10 — Creator-only applications, direct course purchases and verified completion
+
+- Replaced the student admission application path with direct course purchase/enrolment. Paid courses use the existing payment order and admin-confirmation flow; free courses can be enrolled in immediately.
+- Restricted applications and interview workflows to CreatorVerse creators, instructors, teachers and exhibitors. The creator application now collects specialty, portfolio and work samples; the status page shows creator applications and any published interview/practical assessment invitation.
+- Updated the unified admin portal to review partner applications and publish interview tests. Added a server-side grant action that requires an approved application plus a completed, scored interview before the applicant's profile role can become creator.
+- Preserved historic student application data but blocked new student application submissions at the database policy layer. The internal partner application course remains unpublished and excluded from normal course discovery and course-management selectors.
+- Removed learner self-marking of lesson completion and revoked direct student insert/delete access to lesson_progress. Added an admin-only lesson verification RPC and controls in the Learning Progress workspace.
+- Improved the official certificate verification display with a formal certificate-style layout. Certificates remain administrator-issued; the page does not generate, print or download certificates.
+- Added migration supabase/migrations/202611100010_creator_only_applications_direct_course_access.sql; applied additive database changes without deleting existing records.
+- Source-level JavaScript syntax validation passed. Full authenticated browser QA and live payment testing remain pending.
