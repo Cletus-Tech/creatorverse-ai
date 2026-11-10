@@ -1,8 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
-<title id="title">CreatorVerse brand mark</title>
-<defs><linearGradient id="cv" x1="18" y1="18" x2="108" y2="110" gradientUnits="userSpaceOnUse"><stop stop-color="#63E4FF"/><stop offset=".52" stop-color="#318BFF"/><stop offset="1" stop-color="#665CFF"/></linearGradient></defs>
-<path d="M91.5 25.5A49 49 0 1 0 91.5 102.5" fill="none" stroke="url(#cv)" stroke-width="13" stroke-linecap="round"/>
-<path d="M45 43.5 83 64 45 84.5V43.5Z" fill="url(#cv)"/>
-<path d="M82 64h24m-10-10 10 10-10 10" fill="none" stroke="#63E4FF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="45" cy="43.5" r="5" fill="#EAFBFF"/><circle cx="45" cy="84.5" r="5" fill="#EAFBFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+<title id="title">CreatorVerse 3D brand mark</title><desc id="desc">A dimensional metallic blue C surrounding a forward-moving play symbol, representing creativity, learning and progress.</desc>
+<defs>
+ <linearGradient id="face" x1="24" y1="15" x2="135" y2="145" gradientUnits="userSpaceOnUse"><stop stop-color="#E8FAFF"/><stop offset=".13" stop-color="#75DFFF"/><stop offset=".38" stop-color="#328DFF"/><stop offset=".72" stop-color="#2355B7"/><stop offset="1" stop-color="#101D48"/></linearGradient>
+ <linearGradient id="edge" x1="18" y1="20" x2="132" y2="150" gradientUnits="userSpaceOnUse"><stop stop-color="#F6FFFF"/><stop offset=".3" stop-color="#367ACD"/><stop offset=".7" stop-color="#142B66"/><stop offset="1" stop-color="#071126"/></linearGradient>
+ <linearGradient id="play" x1="54" y1="48" x2="111" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset=".28" stop-color="#BDEEFF"/><stop offset=".62" stop-color="#5AB7FF"/><stop offset="1" stop-color="#2870D9"/></linearGradient>
+ <linearGradient id="arrow" x1="101" y1="80" x2="145" y2="80" gradientUnits="userSpaceOnUse"><stop stop-color="#9BEAFF"/><stop offset="1" stop-color="#347FFF"/></linearGradient>
+ <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="matrix(65 0 0 65 54 37)" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></radialGradient>
+ <filter id="shadow" x="1" y="2" width="158" height="158" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="5"/></filter>
+</defs>
+<ellipse cx="80" cy="139" rx="51" ry="8" fill="#000" opacity=".42" filter="url(#shadow)"/>
+<!-- Deep extruded body -->
+<path d="M111 28A59 59 0 1 0 111 132" fill="none" stroke="#08132F" stroke-width="21" stroke-linecap="round" transform="translate(2 5)"/>
+<path d="M111 28A59 59 0 1 0 111 132" fill="none" stroke="url(#edge)" stroke-width="20" stroke-linecap="round"/>
+<path d="M111 28A59 59 0 1 0 111 132" fill="none" stroke="url(#face)" stroke-width="15" stroke-linecap="round"/>
+<path d="M111 28A59 59 0 1 0 111 132" fill="none" stroke="#EAFBFF" stroke-opacity=".55" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="65 250" transform="translate(0 -1)"/>
+<!-- dimensional play prism -->
+<path d="M55 49 112 80 55 111Z" fill="#07142F" transform="translate(2 5)"/>
+<path d="M55 49 112 80 55 111Z" fill="url(#edge)"/>
+<path d="M55 46 109 76 55 106Z" fill="url(#play)"/>
+<path d="M57 49 102 75 57 100Z" fill="url(#shine)" opacity=".8"/>
+<path d="M55 46 109 76 55 106Z" fill="none" stroke="#F2FCFF" stroke-opacity=".8" stroke-width="1.6" stroke-linejoin="round"/>
+<!-- forward motion arrow -->
+<path d="M101 80h39m-15-15 15 15-15 15" fill="none" stroke="#07142F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(1 4)"/>
+<path d="M101 80h39m-15-15 15 15-15 15" fill="none" stroke="url(#arrow)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="55" cy="46" r="3.5" fill="#F4FDFF"/><circle cx="55" cy="106" r="3.5" fill="#F4FDFF"/>
 </svg>
