@@ -115,7 +115,7 @@ form.addEventListener('submit',function(e){e.preventDefault();save.disabled=true
    })
   }
   if(x.status==='approved'){
-   var grantBox=el('section',{class:'academy-interview-admin'}),grantBtn=el('button',{class:'btn btn-primary',type:'button',text:'Grant CreatorVerse access'}),grantFeedback=el('p',{class:'academy-admin-footnote',text:'The server permits this only after at least one interview is completed and scored.'});
+   var grantBox=el('section',{class:'academy-interview-admin'}),grantBtn=el('button',{class:'btn btn-primary',type:'button',text:'Grant CreatorVerse access'}),grantFeedback=el('p',{class:'academy-admin-footnote',text:'Only the Super Admin can grant access, and only after at least one interview is completed and scored.'});
    grantBtn.addEventListener('click',function(){if(!confirm('Grant CreatorVerse creator/instructor access to this applicant?'))return;grantBtn.disabled=true;grantFeedback.textContent='Checking interview result and granting access…';sb.rpc('admin_grant_creator_access',{p_application_id:x.id}).then(function(z){if(z.error)throw z.error;grantFeedback.textContent='Creator access granted. The applicant profile role is now creator.';grantBtn.textContent='Creator access granted';}).catch(function(e){grantFeedback.textContent=e.message||'Could not grant access.';grantBtn.disabled=false})});
    grantBox.append(grantBtn,grantFeedback);detail.appendChild(grantBox)
   }
