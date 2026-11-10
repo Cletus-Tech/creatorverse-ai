@@ -54,15 +54,10 @@ using (user_id=auth.uid() and status='draft')
 with check (
  user_id=auth.uid() and status in ('draft','submitted')
  and consented_at is not null and privacy_version is not null
- and (
-  (application_type='student' and exists(
-   select 1 from public.courses c where c.id=academy_applications.course_id and c.published=true
-  ))
-  or
-  (application_type in ('creator','instructor','teacher','exhibitor') and exists(
-   select 1 from public.courses c where c.id=academy_applications.course_id
-    and c.slug='creator-partner-application' and c.published=false
-  ))
+ and application_type in ('creator','instructor','teacher','exhibitor')
+ and exists(
+  select 1 from public.courses c where c.id=academy_applications.course_id
+   and c.slug='creator-partner-application' and c.published=false
  )
 );
 
@@ -96,8 +91,7 @@ begin
   on conflict(user_id,lesson_id) do update
    set completed_at=coalesce(public.lesson_progress.completed_at,excluded.completed_at);
  else
-  update public.lesson_progress set completed_at=null
-  where user_id=p_user_id and lesson_id=p_lesson_id;
+  delete from public.lesson_progress where user_id=p_user_id and lesson_id=p_lesson_id;
  end if;
  return jsonb_build_object('student_id',p_user_id,'lesson_id',p_lesson_id,'completed',coalesce(p_completed,true));
 end;
