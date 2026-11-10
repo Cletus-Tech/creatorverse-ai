@@ -113,8 +113,8 @@ set search_path=pg_catalog,public
 as $$
 declare v_app public.academy_applications%rowtype;
 begin
- if auth.uid() is null or not public.is_admin() then
-  raise exception 'Only CreatorVerse administrators can grant creator access';
+ if auth.uid() is null or not public.is_super_admin() then
+  raise exception 'Only the CreatorVerse Super Admin can grant creator access';
  end if;
  select * into v_app from public.academy_applications
  where id=p_application_id
