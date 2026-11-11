@@ -404,3 +404,16 @@ Status: **Implemented on main; production deployment and browser QA pending.**
 - Replaced the generic “My Admission Status” account link with a creator-partner application journey, and added direct links to the learner dashboard and partner application form/status.
 - Preserved the existing Vercel hostname, repository name, Supabase project, database identifiers, storage paths, and existing URLs to avoid breaking sign-in links, integrations, bookmarks or media.
 - This phase corrects the public-facing learner navigation. A full route-by-route browser test remains outstanding.
+
+
+## 2026-11-11 — Professional CreatorVerse emblem and security hardening
+
+Status: **Implemented; production deployment and visual QA pending.**
+
+- Refined the standalone CreatorVerse emblem into a cleaner, premium dimensional C monogram with a central creative play mark and a restrained metallic progress ribbon. Removed the previous graduation-cap and extra decorative elements to reduce visual clutter.
+- Kept the artwork text-free and scalable as SVG. The Brand & Logo Studio remains the control point for replacing the mark, configuring variants, favicon, wordmark, gate display and visibility.
+- Updated the saved brand configuration so the new canonical SVG is used for primary, light, dark and favicon placements.
+- Security review confirmed payment-order RLS restricts order creation to the signed-in owner, protects pricing/reference/status fields through a database trigger, and reserves confirmation/expiry/admin-note actions for administrators. The confirmation trigger creates enrolment idempotently.
+- Revoked direct API execution of three trigger-only SECURITY DEFINER functions and fixed their search paths. Trigger execution remains intact; direct RPC access is no longer granted to anon/authenticated.
+- Remaining security findings require targeted review: five anon-executable helper/verifier SECURITY DEFINER functions, 51 authenticated-executable SECURITY DEFINER functions, and six RLS-enabled tables with no direct policies. These are not being blanket-revoked or given broad policies because some helpers are required by RLS and admin RPCs enforce authorization internally.
+- Performance Advisor still reports 63 foreign-key indexes to review; no indexes have been added without checking query patterns and existing indexes.
