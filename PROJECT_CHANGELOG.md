@@ -1,3 +1,13 @@
+## 2026-11-11 — Fix entrance road visibility, embedded gate branding and release timing
+
+Status: **Implemented on `main`; production deployment verification pending.**
+
+- Corrected the entrance styling after mobile testing showed a blank dark opening. The illuminated road now has an explicit reveal animation and stacking order; the two walkers remain above the road and doors.
+- Updated reduced-motion behavior: doors are shown open, the road remains illuminated, and both visitor silhouettes remain visible as a static accessible equivalent. Previously the reduced-motion rule hid the walkers, which could explain the user's screenshot.
+- Removed the floating rectangular plaque appearance. The globe mark, CreatorVerse wordmark and tagline now sit directly on the arch with transparent styling and no separate card/background/border.
+- Set the loader minimum to 30 seconds with a firm 32-second maximum release so the website is not held indefinitely. Cache-busted the gate stylesheet.
+- QA: `layout.js` syntax passes. CSS inspected at source level; Android visual verification remains pending.
+
 ## 2026-11-11 — 30-second university entrance choreography
 
 Status: **Implemented on `main`; production deployment and live visual QA pending.**
