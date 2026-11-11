@@ -1,3 +1,14 @@
+## 2026-11-11 — CreatorVerse crest and university entrance loading experience
+
+Status: **Implemented on `main`; production deployment and visual QA pending.**
+
+- Replaced the old abstract emblem with a custom scalable SVG shield crest. Its open book represents learning and academic foundations; the rising golden path and guiding star represent creativity, ambition and opportunity; connected points represent community and shared progress. The shield communicates trust, belonging and institutional quality.
+- Because the existing header, footer, favicon, authentication and Brand & Logo Studio already reference the shared `assets/creatorverse-mark.svg` asset, the new crest propagates through those placements while remaining replaceable from the admin Brand & Logo Studio.
+- Rebuilt the shared loading gate as a university entrance scene: architectural arch and pillars, CreatorVerse sign, two animated opening doors, illuminated path and subtle student silhouettes. Added a welcome message and kept the gate accessible with a reduced-motion fallback.
+- Increased the minimum display time to allow the entrance animation to play, while retaining the 15-second failsafe and network-idle release behavior.
+- Updated the Brand & Logo Studio default caption and migrated the legacy saved caption at render time so an older saved setting does not hide the new welcome message.
+- QA: `layout.js`, `site.js` and `brand-admin.js` pass JavaScript syntax checks. SVG and CSS reviewed at source level. Live production rendering, mobile viewport checks, and admin upload/configuration checks remain pending.
+
 ## 2026-11-11 — Campus Life route refreshed
 
 Status: **Implemented on `main`; production deployment and mobile browser QA pending.**
