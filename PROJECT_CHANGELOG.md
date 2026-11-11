@@ -466,3 +466,20 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Routed the Verified Housing & Roommates Campus Life card to the dedicated page.
 - Explicitly avoided fake listings and roommate profiles; the UI states that verified data is not live yet.
 - No backend or payment functionality was activated.
+
+
+## 2026-11-11 — CreatorVerse division-led landing and navigation redesign
+
+Status: **Committed to main; deployment and visual QA pending.**
+
+- Replaced the previous homepage-led promotional layout with a clear first-screen division selector: Digital Skills, Academic and Campus Life.
+- Added a Digital Skills landing route leading into the existing course catalogue.
+- Added Academic level selection with separate Secondary School and Tertiary Institutions routes.
+- Added secondary examination entry points for WAEC, NECO, JAMB, GCSE and other examinations. Examination detail routes clearly state that curriculum resources and question banks are not live yet.
+- Added a dedicated tertiary route whose institution/faculty/department structure remains to be planned.
+- Added Campus Life landing and Campus Accommodation sub-landing pages.
+- Campus Accommodation now offers Find a Roommate, Find an Apartment, Become an Agent and Accommodation Community. Roommate and apartment links open the correct tabs in the current housing page.
+- Added planned-state routes for housing agent onboarding and examination pathways to avoid dead-end links.
+- Added responsive, keyboard-focus-visible, reduced-motion-aware styling in `division-hub.css`.
+- No database schema, authentication, course records, housing data or payment flows were changed. Housing and roommate content remains empty until verified backend workflows are built.
+- QA status: repository source committed. Browser rendering, mobile-device testing, link traversal and production deployment verification remain outstanding.
