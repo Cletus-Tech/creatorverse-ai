@@ -166,3 +166,10 @@ No SQL, data, source code, Vercel settings or deployment actions were changed in
 - Compiled `brand-admin.js` with a JavaScript syntax check after the changes. This is a source-level check only; a live upload, storage-policy test and visual browser QA remain outstanding.
 
 Security boundary: these changes harden the admin-side upload form but do not replace server-side Storage bucket MIME/size restrictions. Because `creatorverse-media` is public, the bucket itself still needs an independent policy/configuration review and public-object audit. Do not upload private material there.
+
+
+### Read-only authorization smoke checks (2026-11-11)
+
+- Re-checked EXECUTE privileges for selected privileged RPCs: admin certificate issuance, creator access, notification broadcast, administrative lesson completion and interview review are not executable by `anon`, but are executable by `authenticated` and rely on internal authorization checks. `claim_certificate` is not executable by either `anon` or `authenticated` in the inspected ACL. Public helper functions `is_admin`, `is_super_admin` and `cv_is_content_admin` are executable by anon/authenticated; their inspected bodies derive privilege from `auth.uid()` and profile roles.
+- Executed read-only smoke checks with an empty JWT subject and an unknown UUID subject. All three role helpers returned false in both scenarios; no user/profile data was returned.
+- This is not a complete role-matrix test: real learner, creator, admin and super-admin identities still need controlled authenticated-session tests, and all direct table/storage paths remain to be tested. No grants or functions were changed.
