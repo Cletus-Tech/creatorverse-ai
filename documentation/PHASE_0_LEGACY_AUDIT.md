@@ -154,3 +154,15 @@ Profile guard trigger review:
 - Badge changes require super-admin when an authenticated user context exists. Test privileged service-side operations separately because service contexts may have a null `auth.uid()`.
 
 No SQL, data, source code, Vercel settings or deployment actions were changed in this inspection. Remaining work: verify exact Vercel build/root-directory settings, test grants/RLS and the full role matrix, and perform browser/mobile workflow QA before migration or visual cutover.
+
+
+### Follow-up: deployment readiness and Brand Studio hardening (2026-11-11)
+
+- Verified the newest production deployment for commit `10791dd4561ca050a43e6f5b01c03327f21bbb8d` reached READY and carries the production alias `creatorverse-ai.vercel.app`.
+- Inspected the existing Brand & Logo Studio. It already stores central brand settings in `site_content` and uploads artwork to the public `creatorverse-media` bucket.
+- Hardened the brand upload UI: custom uploads now accept PNG/JPEG/WebP only, require matching file extension and browser MIME type, and are capped at 5 MB. The built-in local SVG emblem remains the default; custom SVG uploads are disallowed because the destination bucket is public and arbitrary SVG content should not be accepted without sanitization.
+- Brand image URL settings now reject unsafe schemes and allow local asset paths or HTTPS URLs (same-origin HTTP is permitted for local development). Primary logo is required before publishing settings.
+- Updated the admin page title to the public CreatorVerse brand.
+- Compiled `brand-admin.js` with a JavaScript syntax check after the changes. This is a source-level check only; a live upload, storage-policy test and visual browser QA remain outstanding.
+
+Security boundary: these changes harden the admin-side upload form but do not replace server-side Storage bucket MIME/size restrictions. Because `creatorverse-media` is public, the bucket itself still needs an independent policy/configuration review and public-object audit. Do not upload private material there.
