@@ -417,3 +417,14 @@ Status: **Implemented; production deployment and visual QA pending.**
 - Revoked direct API execution of three trigger-only SECURITY DEFINER functions and fixed their search paths. Trigger execution remains intact; direct RPC access is no longer granted to anon/authenticated.
 - Remaining security findings require targeted review: five anon-executable helper/verifier SECURITY DEFINER functions, 51 authenticated-executable SECURITY DEFINER functions, and six RLS-enabled tables with no direct policies. These are not being blanket-revoked or given broad policies because some helpers are required by RLS and admin RPCs enforce authorization internally.
 - Performance Advisor still reports 63 foreign-key indexes to review; no indexes have been added without checking query patterns and existing indexes.
+
+
+## 2026-11-11 — Privileged function search-path hardening and Storage review
+
+- Audited the remaining public SECURITY DEFINER routines and changed the remaining functions configured with a bare `search_path=public` to the explicit trusted order `pg_catalog, public`.
+- Covered the admin engagement overview/policy routines, content-admin helper/revision restore, quiz retrieval/submission, profile bootstrap trigger, role/enrolment helpers and public certificate verification.
+- Preserved existing authorization checks and intended public certificate verification behavior; no blanket EXECUTE revocations were applied to application RPCs.
+- Verified no public SECURITY DEFINER routine remains with a missing or bare-public search_path setting.
+- Reviewed Storage buckets and policies: learner submissions, chat attachments and interview recordings are private; creator media, avatars and community images are intentionally public-read with authenticated upload/delete controls. No bucket visibility was changed.
+- Remaining security work: inspect payment receipt upload/download call sites and gateway webhook integrity; finish reviewing the six RLS tables without direct policies and remaining SECURITY DEFINER RPC authorization paths.
+- Verification is database metadata/read-only policy inspection. Authenticated browser tests and live upload/download tests remain outstanding.
