@@ -1,3 +1,10 @@
+## 2026-11-11 — Restore visible entrance road and walking indicator
+- Fixed the actual visibility bug: the road and visitor silhouettes had `opacity: 0 !important`, which prevented their CSS keyframe animations from ever revealing them.
+- Removed the conflicting important opacity declarations while preserving the staged timing: doors open slowly, the perspective road illuminates, and exactly two visitors walk forward and fade into the distance.
+- Kept the 30-second minimum entrance sequence and 32-second hard release; no separate progress bar or loading text is introduced.
+- Bumped the shared stylesheet cache version so mobile browsers fetch the corrected animation rules.
+- Source-level CSS and JavaScript review completed; production visual verification on a physical phone remains pending.
+
 ## 2026-11-11 — Fix entrance road visibility, embedded gate branding and release timing
 
 Status: **Implemented on `main`; production deployment verification pending.**
