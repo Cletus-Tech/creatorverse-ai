@@ -15,7 +15,7 @@ var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{
  if(brand.show_header===false)document.querySelectorAll('.nav-left .logo-mark').forEach(function(n){n.style.display='none'});
  if(brand.show_footer===false)document.querySelectorAll('.footer-brand-lockup img').forEach(function(n){n.style.display='none'});
  if(brand.show_gate===false){var gate=document.getElementById('cv-page-loader');if(gate)gate.style.display='none';var shared=document.querySelector('.cv-universal-gate');if(shared)shared.style.display='none'}
- var title=brand.gate_title||brand.wordmark||'CREATORVERSE',caption=brand.gate_caption||'PREPARING YOUR EXPERIENCE';
+ var title=brand.gate_title||brand.wordmark||'CREATORVERSE',caption=(!brand.gate_caption||brand.gate_caption==='PREPARING YOUR EXPERIENCE')?'A NEW CHAPTER BEGINS HERE':brand.gate_caption;
  document.querySelectorAll('.cv-clean-wordmark,.cv-gate-brand span,.cv-auth-brand span').forEach(function(n){n.textContent=title});
  document.querySelectorAll('.cv-clean-status,.cv-gate-caption,.cv-auth-caption').forEach(function(n){if(n.classList.contains('cv-auth-caption'))n.textContent='Verifying your secure session…';else n.textContent=caption});
  document.querySelectorAll('.brand-name').forEach(function(n){n.textContent=brand.wordmark||'CreatorVerse'});
