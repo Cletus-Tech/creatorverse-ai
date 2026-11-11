@@ -1,50 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-<title id="title">CreatorVerse emblem</title>
-<desc id="desc">A refined dimensional blue C monogram with a burgundy creative play symbol and a silver forward-moving ribbon.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">CreatorVerse crest</title><desc id="desc">A dimensional shield containing an open book, a rising creative path, a guiding star and connected points: learning that opens paths to creativity, opportunity and community.</desc>
 <defs>
- <linearGradient id="cFace" x1="104" y1="65" x2="390" y2="438" gradientUnits="userSpaceOnUse">
-  <stop stop-color="#F4FDFF"/><stop offset=".13" stop-color="#73D8FF"/><stop offset=".34" stop-color="#218CF4"/><stop offset=".63" stop-color="#1551B5"/><stop offset=".86" stop-color="#0A2B68"/><stop offset="1" stop-color="#061A42"/>
- </linearGradient>
- <linearGradient id="cEdge" x1="70" y1="80" x2="430" y2="460" gradientUnits="userSpaceOnUse">
-  <stop stop-color="#9AEAFF"/><stop offset=".35" stop-color="#164B9F"/><stop offset=".72" stop-color="#061B45"/><stop offset="1" stop-color="#020B20"/>
- </linearGradient>
- <linearGradient id="wine" x1="205" y1="175" x2="325" y2="335" gradientUnits="userSpaceOnUse">
-  <stop stop-color="#FFB0C4"/><stop offset=".2" stop-color="#E64D79"/><stop offset=".55" stop-color="#A80E48"/><stop offset="1" stop-color="#500B2D"/>
- </linearGradient>
- <linearGradient id="chrome" x1="75" y1="345" x2="440" y2="420" gradientUnits="userSpaceOnUse">
-  <stop stop-color="#FFFFFF"/><stop offset=".18" stop-color="#8CCBEF"/><stop offset=".38" stop-color="#F8FDFF"/><stop offset=".62" stop-color="#9BB8D6"/><stop offset=".82" stop-color="#FFFFFF"/><stop offset="1" stop-color="#4F79AC"/>
- </linearGradient>
- <filter id="depth" x="-25%" y="-25%" width="150%" height="165%">
-  <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
-  <feOffset in="blur" dx="2" dy="12" result="offset"/>
-  <feComponentTransfer in="offset" result="shadow"><feFuncA type="linear" slope=".42"/></feComponentTransfer>
-  <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
- </filter>
- <filter id="shine" x="-30%" y="-30%" width="160%" height="160%">
-  <feGaussianBlur stdDeviation="4" result="blur"/>
-  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
- </filter>
+ <linearGradient id="shield" x1="28" y1="18" x2="226" y2="242" gradientUnits="userSpaceOnUse"><stop stop-color="#a9f5ff"/><stop offset=".25" stop-color="#438fff"/><stop offset=".68" stop-color="#304d9f"/><stop offset="1" stop-color="#151e4a"/></linearGradient>
+ <linearGradient id="gold" x1="80" y1="70" x2="180" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#fff3b0"/><stop offset=".45" stop-color="#f3c66b"/><stop offset="1" stop-color="#b87531"/></linearGradient>
+ <linearGradient id="page" x1="72" y1="120" x2="184" y2="185" gradientUnits="userSpaceOnUse"><stop stop-color="#f7fdff"/><stop offset="1" stop-color="#8ecbff"/></linearGradient>
+ <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="matrix(120 130 -120 110 76 30)" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".46"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <filter id="shadow" x="-30%" y="-25%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="7"/><feComponentTransfer><feFuncA type="linear" slope=".42"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
-<g filter="url(#depth)">
- <!-- dimensional C monogram -->
- <path d="M390 156C352 94 286 61 213 68 112 77 42 160 49 261c7 105 91 183 196 181 65-1 116-30 151-79l-64-46c-23 31-53 48-91 49-64 2-115-46-119-111-4-65 43-119 108-124 43-3 79 16 103 51z"
-       fill="url(#cEdge)" stroke="#04142F" stroke-width="13" stroke-linejoin="round"/>
- <path d="M376 157C341 108 283 82 218 88 127 96 63 170 69 260c6 92 80 160 174 158 54-1 100-25 131-67l-46-33c-22 27-51 42-84 43-67 2-121-48-125-116-4-67 45-123 112-128 47-4 86 17 110 53z"
-       fill="url(#cFace)" stroke="#72D5FF" stroke-width="5" stroke-linejoin="round"/>
- <path d="M91 193C118 128 178 94 240 96" fill="none" stroke="#F2FDFF" stroke-width="6" stroke-linecap="round" opacity=".9"/>
- <path d="M87 219C104 171 139 135 186 116" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity=".42"/>
- <!-- central creative play mark -->
- <path d="M211 180c-13-8-29 1-29 16v117c0 15 16 24 29 16l104-59c13-8 13-26 0-34z"
-       fill="#37091F" stroke="#07162F" stroke-width="12" stroke-linejoin="round"/>
- <path d="M211 193c-5-3-11 1-11 7v109c0 6 6 10 11 7l96-55c6-4 6-12 0-16z"
-       fill="url(#wine)" stroke="#FF9CB8" stroke-width="4" stroke-linejoin="round"/>
- <path d="M210 207v91" stroke="#FFE6ED" stroke-width="3" stroke-linecap="round" opacity=".42"/>
- <!-- forward ribbon: progress, learning and momentum -->
- <path d="M60 328c80 52 186 63 292 24 39-14 73-34 101-59-34 57-91 102-160 125-88 29-174 17-239-28z"
-       fill="#09285C" stroke="#04142F" stroke-width="10" stroke-linejoin="round"/>
- <path d="M55 310c83 54 190 65 296 26 39-14 75-35 104-61-35 59-93 105-163 128-89 29-177 17-242-29z"
-       fill="url(#chrome)" stroke="#174B8D" stroke-width="5" stroke-linejoin="round"/>
- <path d="M78 315c78 39 175 42 272 10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".95"/>
- <path d="M106 366c69 27 145 29 218 4" fill="none" stroke="#B8E9FF" stroke-width="2.5" stroke-linecap="round" opacity=".65"/>
-</g>
+<path d="M128 8 226 43v75c0 62-38 104-98 130-60-26-98-68-98-130V43L128 8Z" fill="#050c20" opacity=".75" transform="translate(0 5)"/>
+<path d="M128 9 225 44v73c0 61-37 102-97 128-60-26-97-67-97-128V44L128 9Z" fill="url(#shield)" stroke="#c6f5ff" stroke-width="4" filter="url(#shadow)"/>
+<path d="M128 22 211 52v64c0 52-31 88-83 112-52-24-83-60-83-112V52l83-30Z" fill="#0b1c42" stroke="#79caff" stroke-opacity=".7" stroke-width="2"/>
+<path d="M128 22 211 52v64c0 52-31 88-83 112-52-24-83-60-83-112V52l83-30Z" fill="url(#shine)"/>
+<!-- Guiding star: aspiration and discovery -->
+<path d="m128 48 7 17 18 7-18 7-7 18-7-18-18-7 18-7 7-17Z" fill="url(#gold)" stroke="#fff2bc" stroke-width="1.5"/>
+<!-- Rising path / creative spark -->
+<path d="M91 126c14-17 27-24 43-31 13-6 25-13 35-26" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+<path d="m157 67 14 0-2 14" fill="none" stroke="#ffe7a2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Open book, the foundation of learning -->
+<path d="M58 127c25-10 47-7 70 8 23-15 45-18 70-8v48c-25-9-47-5-70 11-23-16-45-20-70-11v-48Z" fill="#06132e" stroke="#8fdfff" stroke-width="3" stroke-linejoin="round"/>
+<path d="M65 133c20-6 39-3 58 9v36c-19-12-38-15-58-9v-36Z" fill="url(#page)" stroke="#dff8ff" stroke-width="1.5"/>
+<path d="M191 133c-20-6-39-3-58 9v36c19-12 38-15 58-9v-36Z" fill="url(#page)" stroke="#dff8ff" stroke-width="1.5"/>
+<path d="M128 142v37M77 142c14-2 27 1 37 7M77 153c13-1 24 2 34 8M179 142c-14-2-27 1-37 7M179 153c-13-1-24 2-34 8" fill="none" stroke="#3d6eae" stroke-width="2" stroke-linecap="round"/>
+<!-- Connected people and ideas -->
+<path d="M91 199 128 213l37-14" fill="none" stroke="#8feaff" stroke-width="3" stroke-linecap="round"/>
+<circle cx="91" cy="199" r="5" fill="#f2c66b"/><circle cx="128" cy="213" r="5" fill="#fff0b4"/><circle cx="165" cy="199" r="5" fill="#f2c66b"/>
+<path d="M128 226v9" stroke="#f4d38a" stroke-width="3" stroke-linecap="round"/>
 </svg>
