@@ -125,3 +125,32 @@ The README is stale: it still says the deployable website is in `public/` and po
 5. Add automated database tests for allow/deny behaviour per operation and role before changing policies. Follow Supabase's current guidance for table grants + RLS tests and function privilege review.
 
 This follow-up remains read-only. No SQL DDL/DML or source/hosting changes were made.
+
+
+### Vercel production target and privileged workflow review (2026-11-11)
+
+Vercel was inspected read-only for project `creatorverse-ai`:
+- The linked project is `prj_3thYvAZidWK9E1mssa2nw4UDZxmN`, connected to `Cletus-Tech/creatorverse-ai` and the `main` branch.
+- The latest listed production deployment is READY and was created from commit `a7bb29d85795b2787fffc411b4a56b0a2f849fce` (audit documentation only).
+- The project has one verified production domain: `creatorverse-ai.vercel.app`. Recent main-branch commits are generating production deployments, so Git integration is active.
+- Vercel reports `framework: null`; repository inspection found no root `package.json` or `vercel.json`. This is consistent with the current root-level static site, but build/output settings and root directory still need a settings-level confirmation before migration.
+- SSO protection is enabled for deployments except custom domains. The verified `creatorverse-ai.vercel.app` domain is the public production entry; generated deployment URLs may be SSO-protected. No domain or protection setting was changed.
+
+Targeted SECURITY DEFINER function-body review:
+- `is_admin()` and `is_super_admin()` derive privileges from the signed-in user's profile role. `cv_is_content_admin()` similarly checks authenticated profile roles.
+- `admin_issue_certificate()` checks administrator authorization, enrolment, lesson completion, quiz passes and graded assignments before issuing. `claim_certificate()` unconditionally rejects learner self-claim, matching the admin-controlled certification requirement.
+- `admin_mark_lesson_completed()` is admin-gated and checks that the learner is enrolled. This is a controlled administrative correction path, not a learner self-completion route.
+- `cv_payment_order_guard()` sets amount/currency/status/reference/expiry from server-side course and payment settings on insert; protects core payment fields on learner updates; and restricts admin confirmation to active payment states. Keep this trigger intact unless a full payment regression suite proves a replacement safe.
+- `accept_academy_admission_offer()` requires the authenticated offer owner, checks expiry/status, and activates free enrolment or requires payment for paid courses. It cancels remaining interview/live-call workflow after acceptance. Product direction still requires this admissions path to be limited to creator/instructor/teacher/exhibitor applications, not ordinary course buyers; verify the calling UI and application creation constraints end-to-end.
+- `admin_grant_creator_access()` requires super-admin authorization, a creator/instructor/teacher/exhibitor application, approved status and a completed scored interview before assigning creator role.
+- `admin_broadcast_notification()` requires admin authorization, validates content/audience and rejects external or script-like links.
+- `submit_quiz()` requires authentication, a published quiz and active enrolment; computes scores server-side from stored correct answers.
+- `submit_academy_interview_review()` requires admin or the assigned reviewer, validates interview state and score range before saving assessment.
+- `verify_certificate()` is a public-style lookup that returns certificate identity/course/issue/revocation fields by certificate number. Confirm intended anonymous EXECUTE and ensure clients treat revoked certificates as invalid; do not expose unrelated student profile data.
+
+Profile guard trigger review:
+- The profile table has BEFORE UPDATE triggers `guard_verified_badge_change`, `profiles_guard_role` and `protect_role`.
+- The role guards overlap: one requires super-admin for role changes; the second additionally blocks a super-admin from changing their own role. This layering prevents ordinary self-escalation and super-admin self-demotion through the normal authenticated path, but ordering/compatibility should be covered by explicit tests.
+- Badge changes require super-admin when an authenticated user context exists. Test privileged service-side operations separately because service contexts may have a null `auth.uid()`.
+
+No SQL, data, source code, Vercel settings or deployment actions were changed in this inspection. Remaining work: verify exact Vercel build/root-directory settings, test grants/RLS and the full role matrix, and perform browser/mobile workflow QA before migration or visual cutover.
