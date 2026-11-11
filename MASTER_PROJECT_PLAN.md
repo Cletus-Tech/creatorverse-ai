@@ -462,3 +462,15 @@ Status: **Initial concept hub implemented on main; feature services are planned 
 - Recommended phased delivery: pilot one campus; establish moderation and verification; launch housing discovery and marketplace listings; build moderated offline study resources; pilot errands with vetted runners; consider escrow only after compliant payment/dispute operations are ready.
 - Preserved the existing CreatorVerse theme and shared authentication/navigation; no database schema or payment settings were changed.
 - QA: source implementation only. Live browser, authenticated user journeys and device accessibility checks remain outstanding.
+
+
+## 2026-11-11 — Campus Housing frontend
+
+- Added a dedicated Campus Housing interface inspired by the supplied CampusLodge frontend reference, integrated into CreatorVerse's shared site shell and visual system.
+- Includes FUTA-first campus selector, roommate/lodge tabs, roommate preference filters, lodge search/location/room-type controls, trust messaging, responsive layouts and empty states.
+- The housing card in Campus Life now opens this dedicated interface.
+- No fabricated lodges, agent identities, roommate profiles, prices, reviews or inspection availability are shown. Both service areas are clearly labelled coming soon until verified backend data and moderation workflows exist.
+- Frontend interactions currently switch tabs, update selected campus label and reset roommate filters. Search/filter controls are visual groundwork only until verified listings and profiles are connected.
+- No payment, booking, identity-document upload or database writes are enabled.
+- Emergency SOS remains out of scope and separate.
+- QA: source-level implementation; live authenticated and device testing outstanding.
