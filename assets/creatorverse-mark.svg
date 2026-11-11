@@ -1,28 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-<title id="title">CreatorVerse crest</title><desc id="desc">A dimensional shield containing an open book, a rising creative path, a guiding star and connected points: learning that opens paths to creativity, opportunity and community.</desc>
+<title id="title">CreatorVerse Globe</title>
+<desc id="desc">A luminous three-dimensional globe with mapped continents, latitude and longitude lines, and an elegant orbital ring, representing a connected world of learning, creativity and opportunity.</desc>
 <defs>
- <linearGradient id="shield" x1="28" y1="18" x2="226" y2="242" gradientUnits="userSpaceOnUse"><stop stop-color="#a9f5ff"/><stop offset=".25" stop-color="#438fff"/><stop offset=".68" stop-color="#304d9f"/><stop offset="1" stop-color="#151e4a"/></linearGradient>
- <linearGradient id="gold" x1="80" y1="70" x2="180" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#fff3b0"/><stop offset=".45" stop-color="#f3c66b"/><stop offset="1" stop-color="#b87531"/></linearGradient>
- <linearGradient id="page" x1="72" y1="120" x2="184" y2="185" gradientUnits="userSpaceOnUse"><stop stop-color="#f7fdff"/><stop offset="1" stop-color="#8ecbff"/></linearGradient>
- <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="matrix(120 130 -120 110 76 30)" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".46"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
- <filter id="shadow" x="-30%" y="-25%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="7"/><feComponentTransfer><feFuncA type="linear" slope=".42"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <radialGradient id="ocean" cx="34%" cy="26%" r="78%"><stop stop-color="#b8f4ff"/><stop offset=".18" stop-color="#4ab8ed"/><stop offset=".55" stop-color="#2365bd"/><stop offset="1" stop-color="#10265f"/></radialGradient>
+ <linearGradient id="land" x1="50" y1="40" x2="205" y2="190" gradientUnits="userSpaceOnUse"><stop stop-color="#e6f8ce"/><stop offset=".42" stop-color="#80d6b0"/><stop offset="1" stop-color="#319b9a"/></linearGradient>
+ <linearGradient id="gold" x1="35" y1="20" x2="220" y2="230" gradientUnits="userSpaceOnUse"><stop stop-color="#fff4c2"/><stop offset=".5" stop-color="#f4c66f"/><stop offset="1" stop-color="#b87c3d"/></linearGradient>
+ <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="matrix(100 100 -100 100 75 55)" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".42"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <clipPath id="sphere"><circle cx="128" cy="105" r="76"/></clipPath>
+ <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
-<path d="M128 8 226 43v75c0 62-38 104-98 130-60-26-98-68-98-130V43L128 8Z" fill="#050c20" opacity=".75" transform="translate(0 5)"/>
-<path d="M128 9 225 44v73c0 61-37 102-97 128-60-26-97-67-97-128V44L128 9Z" fill="url(#shield)" stroke="#c6f5ff" stroke-width="4" filter="url(#shadow)"/>
-<path d="M128 22 211 52v64c0 52-31 88-83 112-52-24-83-60-83-112V52l83-30Z" fill="#0b1c42" stroke="#79caff" stroke-opacity=".7" stroke-width="2"/>
-<path d="M128 22 211 52v64c0 52-31 88-83 112-52-24-83-60-83-112V52l83-30Z" fill="url(#shine)"/>
-<!-- Guiding star: aspiration and discovery -->
-<path d="m128 48 7 17 18 7-18 7-7 18-7-18-18-7 18-7 7-17Z" fill="url(#gold)" stroke="#fff2bc" stroke-width="1.5"/>
-<!-- Rising path / creative spark -->
-<path d="M91 126c14-17 27-24 43-31 13-6 25-13 35-26" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
-<path d="m157 67 14 0-2 14" fill="none" stroke="#ffe7a2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<!-- Open book, the foundation of learning -->
-<path d="M58 127c25-10 47-7 70 8 23-15 45-18 70-8v48c-25-9-47-5-70 11-23-16-45-20-70-11v-48Z" fill="#06132e" stroke="#8fdfff" stroke-width="3" stroke-linejoin="round"/>
-<path d="M65 133c20-6 39-3 58 9v36c-19-12-38-15-58-9v-36Z" fill="url(#page)" stroke="#dff8ff" stroke-width="1.5"/>
-<path d="M191 133c-20-6-39-3-58 9v36c19-12 38-15 58-9v-36Z" fill="url(#page)" stroke="#dff8ff" stroke-width="1.5"/>
-<path d="M128 142v37M77 142c14-2 27 1 37 7M77 153c13-1 24 2 34 8M179 142c-14-2-27 1-37 7M179 153c-13-1-24 2-34 8" fill="none" stroke="#3d6eae" stroke-width="2" stroke-linecap="round"/>
-<!-- Connected people and ideas -->
-<path d="M91 199 128 213l37-14" fill="none" stroke="#8feaff" stroke-width="3" stroke-linecap="round"/>
-<circle cx="91" cy="199" r="5" fill="#f2c66b"/><circle cx="128" cy="213" r="5" fill="#fff0b4"/><circle cx="165" cy="199" r="5" fill="#f2c66b"/>
-<path d="M128 226v9" stroke="#f4d38a" stroke-width="3" stroke-linecap="round"/>
+<!-- orbit: ideas and people connected around one learning world -->
+<ellipse cx="128" cy="105" rx="111" ry="43" transform="rotate(-25 128 105)" fill="none" stroke="url(#gold)" stroke-width="4" opacity=".9"/>
+<ellipse cx="128" cy="105" rx="111" ry="43" transform="rotate(-25 128 105)" fill="none" stroke="#fff4cb" stroke-width="1" opacity=".75"/>
+<circle cx="128" cy="105" r="81" fill="#071631" stroke="#d6f5ff" stroke-width="3" filter="url(#glow)"/>
+<circle cx="128" cy="105" r="76" fill="url(#ocean)" stroke="#8feaff" stroke-width="2"/>
+<g clip-path="url(#sphere)">
+ <ellipse cx="128" cy="105" rx="35" ry="76" fill="none" stroke="#d2f7ff" stroke-width="2" opacity=".6"/>
+ <ellipse cx="128" cy="105" rx="65" ry="76" fill="none" stroke="#d2f7ff" stroke-width="1.5" opacity=".42"/>
+ <path d="M52 105h152M59 76c43 19 95 19 138 0M59 134c43-19 95-19 138 0" fill="none" stroke="#d2f7ff" stroke-width="1.6" opacity=".55"/>
+ <path d="m79 61 13-11 16 3 9 12-7 10-17 1-6 13-14-5-5-13 11-10Zm48-5 15-10 19 7 4 12 17 6 9 14-10 9-15-5-7 11-13-2-6-14-15-5-5-12 7-11Zm-38 66 13 3 10 14-5 16-11 14-9-7-3-18-9-10 4-12Zm58 0 17-8 15 7 10 18-7 13-16 2-7 15-12-5-7-18-10-10 2-11Z" fill="url(#land)" stroke="#e7ffe8" stroke-width="1.2" stroke-linejoin="round"/>
+ <circle cx="128" cy="105" r="76" fill="url(#shine)"/>
+</g>
+<!-- axis and balanced pedestal: a grounded platform for global knowledge -->
+<path d="M128 184v17" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+<path d="M110 198h36l13 17H97l13-17Z" fill="url(#gold)" stroke="#fff0bd" stroke-width="1.5"/>
+<path d="M91 219h74l12 11H79l12-11Z" fill="#173e77" stroke="#a9e8ff" stroke-width="3" stroke-linejoin="round"/>
+<path d="M84 232h88" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+<circle cx="204" cy="48" r="6" fill="#fff0b7" filter="url(#glow)"/>
 </svg>
