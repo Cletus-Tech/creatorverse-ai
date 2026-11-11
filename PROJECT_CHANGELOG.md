@@ -509,3 +509,13 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - The README describes a static `public/` site and GitHub Pages workflow, but several expected source paths returned 404 and no root `package.json` or `vercel.json` was found at the checked paths. The actual tree and active hosting target remain unresolved.
 - No production database, user records, app code, website routes or hosting configuration were changed during this audit.
 - Next: resolve the repository tree/hosting mismatch, inspect role-protection triggers/functions/storage policies, then finalize the migration map before implementation.
+
+
+## 2026-11-11 — Phase 0 follow-up: source tree and backend security inventory
+
+- Resolved the earlier path mismatch: the current static website is at the repository root, not `public/`. The README is stale and incorrectly describes a `public/` output directory and a GitHub Pages workflow that was not found at the checked path.
+- Confirmed the root homepage is the three-division CreatorVerse hub, with root-level HTML/CSS/JS assets. No root `package.json` or `vercel.json` was found at the checked paths; current production hosting linkage still needs confirmation in Vercel.
+- Inspected function configuration: no public SECURITY DEFINER function was found without a pinned function-level search_path. Several client-callable definer RPCs still require body-level authorization tests.
+- Inspected profile guards, views and Storage: profile role/badge updates have multiple triggers; inspected views use `security_invoker=true`; six buckets include three private and three public buckets with path-based policies.
+- Added the follow-up findings and prioritized security checks to `documentation/PHASE_0_LEGACY_AUDIT.md`.
+- No production data, database schema, Storage objects, source code or deployment settings were modified.
