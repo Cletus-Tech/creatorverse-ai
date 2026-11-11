@@ -1,3 +1,15 @@
+## 2026-11-11 — CreatorVerse globe identity and streamlined entrance loader
+
+Status: **Implemented on `main`; production deployment and visual/mobile QA pending.**
+
+- Replaced the shield-and-book crest with a new globe mark: a dimensional blue-green world sphere, latitude/longitude grid, abstract landmasses, orbital ring and stable pedestal. The intended message is a connected world of knowledge, ideas, creators and opportunity — a visual metaphor for the CreatorVerse name rather than a generic academic badge.
+- Updated the shared header/footer/favicon/auth/loader logo references through the existing central SVG asset. The Brand & Logo Studio's custom logo URL, size, glow and wordmark/tagline configuration continue to apply to the new gate signage.
+- Simplified the loading experience to a single university entrance: the gate sign carries the globe and CreatorVerse identity; the two doors gradually swing open; three subtle student silhouettes walk forward along the illuminated road.
+- Removed the separate lower logo lockup, welcome caption, progress bar and “Preparing your experience” text. The walking figures are now the visual loading indicator while actual page/network readiness continues in the background.
+- Reduced the minimum gate display to 1.75 seconds and capped it at 10 seconds (network-idle release still dismisses it sooner when ready; existing 15-second cap replaced). Door motion is 1.65 seconds and walkers animate during the opening/loading interval.
+- Added asset cache-busting for the SVG and gate CSS to prevent older browser-cached branding from persisting.
+- QA: `layout.js` and `site.js` pass JavaScript syntax checks; SVG source reviewed. Production visual verification on the user's Android viewport remains pending.
+
 ## 2026-11-11 — CreatorVerse crest and university entrance loading experience
 
 Status: **Implemented on `main`; production deployment and visual QA pending.**
