@@ -51,7 +51,7 @@ function ccard(c){
 }
 function courses(sb){
  main.textContent='';main.className='page academy-catalogue';
- var all=[],cats=[],cat=Q.get('c')||'',term='',active='all';
+ var all=[],cats=[],cat=Q.get('c')||Q.get('category')||'',term='',active='all',categoryAliases={creative:['ai-content-creation','ai-graphic-design','tiktok-monetization'],business:['youtube-automation','digital-business','algorithm-niche']};
  var hero=h('section',{class:'academy-catalogue-hero'},[
   h('div',{class:'academy-catalogue-copy'},[
    h('span',{class:'academy-eyebrow',text:'CREATORVERSE ACADEMY  /  COURSE LIBRARY'}),
@@ -79,8 +79,8 @@ function courses(sb){
  var grid=h('div',{class:'academy-course-grid','aria-live':'polite'});main.appendChild(grid);
  function draw(){
   filters.textContent='';
-  [{slug:'',title:'All courses'}].concat(cats).forEach(function(c){var b=h('button',{type:'button',class:'academy-filter'+(c.slug===cat?' active':''),text:c.title,on:function(){cat=c.slug;draw()}});filters.appendChild(b)});
-  var list=all.filter(function(c){var q=(c.title+' '+(c.description||'')+' '+(c.category_slug||'')).toLowerCase();return(!cat||c.category_slug===cat)&&(!term||q.indexOf(term)>-1)});
+  [{slug:'',title:'All courses'},{slug:'creative',title:'Creative & AI'},{slug:'business',title:'Business & growth'}].concat(cats).forEach(function(c){var b=h('button',{type:'button',class:'academy-filter'+(c.slug===cat?' active':''),text:c.title,on:function(){cat=c.slug;draw()}});filters.appendChild(b)});
+  var list=all.filter(function(c){var q=(c.title+' '+(c.description||'')+' '+(c.category_slug||'')).toLowerCase();return(!cat||(categoryAliases[cat]?categoryAliases[cat].indexOf(c.category_slug)>-1:c.category_slug===cat))&&(!term||q.indexOf(term)>-1)});
   summary.textContent=list.length+' '+(list.length===1?'course':'courses')+' available';
   grid.textContent='';
   if(!list.length){grid.appendChild(h('div',{class:'academy-empty'},[h('h3',{text:all.length?'No matching courses':'Courses are being prepared'}),h('p',{text:all.length?'Try another search term or choose a different category.':'New learning experiences will appear here as soon as they are published.'})]));return}
@@ -90,7 +90,7 @@ function courses(sb){
  Promise.all([sb.from('courses').select('*,modules(lessons(id))').eq('published',true).order('created_at',{ascending:false}),window.CV_CATS()]).then(function(r){
   if(r[0].error){grid.appendChild(h('div',{class:'academy-empty',text:'Courses could not be loaded. Please refresh the page.'}));return}
   all=(r[0].data||[]).slice().sort(function(a,b){return (b.featured?1:0)-(a.featured?1:0)});cats=r[1]||[];
-  if(cat&&!cats.some(function(x){return x.slug===cat}))cat='';
+  if(cat&&!categoryAliases[cat]&&!cats.some(function(x){return x.slug===cat}))cat='';
   draw();
  }).catch(function(){grid.appendChild(h('div',{class:'academy-empty',text:'Something went wrong while loading courses. Please try again.'}))});
 }
