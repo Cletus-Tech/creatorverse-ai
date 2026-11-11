@@ -563,3 +563,9 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Updated media-library upload and replacement pickers to use the same allowlist; retained the existing 50 MiB per-file limit because the library supports course videos and documents as well as images.
 - Confirmed the public `creatorverse-media` bucket currently has no server-side MIME allowlist. Did not alter bucket configuration because it is shared by several media workflows and requires Storage API configuration plus a review of existing public objects.
 - Ran a JavaScript syntax compilation check on `cms.js` successfully. No existing media objects were changed or deleted.
+
+
+## 2026-11-11 — Final brand asset URL validation correction
+
+- Closed a URL-validation edge case by explicitly rejecting protocol-relative external asset URLs (for example, `//host/path`) in Brand & Logo Studio settings.
+- Recompiled `brand-admin.js` successfully after the correction.
