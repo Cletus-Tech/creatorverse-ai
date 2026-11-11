@@ -1,3 +1,13 @@
+## 2026-11-11 — Course discovery navigation repair
+
+Status: **Implemented on `main`; production deployment and browser QA pending.**
+
+- Fixed a mismatch between the Digital Skills division links and the course catalogue: the division already passed `category=creative` and `category=business`, while the catalogue previously read only `c` and silently reset unknown categories to All courses.
+- The course catalogue now accepts either `c` or `category`, provides explicit Creative & AI and Business & growth filter groups, and maps those groups to the existing published category slugs: AI Content Creation, AI Graphic Design, TikTok Monetization, YouTube Automation, Digital Business, and Algorithm Analysis & Niche Selection.
+- Verified the published category slugs against the live Supabase `public.categories` table using a read-only query; no database data or schema was changed.
+- Updated the course catalogue Open Graph site name from the retired “CreatorVerse AI” brand to “CreatorVerse”.
+- QA: `lms.js` passed a JavaScript syntax check after the change. Live browser filter behavior and mobile visual QA remain pending.
+
 
 
 ## 2026-11-06 — Academy curriculum structure and admin controls (expanded)
