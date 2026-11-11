@@ -438,3 +438,13 @@ Status: **Implemented; production deployment and visual QA pending.**
 - Set the payment trigger function to a trusted explicit search path.
 - No payment orders, enrolments, receipt objects or course records were changed. Receipt upload is not currently implemented in the learner checkout; the admin UI only displays a proof URL if one exists.
 - Remaining: implement a secure private receipt-upload workflow if desired, audit all remaining no-policy tables/RPCs, and only activate Paystack after server-side signature verification and idempotent webhook processing.
+
+
+## 2026-11-11 — Learner workflow RLS review and priority indexing
+
+- Completed the targeted review of the six RLS-enabled learner-engagement/session/intervention tables that had no direct policies.
+- Confirmed RLS is enabled and no table-level grants are exposed to `anon` or `authenticated`; the tables are accessed through narrowly scoped SECURITY DEFINER RPCs instead of direct Data API table access. Kept the no-policy design rather than adding broad row policies.
+- Inspected the related admin/student RPCs. Admin mutations and reads require a signed-in administrator; learner read/respond/check-in functions bind access to `auth.uid()`, validate the student role and (where relevant) course enrolment/session window. RPCs are not executable by anon.
+- Added 13 covering indexes for high-traffic foreign keys across applications, interviews, learning activity, sessions, interventions, notifications, enrolments, lesson progress, course modules/lessons and payment orders. Matching migration: `202611110040_add_priority_foreign_key_indexes.sql`.
+- Database metadata confirms the six no-policy tables remain protected and the indexes were created. Full authenticated user-flow testing remains outstanding.
+- Remaining performance work: review the rest of the 63 FK findings, remove the confirmed duplicate community-comments index only after checking query usage, and inspect the advisor's multiple-permissive-policy findings individually. No blanket policy changes are appropriate.
