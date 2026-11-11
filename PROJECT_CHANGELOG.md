@@ -1,3 +1,12 @@
+## 2026-11-11 — Campus Life route refreshed
+
+Status: **Implemented on `main`; production deployment and mobile browser QA pending.**
+
+- Replaced the outdated `campus-life.html` three-card division hub with the current Campus Life discovery experience already available at `campus.html`, while preserving the existing `campus-life.html` URL so older navigation links no longer land on the stale layout.
+- The refreshed route now presents four distinct service areas: verified housing and roommates, campus marketplace, past questions and study hub, and campus errands and delivery; it also explains trust, transparent-cost and low-data principles.
+- Preserved the existing shared header/footer, navigation, authentication and site configuration scripts. No database schema or data was changed.
+- QA: markup reviewed against the existing Campus Life page and shared CSS. Production deployment and visual verification on the reported Android viewport remain pending.
+
 ## 2026-11-11 — Course discovery navigation repair
 
 Status: **Implemented on `main`; production deployment and browser QA pending.**
