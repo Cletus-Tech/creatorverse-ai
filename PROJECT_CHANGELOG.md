@@ -498,3 +498,14 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Important discovery: current README describes a static site served from public/. A Next.js + Flutter monorepo is a proposed target, not current reality. Legacy source, deployment and Supabase assets must be audited before migration.
 - No production database, user records, app code, website routes or hosting configuration were changed in this planning kickoff.
 - Next gate: inspect repository structure, deployment workflow and Supabase schema/security; then present a preserve/rebuild/migrate map before implementation.
+
+
+## 2026-11-11 — Phase 0 legacy inventory (read-only)
+
+- Added `documentation/PHASE_0_LEGACY_AUDIT.md` with the initial repository/hosting and live Supabase inventory, provisional preserve/refactor/rebuild/retire map, and follow-up security checks.
+- Confirmed the live Supabase project is active on PostgreSQL 17 and currently contains 65 public tables (all reported with RLS enabled), 132 policies, 67 public functions, 6 Storage buckets, 10 Auth users and 36 migrations.
+- Identified meaningful existing learning, social, creator-partner, payment and admin records. These must be preserved; no reset or destructive migration is approved.
+- Advisor output flags overlapping permissive policies and a duplicate index on `community_comments`. These are review items, not permission to make blind policy/index changes.
+- The README describes a static `public/` site and GitHub Pages workflow, but several expected source paths returned 404 and no root `package.json` or `vercel.json` was found at the checked paths. The actual tree and active hosting target remain unresolved.
+- No production database, user records, app code, website routes or hosting configuration were changed during this audit.
+- Next: resolve the repository tree/hosting mismatch, inspect role-protection triggers/functions/storage policies, then finalize the migration map before implementation.
