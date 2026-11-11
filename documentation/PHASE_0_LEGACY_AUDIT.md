@@ -94,3 +94,34 @@ No security finding above is being silently changed in this audit. Each must be 
 ## 7. Change boundary
 
 This audit was read-only. No SQL DDL/DML, account changes, storage mutations, source-code edits, hosting changes, or deployments were performed.
+
+## 8. Follow-up source and database inspection (2026-11-11)
+
+### Repository path mismatch resolved
+
+The earlier 404s were caused by checking a stale `public/` path. The current branch has its static site files at the repository root. The root `index.html` is the current three-division landing hub and links to `digital-skills.html`, `academic.html` and `campus-life.html`. Shared CSS/JS files are also at the root (including `tokens.css`, `components.css`, `pages.css`, `responsive.css`, `division-hub.css`, `layout.js`, `nav.js`, `config.js`, `auth.js` and `site.js`).
+
+The README is stale: it still says the deployable website is in `public/` and points to a GitHub Pages workflow that is not present at the checked path. The current homepage contains a canonical URL for `https://creatorverse-ai.vercel.app/`, which is evidence of intended Vercel production URL, but not sufficient by itself to prove the active Vercel project/domain linkage. There is no root `package.json` or `vercel.json` at the paths checked. Therefore:
+- Current codebase is a root-level static HTML/CSS/JS site, not a Next.js application.
+- Existing pages can be preserved as the legacy web client during the transition.
+- The hosting target and production deployment settings must still be confirmed in Vercel before any cutover.
+- The proposed Next.js/Flutter monorepo remains a target architecture, not the existing application.
+
+### Database function, trigger, view and Storage review
+
+- No public `SECURITY DEFINER` function was found with a missing function-level `search_path` setting in the inspected catalog query.
+- A number of public `SECURITY DEFINER` functions intentionally pin `search_path` to `pg_catalog, public` (some also include `auth`). Their execute grants vary: many admin/user RPCs are granted to authenticated users, while internal trigger functions are service-role/postgres only. This is not automatically a vulnerability, but each client-callable privileged RPC needs a body-level authorization and ownership review. Supabase recommends preferring invoker functions and tightly restricting definer execute privileges.
+- The profile table has three BEFORE UPDATE triggers protecting role and verified-badge changes (`guard_verified_badge_change`, `profiles_guard_role`, `protect_role`). This is defence in depth, but overlapping guards need to be checked for ordering and compatibility with legitimate super-admin updates.
+- Both public views inspected (`academy_learner_activity_summary`, `community_profiles`) have `security_invoker=true`; grants show no anonymous access to the learner summary and public/authenticated SELECT to the community profile view. Underlying profile columns and public exposure still require data-minimization review.
+- Six Storage buckets were found: private `academy-interviews`, `cv-chat-files`, `submissions`; public `community-media`, `creatorverse-media`, `profile-avatars`. Policies restrict interview files to assigned reviewers/admins and uploaders, chat attachments to participants, submissions to owner/admin reads, and avatars/community media to per-user paths. `creatorverse-media` allows admin uploads/updates/deletes and admin listing; public bucket status means object URL access is public, so only intended public assets should be stored there.
+- Storage object metadata must be managed through the Storage API, not direct SQL writes.
+
+### Priority security follow-ups
+
+1. Inspect and test every authenticated-callable SECURITY DEFINER RPC, especially admin, admission, certificate, quiz, live-call, payment and lesson-progress functions. Confirm the caller role is checked inside the function, not merely assumed from its name or UI route.
+2. Review whether `cv_is_content_admin`, `is_admin`, `is_super_admin`, `is_enrolled` and `verify_certificate` genuinely need anonymous EXECUTE; keep only intended public read/verification use cases.
+3. Verify the three profile protection triggers permit authorised admin changes and reject all self-escalation attempts; add tests for ordinary user, admin and super_admin paths.
+4. Review public bucket contents and MIME restrictions, especially `creatorverse-media` (currently no MIME allowlist) and `community-media`.
+5. Add automated database tests for allow/deny behaviour per operation and role before changing policies. Follow Supabase's current guidance for table grants + RLS tests and function privilege review.
+
+This follow-up remains read-only. No SQL DDL/DML or source/hosting changes were made.
