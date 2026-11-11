@@ -548,3 +548,10 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Ran a JavaScript syntax compilation check on `brand-admin.js` successfully.
 - Verified the latest preceding production deployment was READY. New commits trigger automatic Vercel production builds; final status for this code update is pending.
 - No Storage bucket configuration, database records, logo settings or uploaded assets were changed. Live upload and browser QA remain pending.
+
+
+## 2026-11-11 — Authorization smoke checks
+
+- Rechecked EXECUTE ACLs for selected certificate, creator-access, admin notification, lesson-completion and interview-review functions. Selected privileged RPCs deny anonymous execution; authenticated execution is guarded by function-level authorization checks. Certificate self-claim RPC is not executable by anon or authenticated roles in the inspected ACL.
+- Ran read-only smoke checks for `is_admin`, `is_super_admin` and `cv_is_content_admin` using no JWT subject and an unknown UUID. All returned false in both scenarios.
+- No database grants, function definitions or user records were changed. Full authenticated role-matrix and Storage E2E testing remains outstanding.
