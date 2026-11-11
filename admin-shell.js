@@ -177,7 +177,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   }).catch(function(e){status.textContent='Engagement data could not load: '+e.message});
 }
 function analytics(){
-  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Academy performance'}),h('p',{text:'Live learning activity, admissions, course progress and student review readiness.'})])]));
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Academy performance'}),h('p',{text:'Live learning activity, creator applications, course progress and student review readiness.'})])]));
   var metrics=h('div',{class:'stats4'}),courses=h('div',{class:'panel'}),perf=h('div',{class:'panel'}),status=h('p',{class:'pmeta',text:'Loading live Academy analytics…'}),search=h('input',{type:'search',placeholder:'Filter by student, email or course…'}),onlyInactive=h('input',{type:'checkbox'}),onlyReady=h('input',{type:'checkbox'}),rows=[];
   view.appendChild(metrics);view.appendChild(h('div',{class:'two'},[courses,h('div',{class:'panel'},[h('h3',{text:'How to read performance'}),h('p',{text:'Completion is based on completed lessons divided by all lessons in the enrolled course.'}),h('p',{text:'Quiz readiness requires a passed attempt for every quiz. Assignment readiness requires every assignment to be submitted and graded.'}),h('p',{text:'Certificate review readiness is only a review flag. It never issues a certificate automatically.'}),h('p',{class:'pmeta',text:'Inactive means no recorded lesson, quiz or assignment activity for more than 14 days.'})])])); 
   var filters=h('div',{class:'filter-row'},[search,h('label',{},[onlyInactive,h('span',{text:'Inactive 14+ days'})]),h('label',{},[onlyReady,h('span',{text:'Ready for admin review'})])]);
@@ -212,7 +212,7 @@ function analytics(){
  }
  function students(){
   var q=h('input',{type:'search',placeholder:'Search name or email…'}),tb=h('div',{class:'tbl'}),rows=[],detail=h('div',{class:'panel'});
-  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student management'}),h('p',{text:'Open a learner’s complete Academy record: admissions, course performance, level reviews, assignments and recent learning activity.'})])]));
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student management'}),h('p',{text:'Open a learner’s complete Academy record: creator applications, course performance, level reviews, assignments and recent learning activity.'})])]));
   view.appendChild(q);view.appendChild(tb);view.appendChild(detail);
   function section(title,items,empty,render){
     detail.appendChild(h('h3',{text:title}));
@@ -233,7 +233,7 @@ function analytics(){
         h('article',{class:'panel'},[h('strong',{text:profile.full_name||'Student'}),h('p',{text:profile.email||'No email'}),h('small',{text:'Account created '+date(profile.created_at)}),h('p',{class:'pmeta',text:'Role: '+(profile.role||'student')+' · Username: '+(profile.username||'—')})]),
         h('article',{class:'panel'},[h('strong',{text:'Profile details'}),h('p',{text:'Location: '+(profile.location||'Not provided')}),h('p',{text:'Website: '+(profile.website_url||'Not provided')}),h('p',{text:'Bio: '+(profile.bio||'Not provided')}),h('p',{text:'Status: '+(profile.status_text||'—')})])
       ]));
-      section('Admission history',d.applications,'No Academy applications found.',function(a){
+      section('Creator application history',d.applications,'No creator applications found.',function(a){
         return h('article',{class:'panel'},[h('strong',{text:(a.course_title||'Course')+' · '+(a.status||'unknown').replace(/_/g,' ')}),h('p',{text:'Application '+(a.application_no||'—')+' · Submitted '+date(a.submitted_at)}),h('p',{text:'Education: '+(a.education_level||'—')+' · Occupation: '+(a.occupation||'—')}),h('p',{text:'Prior experience: '+(a.prior_experience||'—')}),h('p',{text:'Learning goals: '+(a.learning_goals||'—')}),a.portfolio_url?h('p',{},[h('a',{href:a.portfolio_url,target:'_blank',rel:'noopener',text:'Open portfolio'})]):null,a.decision_reason?h('p',{text:'Admin decision: '+a.decision_reason}):null,h('small',{class:'pmeta',text:'Reviewed: '+date(a.reviewed_at)+' · Offer accepted: '+date(a.offer_accepted_at)+' · Cohort: '+(a.admission_cohort||'—')})])
       });
       section('Course performance',d.courses,'No course enrolments found.',function(x){
