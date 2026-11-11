@@ -447,3 +447,13 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Added 13 priority foreign-key indexes for core course, enrolment, learning activity, progress, payment and creator-partner review workflows.
 - Added migration `202611110040_add_priority_foreign_key_indexes.sql`; SQL executed successfully in the linked Supabase project.
 - Remaining: continue through the other FK-index findings and assess duplicate/permissive-policy advisor warnings one at a time. No live learner/admin E2E was performed.
+
+
+## 2026-11-11 — Campus Life concept hub
+
+- Created `campus.html` as a dedicated Campus Life landing page with four selectable service cards.
+- Created `campus-feature.html` and `campus-feature.js` to render dedicated detail pages for housing/roommates, peer-to-peer marketplace, offline study resources, and campus errands/delivery.
+- Added responsive dark CreatorVerse styling in `campus.css`, including keyboard focus and reduced-motion support.
+- Added Campus Life to shared desktop and mobile navigation.
+- Clearly labelled the service spaces as planned, not live; no transactions or personal-data collection are enabled.
+- Emergency SOS remains explicitly excluded as a separate project.
