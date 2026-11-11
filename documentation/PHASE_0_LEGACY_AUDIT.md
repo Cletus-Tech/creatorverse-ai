@@ -173,3 +173,12 @@ Security boundary: these changes harden the admin-side upload form but do not re
 - Re-checked EXECUTE privileges for selected privileged RPCs: admin certificate issuance, creator access, notification broadcast, administrative lesson completion and interview review are not executable by `anon`, but are executable by `authenticated` and rely on internal authorization checks. `claim_certificate` is not executable by either `anon` or `authenticated` in the inspected ACL. Public helper functions `is_admin`, `is_super_admin` and `cv_is_content_admin` are executable by anon/authenticated; their inspected bodies derive privilege from `auth.uid()` and profile roles.
 - Executed read-only smoke checks with an empty JWT subject and an unknown UUID subject. All three role helpers returned false in both scenarios; no user/profile data was returned.
 - This is not a complete role-matrix test: real learner, creator, admin and super-admin identities still need controlled authenticated-session tests, and all direct table/storage paths remain to be tested. No grants or functions were changed.
+
+
+### Public media library upload review (2026-11-11)
+
+- Confirmed `creatorverse-media` is public, has a 50 MiB per-object limit and currently has no Storage-level MIME allowlist. This bucket is shared by the admin media library for images, videos and documents, so narrowing the bucket to image-only formats would break legitimate media-library workflows.
+- Hardened the shared CMS media upload helper instead: it now accepts only an explicit extension/MIME allowlist for raster images (PNG/JPEG/WebP/GIF), common video (MP4/WebM/MOV/M4V), PDF, Microsoft Office documents, ZIP and TXT; it rejects unknown or mismatched extension/MIME pairs and uses a canonical content type for Storage upload.
+- Updated media-library upload and replacement file pickers to advertise the same explicit allowlist. The 50 MiB limit remains aligned with the existing media library contract.
+- `cms.js` passed a JavaScript syntax compilation check after the change.
+- Remaining: configure an equivalent Storage-level MIME allowlist through the supported Storage API/dashboard and review existing public objects before considering a bucket-level policy change. Client-side checks are defense in depth, not a substitute for server-side validation.
