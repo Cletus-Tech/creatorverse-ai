@@ -400,3 +400,12 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Updated the live `site_content.creatorverse_brand` record to use the canonical SVG for the primary logo and favicon; increased the loading-gate logo size to 72px. Kept the separate site wordmark and tagline unchanged.
 - The artwork contains no text and scales cleanly for navigation, favicon, loading gate, footer and admin placements. Existing admin Brand & Logo Studio remains the control surface for replacing or configuring it.
 - Database update verified by read-back. Full authenticated visual QA is still required.
+
+
+## 2026-11-11 — CreatorVerse brand name and learner navigation
+
+- Changed the visible brand from “CreatorVerse AI” to “CreatorVerse”; AI remains available as a learning category and product capability.
+- Updated public navigation, footer, loader, homepage SEO/social metadata and structured data, learner dashboard, and README.
+- Replaced “My Admission Status” in the account menu with clear learner dashboard and creator-partner application links.
+- Kept technical identifiers and the current production hostname unchanged to protect existing integrations and user links.
+- Production deployment and visual/browser verification pending.
