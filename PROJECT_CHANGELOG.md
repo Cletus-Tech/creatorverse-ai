@@ -421,3 +421,13 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Reviewed payment order RLS and guard/confirmation triggers; no payment data or existing enrolments were modified.
 - Remaining advisor findings and outstanding test requirements are recorded in the Master Project Plan.
 - Production deployment and visual verification pending.
+
+
+## 2026-11-11 — Privileged function search-path hardening and Storage review
+
+- Applied and verified explicit `pg_catalog, public` search paths on the remaining SECURITY DEFINER functions previously configured with bare `public` search paths.
+- Preserved the existing function grants and in-function authorization checks; no broad privilege revocations were made.
+- Confirmed there are no remaining public SECURITY DEFINER routines with an unset or bare-public search_path.
+- Inspected Storage bucket visibility and policies. Private buckets include `submissions`, `cv-chat-files` and `academy-interviews`; public media/avatar/community buckets retain their intended public-read behavior and authenticated ownership/admin write restrictions.
+- No Storage visibility, user files, payment records, enrolments or certificates were changed.
+- Next review: payment receipt client paths and webhook validation, RLS no-policy tables, and remaining privileged RPC authorization.
