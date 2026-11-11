@@ -15,10 +15,10 @@ var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{
  if(brand.show_header===false)document.querySelectorAll('.nav-left .logo-mark').forEach(function(n){n.style.display='none'});
  if(brand.show_footer===false)document.querySelectorAll('.footer-brand-lockup img').forEach(function(n){n.style.display='none'});
  if(brand.show_gate===false){var gate=document.getElementById('cv-page-loader');if(gate)gate.style.display='none';var shared=document.querySelector('.cv-universal-gate');if(shared)shared.style.display='none'}
- var title=brand.gate_title||brand.wordmark||'CREATORVERSE AI',caption=brand.gate_caption||'PREPARING YOUR EXPERIENCE';
+ var title=brand.gate_title||brand.wordmark||'CREATORVERSE',caption=brand.gate_caption||'PREPARING YOUR EXPERIENCE';
  document.querySelectorAll('.cv-clean-wordmark,.cv-gate-brand span,.cv-auth-brand span').forEach(function(n){n.textContent=title});
  document.querySelectorAll('.cv-clean-status,.cv-gate-caption,.cv-auth-caption').forEach(function(n){if(n.classList.contains('cv-auth-caption'))n.textContent='Verifying your secure session…';else n.textContent=caption});
- document.querySelectorAll('.brand-name').forEach(function(n){n.textContent=brand.wordmark||'CreatorVerse AI'});
+ document.querySelectorAll('.brand-name').forEach(function(n){n.textContent=brand.wordmark||'CreatorVerse'});
  document.querySelectorAll('.brand-sub').forEach(function(n){n.textContent=brand.tagline||'LEARN · CREATE · EARN · GROW'});
  var favicon=brand.favicon_url||primary;document.querySelectorAll('link[rel~="icon"]').forEach(function(n){n.href=favicon});
  var style=document.createElement('style');style.textContent='.cv-universal-gate .cv-gate-brand img,.cv-page-loader .cv-clean-mark{animation:'+(brand.gate_animation==='none'?'none':brand.gate_animation==='pulse'?'cvBrandPulse 2.2s ease-in-out infinite':'cvBrandFloat 2.8s ease-in-out infinite')+'!important} @keyframes cvBrandPulse{0%,100%{filter:drop-shadow(0 0 5px #3989ff44)}50%{filter:drop-shadow(0 0 20px #3989ffaa)}}';document.head.appendChild(style);
