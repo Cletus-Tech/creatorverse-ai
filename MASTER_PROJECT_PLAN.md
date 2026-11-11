@@ -428,3 +428,13 @@ Status: **Implemented; production deployment and visual QA pending.**
 - Reviewed Storage buckets and policies: learner submissions, chat attachments and interview recordings are private; creator media, avatars and community images are intentionally public-read with authenticated upload/delete controls. No bucket visibility was changed.
 - Remaining security work: inspect payment receipt upload/download call sites and gateway webhook integrity; finish reviewing the six RLS tables without direct policies and remaining SECURITY DEFINER RPC authorization paths.
 - Verification is database metadata/read-only policy inspection. Authenticated browser tests and live upload/download tests remain outstanding.
+
+## 2026-11-11 — Payment-order integrity hardening
+
+- Reviewed the current learner checkout and admin payment workflow. Current payment methods are manually verified bank transfer/USSD; the Paystack/international option remains disabled and there is no active gateway webhook.
+- Hardened the payment-order trigger: learners can no longer alter `proof_url`, payment ownership, course, amount, currency, method, reference, expiry, admin note or confirmation timestamp.
+- Restricted admin confirmation to active payment requests (pending/proof submitted); expired/cancelled requests cannot be converted into confirmed enrolments through the normal admin update path.
+- Removed a duplicate permissive learner UPDATE policy. The remaining policy requires the order to be unexpired; the trigger independently enforces the expiry check.
+- Set the payment trigger function to a trusted explicit search path.
+- No payment orders, enrolments, receipt objects or course records were changed. Receipt upload is not currently implemented in the learner checkout; the admin UI only displays a proof URL if one exists.
+- Remaining: implement a secure private receipt-upload workflow if desired, audit all remaining no-policy tables/RPCs, and only activate Paystack after server-side signature verification and idempotent webhook processing.
