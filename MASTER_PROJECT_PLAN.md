@@ -448,3 +448,17 @@ Status: **Implemented; production deployment and visual QA pending.**
 - Added 13 covering indexes for high-traffic foreign keys across applications, interviews, learning activity, sessions, interventions, notifications, enrolments, lesson progress, course modules/lessons and payment orders. Matching migration: `202611110040_add_priority_foreign_key_indexes.sql`.
 - Database metadata confirms the six no-policy tables remain protected and the indexes were created. Full authenticated user-flow testing remains outstanding.
 - Remaining performance work: review the rest of the 63 FK findings, remove the confirmed duplicate community-comments index only after checking query usage, and inspect the advisor's multiple-permissive-policy findings individually. No blanket policy changes are appropriate.
+
+
+## 2026-11-11 — Campus Life feature hub
+
+Status: **Initial concept hub implemented on main; feature services are planned and not yet live.**
+
+- Added a dedicated Campus Life page linked from the shared desktop and mobile navigation.
+- Added four selectable feature spaces: Verified Housing & Roommates, Campus Marketplace, Past Questions & Study Hub, and Campus Errands & Delivery.
+- Each card opens a dedicated feature detail page explaining its intended capabilities, trust requirements and suggested rollout.
+- Explicitly excluded emergency SOS and campus emergency dispatch; these remain a separate project.
+- No listings, student identity verification, escrow/payment handling, offline resource downloads, roommate matching or delivery fulfilment are represented as operational features yet.
+- Recommended phased delivery: pilot one campus; establish moderation and verification; launch housing discovery and marketplace listings; build moderated offline study resources; pilot errands with vetted runners; consider escrow only after compliant payment/dispute operations are ready.
+- Preserved the existing CreatorVerse theme and shared authentication/navigation; no database schema or payment settings were changed.
+- QA: source implementation only. Live browser, authenticated user journeys and device accessibility checks remain outstanding.
