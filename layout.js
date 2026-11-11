@@ -1,5 +1,5 @@
 (function(){
-var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261111-gate-ten-second1';document.head.appendChild(brand);
+var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261111-campus-boulevard1';document.head.appendChild(brand);
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
 var ux=document.createElement('link');ux.rel='stylesheet';ux.href='ux-refinement.css?v=20261109-ui-refresh1';document.head.appendChild(ux);
 var pagePolish=document.createElement('link');pagePolish.rel='stylesheet';pagePolish.href='ux-page-polish.css?v=20261109-page-polish1';document.head.appendChild(pagePolish);
