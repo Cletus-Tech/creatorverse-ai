@@ -555,3 +555,11 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Rechecked EXECUTE ACLs for selected certificate, creator-access, admin notification, lesson-completion and interview-review functions. Selected privileged RPCs deny anonymous execution; authenticated execution is guarded by function-level authorization checks. Certificate self-claim RPC is not executable by anon or authenticated roles in the inspected ACL.
 - Ran read-only smoke checks for `is_admin`, `is_super_admin` and `cv_is_content_admin` using no JWT subject and an unknown UUID. All returned false in both scenarios.
 - No database grants, function definitions or user records were changed. Full authenticated role-matrix and Storage E2E testing remains outstanding.
+
+
+## 2026-11-11 — Media library upload restrictions
+
+- Restricted the shared CMS media upload helper to a defined set of image, video, PDF, Office, ZIP and TXT formats with extension/MIME matching and canonical content types.
+- Updated media-library upload and replacement pickers to use the same allowlist; retained the existing 50 MiB per-file limit because the library supports course videos and documents as well as images.
+- Confirmed the public `creatorverse-media` bucket currently has no server-side MIME allowlist. Did not alter bucket configuration because it is shared by several media workflows and requires Storage API configuration plus a review of existing public objects.
+- Ran a JavaScript syntax compilation check on `cms.js` successfully. No existing media objects were changed or deleted.
