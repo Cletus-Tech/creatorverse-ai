@@ -393,3 +393,14 @@ Status: **Implemented in code and initial configuration stored; production deplo
 - Updated the `creatorverse_brand` configuration in Supabase to use the new canonical SVG as the primary logo and favicon, with a 72px loading-gate mark. Existing wordmark and tagline settings remain unchanged.
 - The logo is mark-only: no wordmark, tagline, banner, or loading-screen text is baked into the artwork. The website continues to render its text separately.
 - Source-level SVG and configuration checks completed. Visual QA on authenticated desktop/mobile pages remains outstanding.
+
+
+## 2026-11-11 — Brand name update and learner journey correction
+
+Status: **Implemented on main; production deployment and browser QA pending.**
+
+- The public-facing brand name is now **CreatorVerse** (without “AI”). Artificial intelligence remains a supported subject and platform capability; this is a brand-name change, not removal of AI learning content or assistant functionality.
+- Updated the shared public header, footer, loading gate, homepage metadata/schema, learner dashboard labels and project README to use CreatorVerse.
+- Replaced the generic “My Admission Status” account link with a creator-partner application journey, and added direct links to the learner dashboard and partner application form/status.
+- Preserved the existing Vercel hostname, repository name, Supabase project, database identifiers, storage paths, and existing URLs to avoid breaking sign-in links, integrations, bookmarks or media.
+- This phase corrects the public-facing learner navigation. A full route-by-route browser test remains outstanding.
