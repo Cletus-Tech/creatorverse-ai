@@ -431,3 +431,10 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Inspected Storage bucket visibility and policies. Private buckets include `submissions`, `cv-chat-files` and `academy-interviews`; public media/avatar/community buckets retain their intended public-read behavior and authenticated ownership/admin write restrictions.
 - No Storage visibility, user files, payment records, enrolments or certificates were changed.
 - Next review: payment receipt client paths and webhook validation, RLS no-policy tables, and remaining privileged RPC authorization.
+
+## 2026-11-11 — Payment-order integrity hardening
+
+- Updated `cv_payment_order_guard()` to protect receipt URL and sensitive payment metadata from learner updates, reject confirmation of expired/cancelled orders, and use `pg_catalog, public, auth` as its trusted search path.
+- Dropped the redundant permissive learner UPDATE policy; the remaining policy requires unexpired orders.
+- Confirmed checkout currently uses manual bank transfer/USSD verification. International/Paystack is disabled; no active gateway webhook or receipt-upload interface was found in the inspected checkout/admin files.
+- No payment, enrolment or receipt records were altered.
