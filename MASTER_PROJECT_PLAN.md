@@ -474,3 +474,16 @@ Status: **Initial concept hub implemented on main; feature services are planned 
 - No payment, booking, identity-document upload or database writes are enabled.
 - Emergency SOS remains out of scope and separate.
 - QA: source-level implementation; live authenticated and device testing outstanding.
+
+
+## CreatorVerse primary navigation and division structure (2026-11-11)
+
+The public entry route is now a division-selection landing page. The top-level experience is intentionally simplified to three primary destinations:
+
+1. **Digital Skills** — a single entry point into the practical digital-skills catalogue and learning paths.
+2. **Academic** — a level selector that separates Secondary School from Tertiary Institutions. Secondary School opens examination pathways for WAEC, NECO, JAMB, GCSE and other examinations. Tertiary Institutions has its own dedicated route; the detailed university structure remains to be planned.
+3. **Campus Life** — a student-services area. Campus Accommodation has a dedicated sub-landing page with four actions: Find a Roommate, Find an Apartment, Become an Agent and Accommodation Community. The roommate and apartment actions route to the corresponding tabs in the existing housing interface.
+
+New routes: `digital-skills.html`, `academic.html`, `academic-secondary.html`, `academic-tertiary.html`, `academic-exam.html`, `campus-life.html`, `campus-accommodation.html`, and `campus-agent.html`. Shared visual system: `division-hub.css`.
+
+**Release honesty:** These pages establish navigation and information architecture. They do not mean that examination question banks, university-specific academic tools, housing listings, roommate matching, agent onboarding or accommodation community workflows are live. The existing housing page still shows empty states until verified backend records and workflows are implemented. No fake profiles or property listings are introduced.
