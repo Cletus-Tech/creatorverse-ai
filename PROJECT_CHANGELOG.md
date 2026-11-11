@@ -483,3 +483,18 @@ Status: **Committed to main; deployment and visual QA pending.**
 - Added responsive, keyboard-focus-visible, reduced-motion-aware styling in `division-hub.css`.
 - No database schema, authentication, course records, housing data or payment flows were changed. Housing and roommate content remains empty until verified backend workflows are built.
 - QA status: repository source committed. Browser rendering, mobile-device testing, link traversal and production deployment verification remain outstanding.
+
+
+## 2026-11-11 — CreatorVerse full rebuild planning kickoff
+
+Status: **Planning baseline committed to main. No application architecture or production data changed.**
+
+- Created documentation/MASTER_PRODUCT_BLUEPRINT.md defining the product vision, three divisions, roles, shared capabilities, quality principles and open decisions.
+- Created documentation/BRAND_AND_DESIGN_BLUEPRINT.md defining the premium minimal design direction, logo system, website first impression, app opening/loading behaviour, accessibility and design deliverables.
+- Created documentation/WEBSITE_BLUEPRINT.md defining website routes, landing-page content order, account workspace and Super Admin scope.
+- Created documentation/MOBILE_APP_BLUEPRINT.md defining Flutter Android/iOS scope, opening flow, navigation, screen groups and mobile-specific requirements.
+- Created documentation/TECHNICAL_AND_DEVELOPMENT_BLUEPRINT.md defining the proposed shared-backend architecture, migration safeguards, release gates and phased implementation.
+- Decision: build website and mobile app as coordinated clients against one backend and shared contracts; Android is first release target while maintaining iOS compatibility.
+- Important discovery: current README describes a static site served from public/. A Next.js + Flutter monorepo is a proposed target, not current reality. Legacy source, deployment and Supabase assets must be audited before migration.
+- No production database, user records, app code, website routes or hosting configuration were changed in this planning kickoff.
+- Next gate: inspect repository structure, deployment workflow and Supabase schema/security; then present a preserve/rebuild/migrate map before implementation.
