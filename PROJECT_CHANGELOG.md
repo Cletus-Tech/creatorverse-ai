@@ -1,3 +1,9 @@
+## 2026-11-11 — Rework entrance into a university campus boulevard
+- Replaced the dark empty opening with a layered campus approach: illuminated horizon, landscaped/architectural edges, a broad perspective road narrowing toward the vanishing point, lane lighting and reflective road surface.
+- Reworked pedestrian choreography: one visitor walks away into campus and shrinks toward the horizon; the other approaches from the distance and grows toward the entrance, creating two-way campus foot traffic.
+- Road illumination begins while the gate is opening; walkers enter during the same 10-second first-entry sequence. The compact subsequent-navigation loader remains unchanged.
+- Added mobile and reduced-motion fallbacks; stylesheet cache key refreshed. Source-level review only; visual rendering on a physical device still requires user confirmation.
+
 ## 2026-11-11 — Ten-second entrance and faster internal navigation
 - Set the first entrance to a 9.8-second minimum with a 10.5-second hard release; door opening remains grand, while the road illuminates from 3.4s and the two walking figures run from 4.1s to finish before the entrance releases.
 - Fixed the previous choreography timing mismatch: the road and figures had delays/durations extending beyond the old release point, so users could see only the open doors.
