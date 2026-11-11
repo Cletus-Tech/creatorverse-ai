@@ -28,7 +28,7 @@ window.CV_DASH=function(sb,session,X){
  main.className='page cv-student';main.innerHTML='';
  var shell=el('div',{class:'cv-dash-shell'});
  var side=el('aside',{class:'cv-dash-side'});
- side.appendChild(el('a',{class:'cv-side-brand',href:'index.html',text:'CreatorVerse AI'}));
+ side.appendChild(el('a',{class:'cv-side-brand',href:'index.html',text:'CreatorVerse'}));
  side.appendChild(el('div',{class:'cv-side-label',text:'LEARNING SPACE'}));
  [['Overview','#overview'],['Engagement','#engagement'],['My learning','#learning'],['Achievements','#achievements'],['Profile settings','#profile']].forEach(function(x,i){side.appendChild(el('a',{class:'cv-side-link'+(!i?' active':''),href:x[1],text:x[0]}))});
  side.appendChild(el('a',{class:'cv-side-link',href:'academy-apply.html',text:'Become a CreatorVerse partner'}));side.appendChild(el('a',{class:'cv-side-link cv-side-explore',href:'courses.html',text:'Explore courses'}));
@@ -42,7 +42,7 @@ window.CV_DASH=function(sb,session,X){
  var learning=el('section',{id:'learning',class:'cv-section'});
  var ach=el('section',{id:'achievements',class:'cv-section'});
  var profile=el('section',{id:'profile',class:'cv-section cv-profile-section'});
- var footer=el('div',{class:'cv-dash-footer',text:'CreatorVerse AI · Learn. Create. Grow.'});
+ var footer=el('div',{class:'cv-dash-footer',text:'CreatorVerse · Learn. Create. Grow.'});
  area.appendChild(top);area.appendChild(body);shell.appendChild(side);shell.appendChild(area);main.appendChild(shell);
  side.querySelector('.cv-logout').addEventListener('click',function(){sb.auth.signOut().then(function(){location.href='index.html'})});
  function stat(label,value,detail){return el('article',{class:'cv-stat'},[el('span',{class:'cv-stat-label',text:label}),el('strong',{class:'cv-stat-value',text:String(value)}),el('small',{text:detail})])}
