@@ -1,11 +1,13 @@
 (function(){
 function h(t,a,k){var e=document.createElement(t);for(var i in a||{}){if(i==='text')e.textContent=a[i];else if(i==='on')e.addEventListener('click',a[i]);else if(i==='value')e.value=a[i];else e.setAttribute(i,a[i])}(k||[]).forEach(function(c){if(c)e.appendChild(c)});return e}
-var FOLDERS=['general','homepage','founder','course-thumbnails','categories','banners','videos','documents'],MAX=52428800;
-function kind(f){return /^image\//.test(f.type)?'image':/^video\//.test(f.type)?'video':'file'}
+var FOLDERS=['general','homepage','founder','course-thumbnails','categories','banners','videos','documents'],MAX=52428800,ACCEPT='image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/x-m4v,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-zip-compressed,text/plain,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.mov,.m4v,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt';
+var MIME={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',m4v:'video/x-m4v',pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',zip:'application/zip',txt:'text/plain'};
+function mime(f){var ext=(f.name.split('.').pop()||'').toLowerCase(),expected=MIME[ext],actual=(f.type||'').toLowerCase();if(!expected)return '';if(actual&&actual!==expected&&!(ext==='zip'&&actual==='application/x-zip-compressed')&&!(ext==='m4v'&&actual==='video/mp4'))return '';return expected}
+function kind(f){var t=mime(f);return /^image\//.test(t)?'image':/^video\//.test(t)?'video':'file'}
 function clean(n){return n.replace(/[^\w.\-]+/g,'_')}
-function up(file,folder,path,replace){var sb=window.CV_SB;if(file.size>MAX)return Promise.reject(new Error('File is larger than 50 MB.'));
+function up(file,folder,path,replace){var sb=window.CV_SB,t=mime(file);if(file.size>MAX)return Promise.reject(new Error('File is larger than 50 MB.'));if(!t)return Promise.reject(new Error('Unsupported file type. Use PNG, JPG, WebP, GIF, MP4, WebM, MOV, M4V, PDF, Office documents, ZIP or TXT.'));
  path=path||folder+'/'+Date.now()+'-'+clean(file.name);
- return sb.storage.from('creatorverse-media').upload(path,file,{upsert:!!replace,contentType:file.type||'application/octet-stream',cacheControl:'60'}).then(function(r){if(r.error)throw r.error;
+ return sb.storage.from('creatorverse-media').upload(path,file,{upsert:!!replace,contentType:t,cacheControl:'60'}).then(function(r){if(r.error)throw r.error;
   var url=sb.storage.from('creatorverse-media').getPublicUrl(path).data.publicUrl,row={path:path,url:url,name:file.name,kind:kind(file),folder:path.split('/')[0],size:file.size};
   return sb.from('media_files').upsert(row,{onConflict:'path'}).then(function(x){if(x.error)throw x.error;return url})})}
 window.CV_MEDIA={upload:up};
@@ -17,7 +19,7 @@ function usage(u){var sb=window.CV_SB,o=[];return Promise.all([sb.from('courses'
  (r[0].data||[]).forEach(function(x){o.push('Course thumbnail: '+x.title)});(r[1].data||[]).forEach(function(x){o.push('Lesson video: '+x.title)});(r[2].data||[]).forEach(function(x){o.push('Category image: '+x.title)});
  (r[3].data||[]).forEach(function(x){if((x.value||'').indexOf(u)>-1)o.push('Website content: '+x.key)});var seen={};(r[4].data||[]).forEach(function(x){if(JSON.stringify(x.content).indexOf(u)>-1&&!seen[x.status]){seen[x.status]=1;o.push('Homepage ('+x.status+')')}});return o}).catch(function(){return o})}
 function media(pane){var sb=window.CV_SB,cur='all',type='all',term='',rows=[];pane.appendChild(h('h2',{text:'Media library'}));
- var fs=h('select',{id:'mfolder'},FOLDERS.map(function(f){return h('option',{value:f,text:f})})),fi=h('input',{type:'file',multiple:'',accept:'image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt'}),m=h('div',{class:'msg'}),
+ var fs=h('select',{id:'mfolder'},FOLDERS.map(function(f){return h('option',{value:f,text:f})})),fi=h('input',{type:'file',multiple:'',accept:ACCEPT}),m=h('div',{class:'msg'}),
  flt=h('select',{},[h('option',{value:'all',text:'All folders'})].concat(FOLDERS.map(function(f){return h('option',{value:f,text:f})}))),
  tf=h('select',{},[['all','All types'],['image','Images'],['video','Videos'],['file','Documents']].map(function(x){return h('option',{value:x[0],text:x[1]})})),si=h('input',{type:'search',placeholder:'Search by file name…'}),grid=h('div',{class:'panels'});
  var go=h('button',{class:'btn btn-primary',type:'button',text:'Upload',on:function(){var fl=[].slice.call(fi.files);if(!fl.length){m.textContent='Choose files first.';m.className='msg err';return}
@@ -27,7 +29,7 @@ function media(pane){var sb=window.CV_SB,cur='all',type='all',term='',rows=[];pa
  function load(){var q=sb.from('media_files').select('*').order('created_at',{ascending:false}).limit(300);if(cur!=='all')q=q.eq('folder',cur);if(type!=='all')q=q.eq('kind',type);q.then(function(r){rows=r.data||[];draw()})}
  function draw(){grid.textContent='';var l=rows.filter(function(f){return!term||f.name.toLowerCase().indexOf(term)>-1});if(!l.length)return grid.appendChild(h('p',{text:rows.length?'No files match.':'No media in this view.'}));
   l.forEach(function(f){var pv=f.kind==='image'?h('img',{class:'thumb',src:f.url,alt:''}):f.kind==='video'?h('video',{class:'thumb',src:f.url,controls:''}):h('a',{class:'thumb docthumb',href:f.url,target:'_blank',rel:'noopener',text:(f.name.split('.').pop()||'file').toUpperCase()});
-   var rp=h('input',{type:'file',style:'display:none',accept:f.kind==='image'?'image/*':f.kind==='video'?'video/*':'*/*'});
+   var rp=h('input',{type:'file',style:'display:none',accept:ACCEPT});
    rp.addEventListener('change',function(){if(rp.files[0])up(rp.files[0],f.folder,f.path,true).then(load).catch(function(e){alert(e.message)})});
    grid.appendChild(h('div',{class:'panel'},[pv,h('p',{},[h('strong',{text:f.name})]),h('p',{class:'pmeta',text:f.kind+' · '+size(f.size)+' · '+f.folder+' · '+new Date(f.created_at).toLocaleDateString()}),h('div',{class:'row'},[
     h('button',{class:'btn btn-outline',type:'button',text:'Copy URL',on:function(){navigator.clipboard.writeText(f.url).then(function(){alert('URL copied')})}}),
