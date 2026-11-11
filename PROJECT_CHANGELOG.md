@@ -537,3 +537,14 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Documented the verified root-level static HTML/CSS/JS layout, current Vercel production domain and `main`-branch Git deployment flow.
 - Added explicit data-preservation, additive-migration, authorization and website/mobile shared-backend safeguards.
 - No application runtime code, Supabase data or hosting settings were changed. The README-only commit may still trigger the project's configured main-branch deployment.
+
+
+## 2026-11-11 — Brand Studio upload safeguards
+
+- Hardened Brand & Logo Studio custom image uploads to PNG/JPEG/WebP only, with matching extension/MIME validation and a 5 MB limit.
+- Kept the bundled SVG emblem as the default while disallowing untrusted SVG uploads to the public media bucket.
+- Added validation for brand asset URLs: local asset paths and HTTPS destinations are accepted; unsafe schemes are rejected; a primary logo is required before publishing.
+- Updated the admin page title to “Super Admin & Control Board — CreatorVerse”.
+- Ran a JavaScript syntax compilation check on `brand-admin.js` successfully.
+- Verified the latest preceding production deployment was READY. New commits trigger automatic Vercel production builds; final status for this code update is pending.
+- No Storage bucket configuration, database records, logo settings or uploaded assets were changed. Live upload and browser QA remain pending.
