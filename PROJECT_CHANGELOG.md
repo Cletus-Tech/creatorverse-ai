@@ -1,3 +1,13 @@
+## 2026-11-11 — 30-second university entrance choreography
+
+Status: **Implemented on `main`; production deployment and live visual QA pending.**
+
+- Extended the default entrance sequence to a 30-second minimum display (with a 33-second hard failsafe), while still releasing after the sequence when the page is ready. Reduced-motion preference uses a short static entrance instead of the full timed animation.
+- Reworked the sequence into clear stages: both heavy entrance doors begin opening slowly and progressively swing wide over 8 seconds; after the opening begins, the central road gradually illuminates; two student silhouettes then walk forward along the road and fade away as they reach the distance.
+- Removed the third silhouette so exactly two visitors walk through the gate. No separate progress bar, lower logo lockup or loading copy is added.
+- Cache-busted the entrance stylesheet so the choreography updates on mobile browsers.
+- QA: `layout.js` passes JavaScript syntax validation. CSS reviewed at source level. Real device visual and timing verification remains pending.
+
 ## 2026-11-11 — CreatorVerse globe identity and streamlined entrance loader
 
 Status: **Implemented on `main`; production deployment and visual/mobile QA pending.**
