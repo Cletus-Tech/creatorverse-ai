@@ -1,4 +1,4 @@
-# CreatorVerse AI
+# CreatorVerse
 
 Static site in `public/`. No build step.
 
