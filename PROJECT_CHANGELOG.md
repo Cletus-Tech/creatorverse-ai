@@ -519,3 +519,13 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Inspected profile guards, views and Storage: profile role/badge updates have multiple triggers; inspected views use `security_invoker=true`; six buckets include three private and three public buckets with path-based policies.
 - Added the follow-up findings and prioritized security checks to `documentation/PHASE_0_LEGACY_AUDIT.md`.
 - No production data, database schema, Storage objects, source code or deployment settings were modified.
+
+
+## 2026-11-11 — Vercel target confirmation and privileged RPC review
+
+- Inspected the linked Vercel project, recent deployments and project domains read-only. Confirmed Git integration deploys `main`; latest production deployment is READY from the audit-documentation commit; one verified production domain is `creatorverse-ai.vercel.app`.
+- Vercel reports no detected framework; root-level source remains static HTML/CSS/JS. Build/root-directory details still need explicit settings verification before the Next.js migration.
+- Confirmed generated deployment URLs are covered by SSO protection while custom domains are exempt; no hosting settings were changed.
+- Inspected certificate, payment, quiz, creator-access, notification and interview-review SECURITY DEFINER function bodies. Their inspected paths include server-side role/ownership/state checks; certificate self-claim is explicitly blocked.
+- Reviewed profile role/badge triggers. Multiple role guards overlap; ordinary self-escalation is blocked and the explicit self-role-change guard must remain covered by tests.
+- No production database, source, Vercel configuration or deployment was modified. Findings added to `documentation/PHASE_0_LEGACY_AUDIT.md`.
