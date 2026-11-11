@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CreatorVerse AI — Sign In</title>
+<title>CreatorVerse — Sign In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -697,7 +697,7 @@
         </div>
         <div class="card-eyebrow" style="justify-content:center; display:flex;">ALMOST THERE</div>
         <h2 class="card-title">Check your inbox</h2>
-        <p class="card-sub">Verify your email to activate your CreatorVerse AI account.</p>
+        <p class="card-sub">Verify your email to activate your CreatorVerse account.</p>
 
         <button type="button" class="btn btn-primary btn-block" onclick="fakeSubmit(this,'Verification email resent')" style="margin-bottom:12px;">Resend Email</button>
         <button type="button" class="btn btn-outline btn-block" onclick="showView('register')">Change Email</button>
@@ -724,7 +724,7 @@
         <div class="dev-badge" id="success-dev-badge">DEV MODE</div>
 
         <div class="card-eyebrow" id="success-eyebrow" style="justify-content:center; display:flex;">ACCOUNT CREATED</div>
-        <h2 class="success-title" id="success-title">Welcome to CreatorVerse AI!</h2>
+        <h2 class="success-title" id="success-title">Welcome to CreatorVerse!</h2>
         <p class="success-sub" id="success-sub">Your account has been created successfully.<br>Redirecting you to your dashboard…</p>
 
         <div class="success-redirect-bar">
@@ -898,14 +898,14 @@
     login:    { h:'Continue Your <span class="accent">AI Journey.</span>', d:"Sign in to access your courses, creator community, AI tools, and learning dashboard." },
     register: { h:'Start Your <span class="accent">AI Journey.</span>',    d:"Create your account to unlock courses, community, and AI tools built for creators." },
     forgot:   { h:'Recover Your <span class="accent">Account Access.</span>', d:"We'll help you get back in. Enter your email to receive a secure reset link." },
-    reset:    { h:'Set A New <span class="accent">Secure Password.</span>',  d:"Choose a strong password to keep your CreatorVerse AI account protected." },
+    reset:    { h:'Set A New <span class="accent">Secure Password.</span>',  d:"Choose a strong password to keep your CreatorVerse account protected." },
     // ── EMAIL VERIFICATION VIEW ─────────────────────────────────────
     // DEV MODE: This view is bypassed when EMAIL_VERIFICATION_REQUIRED = false.
     // PROD MODE: Restore by setting EMAIL_VERIFICATION_REQUIRED = true — no
     //            other changes needed; the flow switches back automatically.
     // ────────────────────────────────────────────────────────────────
     verify:   { h:'One Last Step <span class="accent">To Activate.</span>', d:"Confirm your email to unlock your dashboard and start creating." },
-    success:  { h:'You\'re All Set, <span class="accent">Creator.</span>', d:"Your account is ready. Logging you in now — welcome to CreatorVerse AI." },
+    success:  { h:'You\'re All Set, <span class="accent">Creator.</span>', d:"Your account is ready. Logging you in now — welcome to CreatorVerse." },
     "2fa":    { h:'Confirm It\u2019s <span class="accent">Really You.</span>', d:"A quick security check keeps your account and content safe." }
   };
 
@@ -933,7 +933,7 @@
     } else {
       if (badge) badge.style.display = '';
       eyebrow.textContent = 'ACCOUNT CREATED';
-      title.textContent = 'Welcome to CreatorVerse AI!';
+      title.textContent = 'Welcome to CreatorVerse!';
       sub.innerHTML = 'Your account has been created successfully.<br>Redirecting you to your dashboard…';
     }
   }
