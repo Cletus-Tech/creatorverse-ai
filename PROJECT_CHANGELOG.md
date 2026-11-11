@@ -1,3 +1,9 @@
+## 2026-11-11 — Ten-second entrance and faster internal navigation
+- Set the first entrance to a 9.8-second minimum with a 10.5-second hard release; door opening remains grand, while the road illuminates from 3.4s and the two walking figures run from 4.1s to finish before the entrance releases.
+- Fixed the previous choreography timing mismatch: the road and figures had delays/durations extending beyond the old release point, so users could see only the open doors.
+- Subsequent page visits in the same tab use a compact ~1.4-second minimum / 4.5-second hard release, with shortened gate, road and walker animations.
+- Updated the stylesheet cache key. Source-level JS syntax and CSS brace balance checked; physical-device visual QA remains pending.
+
 ## 2026-11-11 — Restore visible entrance road and walking indicator
 - Fixed the actual visibility bug: the road and visitor silhouettes had `opacity: 0 !important`, which prevented their CSS keyframe animations from ever revealing them.
 - Removed the conflicting important opacity declarations while preserving the staged timing: doors open slowly, the perspective road illuminates, and exactly two visitors walk forward and fade into the distance.
