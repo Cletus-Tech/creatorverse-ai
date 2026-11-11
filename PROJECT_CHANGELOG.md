@@ -438,3 +438,12 @@ Status: **Implemented on `education-build`; migration remains a draft and has no
 - Dropped the redundant permissive learner UPDATE policy; the remaining policy requires unexpired orders.
 - Confirmed checkout currently uses manual bank transfer/USSD verification. International/Paystack is disabled; no active gateway webhook or receipt-upload interface was found in the inspected checkout/admin files.
 - No payment, enrolment or receipt records were altered.
+
+
+## 2026-11-11 — Learner workflow RLS review and priority indexes
+
+- Verified the six engagement/session/intervention tables have RLS enabled, no direct anon/authenticated table grants, and no direct policies by design. Kept their RPC-only access model.
+- Reviewed the 14 associated admin/student SECURITY DEFINER routines: admin operations enforce signed-in admin authorization; student operations scope reads/writes to the caller's own account and verify role/enrolment/session timing. Anon cannot execute these RPCs.
+- Added 13 priority foreign-key indexes for core course, enrolment, learning activity, progress, payment and creator-partner review workflows.
+- Added migration `202611110040_add_priority_foreign_key_indexes.sql`; SQL executed successfully in the linked Supabase project.
+- Remaining: continue through the other FK-index findings and assess duplicate/permissive-policy advisor warnings one at a time. No live learner/admin E2E was performed.
