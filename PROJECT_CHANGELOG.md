@@ -529,3 +529,11 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Inspected certificate, payment, quiz, creator-access, notification and interview-review SECURITY DEFINER function bodies. Their inspected paths include server-side role/ownership/state checks; certificate self-claim is explicitly blocked.
 - Reviewed profile role/badge triggers. Multiple role guards overlap; ordinary self-escalation is blocked and the explicit self-role-change guard must remain covered by tests.
 - No production database, source, Vercel configuration or deployment was modified. Findings added to `documentation/PHASE_0_LEGACY_AUDIT.md`.
+
+
+## 2026-11-11 — Repository instructions corrected
+
+- Replaced stale README instructions that described a missing `public/` directory and GitHub Pages workflow.
+- Documented the verified root-level static HTML/CSS/JS layout, current Vercel production domain and `main`-branch Git deployment flow.
+- Added explicit data-preservation, additive-migration, authorization and website/mobile shared-backend safeguards.
+- No application runtime code, Supabase data or hosting settings were changed. The README-only commit may still trigger the project's configured main-branch deployment.
