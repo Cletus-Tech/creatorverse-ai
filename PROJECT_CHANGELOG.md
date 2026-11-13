@@ -1,3 +1,16 @@
+## 2026-11-13 — Marketplace moderation in the unified Super Admin centre
+
+Status: **Admin interface committed on main; database migrations and production workflow are not yet applied or verified.**
+
+- Added a Marketplace section to the existing Super Admin sidebar. This reuses the single `admin.html` / `admin-shell.js` control centre; no second admin dashboard was created.
+- Added seller application review with status filters, seller details, optional review notes, and pending/verified/rejected/suspended decisions.
+- Added listing moderation with status filters, seller and listing details, optional moderation notes, image link review, and publish/reject/archive/sold decisions. The UI does not give sellers any moderation controls.
+- Added category activation controls to hide or show existing categories while preserving old listings.
+- Added a narrowly scoped additive SQL grant for authenticated category updates; the existing Marketplace admin RLS policy still gates updates through `public.is_admin()`.
+- QA: both new JavaScript modules and the modified admin shell passed JavaScript syntax parsing. Responsive admin styles added. No browser-level workflow or Supabase request was run.
+- Important pending checks: confirm the deployed `public.is_admin()` helper definition and role mapping; apply Marketplace migrations in order; test seller/listing/category RLS and trigger behavior in a non-production environment; verify that the production admin route loads the new assets.
+- No live database was modified and no production deployment was confirmed.
+
 ## 2026-11-13 — Marketplace seller workspace and listing drafts
 
 Status: **Frontend committed on main; dependent Supabase migrations are still not applied.**
