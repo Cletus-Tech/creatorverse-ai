@@ -755,3 +755,14 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Added the authenticated `marketplace_submit_listing(uuid)` RPC, which checks the signed-in owner and verified seller status before submission.
 - Hardened the listing trigger to protect moderation metadata while permitting the narrow seller submission transition.
 - This migration is committed to GitHub but has **not** been applied to Supabase. It has not been exercised against the live database. It assumes the existing `public.is_admin()` helper is present and correct; confirm that helper in the target Supabase project before applying.
+
+
+
+## 2026-11-13 — Marketplace buyer discovery and saved listings
+
+- Added dedicated listing detail pages with published-only data, photo gallery, item condition, price and campus location details.
+- Added verified seller storefront pages that display only safe public seller fields and that seller’s published listings.
+- Linked catalogue and storefront cards to listing details; added sign-in-gated save/unsave controls for buyers.
+- Added an additive migration for private saved-listing records and corrected the public seller view to use PostgreSQL `security_invoker=true` with column-limited public access and an RLS policy exposing verified sellers only.
+- Buyer enquiries, orders, payments and reviews remain disabled; the detail page labels this clearly rather than implying checkout is available.
+- JavaScript syntax checks passed. Migration is committed but not applied; live database and browser QA remain pending.
