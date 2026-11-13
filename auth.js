@@ -2,7 +2,7 @@
 var C=window.CV_CONFIG||{},pg=document.body.dataset.page,sb=null,
 CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
 PUBLIC_SB=['marketplace','marketplace-item','marketplace-seller'],
-AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin'],
+AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin','marketplace-enquiries'],
 base=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''),
 $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}
