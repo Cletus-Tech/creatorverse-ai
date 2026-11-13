@@ -1,3 +1,15 @@
+## 2026-11-13 — Marketplace catalogue and seller onboarding interface
+
+Status: **Frontend committed on main; live catalogue and seller applications remain dependent on applying and validating the Supabase migrations.**
+
+- Added a Marketplace catalogue area with search, institution, category and listing-type filters. It requests only published listings and active categories from Supabase; no sample products or sellers are fabricated.
+- Added a seller application dialog for display name, seller type, institution, campus and short bio. Applications are submitted as pending profiles, and existing application status is shown when the schema is available.
+- Added graceful fallback states when the database migration is not applied or the catalogue is unavailable. The page continues to explain the preview rather than pretending that listings are live.
+- Added responsive listing cards, compact filters, dialog styling and reduced-motion support.
+- Included the public Marketplace route in Supabase client initialization so anonymous visitors can load published listings while authenticated users can apply to sell.
+- QA: marketplace.js syntax parsed successfully; source-level route, DOM ID and query review completed. Supabase integration, RLS behavior, production deployment and Android/mobile browser testing remain pending.
+- No database migration was applied and no payment, checkout or order functionality was enabled.
+
 ## 2026-11-13 — Marketplace data foundation: seller onboarding and moderated listings
 
 Status: **SQL migration committed on main; not yet applied to the connected Supabase project.**
