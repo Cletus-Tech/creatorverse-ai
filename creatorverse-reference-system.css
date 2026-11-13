@@ -423,3 +423,67 @@ body[data-page="admin"] .adm-link.on{box-shadow:inset 3px 0 #08764e!important}
 @media(prefers-reduced-motion:reduce){
  body[data-page="admin"] .adm-side{transition:none!important}
 }
+
+
+/* Admin operational workspaces: align admissions, moderation and academy tools. */
+body[data-page="admin"] .academy-admin-head,
+body[data-page="admin"] .academy-admin-stat,
+body[data-page="admin"] .academy-app-card,
+body[data-page="admin"] .academy-admin-workspace .panel,
+body[data-page="admin"] .brand-admin-card,
+body[data-page="admin"] .market-admin-card,
+body[data-page="admin"] .adm-view .academy-panel{
+  background:#fff!important;color:#203b2d!important;border:1px solid #e1e9e1!important;
+  box-shadow:0 8px 24px rgba(20,55,36,.055)!important;
+}
+body[data-page="admin"] .academy-admin-head{
+  background:linear-gradient(120deg,#eaf5ec,#f8fbf7)!important;
+}
+body[data-page="admin"] .academy-admin-head h2,
+body[data-page="admin"] .academy-admin-stat strong,
+body[data-page="admin"] .academy-app-card strong,
+body[data-page="admin"] .academy-admin-workspace h2,
+body[data-page="admin"] .academy-admin-workspace h3{color:#173e2e!important}
+body[data-page="admin"] .academy-admin-head p,
+body[data-page="admin"] .academy-admin-stat span,
+body[data-page="admin"] .academy-app-card small{color:#68786e!important}
+body[data-page="admin"] .academy-eyebrow{color:#08764e!important}
+body[data-page="admin"] .academy-admin-controls input,
+body[data-page="admin"] .academy-admin-controls select,
+body[data-page="admin"] .academy-app-card input,
+body[data-page="admin"] .academy-app-card select,
+body[data-page="admin"] .adm-view input,
+body[data-page="admin"] .adm-view select,
+body[data-page="admin"] .adm-view textarea{
+ background:#fff!important;color:#203b2d!important;border:1px solid #dce7dd!important;
+}
+body[data-page="admin"] .adm-view input::placeholder,
+body[data-page="admin"] .adm-view textarea::placeholder{color:#87958b!important}
+body[data-page="admin"] .adm-view button:not(.adm-burger):not(.adm-link){
+ border-radius:10px;
+}
+body[data-page="admin"] .adm-view .btn-primary,
+body[data-page="admin"] .adm-view button.primary{
+ background:#08764e!important;color:#fff!important;border-color:#08764e!important;
+}
+body[data-page="admin"] .tbl,.adm-view .tbl{color:#294b39}
+body[data-page="admin"] .trow{border-color:#e6ede6!important;color:#294b39!important}
+body[data-page="admin"] .trow small{color:#718078!important}
+body[data-page="admin"] .trow select{background:#fff!important;color:#244536!important;border-color:#dce7dd!important}
+body[data-page="admin"] .guide li{color:#627267!important}
+body[data-page="admin"] .home-bg-preview{background-color:#eaf4ec!important;border-color:#dce7dd!important;box-shadow:0 10px 28px rgba(20,55,36,.08)!important}
+body[data-page="admin"] .home-bg-preview-copy{background:rgba(15,57,39,.84)!important;color:#fff!important}
+body[data-page="admin"] .home-bg-preview-copy span{color:#e2eee5!important}
+body[data-page="admin"] .adm-back.on{background:rgba(10,35,23,.45)!important}
+@media(max-width:700px){
+ body[data-page="admin"] .academy-admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body[data-page="admin"] .academy-admin-workspace{grid-template-columns:minmax(0,1fr)!important}
+ body[data-page="admin"] .academy-app-list{max-height:360px!important}
+ body[data-page="admin"] .adm-top{min-height:62px}
+ body[data-page="admin"] .adm-view h1{font-size:24px!important}
+ body[data-page="dashboard"] .cv-dash-shell{grid-template-columns:minmax(0,1fr)!important}
+ body[data-page="dashboard"] .cv-dash-content{padding:16px 14px 92px!important}
+ body[data-page="dashboard"] .cv-welcome{min-height:230px!important;border-radius:18px!important}
+ body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body[data-page="dashboard"] .cv-course-grid{grid-template-columns:minmax(0,1fr)!important}
+}
