@@ -1,3 +1,13 @@
+## 2026-11-13 — Unified platform navigation and mobile app shell
+
+Status: **Shared navigation and shell styling committed on main; latest deployment is building.**
+
+- Reworked the shared desktop primary navigation around the platform's core destinations: Home, Academic, Digital Skills, Housing, Marketplace, Community and Messages. Secondary destinations remain available in the expandable mobile menu and existing account areas.
+- Rebuilt the mobile bottom navigation around Home, Academic, Housing, Marketplace and Community, with a More action for secondary routes. This replaces the older Courses/Dashboard/Messages-first arrangement so the global navigation reflects the complete CreatorVerse product rather than one learning module.
+- Added active-route states for academic subpages and the campus/housing area, keyboard focus styling, reduced-motion handling, safe-area spacing and a responsive mobile menu grid.
+- Added the shared `unified-shell.css` and loaded it from the shared `layout.js` so all pages using the common layout receive the same shell treatment.
+- QA: checked 14 major module pages for shared layout, auth and responsive stylesheet inclusion; confirmed all primary destination files exist in the main branch; parsed `layout.js` successfully with JavaScript syntax validation. No database migrations or Supabase writes were performed. No manual browser/device test has been completed.
+
 ## 2026-11-13 — Unified CreatorVerse homepage and connected discovery
 
 Status: **Homepage redesign committed on main; production deployment and browser QA still pending.**
