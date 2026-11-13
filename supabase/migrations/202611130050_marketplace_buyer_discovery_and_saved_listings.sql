@@ -8,7 +8,7 @@ on public.marketplace_sellers to anon;
 
 drop policy if exists "Marketplace public can view verified seller cards" on public.marketplace_sellers;
 create policy "Marketplace public can view verified seller cards"
-on public.marketplace_sellers for select to anon
+on public.marketplace_sellers for select to anon, authenticated
 using (status = 'verified');
 
 create or replace view public.marketplace_public_sellers
