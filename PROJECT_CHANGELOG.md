@@ -766,3 +766,15 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Added an additive migration for private saved-listing records and corrected the public seller view to use PostgreSQL `security_invoker=true` with column-limited public access and an RLS policy exposing verified sellers only.
 - Buyer enquiries, orders, payments and reviews remain disabled; the detail page labels this clearly rather than implying checkout is available.
 - JavaScript syntax checks passed. Migration is committed but not applied; live database and browser QA remain pending.
+
+
+## 2026-11-13 — Marketplace private buyer/seller enquiries
+
+- Added private enquiry threads between a buyer and the verified seller of a published listing.
+- Added authenticated RPCs to start an enquiry, send replies, mark incoming messages as read, and close a thread. Direct table writes are not granted to clients.
+- Enquiry and message reads are restricted by RLS to the buyer and the seller account owner; no admin read policy is provided for private enquiry content.
+- New enquiry messages create recipient notifications in the existing CreatorVerse notification centre and update the thread's activity timestamp.
+- Added a responsive enquiries inbox with conversation list, message history, reply composer, read state, and close action.
+- Added a Contact seller action to listing detail pages and a My enquiries entry to the Marketplace.
+- The enquiry migration is committed but not applied. This feature is not production-active until the migration is applied and tested.
+- JavaScript syntax checks passed for the updated and new Marketplace scripts.
