@@ -1,3 +1,9 @@
+## 2026-11-13 — Mobile Explore navigation refinement
+
+- Changed the mobile primary “Academic” destination to “Explore”, routing to the unified platform directory so Academic and Digital Skills are discoverable together.
+- The Explore tab shows an active state across academic, exam, tertiary, course and digital-skills routes. Housing, Marketplace and Community retain their own direct mobile destinations.
+- JavaScript syntax validation passed for the shared layout.
+
 ## 2026-11-13 — Global CreatorVerse destination search
 
 Status: **Search overlay and shared navigation trigger committed on main; deployment pending.**
