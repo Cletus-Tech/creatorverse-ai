@@ -115,8 +115,8 @@ function init(){
  $('seller-form')&&$('seller-form').addEventListener('submit',submitSeller);
  ['market-query','market-institution','market-category','market-kind'].forEach(function(id){var el=$(id);if(el)el.addEventListener('input',render);if(el)el.addEventListener('change',render)});
  $('market-search')&&$('market-search').addEventListener('submit',function(e){e.preventDefault();render();$('live-market').scrollIntoView({behavior:'smooth',block:'start'})});
- if(window.CV_SB){sb=window.CV_SB;loadCatalogue();loadSellerWorkspace();loadSellerWorkspace()}
- document.addEventListener('cv-ready',function(){sb=window.CV_SB;loadCatalogue()},{once:true});
+ if(window.CV_SB){sb=window.CV_SB;loadCatalogue();loadSellerWorkspace()}
+ document.addEventListener('cv-ready',function(){sb=window.CV_SB;loadCatalogue();loadSellerWorkspace()},{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
