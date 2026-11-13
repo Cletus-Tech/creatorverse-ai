@@ -23,8 +23,8 @@ function render(){
  host.innerHTML=rows.map(function(x){
   var photo=(x.image_urls&&x.image_urls.length)?x.image_urls[0]:'';
   var category=categories.find(function(c){return c.id===x.category_id});
-  return '<article class="market-listing">'+(photo?'<img class="market-listing-photo" src="'+escapeText(photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<div class="market-listing-placeholder">CreatorVerse Marketplace</div>')+
-  '<div class="market-listing-body"><span class="market-listing-tag">'+escapeText(category?category.name:x.listing_type)+'</span><h3>'+escapeText(x.title)+'</h3><p>'+escapeText(x.description)+'</p><strong class="market-price">'+money(x.price_ngn)+'</strong><small>'+escapeText([x.campus,x.institution].filter(Boolean).join(' · ')||x.location_label||'Campus listing')+'</small></div></article>';
+  return '<article class="market-listing"><a class="market-listing-link" href="marketplace-item.html?id='+encodeURIComponent(x.id)+'" aria-label="View '+escapeText(x.title)+'">'+(photo?'<img class="market-listing-photo" src="'+escapeText(photo)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<div class="market-listing-placeholder">CreatorVerse Marketplace</div>')+
+  '<div class="market-listing-body"><span class="market-listing-tag">'+escapeText(category?category.name:x.listing_type)+'</span><h3>'+escapeText(x.title)+'</h3><p>'+escapeText(x.description)+'</p><strong class="market-price">'+money(x.price_ngn)+'</strong><small>'+escapeText([x.campus,x.institution].filter(Boolean).join(' · ')||x.location_label||'Campus listing')+'</small><span class="market-view-link">View listing →</span></div></a></article>';
  }).join('');
 }
 function fillCategories(){
