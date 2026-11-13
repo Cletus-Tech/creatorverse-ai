@@ -90,3 +90,26 @@ body[data-page="dashboard"] .cv-feedback{border-radius:11px}
 }
 @media(max-width:390px){body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:1fr 1fr}body[data-page="dashboard"] .cv-stat:last-child{grid-column:1/-1}body[data-page="dashboard"] .cv-course-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){body[data-page="dashboard"] *,body[data-page="dashboard"] *:before,body[data-page="dashboard"] *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* Unified CreatorVerse spaces — compact image-led entry points */
+body[data-page="dashboard"] .cv-spaces-section{margin:30px 0 8px}
+body[data-page="dashboard"] .cv-spaces-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+body[data-page="dashboard"] .cv-space-card{position:relative;isolation:isolate;display:flex;min-height:190px;flex-direction:column;justify-content:space-between;overflow:hidden;padding:16px;border:1px solid #e1e9e1;border-radius:17px;background:#153d2c;color:#fff;text-decoration:none;box-shadow:0 7px 22px rgba(22,55,39,.07);transition:transform var(--cv-motion-fast),box-shadow var(--cv-motion-fast)}
+body[data-page="dashboard"] .cv-space-card:before{position:absolute;z-index:-2;inset:0;content:"";background-position:center;background-size:cover;transition:transform 420ms var(--cv-ease)}
+body[data-page="dashboard"] .cv-space-card:after{position:absolute;z-index:-1;inset:0;content:"";background:linear-gradient(180deg,rgba(8,30,21,.28),rgba(8,30,21,.91))}
+body[data-page="dashboard"] .cv-space-card:hover{transform:translateY(-3px);box-shadow:0 15px 30px rgba(22,55,39,.15)}
+body[data-page="dashboard"] .cv-space-card:hover:before{transform:scale(1.055)}
+body[data-page="dashboard"] .cv-space-card.academic:before{background-image:url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=82')}
+body[data-page="dashboard"] .cv-space-card.skills:before{background-image:url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=82')}
+body[data-page="dashboard"] .cv-space-card.housing:before{background-image:url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=82')}
+body[data-page="dashboard"] .cv-space-card.community:before{background-image:url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=82')}
+body[data-page="dashboard"] .cv-space-card.messages:before{background-image:url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=800&q=82')}
+body[data-page="dashboard"] .cv-space-tag{align-self:flex-start;padding:6px 8px;border:1px solid #ffffff65;border-radius:7px;background:#ffffff20;color:#fff;font-size:9px;font-weight:800;letter-spacing:1.1px}
+body[data-page="dashboard"] .cv-space-arrow{position:absolute;top:13px;right:14px;color:#fff;font-size:19px}
+body[data-page="dashboard"] .cv-space-copy h3{margin:0 0 7px;color:#fff;font:800 16px/1.2 Manrope,'Space Grotesk',sans-serif}
+body[data-page="dashboard"] .cv-space-copy p{margin:0 0 12px;color:#e5eee8;font-size:11px;line-height:1.55}
+body[data-page="dashboard"] .cv-space-action{color:#fff;font-size:11px;font-weight:800}
+@media(max-width:1100px){body[data-page="dashboard"] .cv-spaces-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){body[data-page="dashboard"] .cv-spaces-section{margin-top:24px}body[data-page="dashboard"] .cv-spaces-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}body[data-page="dashboard"] .cv-space-card{min-height:170px;padding:13px;border-radius:14px}body[data-page="dashboard"] .cv-space-copy h3{font-size:14px}body[data-page="dashboard"] .cv-space-copy p{font-size:10px}}
+@media(max-width:360px){body[data-page="dashboard"] .cv-spaces-grid{grid-template-columns:1fr}body[data-page="dashboard"] .cv-space-card{min-height:145px}}
