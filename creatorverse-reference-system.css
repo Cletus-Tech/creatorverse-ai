@@ -487,3 +487,39 @@ body[data-page="admin"] .adm-back.on{background:rgba(10,35,23,.45)!important}
  body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  body[data-page="dashboard"] .cv-course-grid{grid-template-columns:minmax(0,1fr)!important}
 }
+
+
+/* Homepage: bring the actual landing experience fully into the approved light brand. */
+.cv-home{color:#17251e!important}
+.cv-home-hero{
+ background:linear-gradient(115deg,#eaf4eb 0%,#f7faf5 56%,#fff1e5 100%)!important;
+ border:1px solid #dce9dc!important;box-shadow:0 22px 60px rgba(20,55,36,.09)!important;
+}
+.cv-home-copy h1{color:#173e2e!important}
+.cv-home-copy h1 em,.cv-home-lower h2 em{
+ background:linear-gradient(95deg,#08764e,#39966c 70%,#d98243)!important;
+ -webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;
+}
+.cv-home-kicker,.cv-home-label{color:#08764e!important}
+.cv-home-copy>p,.cv-home-lower>div:first-child>p{color:#64766b!important}
+.cv-home-proof{color:#718078!important}
+.cv-home-proof b{color:#08764e!important}
+.cv-home-primary{background:#08764e!important;color:#fff!important;box-shadow:0 9px 22px rgba(8,118,78,.18)!important}
+.cv-home-secondary{background:#fff!important;border:1px solid #dce7dd!important;color:#24513d!important}
+.cv-home-visual,.cv-home-visual *{color:inherit}
+.cv-home-lower{color:#17251e!important}
+.cv-home-lower h2{color:#173e2e!important}
+.cv-home-lower p{color:#68786e!important}
+.cv-home-card,.cv-home-space,.cv-home-feature{
+ background:#fff!important;color:#203b2d!important;border:1px solid #e1e9e1!important;
+ box-shadow:0 9px 26px rgba(20,55,36,.055)!important;
+}
+.cv-home-card h3,.cv-home-space h3,.cv-home-feature h3{color:#173e2e!important}
+.cv-home-card p,.cv-home-space p,.cv-home-feature p{color:#68786e!important}
+@media(max-width:760px){
+ .cv-home{width:calc(100% - 28px)!important;padding:24px 0 86px!important}
+ .cv-home-hero{min-height:0!important;padding:25px 20px!important;border-radius:22px!important;grid-template-columns:minmax(0,1fr)!important}
+ .cv-home-copy h1{font-size:clamp(38px,11vw,56px)!important}
+ .cv-home-actions{gap:9px!important}
+ .cv-home-primary,.cv-home-secondary{min-height:44px;padding:12px 14px!important}
+}
