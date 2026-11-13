@@ -854,3 +854,10 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - The enquiry migration is committed but not applied. This feature is not production-active until the migration is applied and tested.
 - JavaScript syntax checks passed for the updated and new Marketplace scripts.
 - Follow-up security review corrected the authenticated verified-seller view policy and ensured buyer-facing inbox code never requests another seller's private account ID; security-definer functions use an empty search path.
+
+## 2026-11-13 — Tertiary academic hub foundation
+- Replaced the tertiary placeholder with an institution-first academic hub for universities, polytechnics and colleges.
+- Added searchable institution directory UI, institution-type filters, responsive hierarchy overview (institution → faculty/school → department → programme → level/semester → courses), and a study-toolkit roadmap.
+- Added `tertiary-institutions.json` as the published catalogue contract. It intentionally contains no fabricated institutions; only entries explicitly marked `published: true` are displayed.
+- Added accessible search/filter interactions and explicit loading, empty, no-match and unavailable states.
+- This is a frontend and catalogue-contract milestone only. No Supabase schema or data changes were applied; the directory is empty until verified institution records and admin publishing workflows are connected.
