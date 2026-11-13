@@ -1,3 +1,16 @@
+## 2026-11-13 — Marketplace data foundation: seller onboarding and moderated listings
+
+Status: **SQL migration committed on main; not yet applied to the connected Supabase project.**
+
+- Added an additive migration for seller profiles, configurable marketplace categories and product/service/rental listings.
+- Added initial categories for Books & Study, Electronics, Fashion, Food & Essentials, Services, Rentals and Free & Giveaways.
+- Added row-level security policies so sellers can access their own records, public users can view published listings, and moderation remains administrator-controlled.
+- Added database guards so users cannot self-verify seller accounts, publish their own listings, or alter moderation decisions. Listing creation requires an approved seller profile.
+- Added a restricted public seller view that exposes only safe storefront fields; private user IDs and contact fields are not included in public seller cards.
+- Deliberately excluded checkout, payment capture, escrow, order fulfilment and dispute workflows until the listing and seller foundation is reviewed and applied safely.
+- Updated the Marketplace preview copy to distinguish committed schema work from live database functionality and fixed the hero image fallback.
+- No migration was executed against Supabase. Applying it and testing the policies against real authenticated roles remains a required next step.
+
 ## 2026-11-13 — Marketplace elevated to a first-class CreatorVerse space
 
 Status: **Dedicated preview UI committed on main; live commerce workflows not enabled.**
