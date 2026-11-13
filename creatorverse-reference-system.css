@@ -275,3 +275,39 @@ body[data-page="messages"]{background:#f6f8f4!important;color:#17251e!important}
 .market-dialog h2{color:#173d2e!important}
 .market-dialog input,.market-dialog select,.market-dialog textarea{background:#fff!important;color:#173d2e!important;border:1px solid #dce6dc!important;border-radius:10px!important}
 @media(max-width:760px){.cv-hub .hub-subcard{min-height:220px;padding:20px!important}.cv-hub .hub-subcard:after{width:68px;height:68px;right:18px;top:18px}.cv-campus .campus-hero:after{opacity:.22;width:65%}}
+
+/* Super Admin: purpose-built light control centre, keeping all existing admin actions intact. */
+body[data-page="admin"] .adm{background:#f6f8f4;color:#17251e;grid-template-columns:250px minmax(0,1fr)}
+body[data-page="admin"] .adm-side{background:#fff!important;border-right:1px solid #e1e9e1!important;box-shadow:5px 0 22px rgba(20,55,36,.035)}
+body[data-page="admin"] .adm-brand{color:#173d2e!important}
+body[data-page="admin"] .adm-brand strong{color:#173d2e!important}
+body[data-page="admin"] .adm-brand small{color:#78877d!important}
+body[data-page="admin"] .adm-logo{background:#edf6ef!important;color:#08764e!important;border:1px solid #d6e8d9!important;background-image:url('assets/creatorverse-brand.svg')!important;background-repeat:no-repeat!important;background-position:center!important;background-size:31px!important}
+body[data-page="admin"] .adm-logo svg{opacity:0!important}
+body[data-page="admin"] .adm-side hr{border-color:#e6ede6!important}
+body[data-page="admin"] .adm-link{color:#596b60!important}
+body[data-page="admin"] .adm-link:hover{background:#f0f6f0!important;color:#08764e!important}
+body[data-page="admin"] .adm-link.on{background:#eaf5ec!important;color:#08764e!important;box-shadow:inset 3px 0 #08764e!important}
+body[data-page="admin"] .adm-link em{background:#edf6ef!important;color:#176143!important}
+body[data-page="admin"] .adm-main{background:#f6f8f4!important}
+body[data-page="admin"] .adm-top{background:rgba(255,255,255,.94)!important;border-bottom:1px solid #e1e9e1!important;backdrop-filter:blur(14px)}
+body[data-page="admin"] .adm-top strong{color:#173d2e!important}
+body[data-page="admin"] .adm-who{color:#718078!important}
+body[data-page="admin"] .adm-burger{background:#f4f8f4!important;border-color:#dce6dc!important;color:#176143!important}
+body[data-page="admin"] .adm-view h1{color:#173d2e!important}
+body[data-page="admin"] .adm-view p{color:#68786e!important}
+body[data-page="admin"] .adm-view .panel{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:16px!important;box-shadow:0 7px 22px rgba(20,55,36,.045)!important;color:#173d2e!important}
+body[data-page="admin"] .adm-view .panel h3{color:#173d2e!important}
+body[data-page="admin"] .qcard{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:15px!important;color:#173d2e!important;box-shadow:0 6px 18px rgba(20,55,36,.035)!important}
+body[data-page="admin"] .qcard small,body[data-page="admin"] .guide li{color:#718078!important}
+body[data-page="admin"] .qcard>svg:first-child,body[data-page="admin"] .qa-go{color:#08764e!important}
+body[data-page="admin"] .big{color:#173d2e!important}
+body[data-page="admin"] .crow{color:#40584a!important;border-color:#e7eee7!important}
+body[data-page="admin"] .crow small,body[data-page="admin"] .trow small{color:#78877d!important}
+body[data-page="admin"] .trow{border-color:#e7eee7!important;color:#40584a!important}
+body[data-page="admin"] .trow select{background:#fff!important;color:#173d2e!important;border-color:#dce6dc!important}
+body[data-page="admin"] .adm-view input,body[data-page="admin"] .adm-view select,body[data-page="admin"] .adm-view textarea{background:#fff!important;color:#173d2e!important;border:1px solid #dce6dc!important;border-radius:9px}
+body[data-page="admin"] .academy-admin-stat,body[data-page="admin"] .academy-app-card,body[data-page="admin"] .academy-diagnostic-editor,body[data-page="admin"] .academy-diagnostic-item,body[data-page="admin"] .academy-interview-card,body[data-page="admin"] .academy-progress-card{background:#fff!important;border-color:#e1e9e1!important;color:#173d2e!important;box-shadow:0 6px 20px rgba(20,55,36,.04)!important}
+body[data-page="admin"] .academy-app-card h3,body[data-page="admin"] .academy-admin-section-title,body[data-page="admin"] .academy-progress-card strong{color:#173d2e!important}
+body[data-page="admin"] .academy-app-copy,body[data-page="admin"] .academy-admin-footnote{color:#68786e!important}
+@media(max-width:900px){body[data-page="admin"] .adm-side{box-shadow:15px 0 40px rgba(20,55,36,.12)!important}}
