@@ -47,6 +47,7 @@ window.CV_DASH=function(sb,session,X){
   {title:'Housing & Campus',desc:'Discover accommodation, roommates and useful campus services.',href:'campus.html',tag:'CAMPUS',cls:'housing',action:'Explore campus'},
   {title:'Campus Community',desc:'Join conversations, discover groups and share what is happening.',href:'community.html',tag:'CONNECT',cls:'community',action:'Visit community'},
   {title:'Messages & Stories',desc:'Keep up with your conversations, contacts and stories.',href:'messages.html',tag:'MESSAGES',cls:'messages',action:'Open messages'}
+  ,{title:'Marketplace',desc:'Discover student listings, campus vendors, useful services and rentals.',href:'marketplace.html',tag:'BUY · SELL · DISCOVER',cls:'marketplace',action:'Explore marketplace'}
  ].forEach(function(item){
   var a=el('a',{class:'cv-space-card '+item.cls,href:item.href});
   a.appendChild(el('span',{class:'cv-space-tag',text:item.tag}));
