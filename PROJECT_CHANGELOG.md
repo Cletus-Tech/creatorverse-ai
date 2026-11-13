@@ -1,3 +1,10 @@
+## 2026-11-13 — Partner application navigation boundary
+
+- Removed the general “Partner Application Status” destination from the shared account dropdown. This prevents ordinary course learners from being routed into the creator/instructor/teacher/exhibitor application workflow.
+- Kept the optional partner application entry as “Partner opportunities”; learner course discovery and learning remain separate from partner admissions.
+- No application records, roles, enrolments or database policies were changed. The status page remains available to applicants through its existing route and application workflow.
+- QA: `layout.js` passed JavaScript syntax validation. This change was committed on `main`; no database migration was applied and no manual browser test was performed.
+
 ## 2026-11-13 — Mobile Explore navigation refinement
 
 - Changed the mobile primary “Academic” destination to “Explore”, routing to the unified platform directory so Academic and Digital Skills are discoverable together.
