@@ -1,3 +1,15 @@
+## 2026-11-13 — Complete shared loading-gate audit and consolidation
+
+Status: **Implemented on main; production deployment and real-device visual QA to follow.**
+
+- Audited the shared entrance markup, global loader lifecycle, network tracking, timing, CSS cascade, animation keyframes, mobile sizing, reduced-motion behavior and internal-navigation variant.
+- Found accumulated duplicate gate rules and competing animation definitions from earlier iterations. The last stylesheet blocks overrode some earlier pedestrian choreography, while the fast-navigation selectors made both walkers use the same movement. Consolidated the entrance into one authoritative CSS system with explicit depth/road/walker/door stacking and separate two-way pedestrian animations.
+- Rebuilt the scene as one coherent campus entrance: branded arch, pillars, openable double doors, illuminated perspective boulevard, campus-edge scenery and two pedestrians moving in opposite directions. Added compact mobile sizing and a static reduced-motion equivalent.
+- Reworked the loader scheduler to use one polling timer instead of allowing repeated load/readiness events to create overlapping polling loops. Kept the requested first-entry presentation (about 9 seconds minimum, 10.5-second failsafe) and compact subsequent navigation (about 1.4-second minimum, 4.5-second failsafe).
+- Bounded dynamically inserted script tracking to 8 seconds and made the font-readiness check bounded, so a third-party resource cannot keep the gate open indefinitely. The gate remains separate from the actual app's data/rendering state; its hard timeout is a safety release, not proof that every page feature has loaded.
+- No Supabase data, schema, authentication, or user content was changed.
+- QA: JavaScript syntax validation, CSS brace balance, duplicate-selector/keyframe review and source-level timing/cascade checks. Actual Android rendering, visual composition and authenticated page readiness still require browser/device QA.
+
 ## 2026-11-11 — Rework entrance into a university campus boulevard
 - Replaced the dark empty opening with a layered campus approach: illuminated horizon, landscaped/architectural edges, a broad perspective road narrowing toward the vanishing point, lane lighting and reflective road surface.
 - Reworked pedestrian choreography: one visitor walks away into campus and shrinks toward the horizon; the other approaches from the distance and grows toward the entrance, creating two-way campus foot traffic.
