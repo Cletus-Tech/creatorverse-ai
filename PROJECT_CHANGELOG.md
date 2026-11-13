@@ -1,3 +1,13 @@
+## 2026-11-13 — Unified CreatorVerse homepage and connected discovery
+
+Status: **Homepage redesign committed on main; production deployment and browser QA still pending.**
+
+- Replaced the three-division-only landing screen with a unified CreatorVerse entry point that presents Academic, Digital Skills, Housing, Marketplace, Community and Messages as connected first-class spaces.
+- Added a platform-level hero, connected-space visual, concise descriptions, direct routes and account/dashboard entry points.
+- Added responsive styling for desktop, tablet and mobile, visible keyboard focus, and reduced-motion support. The page reuses the existing shared navigation, footer, auth and account infrastructure rather than creating a separate Marketplace shell.
+- Preserved existing module routes and backend data. No database migrations, schema changes or Supabase writes were performed.
+- QA status: source paths were checked against the repository tree; no browser rendering, device test or production deployment verification has yet been performed.
+
 ## 2026-11-13 — Marketplace listing photo uploads and public catalogue initialization
 
 Status: **Frontend and additive Storage migration committed on main; Storage migration is not applied and upload has not been tested against the live project.**
