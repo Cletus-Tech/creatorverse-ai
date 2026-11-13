@@ -778,3 +778,4 @@ Status: **Planning baseline committed to main. No application architecture or pr
 - Added a Contact seller action to listing detail pages and a My enquiries entry to the Marketplace.
 - The enquiry migration is committed but not applied. This feature is not production-active until the migration is applied and tested.
 - JavaScript syntax checks passed for the updated and new Marketplace scripts.
+- Follow-up security review corrected the authenticated verified-seller view policy and ensured buyer-facing inbox code never requests another seller's private account ID; security-definer functions use an empty search path.
