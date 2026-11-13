@@ -64,7 +64,7 @@ create or replace function private.marketplace_enquiry_message_after_insert()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_buyer uuid;
@@ -123,7 +123,7 @@ create or replace function public.marketplace_start_enquiry(p_listing_id uuid, p
 returns uuid
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -164,7 +164,7 @@ create or replace function public.marketplace_send_enquiry_message(p_enquiry_id 
 returns uuid
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -200,7 +200,7 @@ create or replace function public.marketplace_mark_enquiry_read(p_enquiry_id uui
 returns integer
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -231,7 +231,7 @@ create or replace function public.marketplace_close_enquiry(p_enquiry_id uuid)
 returns boolean
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
