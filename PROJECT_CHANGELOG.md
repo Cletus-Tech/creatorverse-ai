@@ -1,3 +1,11 @@
+## 2026-11-13 — Housing navigation and campus preference refinement
+
+- Made the Roommate Matcher and Verified Lodges tabs keyboard-operable with Left/Right, Home and End keys, correct selected-tab state, and a single tab stop.
+- Added deep-linkable housing tabs (#roommates and #lodges) so the shared CreatorVerse experience can open the relevant housing section directly.
+- Remembered the visitor's selected institution for the current browser session and restored it on return to the Housing page. The selected campus label now announces changes to assistive technology.
+- Kept housing listings and roommate matching honest: this does not create sample properties, profiles, or claim that the unbuilt backend is live.
+- QA: campus-housing.js passed JavaScript syntax validation. A route-reference audit across 13 core platform pages found no missing local HTML, JS or CSS targets. No database changes or manual browser tests were performed.
+
 ## 2026-11-13 — GCE examination route correction
 
 - Corrected the GCE card in the secondary examination catalogue to use the `gce` query key expected by the examination pathway page. The visible label was already GCE, but the route previously passed the legacy `gcse` key and therefore fell back to the generic pathway title.
