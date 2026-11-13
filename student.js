@@ -38,6 +38,23 @@ window.CV_DASH=function(sb,session,X){
  var body=el('div',{class:'cv-dash-content',id:'overview'});
  var hero=el('section',{class:'cv-welcome'},[el('div',{class:'cv-welcome-copy'},[el('span',{class:'cv-kicker',text:'YOUR LEARNING SPACE'}),el('h1',{text:'Welcome back, '+(display.trim().split(/\s+/)[0]||'Creator')+'.'}),el('p',{text:'Keep building your skills. Your next breakthrough starts with the next lesson.'}),el('a',{class:'cv-hero-btn',href:'courses.html',text:'Explore learning paths'})]),el('div',{class:'cv-welcome-art'},[el('span',{class:'cv-orbit o1'}),el('span',{class:'cv-orbit o2'}),el('span',{class:'cv-art-mark',text:'CV'})])]);
  body.appendChild(hero);
+ var spaces=el('section',{class:'cv-spaces-section',id:'spaces'});
+ spaces.appendChild(el('div',{class:'cv-section-heading'},[el('div',{},[el('span',{class:'cv-kicker',text:'YOUR CREATORVERSE'}),el('h2',{text:'Everything you need, in one place'}),el('p',{text:'Move between learning, campus services and your community without losing your place.'})])]));
+ var spaceGrid=el('div',{class:'cv-spaces-grid'});
+ [
+  {title:'Academic Hub',desc:'Exam preparation, tertiary learning and course support.',href:'academic.html',tag:'LEARN',cls:'academic',action:'Open academic hub'},
+  {title:'Digital Skills',desc:'Build practical creative, technology and professional skills.',href:'digital-skills.html',tag:'GROW',cls:'skills',action:'Explore skills'},
+  {title:'Housing & Campus',desc:'Discover accommodation, roommates and useful campus services.',href:'campus.html',tag:'CAMPUS',cls:'housing',action:'Explore campus'},
+  {title:'Campus Community',desc:'Join conversations, discover groups and share what is happening.',href:'community.html',tag:'CONNECT',cls:'community',action:'Visit community'},
+  {title:'Messages & Stories',desc:'Keep up with your conversations, contacts and stories.',href:'messages.html',tag:'MESSAGES',cls:'messages',action:'Open messages'}
+ ].forEach(function(item){
+  var a=el('a',{class:'cv-space-card '+item.cls,href:item.href});
+  a.appendChild(el('span',{class:'cv-space-tag',text:item.tag}));
+  a.appendChild(el('span',{class:'cv-space-arrow','aria-hidden':'true',text:'↗'}));
+  a.appendChild(el('div',{class:'cv-space-copy'},[el('h3',{text:item.title}),el('p',{text:item.desc}),el('span',{class:'cv-space-action',text:item.action+'  →'})]));
+  spaceGrid.appendChild(a);
+ });
+ spaces.appendChild(spaceGrid);body.appendChild(spaces);
  var stats=el('section',{class:'cv-stat-grid'});
  var learning=el('section',{id:'learning',class:'cv-section'});
  var ach=el('section',{id:'achievements',class:'cv-section'});
