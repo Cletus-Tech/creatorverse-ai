@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "description": "Verified tertiary institution directory. Only entries with published=true appear in the student-facing directory. Each institution can define its own academic hierarchy.",
+  "institutions": []
+}
