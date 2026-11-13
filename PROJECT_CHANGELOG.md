@@ -1,3 +1,8 @@
+## 2026-11-13 — GCE examination route correction
+
+- Corrected the GCE card in the secondary examination catalogue to use the `gce` query key expected by the examination pathway page. The visible label was already GCE, but the route previously passed the legacy `gcse` key and therefore fell back to the generic pathway title.
+- QA: checked the source route key against the examination page's title map. No database or content records were changed.
+
 ## 2026-11-13 — Partner application navigation boundary
 
 - Removed the general “Partner Application Status” destination from the shared account dropdown. This prevents ordinary course learners from being routed into the creator/instructor/teacher/exhibitor application workflow.
