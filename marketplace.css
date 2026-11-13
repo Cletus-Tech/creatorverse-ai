@@ -1,0 +1,32 @@
+/* CreatorVerse Marketplace — scoped page styles */
+.cv-marketplace{max-width:1220px;margin:0 auto;padding:42px 22px 80px;color:var(--cv-color-ink,#17231d)}
+.market-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:center;padding:clamp(28px,5vw,58px);border-radius:26px;background:linear-gradient(115deg,#123c2e 0%,#1c6047 58%,#397c5c 100%);color:#fff}
+.market-hero:after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;right:-90px;top:-170px;border:1px solid #ffffff30;box-shadow:0 0 0 35px #ffffff0b,0 0 0 75px #ffffff08}
+.market-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#c6e6d2}
+.market-hero h1{font:700 clamp(36px,5vw,58px)/1.05 'Space Grotesk',sans-serif;letter-spacing:-.04em;margin:15px 0}
+.market-hero p{max-width:600px;color:#e0eee5;line-height:1.75;font-size:15px}
+.market-hero-art{position:relative;z-index:1;min-height:220px;display:grid;place-items:center}
+.market-hero-art img{width:100%;height:250px;object-fit:cover;border-radius:20px;box-shadow:0 18px 45px #071d1670}
+.market-search{display:flex;gap:10px;margin:26px 0 12px}
+.market-search input{flex:1;min-width:0;padding:15px 17px;border:1px solid #d8e2dc;border-radius:12px;background:#fff;font:inherit;color:#17231d;outline-offset:3px}
+.market-search button,.market-action{border:0;border-radius:12px;padding:0 20px;background:#1b6248;color:white;font-weight:700;cursor:pointer}
+.market-status{padding:11px 14px;border-radius:10px;background:#fff5df;color:#76531a;font-size:12px;line-height:1.6}
+.market-section{margin-top:42px}
+.market-heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:18px}
+.market-heading h2{font:700 clamp(24px,3vw,32px)/1.2 'Space Grotesk',sans-serif;margin:7px 0}
+.market-heading p{margin:0;color:#69766e;font-size:13px}
+.market-categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.market-category{display:flex;align-items:center;gap:13px;padding:17px;border:1px solid #e2e9e4;border-radius:15px;background:#fff;min-height:82px}
+.market-category-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:12px;background:#eaf4ed;color:#236448;font-size:20px}
+.market-category strong{display:block;font-size:14px}.market-category small{display:block;color:#758078;margin-top:4px;font-size:11px}
+.market-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.market-feature{overflow:hidden;border:1px solid #e2e9e4;border-radius:17px;background:#fff}
+.market-feature img{display:block;width:100%;height:155px;object-fit:cover}
+.market-feature div{padding:17px}.market-feature h3{font:600 18px 'Space Grotesk',sans-serif;margin:0 0 7px}
+.market-feature p{font-size:13px;line-height:1.65;color:#6b776f;margin:0}
+.market-feature span{display:inline-block;margin-top:12px;color:#1b6248;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.market-trust{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.market-trust article{padding:19px;border-radius:15px;background:#f0f5f1}
+.market-trust strong{font-size:14px}.market-trust p{font-size:12px;line-height:1.65;color:#69766e;margin:8px 0 0}
+@media(max-width:800px){.market-hero{grid-template-columns:1fr}.market-hero-art{min-height:0}.market-hero-art img{height:190px}.market-categories{grid-template-columns:repeat(2,minmax(0,1fr))}.market-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.cv-marketplace{padding:24px 15px 55px}.market-search{flex-direction:column}.market-search button{min-height:46px}.market-feature-grid,.market-trust{grid-template-columns:1fr}.market-heading{display:block}.market-heading p{margin-top:8px}}
