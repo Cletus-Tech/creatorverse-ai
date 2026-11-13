@@ -1,0 +1,103 @@
+/* CreatorVerse product-wide interaction and layout polish.
+   Loaded after legacy module styles so the approved ivory / emerald system
+   remains consistent without replacing module behaviour or data workflows. */
+:root{
+  --cv-ink:#17251e;
+  --cv-muted:#68786e;
+  --cv-green:#08764e;
+  --cv-green-deep:#064c3b;
+  --cv-paper:#f6f8f4;
+  --cv-surface:#fff;
+  --cv-border:#e1e9e1;
+  --cv-shadow:0 10px 28px rgba(20,55,36,.055);
+  --cv-radius:18px;
+}
+html{scroll-padding-top:104px}
+body{color:var(--cv-ink);background:var(--cv-paper)}
+main :is(h1,h2,h3,h4){letter-spacing:-.025em;line-height:1.16}
+main :is(p,li){line-height:1.65}
+main :is(input,select,textarea){font:inherit;accent-color:var(--cv-green)}
+main :is(input,select,textarea):focus-visible{
+  outline:3px solid #efa04d!important;outline-offset:2px!important;
+  border-color:#b7d7be!important;
+}
+main :is(button,a,[role=button],input,select,textarea){-webkit-tap-highlight-color:transparent}
+main :is(button,[role=button],a.btn,.btn,.market-action,.market-primary,.ch-btn,.hub-button){
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+main :is(button:disabled,[role=button][aria-disabled=true],a[aria-disabled=true]){
+  opacity:.55;cursor:not-allowed;filter:saturate(.65);transform:none!important;
+}
+main :is(button:not(:disabled),a.btn,.btn,.market-action,.market-primary,.ch-btn,.hub-button):active{
+  transform:translateY(1px);
+}
+main :is(button:focus-visible,a:focus-visible,[role=button]:focus-visible){
+  outline:3px solid #efa04d!important;outline-offset:3px!important;
+}
+main :is(.cv-hub,.cv-campus,.cv-marketplace,.community-page,.cv-messages-page,.page){
+  color:var(--cv-ink);
+}
+main :is(.cv-hub,.cv-campus,.cv-marketplace,.community-page,.cv-messages-page){
+  width:min(100% - 40px,1320px);margin-inline:auto;
+}
+main :is(.hub-page-head,.market-hero,.tertiary-hero,.community-hero,.msg-welcome,.ch-hero,.campus-hero){
+  border-radius:22px;
+}
+main :is(.hub-page-head h1,.market-hero h1,.tertiary-hero h1,.community-hero h1,.msg-welcome h1,.ch-hero h1,.campus-hero h1){
+  max-width:19ch;text-wrap:balance;
+}
+main :is(.hub-page-head p,.market-hero p,.tertiary-hero p,.community-hero p,.msg-welcome p,.ch-hero p,.campus-hero p){
+  max-width:64ch;
+}
+main :is(.hub-subcard,.tertiary-institution,.tertiary-tool-card,.campus-card,.market-listing,.community-side-card,.community-post,.msg-stories-section,.msg-inbox,.msg-chat,.ch-panel,.ch-card){
+  border-radius:16px;
+}
+main :is(.hub-subcard,.tertiary-institution,.tertiary-tool-card,.campus-card,.market-listing,.community-side-card,.community-post,.msg-stories-section,.msg-inbox,.msg-chat,.ch-panel,.ch-card):focus-within{
+  border-color:#a9cfb0!important;box-shadow:0 12px 30px rgba(20,70,42,.09)!important;
+}
+main :is(.market-status,.catalogue-status,.ch-empty,.community-empty,.msg-empty,.empty-state,[role=status]){
+  border-radius:12px;
+}
+main :is(.market-search,.market-live-filters,.community-actions,.msg-search,.tertiary-search,.tertiary-filter){
+  min-width:0;
+}
+main :is(.market-search input,.market-live-filters input,.market-live-filters select,.community-actions input,.msg-search input,.tertiary-search input,.tertiary-filter select){
+  min-width:0;max-width:100%;
+}
+main img{max-width:100%}
+main :is(.market-listing-photo img,.community-post img,.campus-card img,.tertiary-institution img){
+  object-fit:cover;
+}
+main :is(.modal,.market-dialog,.community-modal,.msg-modal){
+  overscroll-behavior:contain;
+}
+main :is(.modal-box,.market-dialog,.community-modal-box,.msg-modal-card){
+  max-height:min(88svh,900px);overflow:auto;overscroll-behavior:contain;
+}
+main :is(.market-dialog input,.market-dialog select,.market-dialog textarea,.community-modal-box input,.community-modal-box textarea,.msg-modal-card input,.msg-modal-card textarea){
+  width:100%;min-height:44px;
+}
+main :is(.market-dialog button,.community-modal-box button,.msg-modal-card button){min-height:42px}
+main :is(.loading,.msg-loading,.community-loading,.market-loading){
+  color:var(--cv-muted);
+}
+@media(max-width:760px){
+  html{scroll-padding-top:84px}
+  main :is(.cv-hub,.cv-campus,.cv-marketplace,.community-page,.cv-messages-page){
+    width:calc(100% - 28px);padding-left:0!important;padding-right:0!important;
+  }
+  main :is(.hub-page-head,.market-hero,.tertiary-hero,.community-hero,.msg-welcome,.ch-hero,.campus-hero){
+    border-radius:18px;
+  }
+  main :is(.market-search,.market-live-filters,.community-actions){
+    display:flex;flex-wrap:wrap;gap:9px;
+  }
+  main :is(.market-search input,.community-actions input){flex:1 1 180px;width:100%}
+  main :is(.market-search button,.community-actions button){min-height:44px}
+  main :is(.market-dialog,.community-modal-box,.msg-modal-card){
+    width:min(100% - 24px,560px);max-height:88svh;margin:auto;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  main :is(button,a,[role=button],.btn,.market-action,.market-primary,.ch-btn,.hub-button){transition:none!important}
+}
