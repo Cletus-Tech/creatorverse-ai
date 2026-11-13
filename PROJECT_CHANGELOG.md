@@ -697,3 +697,12 @@ Status: **Planning baseline committed to main. No application architecture or pr
 
 - Closed a URL-validation edge case by explicitly rejecting protocol-relative external asset URLs (for example, `//host/path`) in Brand & Logo Studio settings.
 - Recompiled `brand-admin.js` successfully after the correction.
+
+
+## 2026-11-13 — Marketplace listing submission workflow
+
+- Added `supabase/migrations/202611130020_marketplace_listing_submission_workflow.sql`.
+- Sellers may now transition only their own editable `draft` or `rejected` listing into `pending_review`; they still cannot self-publish, approve, archive or mark a listing sold.
+- Added the authenticated `marketplace_submit_listing(uuid)` RPC, which checks the signed-in owner and verified seller status before submission.
+- Hardened the listing trigger to protect moderation metadata while permitting the narrow seller submission transition.
+- This migration is committed to GitHub but has **not** been applied to Supabase. It has not been exercised against the live database. It assumes the existing `public.is_admin()` helper is present and correct; confirm that helper in the target Supabase project before applying.
