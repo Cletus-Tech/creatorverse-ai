@@ -157,7 +157,7 @@ grant select on public.marketplace_listings to anon;
 
 drop policy if exists "Marketplace users read own seller profile" on public.marketplace_sellers;
 create policy "Marketplace users read own seller profile" on public.marketplace_sellers
-for select to authenticated using (user_id = auth.uid() or public.is_admin() or status = 'verified');
+for select to authenticated using (user_id = auth.uid() or public.is_admin());
 drop policy if exists "Marketplace users create seller profile" on public.marketplace_sellers;
 create policy "Marketplace users create seller profile" on public.marketplace_sellers
 for insert to authenticated with check (user_id = auth.uid() and status = 'pending');
@@ -198,3 +198,12 @@ for update to authenticated using (
 drop policy if exists "Marketplace admins manage listings" on public.marketplace_listings;
 create policy "Marketplace admins manage listings" on public.marketplace_listings
 for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- Expose only safe seller-card fields publicly; never expose user IDs or private contact data.
+create or replace view public.marketplace_public_sellers
+with (security_barrier = true)
+as
+select id, display_name, seller_type, institution, campus, bio, status, created_at
+from public.marketplace_sellers
+where status = 'verified';
+grant select on public.marketplace_public_sellers to anon, authenticated;
