@@ -225,3 +225,53 @@ body[data-page="messages"]{background:#f6f8f4!important;color:#17251e!important}
 .msg-modal-card h2{color:#173d2e!important}.msg-field-label{color:#53665a!important}
 .msg-modal-card input,.msg-modal-card textarea{background:#fff!important;color:#173d2e!important;border-color:#dce6dc!important}
 @media(max-width:760px){.community-page{padding:94px 16px 80px}.community-layout{grid-template-columns:1fr}.community-side{position:static}.msg-workspace{grid-template-columns:1fr}.msg-inbox{border-right:0!important;border-bottom:1px solid #e5ece5!important}.msg-chat-empty{min-height:360px}}
+
+/* Academic, Skills and Campus spaces — stronger visual hierarchy and compact tiles. */
+.cv-hub .hub-page-head{max-width:760px;margin:28px 0 34px}
+.cv-hub .hub-page-head h1{font-size:clamp(38px,5vw,56px)!important;letter-spacing:-.045em!important}
+.cv-hub .hub-subgrid{gap:18px!important}
+.cv-hub .hub-subcard{position:relative;min-height:255px;padding:26px!important;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.cv-hub .hub-subcard:before{content:"";position:absolute;right:-30px;top:-50px;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,#9bd7a8 0%,#e8f5e9 65%,transparent 70%);opacity:.72}
+.cv-hub .hub-subcard:after{content:"";position:absolute;right:25px;top:25px;width:96px;height:96px;border-radius:25px;background:linear-gradient(145deg,#0a8154,#064c3b);box-shadow:0 12px 25px #064c3b2c;opacity:.95}
+.cv-hub .hub-subcard.academic-secondary:after{background:linear-gradient(145deg,#0a8154,#064c3b)}
+.cv-hub .hub-subcard.academic-tertiary:after{background:linear-gradient(145deg,#348dc5,#22618c)}
+.cv-hub .hub-subcard>*{position:relative;z-index:1}
+.cv-hub .hub-subcard>span{font-size:10px;letter-spacing:.13em}
+.cv-hub .hub-subcard h2{font-size:26px!important;margin:13px 0 8px!important}
+.cv-hub .hub-subcard p{max-width:470px;line-height:1.7}
+.cv-hub .hub-subcard>b{margin-top:17px;color:#08764e!important}
+.cv-hub .hub-exam{min-height:145px;padding:20px!important}
+.cv-hub .hub-exam:hover{transform:translateY(-3px)}
+.cv-hub .hub-exam b{font-size:18px!important}
+.cv-campus .campus-hero{position:relative;overflow:hidden;padding:clamp(28px,4vw,50px)!important}
+.cv-campus .campus-hero:after{content:"";position:absolute;inset:0 0 0 auto;width:45%;background:linear-gradient(90deg,transparent,rgba(8,118,78,.08)),url('https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1000&q=85') center/cover;mask-image:linear-gradient(90deg,transparent,#000 35%);pointer-events:none}
+.cv-campus .campus-hero>*{position:relative;z-index:1}
+.cv-campus .campus-grid{gap:15px!important}
+.cv-campus .campus-card{border-radius:18px!important;padding:21px!important;transition:transform .2s,box-shadow .2s,border-color .2s}
+.cv-campus .campus-card:hover{transform:translateY(-3px);border-color:#afd3b5!important;box-shadow:0 14px 30px rgba(20,70,42,.09)!important}
+.cv-campus .campus-card-icon{background:#edf6ef!important;color:#08764e!important;border-radius:13px!important}
+.cv-campus .campus-card-tag{background:#edf6ef!important;color:#176143!important;border-radius:30px!important}
+.cv-campus .campus-card h3{color:#173d2e!important}
+.cv-campus .campus-card p{color:#68786e!important}
+.cv-campus .campus-card-link{color:#08764e!important}
+.ch-hero{position:relative;overflow:hidden}
+.ch-hero-art{background:linear-gradient(145deg,#0b8054,#d3ecd8)!important;border-radius:22px!important}
+.ch-art-house{background:#fff!important;box-shadow:0 15px 30px rgba(8,76,59,.14)!important}
+.ch-art-chip{background:#fff!important;color:#176143!important;border:1px solid #d4e8d7!important}
+.ch-toolbar,.ch-tabs{background:#fff!important;border-color:#e1e9e1!important}
+.ch-promise{background:#edf6ef!important;border:1px solid #d5e8d8!important;border-radius:18px!important}
+.ch-promise-grid>div{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:14px!important}
+.market-live-tools{background:linear-gradient(110deg,#eaf5ec,#fff)!important;border:1px solid #dce9dd!important;border-radius:18px!important;padding:20px 22px!important}
+.market-live-tools h2{color:#173d2e!important}.market-live-tools p{color:#68786e!important}
+.market-live-filters{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:15px!important;padding:13px!important}
+.market-live-filters input,.market-live-filters select{background:#f9fbf8!important;color:#173d2e!important;border:1px solid #dce6dc!important;border-radius:10px!important}
+.market-listing{overflow:hidden;border-radius:16px!important}
+.market-listing-photo{background:#edf4ed!important}
+.market-listing-body{padding:16px!important}
+.market-listing-tag{background:#edf6ef!important;color:#176143!important}
+.market-price{color:#08764e!important}
+.market-dialog{border:0!important;border-radius:20px!important;box-shadow:0 24px 75px rgba(12,43,27,.22)!important}
+.market-dialog form{background:#fff!important;color:#173d2e!important}
+.market-dialog h2{color:#173d2e!important}
+.market-dialog input,.market-dialog select,.market-dialog textarea{background:#fff!important;color:#173d2e!important;border:1px solid #dce6dc!important;border-radius:10px!important}
+@media(max-width:760px){.cv-hub .hub-subcard{min-height:220px;padding:20px!important}.cv-hub .hub-subcard:after{width:68px;height:68px;right:18px;top:18px}.cv-campus .campus-hero:after{opacity:.22;width:65%}}
