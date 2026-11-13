@@ -102,3 +102,64 @@ body[data-page]::before{opacity:.025!important}
 @media(max-width:900px){.cv-home{padding-top:88px}}
 @media(max-width:580px){.cv-home{padding-top:84px}.cv-home-hero{border-radius:19px}.cv-home-visual{min-height:310px}.cv-home-copy{padding:27px 20px}.cv-home-copy h1{font-size:clamp(39px,11vw,54px)!important}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+/* Module-level visual alignment: all CreatorVerse spaces share one surface language. */
+.cv-hub,.cv-campus,.cv-marketplace,.cv-messages-page,.community-page,.tertiary-page{color:#17251e!important}
+.cv-hub{max-width:1240px;margin-inline:auto;padding:116px 24px 76px}
+.hub-back,.campus-back{color:#08764e!important}
+.hub-page-head h1,.hub-page-head h1 em,.hub-subcard h2,.hub-exam b{color:#173e2e!important}
+.hub-page-head p,.hub-subcard p,.hub-exam span{color:#68786e!important}
+.hub-eyebrow,.hub-subcard>span,.hub-exam i{color:#08764e!important}
+.hub-subcard,.hub-exam{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:19px!important;box-shadow:0 9px 28px rgba(20,55,36,.055)!important;color:#173d2e!important}
+.hub-subcard:hover,.hub-exam:hover{border-color:#9bc9a4!important;box-shadow:0 15px 35px rgba(20,70,42,.1)!important;transform:translateY(-3px)}
+.hub-button{background:#08764e!important;color:#fff!important}
+.hub-feature-panel{background:linear-gradient(125deg,#eaf5ec,#fff)!important;border:1px solid #dce9dd!important;color:#173d2e!important}
+.hub-feature-panel h2{color:#173d2e!important}.hub-disclaimer{color:#748177!important}
+.tertiary-hero,.market-hero,.community-hero,.msg-welcome,.ch-hero{background:linear-gradient(120deg,#eaf5ec,#fff)!important;border:1px solid #dce9dd!important;box-shadow:0 12px 35px rgba(20,55,36,.07)!important;color:#173d2e!important}
+.tertiary-hero h1,.tertiary-hero h1 em,.market-hero h1,.community-hero h1,.community-hero h1 span,.msg-welcome h1,.ch-hero h1{color:#173d2e!important;background:none!important}
+.tertiary-hero p,.market-hero p,.community-hero p,.msg-welcome p,.ch-hero p{color:#627368!important}
+.tertiary-pills span{background:#fff!important;border:1px solid #dce9dd!important;color:#176143!important}
+.tertiary-card{background:linear-gradient(145deg,#08764e,#064c3b)!important;border:1px solid #c7e0ce!important;box-shadow:0 18px 42px rgba(8,76,59,.18)!important}
+.tertiary-card small,.tertiary-card strong{color:#fff!important}.tertiary-orbit{border-color:#9bc9a4!important}
+.tertiary-section,.tertiary-cta{background:#fff!important;border:1px solid #e1e9e1!important;border-radius:20px!important;box-shadow:0 8px 24px rgba(20,55,36,.045)!important;color:#173d2e!important}
+.tertiary-section h2,.tertiary-cta h2{color:#173d2e!important}.tertiary-section p,.tertiary-cta p{color:#68786e!important}
+.catalogue-status{background:#edf6ef!important;color:#176143!important;border-color:#d0e5d4!important}
+.tertiary-search input,.tertiary-filter select{background:#fff!important;color:#17251e!important;border-color:#dce6dc!important}
+.tertiary-institution,.tertiary-tool-card{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 22px rgba(20,55,36,.05)!important}
+.cv-campus{max-width:1240px;margin:auto;padding:116px 24px 80px}
+.campus-hero{background:linear-gradient(120deg,#eaf5ec,#fff)!important;border:1px solid #dce9dd!important;border-radius:25px!important;box-shadow:0 12px 35px rgba(20,55,36,.06)!important}
+.campus-hero h1,.campus-hero h1 span,.campus-section-head h2{color:#173d2e!important}.campus-hero p,.campus-section-head p{color:#68786e!important}
+.campus-eyebrow{color:#08764e!important}.campus-note{background:#fff!important;border:1px solid #e1e9e1!important;color:#607166!important}
+.campus-card{background:#fff!important;border:1px solid #e1e9e1!important;box-shadow:0 9px 28px rgba(20,55,36,.055)!important;color:#173d2e!important}
+.campus-card h3,.campus-card h2{color:#173d2e!important}
+.ch-page{background:transparent!important}
+.ch-topbar,.ch-panel,.ch-results,.ch-filter-panel,.ch-empty{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 24px rgba(20,55,36,.05)!important}
+.ch-brand b,.ch-section h2,.ch-topbar h1{color:#173d2e!important}.ch-brand small,.ch-muted,.ch-topbar p{color:#68786e!important}
+.ch-campus-select select,.ch-filter select,.ch-filter input{background:#fff!important;color:#173d2e!important;border:1px solid #dce6dc!important}
+.ch-tab[aria-selected=true],.ch-primary{background:#08764e!important;color:#fff!important}
+.ch-tab{background:#f3f7f3!important;color:#53665a!important;border-color:#e1e9e1!important}
+.cv-marketplace{max-width:1240px;padding-top:116px}.market-eyebrow{color:#08764e!important}
+.market-hero-art img{box-shadow:0 14px 32px rgba(20,55,36,.12)!important}
+.market-search input,.market-filter select{background:#fff!important;color:#173d2e!important;border-color:#dce6dc!important}
+.market-search button,.market-action,.market-primary{background:#08764e!important;color:#fff!important}
+.market-status{background:#fff7e9!important;color:#81521c!important;border:1px solid #f1dfc4!important}
+.market-category,.market-listing,.market-card,.market-seller-card,.market-enquiry{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 24px rgba(20,55,36,.05)!important}
+.market-category h3,.market-listing h3,.market-card h3{color:#173d2e!important}.market-category p,.market-listing p,.market-card p{color:#68786e!important}
+.community-page{max-width:1240px;padding-top:116px}.community-kicker{color:#08764e!important}
+.community-orb{background:linear-gradient(145deg,#0b8155,#064c3b)!important;border-color:#c4e0ca!important;box-shadow:0 12px 30px rgba(8,76,59,.18)!important}
+.community-orb span,.community-orb b,.community-orb small{color:#fff!important}
+.community-composer,.community-post,.community-card,.community-panel,.community-sidebar,.community-feed-card{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 24px rgba(20,55,36,.05)!important}
+.community-post h3,.community-card h3,.community-panel h2{color:#173d2e!important}.community-post p,.community-card p{color:#68786e!important}
+.cv-messages-page{max-width:1240px;padding-top:116px;color:#173d2e!important}.msg-kicker{color:#08764e!important}
+.msg-live-pill{background:#edf7ef!important;border:1px solid #d1e7d5!important;color:#176143!important}
+.msg-stories-section,.msg-inbox,.msg-conversation,.msg-thread,.msg-chat-panel,.msg-contact-list,.msg-chat-area,.msg-compose{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 24px rgba(20,55,36,.05)!important}
+.msg-section-head h2,.msg-inbox-head h2,.msg-conversation h3{color:#173d2e!important}.msg-section-head p,.msg-contact-meta,.msg-message-time{color:#748177!important}
+.msg-quiet-btn{background:#edf6ef!important;border:1px solid #d4e6d6!important;color:#176143!important}
+.msg-bubble,.msg-message-bubble{background:#f1f6f1!important;color:#173d2e!important}.msg-bubble.mine,.msg-message-bubble.mine{background:#08764e!important;color:#fff!important}
+body[data-page="messages"]{background:#f6f8f4!important;color:#17251e!important}
+body[data-page="dashboard"],body[data-page="admin"]{background:#f6f8f4!important;color:#17251e!important}
+body[data-page="admin"] .page{padding-top:112px}
+body[data-page="admin"] .page h1,body[data-page="admin"] .page h2{color:#173d2e}
+body[data-page="admin"] .page .panel,body[data-page="admin"] .page .card,body[data-page="admin"] .page .admin-card{background:#fff!important;border:1px solid #e1e9e1!important;color:#173d2e!important;box-shadow:0 8px 24px rgba(20,55,36,.05)!important}
+body[data-page="admin"] .page input,body[data-page="admin"] .page select,body[data-page="admin"] .page textarea{background:#fff!important;color:#173d2e!important;border-color:#dce6dc!important}
+@media(max-width:760px){.cv-hub,.cv-campus,.cv-marketplace,.community-page,.cv-messages-page{padding:94px 16px 84px}.market-hero{grid-template-columns:1fr}.market-hero-art{min-height:160px}.market-hero-art img{height:190px}.tertiary-hero{grid-template-columns:1fr}.tertiary-art{min-height:170px}.community-hero{flex-direction:column;align-items:flex-start}.msg-welcome{align-items:flex-start;flex-direction:column}}
