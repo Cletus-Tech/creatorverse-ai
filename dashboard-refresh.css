@@ -1,0 +1,92 @@
+/* CreatorVerse dashboard — combined Canva direction, image-led and mobile-first */
+body[data-page="dashboard"]{background:var(--cv-color-paper);color:var(--cv-color-ink)}
+body[data-page="dashboard"] .cv-dash-shell{min-height:100vh;grid-template-columns:232px minmax(0,1fr);background:var(--cv-color-paper)}
+body[data-page="dashboard"] .cv-dash-side{top:0;height:100dvh;padding:24px 16px 18px;background:#fff;border-right:1px solid var(--cv-color-line)}
+body[data-page="dashboard"] .cv-side-brand{padding:5px 10px 34px;color:var(--cv-color-green);font:800 20px Manrope,'Space Grotesk',sans-serif}
+body[data-page="dashboard"] .cv-side-brand:after{content:''}
+body[data-page="dashboard"] .cv-side-label,body[data-page="dashboard"] .cv-kicker{color:var(--cv-color-green);letter-spacing:1.35px}
+body[data-page="dashboard"] .cv-side-link{min-height:42px;padding:11px 12px;border-radius:11px;color:#647268;font-size:13px;transition:background var(--cv-motion-fast),color var(--cv-motion-fast),transform var(--cv-motion-fast)}
+body[data-page="dashboard"] .cv-side-link:hover{background:#f0f6f0;color:var(--cv-color-green);transform:translateX(2px);box-shadow:none}
+body[data-page="dashboard"] .cv-side-link.active{background:var(--cv-color-green-soft);color:var(--cv-color-green);box-shadow:inset 3px 0 var(--cv-color-green);font-weight:800}
+body[data-page="dashboard"] .cv-side-explore{border:1px solid #d6e8d9;color:var(--cv-color-green);background:#f7fbf7}
+body[data-page="dashboard"] .cv-side-mini{color:#8a968d}
+body[data-page="dashboard"] .cv-logout{border:1px solid #f0d8d5;background:#fff8f6;color:#ad554e;border-radius:10px}
+body[data-page="dashboard"] .cv-dash-area{min-width:0}
+body[data-page="dashboard"] .cv-dash-top{height:72px;padding:0 clamp(18px,3.2vw,42px);background:rgba(255,255,255,.92);border-bottom:1px solid var(--cv-color-line)}
+body[data-page="dashboard"] .cv-breadcrumb{color:#859187}
+body[data-page="dashboard"] .cv-top-user{color:var(--cv-color-ink)}
+body[data-page="dashboard"] .cv-top-user img,body[data-page="dashboard"] .cv-avatar-sm{border:2px solid #e1eee3}
+body[data-page="dashboard"] .cv-avatar-sm{background:var(--cv-color-green);color:#fff}
+body[data-page="dashboard"] .cv-dash-content{max-width:1500px;padding:clamp(18px,3vw,40px)}
+body[data-page="dashboard"] .cv-welcome{min-height:260px;padding:clamp(24px,3.8vw,44px);border:0;border-radius:var(--cv-radius-xl);background:linear-gradient(90deg,rgba(8,45,31,.91) 0%,rgba(9,55,38,.77) 52%,rgba(9,55,38,.18) 100%),url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1800&q=85') center 44%/cover;box-shadow:var(--cv-shadow-float)}
+body[data-page="dashboard"] .cv-welcome:before{width:250px;height:250px;right:4%;top:-165px;background:rgba(137,204,159,.18)}
+body[data-page="dashboard"] .cv-welcome:after{width:190px;height:190px;right:-75px;bottom:-145px;background:rgba(239,139,72,.18)}
+body[data-page="dashboard"] .cv-welcome-copy{max-width:690px}
+body[data-page="dashboard"] .cv-welcome .cv-kicker{color:#c3e8cd}
+body[data-page="dashboard"] .cv-welcome h1{color:#fff;font:800 clamp(28px,3.4vw,42px)/1.12 Manrope,'Space Grotesk',sans-serif;letter-spacing:-1.4px}
+body[data-page="dashboard"] .cv-welcome p{max-width:520px;color:#e2eee5;font-size:14px;line-height:1.75}
+body[data-page="dashboard"] .cv-hero-btn,body[data-page="dashboard"] .cv-secondary-btn{padding:12px 18px;border-radius:11px;background:var(--cv-color-orange);color:#2c2119;box-shadow:0 8px 20px #071c1344;transition:transform var(--cv-motion-fast),filter var(--cv-motion-fast),box-shadow var(--cv-motion-fast)}
+body[data-page="dashboard"] .cv-hero-btn:hover,body[data-page="dashboard"] .cv-secondary-btn:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:0 12px 24px #071c1355}
+body[data-page="dashboard"] .cv-welcome-art{width:150px;height:150px}
+body[data-page="dashboard"] .cv-art-mark{width:76px;height:76px;border-radius:23px;background:linear-gradient(145deg,#2a9a70,#0b563c);box-shadow:0 15px 40px #092c1f66;transform:none}
+body[data-page="dashboard"] .cv-orbit{border-color:#ffffff60}
+body[data-page="dashboard"] .cv-stat-grid{gap:14px;margin:18px 0 34px}
+body[data-page="dashboard"] .cv-stat{padding:18px 20px;border:1px solid var(--cv-color-line);border-radius:var(--cv-radius-md);background:#fff;box-shadow:0 5px 18px rgba(22,55,39,.035);transition:transform var(--cv-motion-fast),box-shadow var(--cv-motion-fast)}
+body[data-page="dashboard"] .cv-stat:hover{transform:translateY(-2px);box-shadow:var(--cv-shadow-card)}
+body[data-page="dashboard"] .cv-stat-label{color:#78877d}
+body[data-page="dashboard"] .cv-stat-value{color:var(--cv-color-ink);font:800 28px Manrope,'Space Grotesk',sans-serif}
+body[data-page="dashboard"] .cv-stat small{color:#89968d}
+body[data-page="dashboard"] .cv-section{margin-top:34px}
+body[data-page="dashboard"] .cv-section-heading h2{color:var(--cv-color-ink);font:800 23px Manrope,'Space Grotesk',sans-serif;letter-spacing:-.7px}
+body[data-page="dashboard"] .cv-section-heading p{color:#7b887f;line-height:1.65}
+body[data-page="dashboard"] .cv-text-link{color:var(--cv-color-green)}
+body[data-page="dashboard"] .cv-continue-card{border:1px solid var(--cv-color-line);border-radius:var(--cv-radius-lg);background:#fff;box-shadow:0 7px 24px rgba(22,55,39,.045)}
+body[data-page="dashboard"] .cv-continue-info h3,body[data-page="dashboard"] .cv-course-card h3{color:var(--cv-color-ink)}
+body[data-page="dashboard"] .cv-continue-info p,body[data-page="dashboard"] .cv-course-card-body p{color:#718076}
+body[data-page="dashboard"] .cv-progress{background:#e9eee8}
+body[data-page="dashboard"] .cv-progress span{background:linear-gradient(90deg,#16875d,#7cbf91);box-shadow:none}
+body[data-page="dashboard"] .cv-course-meta{color:#829087}
+body[data-page="dashboard"] .cv-course-meta strong{color:var(--cv-color-green)}
+body[data-page="dashboard"] .cv-course-card{border:1px solid var(--cv-color-line);border-radius:var(--cv-radius-md);background:#fff;box-shadow:0 6px 22px rgba(22,55,39,.045)}
+body[data-page="dashboard"] .cv-course-card:hover{transform:translateY(-3px);border-color:#b9d6c0;box-shadow:var(--cv-shadow-card)}
+body[data-page="dashboard"] .cv-course-thumb{height:150px}
+body[data-page="dashboard"] .cv-empty,body[data-page="dashboard"] .cv-activity-list,body[data-page="dashboard"] .cv-achievement-card,body[data-page="dashboard"] .cv-settings-card{border:1px solid var(--cv-color-line);border-radius:var(--cv-radius-md);background:#fff}
+body[data-page="dashboard"] .cv-empty h3,body[data-page="dashboard"] .cv-activity-row strong,body[data-page="dashboard"] .cv-certificate-row strong,body[data-page="dashboard"] .cv-settings-title h3,body[data-page="dashboard"] .cv-achievement-card strong{color:var(--cv-color-ink)}
+body[data-page="dashboard"] .cv-empty p,body[data-page="dashboard"] .cv-activity-row small,body[data-page="dashboard"] .cv-certificate-row small,body[data-page="dashboard"] .cv-settings-title p{color:#78867c}
+body[data-page="dashboard"] .cv-engagement-card,body[data-page="dashboard"] .cv-session-card{background:#fff;border:1px solid var(--cv-color-line);border-radius:var(--cv-radius-md);box-shadow:0 5px 18px rgba(22,55,39,.035)}
+body[data-page="dashboard"] .cv-engagement-card h3,body[data-page="dashboard"] .cv-session-card h3{color:var(--cv-color-ink)}
+body[data-page="dashboard"] .cv-engagement-card p,body[data-page="dashboard"] .cv-session-card p{color:#718076}
+body[data-page="dashboard"] .cv-engagement-track{background:#edf1ec}
+body[data-page="dashboard"] .cv-engagement-track span{background:var(--cv-color-green)}
+body[data-page="dashboard"] .cv-dash-footer{color:#8b978e;border-top:1px solid var(--cv-color-line)}
+body[data-page="dashboard"] .cv-feedback{border-radius:11px}
+@media(max-width:900px){body[data-page="dashboard"] .cv-dash-shell{grid-template-columns:190px minmax(0,1fr)}body[data-page="dashboard"] .cv-welcome-art{margin-right:0;width:120px;height:120px}}
+@media(max-width:700px){
+ body[data-page="dashboard"]{padding-bottom:0}
+ body[data-page="dashboard"] .cv-dash-shell{display:block;min-height:100dvh}
+ body[data-page="dashboard"] .cv-dash-side{position:relative;top:auto;height:auto;padding:13px 16px;border-right:0;border-bottom:1px solid var(--cv-color-line);display:flex;flex-direction:row;align-items:center;gap:12px;overflow-x:auto;white-space:nowrap}
+ body[data-page="dashboard"] .cv-side-brand{padding:0 8px 0 0;font-size:17px;flex:none}
+ body[data-page="dashboard"] .cv-side-label,body[data-page="dashboard"] .cv-side-bottom{display:none}
+ body[data-page="dashboard"] .cv-side-link{flex:none;margin:0;padding:9px 10px;font-size:11px}
+ body[data-page="dashboard"] .cv-side-explore{margin:0}
+ body[data-page="dashboard"] .cv-dash-top{height:58px;padding:0 16px}
+ body[data-page="dashboard"] .cv-dash-content{padding:16px 14px 36px}
+ body[data-page="dashboard"] .cv-welcome{min-height:235px;padding:22px 19px;border-radius:20px;background-position:58% center}
+ body[data-page="dashboard"] .cv-welcome-art{display:none}
+ body[data-page="dashboard"] .cv-welcome h1{font-size:28px}
+ body[data-page="dashboard"] .cv-welcome p{font-size:13px}
+ body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 26px}
+ body[data-page="dashboard"] .cv-stat{padding:13px 10px;border-radius:12px}
+ body[data-page="dashboard"] .cv-stat-label{font-size:9px;line-height:1.4}
+ body[data-page="dashboard"] .cv-stat-value{font-size:21px;margin:7px 0 2px}
+ body[data-page="dashboard"] .cv-stat small{font-size:9px;line-height:1.4}
+ body[data-page="dashboard"] .cv-section-heading h2{font-size:20px}
+ body[data-page="dashboard"] .cv-continue-card{grid-template-columns:1fr;gap:13px;padding:12px}
+ body[data-page="dashboard"] .cv-course-cover{height:175px}
+ body[data-page="dashboard"] .cv-course-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ body[data-page="dashboard"] .cv-course-thumb{height:110px}
+ body[data-page="dashboard"] .cv-course-card-body{padding:12px}
+ body[data-page="dashboard"] .cv-course-card h3{font-size:13px}
+}
+@media(max-width:390px){body[data-page="dashboard"] .cv-stat-grid{grid-template-columns:1fr 1fr}body[data-page="dashboard"] .cv-stat:last-child{grid-column:1/-1}body[data-page="dashboard"] .cv-course-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){body[data-page="dashboard"] *,body[data-page="dashboard"] *:before,body[data-page="dashboard"] *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
