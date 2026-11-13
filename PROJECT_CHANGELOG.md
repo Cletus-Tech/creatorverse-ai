@@ -1,3 +1,14 @@
+## 2026-11-13 — Marketplace elevated to a first-class CreatorVerse space
+
+Status: **Dedicated preview UI committed on main; live commerce workflows not enabled.**
+
+- Added Marketplace as a sixth first-class entry point in the student dashboard, separate from Housing & Campus.
+- Created a dedicated `marketplace.html` discovery experience with Buy & Sell, Campus Vendors, Student Services and Rentals categories; image-led examples; search-preview feedback; and trust/safety principles.
+- Kept the Campus Life Marketplace feature as a roadmap explanation, while the new route gives Marketplace its own destination and clear product identity.
+- Explicitly labelled the new page as a preview. Live listings, seller accounts, checkout, payments, orders, ratings and dispute operations are not claimed as implemented.
+- No Supabase schema, policies, payment configuration or customer data were changed. Next marketplace backend milestone requires an audited data model, RLS policies, moderation workflows and transaction safeguards before enabling listings or checkout.
+- QA: dashboard route and markup insertion points checked; Marketplace is linked from the dashboard. Browser/device and production deployment verification remain pending.
+
 ## 2026-11-13 — Unified student dashboard entry points
 
 Status: **Implemented on main; production deployment and authenticated browser QA pending.**
