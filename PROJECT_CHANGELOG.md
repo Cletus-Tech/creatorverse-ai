@@ -1,3 +1,15 @@
+## 2026-11-13 — Marketplace listing photo uploads and public catalogue initialization
+
+Status: **Frontend and additive Storage migration committed on main; Storage migration is not applied and upload has not been tested against the live project.**
+
+- Added a public Supabase client initialization route for `marketplace` without putting Marketplace in the protected-page list. This preserves anonymous catalogue browsing while enabling authenticated seller actions.
+- Replaced the listing image URL field with multiple photo selection: up to five JPG, PNG, WebP or AVIF images, maximum 5 MB each.
+- Added upload to the `marketplace-listing-images` bucket under the authenticated user's UUID folder. The listing stores generated public URLs after successful upload.
+- Added best-effort cleanup of uploaded objects if the listing database insert fails.
+- Added an additive Storage migration that creates the public listing-photo bucket with a 5 MB limit and MIME allowlist, permits public reads, and restricts upload/delete to each authenticated user's own UUID folder. No upsert/update policy is granted.
+- QA: `auth.js`, `marketplace.js`, `marketplace-admin.js`, and `admin-shell.js` passed JavaScript syntax parsing. Supabase Storage API usage checked against current Supabase docs. No hosted Storage/database changes or production browser tests were performed.
+- Pending: apply Marketplace migrations in order, confirm bucket settings and Storage RLS, test real seller uploads, verify image rendering and cleanup, and confirm the deployed build.
+
 ## 2026-11-13 — Marketplace moderation in the unified Super Admin centre
 
 Status: **Admin interface committed on main; database migrations and production workflow are not yet applied or verified.**
