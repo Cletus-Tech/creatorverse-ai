@@ -1,7 +1,8 @@
 (function(){
 var C=window.CV_CONFIG||{},pg=document.body.dataset.page,sb=null,
 CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
-AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin','marketplace'],
+PUBLIC_SB=['marketplace'],
+AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin'],
 base=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''),
 $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}
@@ -38,5 +39,5 @@ function run(){
    return sb.auth.updateUser({password:d.get('password')}).then(function(r){if(!oops(r.error)){msg('Password updated. Redirecting to login…','ok');setTimeout(function(){sb.auth.signOut().then(function(){location.href='login.html'})},1500)}})})}
  if(pg==='dashboard')sb.auth.getSession().then(function(r){var s=r.data.session;if(!s){location.href='login.html';return}window.CV_DASH(sb,s,{msg:msg,form:form,oops:oops})})}
 if(AUTH.indexOf(pg)>-1&&!(C.supabaseUrl&&C.supabaseAnonKey)){var m=$('content');if(m)m.innerHTML='<h1>Accounts not configured</h1><div class="note">The site owner has not added the Supabase keys in config.js yet.</div><a class="btn btn-primary" href="index.html">Back to Home</a>';return}
-if(C.supabaseUrl&&C.supabaseAnonKey&&(AUTH.indexOf(pg)>-1||hasSession()))load(run)
+if(C.supabaseUrl&&C.supabaseAnonKey&&(AUTH.indexOf(pg)>-1||PUBLIC_SB.indexOf(pg)>-1||hasSession()))load(run)
 })();
