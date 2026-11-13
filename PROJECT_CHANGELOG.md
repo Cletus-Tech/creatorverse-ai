@@ -1,3 +1,14 @@
+## 2026-11-13 — Unified Explore directory and Campus Life route cleanup
+
+Status: **Directory and cross-module route corrections committed on main; deployment pending.**
+
+- Replaced the legacy divisions catalogue, which described Marketplace as unavailable and represented an older CreatorVerse structure, with a complete directory of Academic, Digital Skills, Housing, Marketplace, Campus Life, Community, Messages and planned Business/Advertising.
+- The directory uses the same CreatorVerse visual system and shared header/footer, with direct links to the canonical module routes.
+- Corrected Campus Life's Marketplace card to open the actual unified Marketplace and its study card to open Academic rather than an outdated feature placeholder.
+- Redirected the legacy `campus-life.html` address to the canonical `campus.html` route, preserving query strings and URL fragments.
+- Renamed the old Divisions menu label to “Explore all spaces” so it describes the directory's new purpose.
+- QA: verified the canonical route files exist and searched for the two obsolete Campus Life feature URLs; no remaining matches were found. No database changes were made.
+
 ## 2026-11-13 — Unified platform navigation and mobile app shell
 
 Status: **Shared navigation and shell styling committed on main; latest deployment is building.**
