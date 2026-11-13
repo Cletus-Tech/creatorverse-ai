@@ -29,24 +29,119 @@ var b=document.getElementById('menu-btn'),m=document.getElementById('mobile-menu
 var bm=document.getElementById('bn-more');if(bm)bm.addEventListener('click',function(){m.classList.toggle('open')});
 if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)});
 
-// Unified page-loading gate: keep the complete page hidden until its initial
-// scripts/data requests settle. A network-idle barrier replaces the old text-stability
-// heuristic, which could dismiss the loader while async sections were still rendering.
+// Shared CreatorVerse entrance gate.
+// The gate is a short visual introduction, while page readiness is tracked separately.
 (function(){
- var started=Date.now(),firstEntrance=false;try{firstEntrance=!sessionStorage.getItem('cv-entrance-seen');sessionStorage.setItem('cv-entrance-seen','1')}catch(e){firstEntrance=true}var minWait=firstEntrance?9800:1400,maxWait=firstEntrance?10500:4500,quietFor=firstEntrance?350:250,lastActivity=Date.now(),pending=0,readyEvent=false,done=false,gate=document.getElementById('cv-page-loader'),style=document.createElement('style');
- style.id='cv-universal-loader-style';style.textContent='.cv-page-loader.cv-universal-gate,.cv-universal-gate{position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:25px;padding:24px;background:radial-gradient(ellipse at 50% 42%,rgba(36,92,190,.2),transparent 52%),#070d1d;color:#eef4ff;opacity:1;visibility:visible;transition:opacity .38s ease,visibility .38s ease}.cv-universal-gate.is-leaving{opacity:0!important;visibility:hidden!important;pointer-events:none}.cv-universal-gate .cv-gate-brand{display:flex;align-items:center;gap:15px;font:800 17px/1.2 Inter,system-ui,sans-serif;letter-spacing:.08em}.cv-universal-gate img{width:58px;height:58px}.cv-universal-gate b{color:#83aaff}.cv-universal-gate .cv-gate-track{width:164px;height:3px;border-radius:9px;background:rgba(151,177,226,.16);overflow:hidden}.cv-universal-gate .cv-gate-track:after{content:"";display:block;width:42%;height:100%;border-radius:9px;background:linear-gradient(90deg,#3989ff,#a16bff);animation:cvGateProgress 1.15s ease-in-out infinite alternate}.cv-universal-gate .cv-gate-caption{color:#8fa2c3;font:600 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase}@keyframes cvGateProgress{from{transform:translateX(-5%)}to{transform:translateX(145%)}}';document.head.appendChild(style);
- if(!gate){gate=document.createElement('div');gate.id='cv-page-loader';gate.className='cv-universal-gate';gate.setAttribute('role','status');gate.setAttribute('aria-live','polite');document.body.appendChild(gate)}else{gate.classList.add('cv-universal-gate');}if(!firstEntrance)gate.classList.add('cv-fast-navigation');
- gate.innerHTML='<div class="cv-campus-gate-scene" aria-label="CreatorVerse entrance gate opening"><div class="cv-gate-arch"><div class="cv-gate-arch-glow"></div><div class="cv-gate-pillars"><span></span><span></span></div><div class="cv-gate-sign"><img src="assets/creatorverse-mark.svg?v=20261111-globe2" alt=""><b>CREATORVERSE</b><small>LEARN · CREATE · EARN · GROW</small></div><div class="cv-gate-opening"><div class="cv-gate-depth"></div><div class="cv-gate-road"></div><div class="cv-gate-walkers"><i class="cv-gate-walker cv-gate-walker-one"></i><i class="cv-gate-walker cv-gate-walker-two"></i></div><div class="cv-gate-doors"><div class="cv-gate-door cv-gate-door-left"><span class="cv-gate-door-panel"></span></div><div class="cv-gate-door cv-gate-door-right"><span class="cv-gate-door-panel"></span></div></div></div></div></div>';
-document.documentElement.classList.add('cv-loading');
+ var started=Date.now(),firstEntrance=false;
+ try{
+  firstEntrance=!sessionStorage.getItem('cv-entrance-seen');
+  sessionStorage.setItem('cv-entrance-seen','1');
+ }catch(e){firstEntrance=true}
+ var minWait=firstEntrance?9000:1400;
+ var maxWait=firstEntrance?10500:4500;
+ var quietFor=firstEntrance?350:250;
+ var lastActivity=Date.now(),pending=0,done=false,checkingFonts=false,timer=null;
+ var gate=document.getElementById('cv-page-loader');
+ var style=document.createElement('style');
+ style.id='cv-universal-loader-style';
+ style.textContent='.cv-universal-gate{position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0!important;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,rgba(34,91,159,.32),transparent 55%),linear-gradient(180deg,#0a1a31,#050b17)!important;color:#eef4ff;opacity:1;visibility:visible;transition:opacity .42s ease,visibility .42s ease}.cv-universal-gate.is-leaving{opacity:0!important;visibility:hidden!important;pointer-events:none}@media(prefers-reduced-motion:reduce){.cv-universal-gate{transition:none}}';
+ document.head.appendChild(style);
+ if(!gate){
+  gate=document.createElement('div');
+  gate.id='cv-page-loader';
+  gate.className='cv-universal-gate';
+  gate.setAttribute('role','status');
+  gate.setAttribute('aria-live','polite');
+  document.body.appendChild(gate);
+ }else{
+  gate.classList.add('cv-universal-gate');
+ }
+ if(!firstEntrance)gate.classList.add('cv-fast-navigation');
+ gate.innerHTML='<div class="cv-campus-gate-scene" aria-label="CreatorVerse campus entrance"><div class="cv-gate-arch"><div class="cv-gate-arch-glow"></div><div class="cv-gate-pillars"><span></span><span></span></div><div class="cv-gate-sign"><img src="assets/creatorverse-mark.svg?v=20261111-globe2" alt=""><b>CREATORVERSE</b><small>LEARN · CREATE · EARN · GROW</small></div><div class="cv-gate-opening"><div class="cv-gate-depth"></div><div class="cv-gate-road"></div><div class="cv-gate-walkers"><i class="cv-gate-walker cv-gate-walker-one"></i><i class="cv-gate-walker cv-gate-walker-two"></i></div><div class="cv-gate-doors"><div class="cv-gate-door cv-gate-door-left"><span class="cv-gate-door-panel"></span></div><div class="cv-gate-door cv-gate-door-right"><span class="cv-gate-door-panel"></span></div></div></div></div></div>';
+ document.documentElement.classList.add('cv-loading');
+
  function touch(){lastActivity=Date.now()}
- if(window.fetch){var originalFetch=window.fetch.bind(window);window.fetch=function(){pending++;touch();return originalFetch.apply(this,arguments).finally(function(){pending=Math.max(0,pending-1);touch()})}}
- if(window.XMLHttpRequest){var open=XMLHttpRequest.prototype.open,send=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(){this.__cvTracked=true;return open.apply(this,arguments)};XMLHttpRequest.prototype.send=function(){if(this.__cvTracked){pending++;touch();this.addEventListener('loadend',function(){pending=Math.max(0,pending-1);touch()},{once:true})}return send.apply(this,arguments)}}
- // Dynamically loaded SDKs (notably the Supabase CDN) must also settle before
- // releasing the gate; the browser's window.load event does not wait for them.
- var seenScripts=new WeakSet(),scriptObserver=new MutationObserver(function(records){records.forEach(function(rec){rec.addedNodes.forEach(function(node){if(node.nodeType!==1)return;var list=[];if(node.tagName==='SCRIPT')list.push(node);if(node.querySelectorAll)list=list.concat(Array.prototype.slice.call(node.querySelectorAll('script[src]')));list.forEach(function(sc){if(!sc.src||seenScripts.has(sc))return;seenScripts.add(sc);pending++;touch();var settled=false;function end(){if(settled)return;settled=true;pending=Math.max(0,pending-1);touch()}sc.addEventListener('load',end,{once:true});sc.addEventListener('error',end,{once:true});setTimeout(end,12000)})})})});scriptObserver.observe(document.documentElement,{childList:true,subtree:true});
- function finish(){if(done)return;done=true;scriptObserver.disconnect();document.documentElement.classList.add('cv-app-ready');document.documentElement.classList.remove('cv-loading');gate.classList.add('is-done','is-leaving');setTimeout(function(){if(gate&&gate.parentNode)gate.remove();if(style&&style.parentNode)style.remove()},430)}
- function tryFinish(){if(done)return;var elapsed=Date.now()-started,loaded=document.readyState==='complete',networkIdle=pending===0&&Date.now()-lastActivity>=quietFor;if(elapsed>=maxWait){finish();return}if(elapsed>=minWait&&loaded&&networkIdle){var fonts=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();Promise.resolve(fonts).then(function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!done&&pending===0&&Date.now()-lastActivity>=quietFor)finish();else setTimeout(tryFinish,180)})})});return}setTimeout(tryFinish,180)}
- window.cvFinishLoading=function(){readyEvent=true;touch();setTimeout(tryFinish,quietFor)};
- window.addEventListener('load',function(){touch();tryFinish()},{once:true});window.addEventListener('pageshow',function(e){if(e.persisted)finish()});if(document.readyState==='complete')tryFinish();else setTimeout(tryFinish,250);
+ if(window.fetch){
+  var originalFetch=window.fetch.bind(window);
+  window.fetch=function(){
+   pending++;touch();
+   return originalFetch.apply(this,arguments).finally(function(){pending=Math.max(0,pending-1);touch();scheduleCheck()});
+  };
+ }
+ if(window.XMLHttpRequest){
+  var xhrOpen=XMLHttpRequest.prototype.open,xhrSend=XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open=function(){this.__cvTracked=true;return xhrOpen.apply(this,arguments)};
+  XMLHttpRequest.prototype.send=function(){
+   if(this.__cvTracked){
+    pending++;touch();
+    this.addEventListener('loadend',function(){pending=Math.max(0,pending-1);touch();scheduleCheck()},{once:true});
+   }
+   return xhrSend.apply(this,arguments);
+  };
+ }
+
+ // Count scripts inserted dynamically after this gate starts. A bounded timeout
+ // prevents one third-party script from holding the entrance indefinitely.
+ var seenScripts=new WeakSet();
+ function trackScript(sc){
+  if(!sc||!sc.src||seenScripts.has(sc))return;
+  seenScripts.add(sc);pending++;touch();
+  var settled=false;
+  function settle(){if(settled)return;settled=true;pending=Math.max(0,pending-1);touch();scheduleCheck()}
+  sc.addEventListener('load',settle,{once:true});
+  sc.addEventListener('error',settle,{once:true});
+  setTimeout(settle,8000);
+ }
+ var scriptObserver=new MutationObserver(function(records){
+  records.forEach(function(rec){
+   rec.addedNodes.forEach(function(node){
+    if(node.nodeType!==1)return;
+    if(node.tagName==='SCRIPT')trackScript(node);
+    if(node.querySelectorAll)node.querySelectorAll('script[src]').forEach(trackScript);
+   });
+  });
+ });
+ scriptObserver.observe(document.documentElement,{childList:true,subtree:true});
+
+ function finish(){
+  if(done)return;
+  done=true;
+  if(timer)clearTimeout(timer);
+  scriptObserver.disconnect();
+  document.documentElement.classList.add('cv-app-ready');
+  document.documentElement.classList.remove('cv-loading');
+  gate.classList.add('is-done','is-leaving');
+  setTimeout(function(){
+   if(gate&&gate.parentNode)gate.remove();
+   if(style&&style.parentNode)style.remove();
+  },460);
+ }
+ function scheduleCheck(){
+  if(done||timer)return;
+  timer=setTimeout(checkReady,180);
+ }
+ function checkReady(){
+  timer=null;
+  if(done)return;
+  var elapsed=Date.now()-started;
+  if(elapsed>=maxWait){finish();return}
+  var loaded=document.readyState==='complete';
+  var networkIdle=pending===0&&Date.now()-lastActivity>=quietFor;
+  if(elapsed<minWait||!loaded||!networkIdle){scheduleCheck();return}
+  if(checkingFonts){scheduleCheck();return}
+  checkingFonts=true;
+  var fonts=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+  Promise.race([fonts,new Promise(function(resolve){setTimeout(resolve,700)})]).then(function(){
+   requestAnimationFrame(function(){requestAnimationFrame(function(){
+    checkingFonts=false;
+    if(!done&&pending===0&&Date.now()-lastActivity>=quietFor&&document.readyState==='complete')finish();
+    else scheduleCheck();
+   })});
+  });
+ }
+ window.addEventListener('load',function(){touch();scheduleCheck()},{once:true});
+ window.addEventListener('pageshow',function(e){if(e.persisted)finish()});
+ if(document.readyState==='complete')scheduleCheck();
+ else scheduleCheck();
 })();
 var socialLinksScript=document.createElement('script');socialLinksScript.src='social-links.js?v=20261107-1';socialLinksScript.defer=true;document.body.appendChild(socialLinksScript);var helper=document.createElement('script');helper.src='assistant-widget.js';helper.defer=true;document.body.appendChild(helper);var notifications=document.createElement('script');notifications.src='notifications.js?v=20261108-2';notifications.defer=true;document.body.appendChild(notifications);})();
