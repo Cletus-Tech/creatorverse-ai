@@ -1,3 +1,13 @@
+## 2026-11-13 — Global CreatorVerse destination search
+
+Status: **Search overlay and shared navigation trigger committed on main; deployment pending.**
+
+- Added a shared search action to the global navigation, available across pages that use the common layout.
+- Added a keyboard-accessible destination search overlay with Ctrl+K / Cmd+K shortcut, Escape close, arrow-key result navigation, Enter to open, focus return, and empty-result feedback.
+- Indexed core platform destinations and common terms: Academic, WAEC, NECO, GCE, JAMB, tertiary learning, Digital Skills, courses, Housing, Marketplace, Campus Life, Community, Messages, Dashboard, Notifications and CreatorVerse AI.
+- This milestone searches platform destinations and pathways; it does not claim to search private messages, marketplace inventory or all course content.
+- QA: JavaScript syntax checks passed for the global layout and search script. The dialog uses textContent for dynamic result labels and route links are from a fixed allowlist. No database or Supabase changes were made; no manual browser/device test has yet been completed.
+
 ## 2026-11-13 — Academic examination catalogue correction
 
 Status: **Examination labels aligned and committed on main.**
