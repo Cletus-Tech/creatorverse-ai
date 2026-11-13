@@ -1,3 +1,11 @@
+## 2026-11-13 — Academic examination catalogue correction
+
+Status: **Examination labels aligned and committed on main.**
+
+- Corrected the examination pathway catalogue to present WAEC, NECO, GCE and JAMB, replacing the unrelated GCSE option.
+- Updated the pathway title mapping so the GCE route resolves to “GCE preparation”.
+- The exam pages remain honest pathway entry points; no exam question bank or mock-exam content is represented as live before it is built and quality-checked.
+
 ## 2026-11-13 — Unified Explore directory and Campus Life route cleanup
 
 Status: **Directory and cross-module route corrections committed on main; deployment pending.**
