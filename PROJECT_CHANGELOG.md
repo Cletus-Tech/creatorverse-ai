@@ -1,3 +1,15 @@
+## 2026-11-13 — Marketplace seller workspace and listing drafts
+
+Status: **Frontend committed on main; dependent Supabase migrations are still not applied.**
+
+- Added a seller workspace to the dedicated Marketplace page. Signed-in users can see their own seller application status and review note.
+- Verified sellers can create listing drafts with category, listing type, title, description, price, condition, institution, campus and an optional image URL.
+- Sellers can review their own listings and submit draft/rejected listings to the review queue through the `marketplace_submit_listing` RPC introduced in the previous migration.
+- Pending-review and published listings are locked from seller-side edits by the existing database guard; the interface does not provide a seller publish action.
+- Added responsive seller forms, status rows and mobile layout.
+- QA: JavaScript syntax parsed successfully; seller workspace selectors, form payload and RPC name were reviewed against the committed migration schema.
+- Not verified: live Supabase RLS/RPC execution, image storage uploads, production deployment or mobile browser behavior. No database changes were applied.
+
 ## 2026-11-13 — Marketplace catalogue and seller onboarding interface
 
 Status: **Frontend committed on main; live catalogue and seller applications remain dependent on applying and validating the Supabase migrations.**
