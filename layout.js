@@ -2,7 +2,7 @@
 var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261113-brand-refresh';document.head.appendChild(brand);var shell=document.createElement('link');shell.rel='stylesheet';shell.href='unified-shell.css?v=20261113-1';document.head.appendChild(shell);
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
 var ux=document.createElement('link');ux.rel='stylesheet';ux.href='ux-refinement.css?v=20261109-ui-refresh1';document.head.appendChild(ux);
-var pagePolish=document.createElement('link');pagePolish.rel='stylesheet';pagePolish.href='ux-page-polish.css?v=20261109-page-polish1';document.head.appendChild(pagePolish);var referenceSkin=document.createElement('link');referenceSkin.rel='stylesheet';referenceSkin.href='creatorverse-reference-system.css?v=20261113-3';document.head.appendChild(referenceSkin);
+var pagePolish=document.createElement('link');pagePolish.rel='stylesheet';pagePolish.href='ux-page-polish.css?v=20261109-page-polish1';document.head.appendChild(pagePolish);var referenceSkin=document.createElement('link');referenceSkin.rel='stylesheet';referenceSkin.href='creatorverse-reference-system.css?v=20261113-4';document.head.appendChild(referenceSkin);
 if(f==='category.html')f='learn.html';
 var fav=document.querySelector('link[rel~="icon"]');if(!fav){fav=document.createElement('link');fav.rel='icon';fav.type='image/svg+xml';fav.href='assets/creatorverse-brand.svg?v=20261113-brand1';document.head.appendChild(fav);}
 var L=[['Home','index.html'],['Divisions','divisions.html'],['Courses','courses.html'],['Learning Paths','learn.html'],['About','about.html'],['Community','community.html'],['Campus Life','campus.html'],['AI Assistant','ai.html']];
