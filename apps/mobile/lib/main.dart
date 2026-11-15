@@ -797,27 +797,132 @@ class LinkPage extends StatelessWidget {
     const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
     const SizedBox(height: 22), FilledButton(onPressed: () => openLink(path), child: Text(button))])));
 }
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
   @override
-  Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser; final name = user?.userMetadata?['full_name'] as String?;
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      const CircleAvatar(radius: 34, backgroundColor: Color(0x3320B887), child: Icon(Icons.person, size: 34, color: emerald)),
-      const SizedBox(height: 14), Text(name?.isNotEmpty == true ? name! : 'CreatorVerse member', textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 4), Text(user?.email ?? '', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
-      const SizedBox(height: 24), const FeatureTile(icon: Icons.account_circle_outlined, title: 'My profile', detail: 'Manage your profile.', path: '/profile.html'),
-      const FeatureTile(icon: Icons.settings_outlined, title: 'Settings', detail: 'Account and platform preferences.', path: '/profile.html'),
-      const SizedBox(height: 18), OutlinedButton.icon(onPressed: () => Supabase.instance.client.auth.signOut(),
-        icon: const Icon(Icons.logout), label: const Text('Sign out'), style: OutlinedButton.styleFrom(foregroundColor: gold, minimumSize: const Size.fromHeight(50)))]);
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+class _ProfileTabState extends State<ProfileTab> {
+  final db = Supabase.instance.client;
+  late Future<Map<String, dynamic>> profile;
+  @override
+  void initState() { super.initState(); profile = loadProfile(); }
+  Future<Map<String, dynamic>> loadProfile() async {
+    final user = db.auth.currentUser;
+    if (user == null) throw Exception('You are signed out.');
+    final row = await db.from('profiles')
+      .select('id,full_name,email,avatar_url,username,bio,cover_url,location,website_url,skills,status_text,verified_badge,role,created_at,updated_at')
+      .eq('id', user.id).maybeSingle();
+    if (row == null) {
+      return {'id': user.id, 'full_name': user.userMetadata?['full_name'] ?? '', 'email': user.email ?? '', 'role': 'student'};
+    }
+    return Map<String, dynamic>.from(row);
   }
+  Future<void> refresh() async => setState(() => profile = loadProfile());
+  Future<void> editProfile(Map<String, dynamic> current) async {
+    final name = TextEditingController(text: (current['full_name'] ?? '').toString());
+    final username = TextEditingController(text: (current['username'] ?? '').toString());
+    final bio = TextEditingController(text: (current['bio'] ?? '').toString());
+    final location = TextEditingController(text: (current['location'] ?? '').toString());
+    final website = TextEditingController(text: (current['website_url'] ?? '').toString());
+    final skills = TextEditingController(text: (current['skills'] ?? '').toString());
+    final status = TextEditingController(text: (current['status_text'] ?? '').toString());
+    bool saving = false;
+    try {
+      await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
+        AlertDialog(backgroundColor: panel, title: const Text('Edit profile'),
+          content: SizedBox(width: 440, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
+            const SizedBox(height: 10), TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
+            const SizedBox(height: 10), TextField(controller: bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
+            const SizedBox(height: 10), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location')),
+            const SizedBox(height: 10), TextField(controller: website, decoration: const InputDecoration(labelText: 'Website URL')),
+            const SizedBox(height: 10), TextField(controller: skills, decoration: const InputDecoration(labelText: 'Skills')),
+            const SizedBox(height: 10), TextField(controller: status, decoration: const InputDecoration(labelText: 'Status')),
+          ]))),
+          actions: [
+            TextButton(onPressed: saving ? null : () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            FilledButton(onPressed: saving ? null : () async {
+              setDialogState(() => saving = true);
+              try {
+                await db.from('profiles').update({
+                  'full_name': name.text.trim(), 'username': username.text.trim(),
+                  'bio': bio.text.trim(), 'location': location.text.trim(),
+                  'website_url': website.text.trim(), 'skills': skills.text.trim(),
+                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
+                }).eq('id', db.auth.currentUser!.id);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                await refresh();
+                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Profile updated.')));
+              } catch (e) {
+                setDialogState(() => saving = false);
+                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text('Could not update profile: $e')));
+              }
+            }, child: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save changes')),
+          ])));
+    } finally {
+      name.dispose(); username.dispose(); bio.dispose(); location.dispose(); website.dispose(); skills.dispose(); status.dispose();
+    }
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+    future: profile,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
+        const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+        const SizedBox(height: 14), OutlinedButton.icon(onPressed: refresh, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+      ])));
+      final p = snapshot.data ?? {};
+      final user = db.auth.currentUser;
+      final name = (p['full_name'] ?? '').toString().trim();
+      final role = (p['role'] ?? 'student').toString();
+      final avatar = (p['avatar_url'] ?? '').toString();
+      final isAdmin = role == 'admin' || role == 'super_admin';
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
+        Center(child: Column(children: [
+          CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
+            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, size: 40, color: emerald)),
+          const SizedBox(height: 13),
+          Text(name.isEmpty ? 'CreatorVerse member' : name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+          if ((p['username'] ?? '').toString().isNotEmpty) Text('@${p['username']}', style: const TextStyle(color: muted)),
+          const SizedBox(height: 4), Text(user?.email ?? '', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+          const SizedBox(height: 10),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Chip(label: Text(role.replaceAll('_', ' ').toUpperCase()), backgroundColor: emerald.withValues(alpha: .15), side: BorderSide(color: emerald.withValues(alpha: .35))),
+            if ((p['verified_badge'] ?? 'none') != 'none') ...[const SizedBox(width: 6), const Icon(Icons.verified, color: gold, size: 20)],
+          ]),
+        ])),
+        if ((p['bio'] ?? '').toString().trim().isNotEmpty) ...[
+          const SizedBox(height: 16), Text(p['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5)),
+        ],
+        const SizedBox(height: 20),
+        FilledButton.icon(onPressed: () => editProfile(p), icon: const Icon(Icons.edit_outlined), label: const Text('Edit profile'),
+          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48))),
+        const SizedBox(height: 18),
+        if ((p['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(p['location'].toString()), dense: true),
+        if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
+        if ((p['skills'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text(p['skills'].toString()), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
+        const SizedBox(height: 12),
+        if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Administrative tools for your account.', path: '/admin.html'),
+        FeatureTile(icon: Icons.people_outline, title: 'Find members', detail: 'Discover people using CreatorVerse.', path: '/members'),
+        FeatureTile(icon: Icons.settings_outlined, title: 'Account settings', detail: 'Review your account details.', path: '/settings'),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(onPressed: () => db.auth.signOut(), icon: const Icon(Icons.logout), label: const Text('Sign out'),
+          style: OutlinedButton.styleFrom(foregroundColor: gold, minimumSize: const Size.fromHeight(50))),
+      ]));
+    });
 }
 class FeatureTile extends StatelessWidget {
   final IconData icon; final String title, detail, path;
   const FeatureTile({super.key, required this.icon, required this.title, required this.detail, required this.path});
   @override
   Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Material(color: panel,
-    borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openLink(path),
+    borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openFeature(context, path),
       child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
         Container(width: 44, height: 44, decoration: BoxDecoration(color: emerald.withValues(alpha: .13), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: emerald)),
         const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -825,6 +930,117 @@ class FeatureTile extends StatelessWidget {
           Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
         const Icon(Icons.chevron_right, color: muted)])))));
 }
+
+void openFeature(BuildContext context, String path) {
+  Widget? destination;
+  String title = 'CreatorVerse';
+  String detail = 'This space is being prepared for the native app.';
+  IconData icon = Icons.auto_awesome_outlined;
+  switch (path) {
+    case '/community.html':
+      destination = const CommunityTab(); title = 'Community'; break;
+    case '/digital-skills.html':
+    case '/divisions.html':
+      destination = const LearnTab(); title = 'Learn'; break;
+    case '/campus.html':
+    case '/campus-life.html':
+      destination = const CampusTab(); title = 'Campus Life'; break;
+    case '/profile.html':
+      destination = const ProfileTab(); title = 'My profile'; break;
+    case '/members':
+      destination = const MemberDirectoryScreen(); title = 'Find members'; break;
+    case '/settings':
+      destination = const AccountSettingsScreen(); title = 'Account settings'; break;
+    case '/admin.html':
+      destination = const NativeSpaceScreen(title: 'Admin workspace', description: 'Your account has administrator access. Native admin tools are being added in a protected module.', icon: Icons.admin_panel_settings_outlined);
+      title = 'Admin workspace'; break;
+    default:
+      destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
+        description: 'This section is part of CreatorVerse. Its native app experience is being built next; your website account and data remain shared.',
+        icon: path.contains('marketplace') ? Icons.storefront_outlined : Icons.school_outlined);
+      title = path.contains('marketplace') ? 'Marketplace' : 'Academic';
+  }
+  Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+    appBar: AppBar(title: Text(title)), body: destination!)));
+}
+
+class NativeSpaceScreen extends StatelessWidget {
+  final String title, description; final IconData icon;
+  const NativeSpaceScreen({super.key, required this.title, required this.description, required this.icon});
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    Icon(icon, size: 54, color: emerald), const SizedBox(height: 18),
+    Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
+  ])));
+}
+
+class MemberDirectoryScreen extends StatefulWidget {
+  const MemberDirectoryScreen({super.key});
+  @override
+  State<MemberDirectoryScreen> createState() => _MemberDirectoryScreenState();
+}
+class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
+  final db = Supabase.instance.client;
+  final search = TextEditingController();
+  late Future<List<Map<String, dynamic>>> members;
+  @override
+  void initState() { super.initState(); members = loadMembers(); }
+  @override
+  void dispose() { search.dispose(); super.dispose(); }
+  Future<List<Map<String, dynamic>>> loadMembers() async {
+    var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge,role');
+    final term = search.text.trim();
+    if (term.length >= 2) query = query.or('full_name.ilike.%$term%,username.ilike.%$term%');
+    final rows = await query.neq('id', db.auth.currentUser!.id).limit(40);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+  void runSearch() => setState(() => members = loadMembers());
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    Padding(padding: const EdgeInsets.all(16), child: TextField(controller: search, onSubmitted: (_) => runSearch(),
+      decoration: InputDecoration(hintText: 'Search name or username', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(onPressed: runSearch, icon: const Icon(Icons.arrow_forward, color: emerald))))),
+    Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: members, builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snap.hasError) return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Member directory unavailable: ${snap.error}', textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+      final rows = snap.data ?? [];
+      if (rows.isEmpty) return const Center(child: Text('No members found.', style: TextStyle(color: muted)));
+      return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+        itemBuilder: (context, index) {
+          final p = rows[index]; final avatar = (p['avatar_url'] ?? '').toString();
+          return ListTile(leading: CircleAvatar(backgroundColor: const Color(0x3320B887),
+            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald)),
+            title: Row(children: [Flexible(child: Text((p['full_name'] ?? 'CreatorVerse member').toString(), overflow: TextOverflow.ellipsis)),
+              if ((p['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 16))]),
+            subtitle: Text('@${p['username'] ?? 'member'} · ${p['role'] ?? 'student'}', style: const TextStyle(color: muted)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
+        });
+    })),
+  ]);
+}
+
+class PublicMemberProfileScreen extends StatelessWidget {
+  final Map<String, dynamic> profile;
+  const PublicMemberProfileScreen({super.key, required this.profile});
+  @override
+  Widget build(BuildContext context) {
+    final avatar = (profile['avatar_url'] ?? '').toString();
+    return Scaffold(appBar: AppBar(title: const Text('Member profile')), body: ListView(padding: const EdgeInsets.all(22), children: [
+      Center(child: CircleAvatar(radius: 44, backgroundColor: const Color(0x3320B887),
+        backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+        child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 42))),
+      const SizedBox(height: 14), Text((profile['full_name'] ?? 'CreatorVerse member').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4), Text('@${profile['username'] ?? 'member'}', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+      if ((profile['bio'] ?? '').toString().isNotEmpty) ...[const SizedBox(height: 14), Text(profile['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5))],
+      if ((profile['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(profile['location'].toString())),
+      const SizedBox(height: 16),
+      FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen())),
+        icon: const Icon(Icons.chat_bubble_outline), label: const Text('Open messages'), style: FilledButton.styleFrom(backgroundColor: emerald)),
+    ]));
+  }
+}
+
 Future<void> openLink(String path) async {
   await launchUrl(Uri.parse('https://creatorverse-ai.vercel.app$path'), mode: LaunchMode.externalApplication);
 }
