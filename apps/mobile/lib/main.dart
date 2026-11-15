@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,8 +25,117 @@ class CreatorVerseApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white12)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: emerald)))),
-    home: const AuthGate());
+    home: const CreatorVerseLaunchGate());
 }
+
+class CreatorVerseLaunchGate extends StatefulWidget {
+  const CreatorVerseLaunchGate({super.key});
+  @override
+  State<CreatorVerseLaunchGate> createState() => _CreatorVerseLaunchGateState();
+}
+class _CreatorVerseLaunchGateState extends State<CreatorVerseLaunchGate> {
+  Timer? _dismissTimer;
+  bool _showGate = true;
+  @override
+  void initState() {
+    super.initState();
+    // Mirrors the website's short branded loading handoff.
+    _dismissTimer = Timer(const Duration(milliseconds: 1250), () {
+      if (mounted) setState(() => _showGate = false);
+    });
+  }
+  @override
+  void dispose() { _dismissTimer?.cancel(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Stack(fit: StackFit.expand, children: [
+    const AuthGate(),
+    IgnorePointer(
+      ignoring: !_showGate,
+      child: AnimatedOpacity(
+        opacity: _showGate ? 1 : 0,
+        duration: const Duration(milliseconds: 340),
+        child: _showGate ? const _CreatorVerseLoadingGate() : const SizedBox.shrink(),
+      ),
+    ),
+  ]);
+}
+class _CreatorVerseLoadingGate extends StatefulWidget {
+  const _CreatorVerseLoadingGate();
+  @override
+  State<_CreatorVerseLoadingGate> createState() => _CreatorVerseLoadingGateState();
+}
+class _CreatorVerseLoadingGateState extends State<_CreatorVerseLoadingGate>
+    with TickerProviderStateMixin {
+  late final AnimationController _outer = AnimationController(
+    vsync: this, duration: const Duration(milliseconds: 1500),
+  )..repeat();
+  late final AnimationController _inner = AnimationController(
+    vsync: this, duration: const Duration(milliseconds: 2400),
+  )..repeat();
+  late final AnimationController _pulse = AnimationController(
+    vsync: this, duration: const Duration(milliseconds: 1800),
+  )..repeat(reverse: true);
+  @override
+  void dispose() { _outer.dispose(); _inner.dispose(); _pulse.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF06130C),
+    body: Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0, -0.04), radius: .8,
+          colors: [Color(0x3035AE5E), Color(0xFF06130C)],
+          stops: [0, .72],
+        ),
+      ),
+      child: Center(child: SizedBox(
+        width: 156, height: 156,
+        child: Stack(alignment: Alignment.center, children: [
+          AnimatedBuilder(animation: _outer, builder: (context, child) => Transform.rotate(
+            angle: _outer.value * 6.283185307,
+            child: Container(decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: const Border(
+                top: BorderSide(color: Color(0xFF9DF5B8), width: 1.4),
+                right: BorderSide(color: Colors.transparent, width: 1),
+                bottom: BorderSide(color: Color(0x5555E18B), width: 1),
+                left: BorderSide(color: Color(0x5555E18B), width: 1),
+              ),
+              boxShadow: [BoxShadow(color: const Color(0x2236D878), blurRadius: 25)],
+            )),
+          )),
+          AnimatedBuilder(animation: _inner, builder: (context, child) => Transform.rotate(
+            angle: -_inner.value * 6.283185307,
+            child: Container(
+              width: 124, height: 124,
+              decoration: const BoxDecoration(shape: BoxShape.circle,
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE2C66D), width: 1.4),
+                  left: BorderSide(color: Colors.transparent, width: 1),
+                  top: BorderSide(color: Color(0x44E2C66D), width: 1),
+                  right: BorderSide(color: Color(0x44E2C66D), width: 1),
+                )),
+            ),
+          )),
+          AnimatedBuilder(animation: _pulse, builder: (context, child) => Transform.scale(
+            scale: .94 + (_pulse.value * .10),
+            child: SvgPicture.asset('assets/creatorverse-brand.svg', width: 104, height: 104,
+              fit: BoxFit.contain,
+            ),
+          )),
+          Positioned(right: 30, top: 10, child: Container(
+            width: 10, height: 10,
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFD9EF87),
+              boxShadow: [BoxShadow(color: Color(0xFFD9EF87), blurRadius: 18)]),
+          )),
+        ]),
+      )),
+    ),
+  );
+}
+
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
   @override
@@ -72,7 +182,7 @@ class _SignInScreenState extends State<SignInScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Center(child: Container(width: 82, height: 82, padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(22)),
-          child: SvgPicture.asset('assets/creatorverse-mark.svg'))),
+          child: SvgPicture.asset('assets/creatorverse-brand.svg'))),
         const SizedBox(height: 24),
         const Text('CREATORVERSE', textAlign: TextAlign.center, style: TextStyle(color: gold, letterSpacing: 3, fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
@@ -117,7 +227,7 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     const pages = [HomeTab(), LearnTab(), CampusTab(), CommunityTab(), ProfileTab()];
     return Scaffold(
-      appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-mark.svg', width: 30, height: 30),
+      appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-brand.svg', width: 30, height: 30),
         const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
         actions: [
           IconButton(tooltip: 'Messages', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
