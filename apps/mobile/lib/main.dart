@@ -1840,6 +1840,11 @@ void openFeature(BuildContext context, String path) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     return;
   }
+  if (path == '/notifications.html' || path == '/notifications') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+      appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
+    return;
+  }
   Widget? destination;
   String title = 'CreatorVerse';
   switch (path) {
