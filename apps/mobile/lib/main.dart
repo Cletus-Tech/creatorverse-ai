@@ -2117,6 +2117,9 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceAdminScreen())),
             icon: const Icon(Icons.store_mall_directory_outlined), label: const Text('Manage Marketplace')),
           const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CourseAdminScreen())),
+            icon: const Icon(Icons.menu_book_outlined), label: const Text('Manage Courses & Lessons')),
+          const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
             icon: const Icon(Icons.flag_outlined), label: const Text('Moderate Community reports')),
           const SizedBox(height: 22),
@@ -2140,6 +2143,181 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           )),
         ]));
     });
+}
+
+class CourseAdminScreen extends StatefulWidget {
+  const CourseAdminScreen({super.key});
+  @override State<CourseAdminScreen> createState()=>_CourseAdminScreenState();
+}
+class _CourseAdminScreenState extends State<CourseAdminScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> courses;bool busy=false;
+  @override void initState(){super.initState();courses=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Course administration access is required.');
+    final rows=await db.from('courses').select('id,slug,title,description,category_slug,level,duration_text,price_ngn,published,featured,duration_months,study_hours_per_week')
+      .order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>courses=next);await next;}
+  Future<void> addCourse() async {
+    final title=TextEditingController(),description=TextEditingController(),category=TextEditingController(),price=TextEditingController(text:'0'),duration=TextEditingController(text:'1');
+    String level='Beginner';
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Create course'),
+      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:title,decoration:const InputDecoration(labelText:'Course title')),
+        const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Description')),
+        const SizedBox(height:8),TextField(controller:category,decoration:const InputDecoration(labelText:'Category slug (e.g. digital-skills)')),
+        const SizedBox(height:8),DropdownButtonFormField<String>(value:level,decoration:const InputDecoration(labelText:'Level'),
+          items:const [DropdownMenuItem(value:'Beginner',child:Text('Beginner')),DropdownMenuItem(value:'Intermediate',child:Text('Intermediate')),DropdownMenuItem(value:'Advanced',child:Text('Advanced'))],
+          onChanged:(v)=>setDialog(()=>level=v??level)),
+        const SizedBox(height:8),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Price in naira (0 for free)')),
+        const SizedBox(height:8),TextField(controller:duration,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Duration in months (1–36)')),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Create draft'))])));
+    if(!mounted){title.dispose();description.dispose();category.dispose();price.dispose();duration.dispose();return;}
+    final t=title.text.trim(),d=description.text.trim(),cat=category.text.trim(),p=price.text.trim(),months=duration.text.trim();
+    title.dispose();description.dispose();category.dispose();price.dispose();duration.dispose();if(ok!=true)return;
+    final slug=t.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'-').replaceAll(RegExp(r'^-+|-+$'),'');
+    if(t.length<4||d.length<10||slug.length<4||int.tryParse(p)==null||int.tryParse(months)==null||int.parse(months)<1||int.parse(months)>36){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Check title, description, price and duration.')));return;
+    }
+    setState(()=>busy=true);
+    try{
+      await db.from('courses').insert({'title':t,'slug':slug,'description':d,'category_slug':cat.isEmpty?null:cat,
+        'level':level,'price_ngn':int.parse(p),'duration_months':int.parse(months),'duration_text':'${months} months',
+        'published':false,'featured':false});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not create course: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> toggleCourse(Map<String,dynamic> course,String field) async {
+    setState(()=>busy=true);
+    try{await db.from('courses').update({field:!(course[field]==true)}).eq('id',course['id']);await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update course: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Course administration'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:courses,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Course manager unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final rows=snap.data??[];
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        FilledButton.icon(onPressed:busy?null:addCourse,style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.add),label:const Text('Create course draft')),
+        const SizedBox(height:14),if(rows.isEmpty)const Text('No courses have been created yet.',style:TextStyle(color:muted)),
+        for(final course in rows)Card(color:panel,child:Column(children:[
+          ListTile(title:Text((course['title']??'Course').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text('${course['level']} · ${course['price_ngn']==0?'Free':'₦${course['price_ngn']}'} · ${course['published']==true?'Published':'Draft'}',style:const TextStyle(color:muted)),
+            trailing:const Icon(Icons.chevron_right,color:emerald),
+            onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseModulesAdminScreen(course:course))).then((_)=>refresh())),
+          Row(children:[
+            Expanded(child:SwitchListTile(dense:true,title:const Text('Published',style:TextStyle(fontSize:12)),value:course['published']==true,activeColor:emerald,onChanged:busy?null:(_)=>toggleCourse(course,'published'))),
+            Expanded(child:SwitchListTile(dense:true,title:const Text('Featured',style:TextStyle(fontSize:12)),value:course['featured']==true,activeColor:gold,onChanged:busy?null:(_)=>toggleCourse(course,'featured'))),
+          ]),
+        ])),
+      ]));
+    }));
+}
+
+class CourseModulesAdminScreen extends StatefulWidget {
+  final Map<String,dynamic> course;
+  const CourseModulesAdminScreen({super.key,required this.course});
+  @override State<CourseModulesAdminScreen> createState()=>_CourseModulesAdminScreenState();
+}
+class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> modules;bool busy=false;
+  @override void initState(){super.initState();modules=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final rows=await db.from('modules').select('id,course_id,title,description,position,stage_number,duration_text,lessons(id,title,position)')
+      .eq('course_id',widget.course['id']).order('position');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>modules=next);await next;}
+  Future<void> addModule() async {
+    final title=TextEditingController(),description=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Add course module'),
+      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:title,decoration:const InputDecoration(labelText:'Module title')),
+        const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Module description')),
+      ]),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Add module'))]));
+    if(!mounted){title.dispose();description.dispose();return;}
+    final t=title.text.trim(),d=description.text.trim();title.dispose();description.dispose();if(ok!=true||t.length<3)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('modules').insert({'course_id':widget.course['id'],'title':t,'description':d.isEmpty?null:d,
+        'position':(modulesResultLength??0)+1,'stage_number':(modulesResultLength??0)+1});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add module: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  int? get modulesResultLength => null;
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text((widget.course['title']??'Course modules').toString()),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:modules,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Modules unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final rows=snap.data??[];
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        FilledButton.icon(onPressed:busy?null:addModule,icon:const Icon(Icons.add),label:const Text('Add module'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+        for(final module in rows)Card(color:panel,child:ListTile(title:Text((module['title']??'Module').toString()),
+          subtitle:Text('${(module['lessons'] as List? ?? []).length} lessons · Stage ${module['stage_number']}',style:const TextStyle(color:muted)),
+          trailing:const Icon(Icons.chevron_right,color:emerald),
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseLessonsAdminScreen(module:module))).then((_)=>refresh()))),
+      ]);
+    }));
+}
+
+class CourseLessonsAdminScreen extends StatefulWidget {
+  final Map<String,dynamic> module;
+  const CourseLessonsAdminScreen({super.key,required this.module});
+  @override State<CourseLessonsAdminScreen> createState()=>_CourseLessonsAdminScreenState();
+}
+class _CourseLessonsAdminScreenState extends State<CourseLessonsAdminScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> lessons;bool busy=false;
+  @override void initState(){super.initState();lessons=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final rows=await db.from('lessons').select('id,module_id,title,content,video_url,position,estimated_minutes,chapter_number,topic_outline')
+      .eq('module_id',widget.module['id']).order('position');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>lessons=next);await next;}
+  Future<void> addLesson() async {
+    final title=TextEditingController(),content=TextEditingController(),video=TextEditingController(),minutes=TextEditingController(text:'30');
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Add lesson'),
+      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:title,decoration:const InputDecoration(labelText:'Lesson title')),
+        const SizedBox(height:8),TextField(controller:content,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Lesson content / notes')),
+        const SizedBox(height:8),TextField(controller:video,decoration:const InputDecoration(labelText:'Video URL (optional)')),
+        const SizedBox(height:8),TextField(controller:minutes,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Estimated minutes (5–600)')),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Add lesson'))]));
+    if(!mounted){title.dispose();content.dispose();video.dispose();minutes.dispose();return;}
+    final t=title.text.trim(),body=content.text.trim(),url=video.text.trim(),mins=int.tryParse(minutes.text.trim())??30;
+    title.dispose();content.dispose();video.dispose();minutes.dispose();if(ok!=true||t.length<3||mins<5||mins>600)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('lessons').insert({'module_id':widget.module['id'],'title':t,'content':body.isEmpty?null:body,
+        'video_url':url.isEmpty?null:url,'estimated_minutes':mins,'position':(lessonsResultLength??0)+1,'chapter_number':1});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add lesson: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  int? get lessonsResultLength => null;
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text((widget.module['title']??'Lessons').toString()),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:lessons,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Lessons unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final rows=snap.data??[];
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        FilledButton.icon(onPressed:busy?null:addLesson,icon:const Icon(Icons.add),label:const Text('Add lesson'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+        for(final lesson in rows)Card(color:panel,child:ListTile(
+          leading:const Icon(Icons.play_circle_outline,color:emerald),
+          title:Text((lesson['title']??'Lesson').toString()),
+          subtitle:Text('${lesson['estimated_minutes']} min · Chapter ${lesson['chapter_number']}',style:const TextStyle(color:muted)),
+        )),
+      ]);
+    }));
 }
 
 class CommunityModerationScreen extends StatefulWidget {
