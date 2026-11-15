@@ -391,7 +391,7 @@ class CourseCard extends StatelessWidget {
           Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text((course['level'] ?? 'Course').toString(), style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w700))),
-              Text(price == 0 ? 'FREE' : '₦${price.toString()}', style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
+              Text(price <= 0 ? 'PRICE PENDING' : '₦${price.toString()}', style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
             ]),
             const SizedBox(height: 7),
             Text((course['title'] ?? 'Untitled course').toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
@@ -523,7 +523,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         Wrap(spacing: 8, runSpacing: 8, children: [
           Chip(label: Text((c['level'] ?? 'All levels').toString())),
           Chip(label: Text((c['duration_text'] ?? 'Self-paced').toString())),
-          Chip(label: Text(price == 0 ? 'Free course' : '₦${price.toString()}')),
+          Chip(label: Text(price <= 0 ? 'Price pending' : '₦${price.toString()}')),
         ]),
         const SizedBox(height: 14),
         FutureBuilder<bool>(future: enrollment, builder: (context, enrolledSnap) {
