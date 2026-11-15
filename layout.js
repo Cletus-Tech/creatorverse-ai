@@ -81,7 +81,7 @@ if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.se
 })();
 var socialLinksScript=document.createElement('script');socialLinksScript.src='social-links.js?v=20261107-1';socialLinksScript.defer=true;document.body.appendChild(socialLinksScript);var helper=document.createElement('script');helper.src='assistant-widget.js';helper.defer=true;document.body.appendChild(helper);var notifications=document.createElement('script');notifications.src='notifications.js?v=20261108-2';notifications.defer=true;document.body.appendChild(notifications);var globalSearch=document.createElement('script');globalSearch.src='unified-search.js?v=20261113-1';globalSearch.defer=true;document.body.appendChild(globalSearch);
 /* Global appearance: the preference follows the user across every CreatorVerse page. */
-var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThemeCss.href='global-theme.css?v=20261115-evergreen-2';document.head.appendChild(cvThemeCss);
+var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThemeCss.href='global-theme.css?v=20261115-evergreen-gold-1';document.head.appendChild(cvThemeCss);
 (function(){
  var key='cv-home-theme',html=document.documentElement,body=document.body;
  function apply(theme,save){
