@@ -836,6 +836,91 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ]))),
     ]));
 }
+class AccountSettingsScreen extends StatefulWidget {
+  const AccountSettingsScreen({super.key});
+  @override
+  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
+}
+
+class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+  final password = TextEditingController();
+  final confirmPassword = TextEditingController();
+  bool saving = false;
+  bool obscurePassword = true;
+  bool obscureConfirm = true;
+
+  @override
+  void dispose() {
+    password.dispose();
+    confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> changePassword() async {
+    if (password.text.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use at least 8 characters for your new password.')));
+      return;
+    }
+    if (password.text != confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The passwords do not match.')));
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: password.text));
+      if (!mounted) return;
+      password.clear();
+      confirmPassword.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your password has been updated.')));
+    } on AuthException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update password: $e')));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? '';
+    return ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('Account security', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 6),
+      const Text('Your CreatorVerse mobile app uses the same account as the website.', style: TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 20),
+      Card(color: panel, child: ListTile(
+        leading: const Icon(Icons.email_outlined, color: emerald),
+        title: const Text('Signed-in email'),
+        subtitle: Text(email, style: const TextStyle(color: muted)),
+      )),
+      const SizedBox(height: 22),
+      const Text('Change password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 8),
+      TextField(controller: password, obscureText: obscurePassword,
+        decoration: InputDecoration(labelText: 'New password', suffixIcon: IconButton(
+          onPressed: () => setState(() => obscurePassword = !obscurePassword),
+          icon: Icon(obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined)))),
+      const SizedBox(height: 12),
+      TextField(controller: confirmPassword, obscureText: obscureConfirm,
+        decoration: InputDecoration(labelText: 'Confirm new password', suffixIcon: IconButton(
+          onPressed: () => setState(() => obscureConfirm = !obscureConfirm),
+          icon: Icon(obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined)))),
+      const SizedBox(height: 16),
+      FilledButton.icon(onPressed: saving ? null : changePassword,
+        icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_reset),
+        label: Text(saving ? 'Updating…' : 'Update password'),
+        style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48))),
+    ]);
+  }
+}
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
   @override
@@ -1134,7 +1219,7 @@ void openFeature(BuildContext context, String path) {
     case '/members':
       destination = const MemberDirectoryScreen(); title = 'Find members'; break;
     case '/settings':
-      destination = const NativeSpaceScreen(title: 'Account settings', description: 'Your sign-in is secured by your shared CreatorVerse account. Profile information can be edited from My Profile. Password and security controls will be connected here in the next account-security pass.', icon: Icons.settings_outlined); title = 'Account settings'; break;
+      destination = const AccountSettingsScreen(); title = 'Account settings'; break;
     case '/admin.html':
       destination = const NativeSpaceScreen(title: 'Admin workspace', description: 'Your account has administrator access. Native admin tools are being added in a protected module.', icon: Icons.admin_panel_settings_outlined);
       title = 'Admin workspace'; break;
