@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' as material;
+import 'package:flutter/material.dart' as flutter_ui;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -183,7 +183,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(body: SafeArea(child: Center(child: SingleChildScrollView(
     padding: const EdgeInsets.all(24), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440),
-      child: material.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Center(child: Container(width: 82, height: 82, padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(22)),
           child: SvgPicture.asset('assets/creatorverse-brand.svg'))),
@@ -194,7 +194,7 @@ class _SignInScreenState extends State<SignInScreen> {
         const SizedBox(height: 8),
         const Text('Learning, creativity and campus life in one place.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
         const SizedBox(height: 28),
-        Form(key: form, child: material.Column(children: [
+        Form(key: form, child: flutter_ui.Column(children: [
           if (create) ...[
             TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Full name', prefixIcon: Icon(Icons.person_outline)),
               validator: (v) => v == null || v.trim().isEmpty ? 'Enter your name' : null),
@@ -257,7 +257,7 @@ class HomeTab extends StatelessWidget {
       Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22), gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
         border: Border.all(color: emerald.withValues(alpha: .3))),
-        child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('YOUR NEXT CHAPTER STARTS HERE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12), Text('Hello${n == null || n.isEmpty ? '' : ', $n'}.', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8), const Text('Learn new skills, explore opportunities and find your community.', style: TextStyle(color: Colors.white70, height: 1.5)),
@@ -295,7 +295,7 @@ class _LearnTabState extends State<LearnTab> {
         return const Center(child: CircularProgressIndicator(color: emerald));
       }
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, size: 42, color: muted),
           const SizedBox(height: 12), const Text('Courses could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8), const Text('Check your connection and try again.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
@@ -326,11 +326,11 @@ class CourseCard extends StatelessWidget {
       color: panel, borderRadius: BorderRadius.circular(18), clipBehavior: Clip.antiAlias,
       child: InkWell(onTap: () => Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => CourseDetailScreen(course: course)),
-        ), child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (image != null && image.startsWith('https://'))
             Image.network(image, height: 150, width: double.infinity, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(height: 90, color: const Color(0xFF17352F), child: const Icon(Icons.menu_book, color: emerald, size: 34))),
-          Padding(padding: const EdgeInsets.all(16), child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text((course['level'] ?? 'Course').toString(), style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w700))),
               Text(price == 0 ? 'FREE' : '₦${price.toString()}', style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
@@ -437,7 +437,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
               label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
           }
-          return material.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          return flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
               subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
             OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))),
@@ -452,7 +452,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (snapshot.hasError) return const Text('The course outline is temporarily unavailable.', style: TextStyle(color: muted));
           final modules = snapshot.data ?? [];
           if (modules.isEmpty) return const Text('Course lessons are being prepared.', style: TextStyle(color: muted));
-          return material.Column(children: [
+          return flutter_ui.Column(children: [
             for (final module in modules) Card(color: panel, child: ExpansionTile(
               initiallyExpanded: false,
               title: Text((module['title'] ?? 'Module').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -630,7 +630,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
             title: Text('Payment confirmed'),
             subtitle: Text('Your course enrolment has been activated.', style: TextStyle(color: muted)))),
           if (order != null && orderStatus != 'confirmed') ...[
-            Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material.Column(
+            Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(expired ? 'Payment window expired' : 'Payment request · $orderStatus',
                   style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -655,7 +655,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
               padding: EdgeInsets.all(16), child: Text(
                 'Payments are not enabled at the moment. The administrator must configure bank transfer or USSD in CreatorVerse payment settings before checkout can begin.',
                 style: TextStyle(color: muted, height: 1.5)))),
-            if (bankEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material.Column(
+            if (bankEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Bank transfer', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -667,7 +667,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
                   style: FilledButton.styleFrom(backgroundColor: emerald),
                   child: Text(creating ? 'Creating request…' : 'Create bank transfer request')),
               ]))),
-            if (ussdEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material.Column(
+            if (ussdEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('USSD payment', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -712,7 +712,7 @@ class CampusTab extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
       border: Border.all(color: emerald.withValues(alpha: .3))),
-      child: const material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: const flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('THE STUDENT EXPERIENCE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
         SizedBox(height: 10), Text('Make campus life work better.', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
         SizedBox(height: 8), Text('Discover the spaces CreatorVerse is building around student life beyond the classroom.', style: TextStyle(color: Colors.white70, height: 1.5)),
@@ -758,13 +758,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material.Column(
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(
         mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.storefront_outlined, color: emerald, size: 46),
           const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings and seller applications will appear after that setup is completed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
           const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
-        ]))));
+        ])));
       }
       final categories = snapshot.data?['categories'] as List<Map<String, dynamic>>? ?? [];
       final all = snapshot.data?['listings'] as List<Map<String, dynamic>>? ?? [];
@@ -775,8 +775,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           .map((v) => (v ?? '').toString().toLowerCase()).join(' ');
         return matchesCategory && (term.isEmpty || haystack.contains(term));
       }).toList();
-      return material.Column(children: [
-        Padding(padding: const EdgeInsets.all(16), child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      return flutter_ui.Column(children: [
+        Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Campus Marketplace', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
           const SizedBox(height: 5), const Text('Approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
           const SizedBox(height: 12), TextField(controller: search, onChanged: (_) => setState(() {}),
@@ -871,7 +871,7 @@ class _CommunityTabState extends State<CommunityTab> {
     final title = TextEditingController(), body = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
       backgroundColor: panel, title: const Text('Share with the community'),
-      content: SizedBox(width: 420, child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+      content: SizedBox(width: 420, child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: title, maxLength: 120, decoration: const InputDecoration(labelText: 'Post title')),
         const SizedBox(height: 10), TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
           decoration: const InputDecoration(labelText: 'What would you like to share?')),
@@ -912,7 +912,7 @@ class _CommunityTabState extends State<CommunityTab> {
     future: feed, builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
           const Text('Community is unavailable right now.'), const SizedBox(height: 12),
           OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
@@ -924,7 +924,7 @@ class _CommunityTabState extends State<CommunityTab> {
             style: FilledButton.styleFrom(backgroundColor: emerald))]),
         const SizedBox(height: 6), const Text('Ideas, updates and conversations from CreatorVerse members.', style: TextStyle(color: muted)),
         const SizedBox(height: 16),
-        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: material.Column(children: [
+        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: flutter_ui.Column(children: [
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
           Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
@@ -942,12 +942,12 @@ class CommunityPostCard extends StatelessWidget {
     final avatar = author['avatar_url']?.toString() ?? '';
     final image = post['image_url']?.toString() ?? '';
     return Container(margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)),
-      child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.all(14), child: Row(children: [
           CircleAvatar(radius: 19, backgroundColor: emerald.withValues(alpha: .18),
             backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
             child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 20)),
-          const SizedBox(width: 10), Expanded(child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 10), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
               if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
             Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
@@ -1015,7 +1015,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
   }
   @override
   Widget build(BuildContext context) => SafeArea(child: Padding(padding: EdgeInsets.only(left: 18, right: 18, top: 18, bottom: MediaQuery.of(context).viewInsets.bottom + 18),
-    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: material.Column(children: [
+    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: flutter_ui.Column(children: [
       const Text('Comments', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12), Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: comments, builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
@@ -1024,7 +1024,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
         if (rows.isEmpty) return const Center(child: Text('No comments yet. Start the conversation.', style: TextStyle(color: muted)));
         return ListView(children: [for (final row in rows) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const CircleAvatar(radius: 15, backgroundColor: Color(0x3320B887), child: Icon(Icons.person, size: 16, color: emerald)),
-          const SizedBox(width: 9), Expanded(child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 9), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(((row['author'] as Map?)?['full_name'] ?? (row['author'] as Map?)?['username'] ?? 'Member').toString(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
             const SizedBox(height: 3), Text(row['body'].toString(), style: const TextStyle(color: Colors.white70, height: 1.4))]))]))]);
       })),
@@ -1110,7 +1110,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       if (snap.hasError) return Center(child: Text('Messages could not load: ${snap.error}', style: const TextStyle(color: muted)));
       final rows = snap.data ?? [];
       if (rows.isEmpty) {
-        return Center(child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
           const Text('No conversations yet'), const SizedBox(height: 8),
           FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
@@ -1157,7 +1157,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text((widget.person['full_name'] ?? widget.person['username'] ?? 'Chat').toString())),
-    body: material.Column(children: [
+    body: flutter_ui.Column(children: [
       Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: messages, builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
         if (snap.hasError) return const Center(child: Text('Could not load this conversation.', style: TextStyle(color: muted)));
@@ -1243,7 +1243,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
         return const Center(child: CircularProgressIndicator(color: emerald));
       }
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material.Column(
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(
           mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.admin_panel_settings_outlined, color: gold, size: 42),
             const SizedBox(height: 12),
@@ -1258,7 +1258,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
       final orders = data['orders'] as List<Map<String, dynamic>>? ?? [];
       final admissions = data['admissions'] as List<Map<String, dynamic>>? ?? [];
       Widget metric(String label, dynamic value, IconData icon) => Expanded(child: Card(
-        color: panel, child: Padding(padding: const EdgeInsets.all(14), child: material.Column(
+        color: panel, child: Padding(padding: const EdgeInsets.all(14), child: flutter_ui.Column(
           crossAxisAlignment: CrossAxisAlignment.start, children: [
             Icon(icon, color: emerald), const SizedBox(height: 10),
             Text('$value', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
@@ -1400,7 +1400,7 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
       }
       final all = snapshot.data ?? [];
       final visible = filter == 'all' ? all : all.where((o) => o['status'] == filter).toList();
-      return material.Column(children: [
+      return flutter_ui.Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: filter,
@@ -1428,7 +1428,7 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
               final active = order['status'] == 'pending' || order['status'] == 'proof_submitted';
               final expiry = DateTime.tryParse((order['expires_at'] ?? '').toString());
               return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: Padding(
-                padding: const EdgeInsets.all(14), child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                padding: const EdgeInsets.all(14), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text((course ?? 'Course payment').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 5),
                   Text('₦${order['amount_ngn']} · ${order['status']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w700)),
@@ -1655,7 +1655,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final rows = snapshot.data ?? [];
       final unread = rows.where((item) => item['read_at'] == null).length;
       if (rows.isEmpty) return const Center(child: Text('You are all caught up.', style: TextStyle(color: muted)));
-      return RefreshIndicator(color: emerald, onRefresh: refresh, child: material.Column(children: [
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: flutter_ui.Column(children: [
         if (unread > 0) Align(alignment: Alignment.centerRight, child: TextButton(
           onPressed: () => markAllRead(rows), child: Text('Mark all as read ($unread)'))),
         Expanded(child: ListView.separated(itemCount: rows.length,
@@ -1684,7 +1684,7 @@ class LinkPage extends StatelessWidget {
   final IconData icon; final String title, description, button, path;
   const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 54, color: emerald), const SizedBox(height: 18), Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
     const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
     const SizedBox(height: 22), FilledButton(onPressed: () => openLink(path), child: Text(button))])));
@@ -1723,7 +1723,7 @@ class _ProfileTabState extends State<ProfileTab> {
     try {
       await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
         AlertDialog(backgroundColor: panel, title: const Text('Edit profile'),
-          content: SizedBox(width: 440, child: SingleChildScrollView(child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+          content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
             const SizedBox(height: 10), TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
             const SizedBox(height: 10), TextField(controller: bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
@@ -1763,7 +1763,7 @@ class _ProfileTabState extends State<ProfileTab> {
     future: profile,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
         const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
@@ -1776,7 +1776,7 @@ class _ProfileTabState extends State<ProfileTab> {
       final avatar = (p['avatar_url'] ?? '').toString();
       final isAdmin = role == 'admin' || role == 'super_admin';
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
-        Center(child: material.Column(children: [
+        Center(child: flutter_ui.Column(children: [
           CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
             backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
             child: avatar.startsWith('https://') ? null : const Icon(Icons.person, size: 40, color: emerald)),
@@ -1818,7 +1818,7 @@ class FeatureTile extends StatelessWidget {
     borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openFeature(context, path),
       child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
         Container(width: 44, height: 44, decoration: BoxDecoration(color: emerald.withValues(alpha: .13), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: emerald)),
-        const SizedBox(width: 14), Expanded(child: material.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(width: 14), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), const SizedBox(height: 4),
           Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
         const Icon(Icons.chevron_right, color: muted)])))));
@@ -1908,7 +1908,7 @@ class NativeSpaceScreen extends StatelessWidget {
   final String title, description; final IconData icon;
   const NativeSpaceScreen({super.key, required this.title, required this.description, required this.icon});
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: material.Column(mainAxisSize: MainAxisSize.min, children: [
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 54, color: emerald), const SizedBox(height: 18),
     Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
     const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
@@ -1937,7 +1937,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
   }
   void runSearch() => setState(() => members = loadMembers());
   @override
-  Widget build(BuildContext context) => material.Column(children: [
+  Widget build(BuildContext context) => flutter_ui.Column(children: [
     Padding(padding: const EdgeInsets.all(16), child: TextField(controller: search, onSubmitted: (_) => runSearch(),
       decoration: InputDecoration(hintText: 'Search name or username', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(onPressed: runSearch, icon: const Icon(Icons.arrow_forward, color: emerald))))),
     Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: members, builder: (context, snap) {
