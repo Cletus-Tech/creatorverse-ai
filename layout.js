@@ -83,6 +83,7 @@ var socialLinksScript=document.createElement('script');socialLinksScript.src='so
 /* Global appearance: the preference follows the user across every CreatorVerse page. */
 var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThemeCss.href='global-theme.css?v=20261115-evergreen-gold-1';document.head.appendChild(cvThemeCss);
 if(f==='dashboard.html'){var dashboardBrandCss=document.createElement('link');dashboardBrandCss.rel='stylesheet';dashboardBrandCss.href='dashboard-brand.css?v=20261115-forest-champagne-1';document.head.appendChild(dashboardBrandCss);}
+if(f==='learn.html'||f==='category.html'){var exploreBrandCss=document.createElement('link');exploreBrandCss.rel='stylesheet';exploreBrandCss.href='explore-brand.css?v=20261115-explore-full-1';document.head.appendChild(exploreBrandCss);}
 (function(){
  var key='cv-home-theme',html=document.documentElement,body=document.body;
  function apply(theme,save){
