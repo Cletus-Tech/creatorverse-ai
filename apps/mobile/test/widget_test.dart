@@ -20,7 +20,7 @@ void main() {
 
   group('sanitizeSearchTerm', () {
     test('removes PostgREST filter syntax from search input', () {
-      expect(sanitizeSearchTerm('Ada, (admin). %'), 'Ada  admin');
+      expect(sanitizeSearchTerm('Ada, (admin). %'), 'Ada admin');
     });
 
     test('keeps ordinary names and usernames searchable', () {
