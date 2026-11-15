@@ -3318,8 +3318,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await Navigator.push(context, MaterialPageRoute(
         builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open member profile: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open member profile: $e')));
+      }
     }
   }
 
