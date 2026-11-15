@@ -189,3 +189,41 @@ body[data-page="messages"]{background:#070b16!important;color:#f3f6ff}
 .msg-story-owner-actions{display:flex;justify-content:center;gap:8px;padding:0 12px 12px}
 .msg-story-owner-actions .msg-story-report{margin:0}
 .msg-story-delete{border-color:rgba(255,110,135,.35);background:rgba(170,45,75,.15);color:#ffc1cd}
+
+
+/* CreatorVerse Connect — WhatsApp-inspired workflow in the green + gold brand */
+body[data-page="messages"]{background:#071b14;color:#edf7f0}
+body[data-page="messages"] .msg-welcome{background:radial-gradient(ellipse at 82% 12%,rgba(218,190,91,.15),transparent 40%),linear-gradient(120deg,#103c2c,#09251b 72%);border-color:rgba(218,190,91,.23)}
+body[data-page="messages"] .msg-kicker{color:#e2c96e}
+body[data-page="messages"] .msg-welcome p{color:#c0d1c6}
+body[data-page="messages"] .msg-live-pill{border-color:rgba(218,190,91,.25);background:rgba(16,111,70,.2);color:#e4d58e}
+body[data-page="messages"] .msg-stories-section{background:linear-gradient(145deg,#103b2b,#09251b);border-color:rgba(218,190,91,.18)}
+body[data-page="messages"] .msg-story-rail{scrollbar-color:#a98e3d transparent}
+body[data-page="messages"] .msg-story-avatar{background:linear-gradient(135deg,#1b8b5c,#e0c15b)}
+body[data-page="messages"] .msg-story-add{background:#d9bd58;color:#092419;border-color:#103b2b}
+body[data-page="messages"] .msg-quiet-btn{border-color:rgba(218,190,91,.3);background:rgba(218,190,91,.1);color:#ead47e}
+body[data-page="messages"] .msg-workspace{background:#0b281e;border-color:rgba(218,190,91,.2)}
+body[data-page="messages"] .msg-inbox{background:linear-gradient(180deg,#103a2b,#0b291f);border-color:rgba(218,190,91,.17)}
+body[data-page="messages"] .msg-chat{background:radial-gradient(ellipse at 50% 0%,rgba(20,120,77,.15),transparent 44%),#09251b}
+body[data-page="messages"] .msg-search{background:rgba(1,20,13,.48);border-color:rgba(218,190,91,.2);color:#d6c06a}
+body[data-page="messages"] .msg-search input{color:#f0f7f2}
+body[data-page="messages"] .msg-search input::placeholder{color:#9bb3a4}
+body[data-page="messages"] .msg-conversation:hover,body[data-page="messages"] .msg-conversation.active{background:rgba(18,129,82,.2);border-color:rgba(218,190,91,.2)}
+body[data-page="messages"] .msg-avatar{background:linear-gradient(135deg,#167b50,#c5a747)}
+body[data-page="messages"] .msg-avatar img,body[data-page="messages"] .msg-avatar>span{border-color:#103a2b}
+body[data-page="messages"] .msg-avatar>span,body[data-page="messages"] .msg-story-avatar>span{background:linear-gradient(135deg,#176d49,#947b31)}
+body[data-page="messages"] .msg-conversation-copy strong{color:#f0f7f2}
+body[data-page="messages"] .msg-conversation-copy small{color:#b5c9bd}
+body[data-page="messages"] .msg-conversation-time{color:#d4c06c}
+body[data-page="messages"] .msg-chat-head,body[data-page="messages"] .msg-thread,body[data-page="messages"] .msg-typing-indicator,body[data-page="messages"] .msg-composer{background-color:#0b291f}
+body[data-page="messages"] .msg-bubble{background:#164332;color:#eff8f2;border-color:rgba(218,190,91,.12)}
+body[data-page="messages"] .msg-bubble-row.mine .msg-bubble{background:#1b6545;color:#fff4cf}
+body[data-page="messages"] .msg-read-state{color:#e3cf79}
+body[data-page="messages"] .msg-primary-btn,body[data-page="messages"] .msg-new-btn{background:linear-gradient(120deg,#167b50,#d2b34f);color:#092419;border-color:rgba(218,190,91,.35);box-shadow:0 7px 18px rgba(15,100,64,.2)}
+body[data-page="messages"] .msg-attach-btn{background:#123b2c;color:#e2c96e;border-color:rgba(218,190,91,.25)}
+body[data-page="messages"] .msg-chat-empty p,body[data-page="messages"] .msg-safety-note p{color:#b8cbbf}
+body[data-page="messages"] .msg-safety-note{border-color:rgba(218,190,91,.18)}
+.msg-inbox-filters{display:flex;gap:7px;margin:13px 0 9px}
+.msg-inbox-filters button{padding:7px 13px;border:1px solid rgba(218,190,91,.2);border-radius:20px;background:rgba(255,255,255,.035);color:#c5d4ca;font:600 10px Inter;cursor:pointer}
+.msg-inbox-filters button.active{background:linear-gradient(110deg,#167b50,#d2b34f);color:#092419;border-color:transparent}
+.msg-unread-badge{min-width:19px;height:19px;display:grid;place-items:center;padding:0 5px;border-radius:99px;background:#d9bd58;color:#092419;font:800 9px Inter}
