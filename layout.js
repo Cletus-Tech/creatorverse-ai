@@ -53,7 +53,7 @@ if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.se
  document.head.appendChild(style);
  if(!gate){gate=document.createElement('div');gate.id='cv-page-loader';gate.setAttribute('role','status');gate.setAttribute('aria-label','Loading CreatorVerse');gate.setAttribute('aria-live','polite');document.body.appendChild(gate)}
  gate.className='cv-universal-gate';
- gate.innerHTML='<div class="cv-logo-loader"><img src="assets/creatorverse-brand.svg" alt="CreatorVerse"><i aria-hidden="true"></i></div>';
+ gate.innerHTML='<div class="cv-logo-loader"><img src="assets/creatorverse-brand.svg?v=20261115-brand-current" alt="CreatorVerse"><i aria-hidden="true"></i></div>';
  function touch(){lastActivity=Date.now()}
  function track(p){pending++;touch();return p.finally(function(){pending=Math.max(0,pending-1);touch();schedule()})}
  if(window.fetch){var originalFetch=window.fetch.bind(window);window.fetch=function(){return track(originalFetch.apply(this,arguments))}}
