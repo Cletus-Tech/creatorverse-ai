@@ -1,0 +1,125 @@
+/* CreatorVerse text contrast layer
+   Loaded after every page and brand stylesheet. Keep green/gold identity while
+   enforcing readable text in both theme modes. */
+:root{
+  --cv-text-primary:#edf5ec;
+  --cv-text-secondary:#b9cbbd;
+  --cv-text-subtle:#9eb4a4;
+  --cv-text-link:#e7ca83;
+  --cv-text-heading:#f4f8f2;
+  --cv-text-border:rgba(214,179,106,.24);
+}
+html[data-cv-theme="dark"],body[data-cv-theme="dark"]{
+  --cv-text-primary:#edf5ec;
+  --cv-text-secondary:#b9cbbd;
+  --cv-text-subtle:#9eb4a4;
+  --cv-text-link:#e7ca83;
+  --cv-text-heading:#f4f8f2;
+  color-scheme:dark;
+}
+html[data-cv-theme="light"],body[data-cv-theme="light"]{
+  --cv-text-primary:#183b29;
+  --cv-text-secondary:#496653;
+  --cv-text-subtle:#617b68;
+  --cv-text-link:#176b43;
+  --cv-text-heading:#153a27;
+  color-scheme:light;
+}
+
+/* Semantic typography: headings, reading text, supporting labels and links. */
+body[data-cv-theme="dark"] :is(h1,h2,h3,h4,h5,h6,.page-title,.section-title,.card-title,.modal-title,.hub-choice h2,.hub-subcard h2,.hub-feature-panel h2,.hub-exam>b){
+  color:var(--cv-text-heading)!important;
+  -webkit-text-fill-color:currentColor;
+}
+body[data-cv-theme="light"] :is(h1,h2,h3,h4,h5,h6,.page-title,.section-title,.card-title,.modal-title,.hub-choice h2,.hub-subcard h2,.hub-feature-panel h2,.hub-exam>b){
+  color:var(--cv-text-heading)!important;
+  -webkit-text-fill-color:currentColor;
+}
+body[data-cv-theme="dark"] :is(p,li,label,figcaption,blockquote,.muted,.cv-muted,.description,.subtitle,.helper-text,.form-hint,.field-hint,.empty-state,.meta,.metadata,.breadcrumb,.hub-choice p,.hub-subcard p,.hub-exam>span,.hub-feature-panel p,.hub-disclaimer,.hub-trust-note){
+  color:var(--cv-text-secondary)!important;
+}
+body[data-cv-theme="light"] :is(p,li,label,figcaption,blockquote,.muted,.cv-muted,.description,.subtitle,.helper-text,.form-hint,.field-hint,.empty-state,.meta,.metadata,.breadcrumb,.hub-choice p,.hub-subcard p,.hub-exam>span,.hub-feature-panel p,.hub-disclaimer,.hub-trust-note){
+  color:var(--cv-text-secondary)!important;
+}
+body[data-cv-theme="dark"] :is(small,.text-muted,.text-secondary,.hint,.caption,.timestamp,.course-meta,.stat-label,.nav-description){
+  color:var(--cv-text-subtle)!important;
+}
+body[data-cv-theme="light"] :is(small,.text-muted,.text-secondary,.hint,.caption,.timestamp,.course-meta,.stat-label,.nav-description){
+  color:var(--cv-text-subtle)!important;
+}
+body[data-cv-theme="dark"] a:not(.btn):not(.button):not([class*="primary"]){color:var(--cv-text-link)}
+body[data-cv-theme="light"] a:not(.btn):not(.button):not([class*="primary"]){color:var(--cv-text-link)}
+body[data-cv-theme="dark"] :is(.eyebrow,.hub-eyebrow,.hub-index,.hub-coming,.hub-action,.hub-subcard>b,.hub-exam>i,.hub-back,.section-kicker,.page-kicker){
+  color:#e7ca83!important;
+}
+body[data-cv-theme="light"] :is(.eyebrow,.hub-eyebrow,.hub-index,.hub-coming,.hub-action,.hub-subcard>b,.hub-exam>i,.hub-back,.section-kicker,.page-kicker){
+  color:#8b6829!important;
+}
+
+/* Repair legacy blue/teal gradient headings which become muddy on green surfaces. */
+body[data-cv-theme="dark"] :is(.hub-welcome h1 em,.hub-page-head h1 em,.hub-feature-panel h2 em,.hub-choice h2 em,.hub-subcard h2 em){
+  background:linear-gradient(95deg,#e7ca83 0%,#f4e5b8 55%,#b7d9bd 100%)!important;
+  background-clip:text!important;-webkit-background-clip:text!important;
+  color:transparent!important;-webkit-text-fill-color:transparent!important;
+}
+body[data-cv-theme="light"] :is(.hub-welcome h1 em,.hub-page-head h1 em,.hub-feature-panel h2 em,.hub-choice h2 em,.hub-subcard h2 em){
+  background:linear-gradient(95deg,#176b43 0%,#987333 100%)!important;
+  background-clip:text!important;-webkit-background-clip:text!important;
+  color:transparent!important;-webkit-text-fill-color:transparent!important;
+}
+
+/* Academic/division hubs: convert old navy surfaces and their text as one system. */
+body[data-cv-theme="dark"] :is(.hub-welcome,.hub-page-head,.hub-feature-panel){
+  background:radial-gradient(ellipse at 88% 8%,rgba(214,179,106,.13),transparent 40%),linear-gradient(135deg,#10291d,#0b1d14 68%,#153a29)!important;
+  border-color:var(--cv-text-border)!important;color:var(--cv-text-primary)!important;
+}
+body[data-cv-theme="dark"] :is(.hub-choice,.hub-subcard,.hub-exam){
+  background:linear-gradient(145deg,#153a29,#0c2418)!important;
+  border-color:var(--cv-text-border)!important;color:var(--cv-text-primary)!important;
+}
+body[data-cv-theme="dark"] .hub-exam>b{color:#edf5ec!important}
+body[data-cv-theme="dark"] .hub-exam>span{color:#b9cbbd!important}
+body[data-cv-theme="dark"] .hub-disclaimer,body[data-cv-theme="dark"] .hub-trust-note{
+  background:#0d2419!important;border-color:var(--cv-text-border)!important;color:#b9cbbd!important;
+}
+body[data-cv-theme="light"] :is(.hub-welcome,.hub-page-head,.hub-feature-panel,.hub-choice,.hub-subcard,.hub-exam,.hub-disclaimer,.hub-trust-note){
+  background:#fff!important;border:1px solid #d9e7d9!important;color:#183b29!important;
+  box-shadow:0 10px 28px rgba(26,64,40,.06)!important;
+}
+body[data-cv-theme="light"] .hub-exam>b{color:#183b29!important}
+body[data-cv-theme="light"] .hub-exam>span{color:#496653!important}
+body[data-cv-theme="light"] .hub-disclaimer,body[data-cv-theme="light"] .hub-trust-note{
+  background:#f5faf5!important;color:#496653!important;
+}
+body[data-cv-theme="light"] .hub-button{background:#176b43!important;color:#fff!important}
+
+/* Shared content surfaces and nested text across learning, dashboard, community,
+   marketplace, housing, messaging and administration. */
+body[data-cv-theme="dark"] :is(.panel,.card,.panel-card,.skill-card,.campus-card,.market-card,.market-listing,.market-category,.community-card,.community-post,.community-panel,.community-sidebar,.community-feed-card,.community-side-card,.msg-inbox,.msg-conversation,.msg-thread,.msg-chat-panel,.msg-contact-list,.msg-chat-area,.msg-compose,.msg-workspace,.modal-box,.modal-card,.market-dialog,.adm-view .panel,.qcard,.academy-app-card,.academy-admin-stat,.brand-admin-card,.market-admin-card,.cv-dash-card,.cv-stat-card,.cv-course-card,.cv-settings-card,.cv-engagement-card,.cv-session-card,.cv-continue-card,.cv-achievement-card,.cv-activity-list,.category-tile,.category-topics li){
+  color:var(--cv-text-primary);
+}
+body[data-cv-theme="dark"] :is(.panel,.card,.panel-card,.skill-card,.campus-card,.market-card,.market-listing,.market-category,.community-card,.community-post,.community-panel,.community-sidebar,.community-feed-card,.community-side-card,.msg-inbox,.msg-conversation,.msg-thread,.msg-chat-panel,.msg-contact-list,.msg-chat-area,.msg-compose,.msg-workspace,.modal-box,.modal-card,.market-dialog,.adm-view .panel,.qcard,.academy-app-card,.academy-admin-stat,.brand-admin-card,.market-admin-card,.cv-dash-card,.cv-stat-card,.cv-course-card,.cv-settings-card,.cv-engagement-card,.cv-session-card,.cv-continue-card,.cv-achievement-card,.cv-activity-list,.category-tile,.category-topics li) :is(p,li,small,label,.muted,.description,.meta,.hint){
+  color:var(--cv-text-secondary)!important;
+}
+body[data-cv-theme="light"] :is(.panel,.card,.panel-card,.skill-card,.campus-card,.market-card,.market-listing,.market-category,.community-card,.community-post,.community-panel,.community-sidebar,.community-feed-card,.community-side-card,.msg-inbox,.msg-conversation,.msg-thread,.msg-chat-panel,.msg-contact-list,.msg-chat-area,.msg-compose,.msg-workspace,.modal-box,.modal-card,.market-dialog,.adm-view .panel,.qcard,.academy-app-card,.academy-admin-stat,.brand-admin-card,.market-admin-card,.cv-dash-card,.cv-stat-card,.cv-course-card,.cv-settings-card,.cv-engagement-card,.cv-session-card,.cv-continue-card,.cv-achievement-card,.cv-activity-list,.category-tile,.category-topics li){
+  color:#183b29;
+}
+body[data-cv-theme="light"] :is(.panel,.card,.panel-card,.skill-card,.campus-card,.market-card,.market-listing,.market-category,.community-card,.community-post,.community-panel,.community-sidebar,.community-feed-card,.community-side-card,.msg-inbox,.msg-conversation,.msg-thread,.msg-chat-panel,.msg-contact-list,.msg-chat-area,.msg-compose,.msg-workspace,.modal-box,.modal-card,.market-dialog,.adm-view .panel,.qcard,.academy-app-card,.academy-admin-stat,.brand-admin-card,.market-admin-card,.cv-dash-card,.cv-stat-card,.cv-course-card,.cv-settings-card,.cv-engagement-card,.cv-session-card,.cv-continue-card,.cv-achievement-card,.cv-activity-list,.category-tile,.category-topics li) :is(p,li,small,label,.muted,.description,.meta,.hint){
+  color:#496653!important;
+}
+
+/* Form controls: legible entered text, labels, and placeholders in both modes. */
+body[data-cv-theme="dark"] :is(input,select,textarea){color:#edf5ec!important;background-color:#091d14}
+body[data-cv-theme="light"] :is(input,select,textarea){color:#183b29!important;background-color:#fff}
+body[data-cv-theme="dark"] :is(input,textarea)::placeholder{color:#9eb4a4!important;opacity:1}
+body[data-cv-theme="light"] :is(input,textarea)::placeholder{color:#718a77!important;opacity:1}
+body[data-cv-theme="dark"] :is(option){background:#10291d;color:#edf5ec}
+body[data-cv-theme="light"] :is(option){background:#fff;color:#183b29}
+body[data-cv-theme="dark"] :is(table,th,td){color:#edf5ec}
+body[data-cv-theme="light"] :is(table,th,td){color:#183b29}
+
+/* Assistant widget stays readable even when the site is in light appearance. */
+body[data-cv-theme="light"] #cv-helper-greeting,
+body[data-cv-theme="light"] #cv-helper-panel{color:#edf5ec!important}
+body[data-cv-theme="light"] #cv-helper-log .cv-helper-msg.assistant{color:#edf5ec!important}
+body[data-cv-theme="light"] #cv-helper-input{color:#fff!important}
