@@ -286,3 +286,17 @@ body[data-page="messages"] .msg-safety-note>span{font-size:8px}
  body[data-page="messages"] .msg-bubble-row{max-width:90%}
  body[data-page="messages"] .msg-safety-note{display:none}
 }
+
+
+/* Mobile conversation navigation: inbox first, focused full-height chat after selection. */
+.msg-back-inbox{display:none;flex:none;width:30px;height:30px;border:1px solid rgba(218,190,91,.25);border-radius:9px;background:rgba(218,190,91,.08);color:#e8d17b;font:500 25px/1 Inter;cursor:pointer}
+@media(max-width:760px){
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-stories-section,
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-inbox{display:none}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-workspace{display:block;min-height:0;border:0;background:transparent}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-chat{display:block;min-height:0;border:1px solid rgba(218,190,91,.2);border-radius:13px;overflow:hidden}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-chat-active{height:calc(100dvh - 150px);min-height:430px;max-height:780px}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-chat-head{display:flex;gap:8px}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-back-inbox{display:grid;place-items:center}
+ body[data-page="messages"] .cv-messages-page.is-chat-open .msg-thread{min-height:0}
+}
