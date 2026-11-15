@@ -2310,12 +2310,13 @@ class AdminCreatorApplicationsScreen extends StatefulWidget {
   @override State<AdminCreatorApplicationsScreen> createState()=>_AdminCreatorApplicationsScreenState();
 }
 class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplicationsScreen>{
-  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> rows;bool busy=false;
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> rows;bool busy=false,superAdmin=false;
   @override void initState(){super.initState();rows=load();}
   Future<List<Map<String,dynamic>>> load() async {
     final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
     final p=await db.from('profiles').select('role').eq('id',user.id).single();
     if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access required.');
+    superAdmin=p['role']=='super_admin';
     final apps=await db.from('academy_applications').select('id,application_no,user_id,application_type,status,first_name,last_name,phone,country,region,specialty,proposed_level,prior_experience,portfolio_url,motivation,learning_goals,work_sample_urls,decision_reason,created_at,submitted_at')
       .inFilter('application_type',['creator','instructor','teacher','exhibitor']).order('created_at',ascending:false).limit(200);
     return List<Map<String,dynamic>>.from(apps);
@@ -2367,7 +2368,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
             OutlinedButton(onPressed:busy?null:()=>review(app,'more_information_requested'),child:const Text('Request info')),
             OutlinedButton(onPressed:busy?null:()=>review(app,'rejected'),child:const Text('Reject')),
             FilledButton(onPressed:busy?null:()=>review(app,'approved'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Approve')),
-            if(app['status']=='approved')OutlinedButton(onPressed:busy?null:()=>grantCreator(app),child:const Text('Grant Creator role')),
+            if(superAdmin&&app['status']=='approved')OutlinedButton(onPressed:busy?null:()=>grantCreator(app),child:const Text('Grant Creator role')),
           ]),
         ]))),
       ]));
