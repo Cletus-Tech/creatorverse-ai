@@ -562,6 +562,73 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 }
 
+class CourseQuizScreen extends StatefulWidget {
+  final String quizId;
+  const CourseQuizScreen({super.key,required this.quizId});
+  @override State<CourseQuizScreen> createState()=>_CourseQuizScreenState();
+}
+class _CourseQuizScreenState extends State<CourseQuizScreen>{
+  final db=Supabase.instance.client;
+  late Future<Map<String,dynamic>> quiz;
+  final Map<String,int> answers={};
+  bool submitting=false;
+  Map<String,dynamic>? result;
+  @override void initState(){super.initState();quiz=load();}
+  Future<Map<String,dynamic>> load() async {
+    final raw=await db.rpc('get_quiz',params:{'p_quiz':widget.quizId});
+    if(raw==null)throw StateError('This quiz is unavailable. Check your enrolment.');
+    return Map<String,dynamic>.from(raw as Map);
+  }
+  Future<void> submit(Map<String,dynamic> data) async {
+    final questions=data['questions'] as List? ?? [];
+    if(answers.length!=questions.length){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Answer every question before submitting.')));return;
+    }
+    setState(()=>submitting=true);
+    try{
+      final raw=await db.rpc('submit_quiz',params:{
+        'p_quiz':widget.quizId,
+        'p_answers':answers.map((key,value)=>MapEntry(key,value)),
+      });
+      final outcome=Map<String,dynamic>.from(raw as Map);
+      if(mounted)setState(()=>result=outcome);
+      if(mounted)showDialog<void>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
+        title:Text(outcome['passed']==true?'Assessment passed':'Assessment result'),
+        content:Text('Score: ${outcome['score']}%\nCorrect: ${outcome['correct']} of ${outcome['total']}\nPass mark: ${outcome['pass_mark']}%\n\n${outcome['passed']==true?'Well done. Your result has been recorded.':'Review the lessons and try again.'}'),
+        actions:[FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Continue'))]));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit assessment: $e')));}
+    finally{if(mounted)setState(()=>submitting=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Course assessment')),body:FutureBuilder<Map<String,dynamic>>(future:quiz,builder:(context,snap){
+    if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+    if(snap.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Assessment unavailable: ${snap.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+    final data=snap.data??{};final questions=data['questions'] as List? ?? [];
+    return ListView(padding:const EdgeInsets.all(18),children:[
+      Text((data['title']??'Assessment').toString(),style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
+      const SizedBox(height:6),Text('Pass mark: ${data['pass_mark']}% · ${questions.length} questions',style:const TextStyle(color:muted)),
+      const SizedBox(height:16),
+      for(var i=0;i<questions.length;i++)...[
+        Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text('Question ${i+1}',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800)),
+          const SizedBox(height:7),Text((questions[i]['question']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w700,height:1.4)),
+          const SizedBox(height:8),
+          for(var j=0;j<(questions[i]['options'] as List? ?? []).length;j++)
+            RadioListTile<int>(dense:true,contentPadding:EdgeInsets.zero,activeColor:emerald,
+              value:j,groupValue:answers[questions[i]['id'].toString()],
+              title:Text((questions[i]['options'] as List)[j].toString()),
+              onChanged:result!=null||submitting?null:(v)=>setState(()=>answers[questions[i]['id'].toString()]=v!)),
+        ]))),
+      ],
+      if(result==null)FilledButton(onPressed:submitting?null:()=>submit(data),
+        style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(48)),
+        child:Text(submitting?'Submitting…':'Submit assessment'))
+      else OutlinedButton.icon(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.arrow_back),label:const Text('Back to course')),
+      const SizedBox(height:12),
+      const Text('Assessment results are recorded by CreatorVerse. Completing a quiz does not automatically issue a certificate; certificate approval remains an administrator decision.',style:TextStyle(color:muted,fontSize:12,height:1.5)),
+    ]);
+  }));
+}
+
 class CourseCheckoutScreen extends StatefulWidget {
   final Map<String, dynamic> course;
   const CourseCheckoutScreen({super.key, required this.course});
