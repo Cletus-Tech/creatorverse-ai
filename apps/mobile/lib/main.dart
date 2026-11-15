@@ -933,6 +933,267 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
   }
 }
 
+class MarketplaceSellerScreen extends StatefulWidget {
+  const MarketplaceSellerScreen({super.key});
+  @override
+  State<MarketplaceSellerScreen> createState() => _MarketplaceSellerScreenState();
+}
+class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
+  final db = Supabase.instance.client;
+  final name = TextEditingController(), institution = TextEditingController(), campus = TextEditingController(), bio = TextEditingController();
+  late Future<Map<String, dynamic>> data;
+  bool busy = false;
+  @override
+  void initState() { super.initState(); data = load(); }
+  @override
+  void dispose() { name.dispose(); institution.dispose(); campus.dispose(); bio.dispose(); super.dispose(); }
+  Future<Map<String, dynamic>> load() async {
+    final user = db.auth.currentUser;
+    if (user == null) throw StateError('Sign in to manage a seller profile.');
+    final seller = await db.from('marketplace_sellers').select(
+      'id,user_id,display_name,seller_type,institution,campus,bio,status,review_note,created_at'
+    ).eq('user_id', user.id).maybeSingle();
+    if (seller == null) return {'seller': null, 'listings': <Map<String,dynamic>>[]};
+    final rows = await db.from('marketplace_listings').select(
+      'id,title,description,status,price_ngn,created_at,moderation_note'
+    ).eq('seller_id', seller['id']).order('created_at', ascending: false).limit(50);
+    return {'seller': seller, 'listings': List<Map<String,dynamic>>.from(rows)};
+  }
+  Future<void> refresh() async { final next = load(); setState(() => data = next); await next; }
+  Future<void> apply() async {
+    if (name.text.trim().length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a seller or business name.'))); return;
+    }
+    setState(() => busy = true);
+    try {
+      await db.from('marketplace_sellers').insert({
+        'user_id': db.auth.currentUser!.id,
+        'display_name': name.text.trim(),
+        'seller_type': 'student',
+        'institution': institution.text.trim().isEmpty ? null : institution.text.trim(),
+        'campus': campus.text.trim().isEmpty ? null : campus.text.trim(),
+        'bio': bio.text.trim().isEmpty ? null : bio.text.trim(),
+      });
+      await refresh();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seller application submitted. An administrator must verify your profile before listings can be submitted.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not submit seller application: $e')));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+  Future<void> createListing(Map<String,dynamic> seller) async {
+    final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
+    if (cats.isEmpty || !mounted) return;
+    final title = TextEditingController(), description = TextEditingController(), price = TextEditingController(),
+      campusField = TextEditingController(text: (seller['campus'] ?? '').toString()),
+      institutionField = TextEditingController(text: (seller['institution'] ?? '').toString()),
+      location = TextEditingController();
+    String category = cats.first['id'].toString(), type = 'product';
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) => AlertDialog(
+      backgroundColor: panel, title: const Text('Create a listing'),
+      content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: title, maxLength: 100, decoration: const InputDecoration(labelText: 'Listing title')),
+        const SizedBox(height: 8), DropdownButtonFormField<String>(value: category, decoration: const InputDecoration(labelText: 'Category'),
+          items: [for (final cat in cats) DropdownMenuItem(value: cat['id'].toString(), child: Text(cat['name'].toString()))],
+          onChanged: (v) => setDialog(() => category = v ?? category)),
+        const SizedBox(height: 8), DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'Listing type'),
+          items: const [DropdownMenuItem(value: 'product',child:Text('Product')),DropdownMenuItem(value:'service',child:Text('Service')),DropdownMenuItem(value:'rental',child:Text('Rental')),DropdownMenuItem(value:'free',child:Text('Free item'))],
+          onChanged: (v) => setDialog(() => type = v ?? type)),
+        const SizedBox(height: 8), TextField(controller: description, minLines: 3, maxLines: 5, maxLength: 3000,
+          decoration: const InputDecoration(labelText: 'Description (at least 10 characters)')),
+        const SizedBox(height: 8), TextField(controller: price, keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Price in naira (leave blank if negotiable / on request)')),
+        const SizedBox(height: 8), TextField(controller: institutionField, decoration: const InputDecoration(labelText: 'Institution')),
+        const SizedBox(height: 8), TextField(controller: campusField, decoration: const InputDecoration(labelText: 'Campus')),
+        const SizedBox(height: 8), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location / pickup point')),
+      ]))),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx,false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx,true), child: const Text('Submit for review'))],
+    )));
+    final titleText = title.text.trim(), descText = description.text.trim(), priceText = price.text.trim();
+    title.dispose(); description.dispose(); price.dispose(); campusField.dispose(); institutionField.dispose(); location.dispose();
+    if (ok != true) return;
+    if (titleText.length < 4 || descText.length < 10 || (priceText.isNotEmpty && int.tryParse(priceText) == null)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Check the title, description and price fields.')));
+      return;
+    }
+    setState(() => busy = true);
+    try {
+      final inserted = await db.from('marketplace_listings').insert({
+        'seller_id': seller['id'], 'category_id': category, 'title': titleText, 'description': descText,
+        'listing_type': type, 'price_ngn': priceText.isEmpty ? null : int.parse(priceText),
+        'institution': institutionField.text.trim().isEmpty ? null : institutionField.text.trim(),
+        'campus': campusField.text.trim().isEmpty ? null : campusField.text.trim(),
+        'location_label': location.text.trim().isEmpty ? null : location.text.trim(),
+        'status': 'draft',
+      }).select('id').single();
+      await db.rpc('marketplace_submit_listing', params: {'p_listing_id': inserted['id']});
+      await refresh();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing submitted. It will appear in Marketplace after administrator approval.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not submit listing: $e')));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Seller workspace'), actions: [
+    IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh)),
+  ]), body: FutureBuilder<Map<String,dynamic>>(future: data, builder: (context,snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child:CircularProgressIndicator(color:emerald));
+    if (snapshot.hasError) return Center(child:Padding(padding:const EdgeInsets.all(22),child:Text('Seller workspace unavailable: ${snapshot.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+    final seller = snapshot.data?['seller'] as Map<String,dynamic>?;
+    final listings = snapshot.data?['listings'] as List<Map<String,dynamic>>? ?? [];
+    if (seller == null) return ListView(padding:const EdgeInsets.all(20),children:[
+      const Icon(Icons.storefront_outlined,color:emerald,size:46),const SizedBox(height:12),
+      const Text('Become a CreatorVerse seller',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
+      const SizedBox(height:8),const Text('Apply to sell products or offer services to the community. An administrator verifies every seller before listings can be submitted.',style:TextStyle(color:muted,height:1.5)),
+      const SizedBox(height:18),TextField(controller:name,decoration:const InputDecoration(labelText:'Seller / business display name')),
+      const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution')),
+      const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus')),
+      const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide?')),
+      const SizedBox(height:16),FilledButton(onPressed:busy?null:apply,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(busy?'Submitting…':'Submit seller application')),
+    ]);
+    final status = (seller['status'] ?? 'pending').toString();
+    return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(18),children:[
+      const Text('Your seller profile',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
+      const SizedBox(height:10),Card(color:panel,child:ListTile(
+        leading:Icon(status=='verified'?Icons.verified:Icons.storefront_outlined,color:status=='verified'?emerald:gold),
+        title:Text((seller['display_name']??'Seller').toString()),
+        subtitle:Text('Status: ${status.toUpperCase()}\n${seller['review_note']??'Your profile is reviewed by the Marketplace team.'}',style:const TextStyle(color:muted,height:1.5)),
+      )),
+      if(status=='verified') ...[
+        const SizedBox(height:12),FilledButton.icon(onPressed:busy?null:()=>createListing(seller),style:FilledButton.styleFrom(backgroundColor:emerald),
+          icon:const Icon(Icons.add),label:const Text('Create a listing')),
+      ] else const Padding(padding:EdgeInsets.symmetric(vertical:14),child:Text('You can create listings after your seller profile is verified.')),
+      const SizedBox(height:18),const Text('Your listings',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+      if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not submitted any listings yet.',style:TextStyle(color:muted))),
+      for(final listing in listings) Card(color:panel,child:ListTile(
+        title:Text((listing['title']??'Untitled listing').toString()),
+        subtitle:Text('${listing['status']} · ${listing['moderation_note']??''}',style:const TextStyle(color:muted)),
+        trailing:Text(listing['price_ngn']==null?'Ask':'₦${listing['price_ngn']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w700)),
+      )),
+    ]));
+  }));
+}
+
+class MarketplaceSavedScreen extends StatefulWidget {
+  const MarketplaceSavedScreen({super.key});
+  @override
+  State<MarketplaceSavedScreen> createState() => _MarketplaceSavedScreenState();
+}
+class _MarketplaceSavedScreenState extends State<MarketplaceSavedScreen> {
+  final db=Supabase.instance.client;
+  late Future<List<Map<String,dynamic>>> rows;
+  @override void initState(){super.initState();rows=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to view saved listings.');
+    final saved=await db.from('marketplace_saved_listings').select('listing_id,created_at').eq('user_id',user.id).order('created_at',ascending:false);
+    if(saved.isEmpty)return [];
+    final ids=saved.map((r)=>r['listing_id']).toList();
+    final listings=await db.from('marketplace_listings').select('id,seller_id,title,description,price_ngn,campus,institution,location_label,image_urls').inFilter('id',ids).eq('status','published');
+    return List<Map<String,dynamic>>.from(listings);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Saved listings')),body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
+    if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+    if(snap.hasError)return Center(child:Text('Could not load saved listings: ${snap.error}',style:const TextStyle(color:muted)));
+    final items=snap.data??[];
+    if(items.isEmpty)return const Center(child:Text('You have not saved any listings yet.',style:TextStyle(color:muted)));
+    return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(children:[for(final item in items) ListTile(
+      title:Text((item['title']??'Listing').toString()),subtitle:Text((item['campus']??item['institution']??'Marketplace').toString(),style:const TextStyle(color:muted)),
+      trailing:Text(item['price_ngn']==null?'Ask':'₦${item['price_ngn']}',style:const TextStyle(color:emerald)),
+      onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
+    )]));
+  }));
+}
+
+class MarketplaceEnquiriesScreen extends StatefulWidget {
+  const MarketplaceEnquiriesScreen({super.key});
+  @override State<MarketplaceEnquiriesScreen> createState()=>_MarketplaceEnquiriesScreenState();
+}
+class _MarketplaceEnquiriesScreenState extends State<MarketplaceEnquiriesScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> rows;
+  @override void initState(){super.initState();rows=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to view enquiries.');
+    final data=await db.from('marketplace_enquiries').select('id,listing_id,buyer_id,seller_id,status,last_message_at,marketplace_listings(title),marketplace_sellers(display_name,user_id)')
+      .or('buyer_id.eq.${user.id},seller_id.in.(${await sellerIds(user.id)})')
+      .order('last_message_at',ascending:false);
+    return List<Map<String,dynamic>>.from(data);
+  }
+  Future<String> sellerIds(String userId) async {
+    final result=await db.from('marketplace_sellers').select('id').eq('user_id',userId);
+    return List<Map<String,dynamic>>.from(result).map((r)=>r['id'].toString()).join(',');
+  }
+  Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Marketplace enquiries')),body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
+    if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+    if(snap.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Could not load enquiries: ${snap.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+    final items=snap.data??[];
+    if(items.isEmpty)return const Center(child:Text('No Marketplace enquiries yet.',style:TextStyle(color:muted)));
+    return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(children:[for(final item in items)
+      ListTile(leading:const Icon(Icons.chat_bubble_outline,color:emerald),
+        title:Text((item['marketplace_listings'] is Map?item['marketplace_listings']['title']:'Marketplace enquiry').toString()),
+        subtitle:Text('${item['status']} · ${item['last_message_at']}',style:const TextStyle(color:muted,fontSize:12)),
+        onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceEnquiryThreadScreen(enquiryId:item['id'].toString()))).then((_)=>refresh()),
+      )]));
+  }));
+}
+
+class MarketplaceEnquiryThreadScreen extends StatefulWidget {
+  final String enquiryId;
+  const MarketplaceEnquiryThreadScreen({super.key,required this.enquiryId});
+  @override State<MarketplaceEnquiryThreadScreen> createState()=>_MarketplaceEnquiryThreadScreenState();
+}
+class _MarketplaceEnquiryThreadScreenState extends State<MarketplaceEnquiryThreadScreen>{
+  final db=Supabase.instance.client;final input=TextEditingController();late Future<Map<String,dynamic>> thread;bool sending=false;
+  @override void initState(){super.initState();thread=load();}
+  @override void dispose(){input.dispose();super.dispose();}
+  Future<Map<String,dynamic>> load() async {
+    final head=await db.from('marketplace_enquiries').select('id,status,buyer_id,seller_id,listing_id,marketplace_listings(title),marketplace_sellers(display_name,user_id)')
+      .eq('id',widget.enquiryId).single();
+    await db.rpc('marketplace_mark_enquiry_read',params:{'p_enquiry_id':widget.enquiryId});
+    final messages=await db.from('marketplace_enquiry_messages').select('id,sender_id,body,created_at,read_at')
+      .eq('enquiry_id',widget.enquiryId).order('created_at');
+    return {'head':head,'messages':List<Map<String,dynamic>>.from(messages)};
+  }
+  Future<void> refresh() async {final next=load();setState(()=>thread=next);await next;}
+  Future<void> send() async {
+    final body=input.text.trim();if(body.isEmpty||sending)return;
+    setState(()=>sending=true);
+    try{await db.rpc('marketplace_send_enquiry_message',params:{'p_enquiry_id':widget.enquiryId,'p_message':body});input.clear();await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message not sent: $e')));}
+    finally{if(mounted)setState(()=>sending=false);}
+  }
+  Future<void> closeThread() async {
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Close this enquiry?'),
+      content:const Text('Both participants will no longer be able to send messages in this thread.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Keep open')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Close enquiry'))]));
+    if(ok!=true)return;
+    try{await db.rpc('marketplace_close_enquiry',params:{'p_enquiry_id':widget.enquiryId});await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not close enquiry: $e')));}
+  }
+  @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:thread,builder:(context,snap){
+    if(snap.connectionState==ConnectionState.waiting)return Scaffold(appBar:AppBar(title:const Text('Enquiry')),body:const Center(child:CircularProgressIndicator(color:emerald)));
+    if(snap.hasError)return Scaffold(appBar:AppBar(title:const Text('Enquiry')),body:Center(child:Text('Enquiry unavailable: ${snap.error}',style:const TextStyle(color:muted))));
+    final data=snap.data??{};final head=data['head'] as Map<String,dynamic>;final messages=data['messages'] as List<Map<String,dynamic>>;
+    final closed=head['status']=='closed';
+    return Scaffold(appBar:AppBar(title:Text((head['marketplace_listings'] is Map?head['marketplace_listings']['title']:'Marketplace enquiry').toString()),
+      actions:[if(!closed)IconButton(onPressed:closeThread,icon:const Icon(Icons.lock_outline))]),
+      body:flutter_ui.Column(children:[
+        Expanded(child:messages.isEmpty?const Center(child:Text('Start the conversation.',style:TextStyle(color:muted))):ListView(padding:const EdgeInsets.all(14),children:[
+          for(final m in messages) Align(alignment:m['sender_id']==db.auth.currentUser?.id?Alignment.centerRight:Alignment.centerLeft,
+            child:Container(constraints:const BoxConstraints(maxWidth:310),margin:const EdgeInsets.symmetric(vertical:4),padding:const EdgeInsets.all(12),
+              decoration:BoxDecoration(color:m['sender_id']==db.auth.currentUser?.id?const Color(0xFF155E48):panel,borderRadius:BorderRadius.circular(14)),
+              child:Text((m['body']??'').toString(),style:const TextStyle(height:1.4)))),
+        ])),
+        if(closed)const Padding(padding:EdgeInsets.all(16),child:Text('This enquiry is closed.',style:TextStyle(color:muted)))
+        else SafeArea(child:Padding(padding:const EdgeInsets.all(12),child:Row(children:[
+          Expanded(child:TextField(controller:input,minLines:1,maxLines:4,decoration:const InputDecoration(hintText:'Write a message...'))),
+          IconButton(onPressed:sending?null:send,icon:sending?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.send,color:emerald)),
+        ]))),
+      ]));
+  });
+}
+
 class CommunityTab extends StatefulWidget {
   const CommunityTab({super.key});
   @override
