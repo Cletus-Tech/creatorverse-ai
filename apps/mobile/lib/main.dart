@@ -736,7 +736,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
         'currency': (settings['currency'] ?? 'NGN').toString(),
         'method': method,
         'status': 'pending',
-        'reference': 'CV-MOBILE-PENDING',
+        'reference': 'CV-MOB-${now.millisecondsSinceEpoch}-${user.id.substring(0, 8).toUpperCase()}',
         'expires_at': now.add(Duration(minutes: window)).toIso8601String(),
       });
       if (!mounted) return;
