@@ -234,7 +234,8 @@ class _MainShellState extends State<MainShell> {
         const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
         actions: [
           IconButton(tooltip: 'Messages', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
-          IconButton(tooltip: 'Notifications', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())), icon: const Icon(Icons.notifications_none))]),
+          IconButton(tooltip: 'Notifications', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen()))), icon: const Icon(Icons.notifications_none))]),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
         backgroundColor: panel, indicatorColor: emerald.withValues(alpha: .2),
@@ -1141,7 +1142,8 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
             const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
           ]),
           const SizedBox(height: 12),
-          FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPaymentReviewScreen())),
+          FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('Payment review')), body: const AdminPaymentReviewScreen()))),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('Review payment requests'),
             style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
           const SizedBox(height: 22),
