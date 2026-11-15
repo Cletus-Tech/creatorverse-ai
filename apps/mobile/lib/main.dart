@@ -411,10 +411,12 @@ class _CommunityTabState extends State<CommunityTab> {
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
     future: feed, builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
-        const Text('Community is unavailable right now.'), const SizedBox(height: 12),
-        OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
+          const Text('Community is unavailable right now.'), const SizedBox(height: 12),
+          OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
+      }
       final posts = snapshot.data ?? [];
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
         Row(children: [const Expanded(child: Text('Community', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
@@ -570,8 +572,9 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
           try {
             final found = await db.from('public_profiles').select('id,full_name,username,avatar_url')
               .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id', db.auth.currentUser!.id).limit(12);
-            if (!mounted) return;
+            if (!ctx.mounted) return;
             Navigator.pop(ctx);
+            if (!mounted) return;
             await showDialog(context: context, builder: (pickCtx) => AlertDialog(backgroundColor: panel, title: const Text('Choose a member'),
               content: SizedBox(width: 420, child: ListView(shrinkWrap: true, children: [
                 for (final person in List<Map<String, dynamic>>.from(found))
@@ -588,8 +591,9 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                           final created = await db.from('cv_conversations').insert({'user_a': a, 'user_b': b, 'created_by': me}).select('id').single();
                           id = created['id'].toString();
                         }
-                        if (!mounted) return;
+                        if (!pickCtx.mounted) return;
                         Navigator.pop(pickCtx);
+                        if (!mounted) return;
                         await Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
                         if (mounted) setState(() => inbox = loadInbox());
                       } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not start chat: $e'))); }
@@ -605,10 +609,12 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
       if (snap.hasError) return Center(child: Text('Messages could not load: ${snap.error}', style: const TextStyle(color: muted)));
       final rows = snap.data ?? [];
-      if (rows.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
-        const Text('No conversations yet'), const SizedBox(height: 8),
-        FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
+      if (rows.isEmpty) {
+        return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
+          const Text('No conversations yet'), const SizedBox(height: 8),
+          FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
+      }
       return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
         itemBuilder: (context, i) {
           final c = rows[i], person = Map<String, dynamic>.from(c['person'] as Map? ?? {}), latest = c['latest'] as Map?;
