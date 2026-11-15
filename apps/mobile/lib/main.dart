@@ -1208,19 +1208,22 @@ class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
     final other = widget.profile['id']?.toString();
     if (me == null || other == null) return;
     try {
-      final result = await Future.wait([
-        db.from('community_follows').select('follower_id').eq('follower_id', me).eq('following_id', other).maybeSingle(),
-        db.from('community_follows').select('follower_id').eq('following_id', other).count(CountOption.exact),
-        db.from('community_follows').select('following_id').eq('follower_id', other).count(CountOption.exact),
-      ]);
+      final relation = await db.from('community_follows').select('follower_id')
+        .eq('follower_id', me).eq('following_id', other).maybeSingle();
+      final followers = await db.from('community_follows').select('follower_id')
+        .eq('following_id', other).count(CountOption.exact);
+      final following = await db.from('community_follows').select('following_id')
+        .eq('follower_id', other).count(CountOption.exact);
       if (!mounted) return;
       setState(() {
-        isFollowing = result[0] != null;
-        followerCount = (result[1] as dynamic).count as int;
-        followingCount = (result[2] as dynamic).count as int;
+        isFollowing = relation != null;
+        followerCount = followers.count ?? 0;
+        followingCount = following.count ?? 0;
       });
     } catch (_) {
-      if (mounted) setState(() => isFollowing = false);
+      if (mounted) {
+        setState(() => isFollowing = false);
+      }
     }
   }
 
@@ -1232,16 +1235,24 @@ class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
     try {
       if (isFollowing!) {
         await db.from('community_follows').delete().eq('follower_id', me).eq('following_id', other);
-        if (mounted) setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30).toInt(); });
+        if (mounted) {
+          setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30).toInt(); });
+        }
       } else {
         await db.from('community_follows').insert({'follower_id': me, 'following_id': other});
-        if (mounted) setState(() { isFollowing = true; followerCount += 1; });
+        if (mounted) {
+          setState(() { isFollowing = true; followerCount += 1; });
+        }
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update follow status: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update follow status: $e')));
+      }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() => busy = false);
+      }
     }
   }
 
