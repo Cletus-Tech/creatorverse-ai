@@ -380,6 +380,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     return row != null;
   }
 
+  void refreshCourse() => setState(() { enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
+
   Future<void> enrolFreeCourse() async {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser;
@@ -476,7 +478,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final c = widget.course;
     final price = (c['price_ngn'] as num?)?.toInt() ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('Course overview')),
+      appBar: AppBar(title: const Text('Course overview'), actions: [IconButton(onPressed: refreshCourse, tooltip: 'Refresh enrolment', icon: const Icon(Icons.refresh))]),
       body: ListView(padding: const EdgeInsets.all(18), children: [
         Text((c['title'] ?? '').toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
@@ -504,7 +506,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           return flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
               subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
-            OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))),
+            OutlinedButton.icon(onPressed: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
               icon: const Icon(Icons.payments_outlined), label: const Text('View payment options')),
           ]);
         }),
