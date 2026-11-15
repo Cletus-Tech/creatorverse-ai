@@ -156,17 +156,175 @@ class HomeTab extends StatelessWidget {
       const FeatureTile(icon: Icons.groups_outlined, title: 'Community', detail: 'Connect with other learners and creators.', path: '/community.html')]);
   }
 }
-class LearnTab extends StatelessWidget {
+class LearnTab extends StatefulWidget {
   const LearnTab({super.key});
   @override
-  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(20), children: const [
-    Text('Keep growing', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), SizedBox(height: 8),
-    Text('Browse programmes and continue learning through your CreatorVerse account.', style: TextStyle(color: muted, height: 1.5)),
-    SizedBox(height: 18),
-    FeatureTile(icon: Icons.play_lesson_outlined, title: 'Browse courses', detail: 'View available courses and learning paths.', path: '/courses.html'),
-    FeatureTile(icon: Icons.school_outlined, title: 'Academic learning', detail: 'Explore examination and tertiary resources.', path: '/academic.html'),
-    FeatureTile(icon: Icons.dashboard_outlined, title: 'My learning dashboard', detail: 'Open your enrolled courses and progress.', path: '/student-dashboard.html')]);
+  State<LearnTab> createState() => _LearnTabState();
 }
+class _LearnTabState extends State<LearnTab> {
+  late Future<List<Map<String, dynamic>>> courses;
+  @override
+  void initState() { super.initState(); courses = loadCourses(); }
+  Future<List<Map<String, dynamic>>> loadCourses() async {
+    final rows = await Supabase.instance.client.from('courses')
+      .select('id,slug,title,description,category_slug,level,duration_text,thumbnail_url,price_ngn,featured')
+      .eq('published', true).order('featured', ascending: false).order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+  void reload() => setState(() => courses = loadCourses());
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: courses,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.cloud_off_outlined, size: 42, color: muted),
+          const SizedBox(height: 12), const Text('Courses could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8), const Text('Check your connection and try again.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
+          const SizedBox(height: 16), OutlinedButton.icon(onPressed: reload, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+        ])));
+      }
+      final items = snapshot.data ?? [];
+      return RefreshIndicator(color: emerald, onRefresh: () async => reload(),
+        child: ListView(padding: const EdgeInsets.all(18), children: [
+          const Text('Learn and grow', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          const Text('Explore programmes published by CreatorVerse.', style: TextStyle(color: muted)),
+          const SizedBox(height: 18),
+          if (items.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No published courses are available yet.', textAlign: TextAlign.center, style: TextStyle(color: muted))),
+          for (final course in items) CourseCard(course: course),
+        ]));
+    });
+  }
+}
+
+class CourseCard extends StatelessWidget {
+  final Map<String, dynamic> course;
+  const CourseCard({super.key, required this.course});
+  @override
+  Widget build(BuildContext context) {
+    final image = course['thumbnail_url'] as String?;
+    final price = (course['price_ngn'] as num?)?.toInt() ?? 0;
+    return Padding(padding: const EdgeInsets.only(bottom: 14), child: Material(
+      color: panel, borderRadius: BorderRadius.circular(18), clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CourseDetailScreen(course: course)),
+        ), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (image != null && image.startsWith('https://'))
+            Image.network(image, height: 150, width: double.infinity, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(height: 90, color: const Color(0xFF17352F), child: const Icon(Icons.menu_book, color: emerald, size: 34))),
+          Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text((course['level'] ?? 'Course').toString(), style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w700))),
+              Text(price == 0 ? 'FREE' : '₦${price.toString()}', style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
+            ]),
+            const SizedBox(height: 7),
+            Text((course['title'] ?? 'Untitled course').toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text((course['description'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: muted, height: 1.4, fontSize: 12)),
+            const SizedBox(height: 12),
+            Row(children: [
+              const Icon(Icons.schedule, size: 15, color: muted), const SizedBox(width: 5),
+              Expanded(child: Text((course['duration_text'] ?? 'Self-paced').toString(), style: const TextStyle(color: muted, fontSize: 12))),
+              const Text('View course', style: TextStyle(color: emerald, fontWeight: FontWeight.w700, fontSize: 12)),
+              const Icon(Icons.chevron_right, color: emerald, size: 18),
+            ]),
+          ])),
+        ])),
+    ));
+  }
+}
+
+class CourseDetailScreen extends StatefulWidget {
+  final Map<String, dynamic> course;
+  const CourseDetailScreen({super.key, required this.course});
+  @override
+  State<CourseDetailScreen> createState() => _CourseDetailScreenState();
+}
+class _CourseDetailScreenState extends State<CourseDetailScreen> {
+  late Future<List<Map<String, dynamic>>> curriculum;
+  @override
+  void initState() { super.initState(); curriculum = loadCurriculum(); }
+  Future<List<Map<String, dynamic>>> loadCurriculum() async {
+    final db = Supabase.instance.client;
+    final modulesRaw = await db.from('modules').select('id,title,description,position,duration_text,stage_number')
+      .eq('course_id', widget.course['id']).order('position');
+    final modules = List<Map<String, dynamic>>.from(modulesRaw);
+    if (modules.isEmpty) return [];
+    final ids = modules.map((m) => m['id']).toList();
+    final lessonsRaw = await db.from('lessons')
+      .select('id,module_id,title,video_url,content,position,estimated_minutes,chapter_number,topic_outline')
+      .inFilter('module_id', ids).order('position');
+    final lessons = List<Map<String, dynamic>>.from(lessonsRaw);
+    for (final module in modules) {
+      module['lessons'] = lessons.where((l) => l['module_id'] == module['id']).toList();
+    }
+    return modules;
+  }
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.course;
+    final price = (c['price_ngn'] as num?)?.toInt() ?? 0;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Course overview')),
+      body: ListView(padding: const EdgeInsets.all(18), children: [
+        Text((c['title'] ?? '').toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text((c['description'] ?? '').toString(), style: const TextStyle(color: muted, height: 1.5)),
+        const SizedBox(height: 14),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          Chip(label: Text((c['level'] ?? 'All levels').toString())),
+          Chip(label: Text((c['duration_text'] ?? 'Self-paced').toString())),
+          Chip(label: Text(price == 0 ? 'Free course' : '₦${price.toString()}')),
+        ]),
+        const SizedBox(height: 22),
+        const Text('Course curriculum', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        FutureBuilder<List<Map<String, dynamic>>>(future: curriculum, builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator(color: emerald)));
+          if (snapshot.hasError) return const Text('The course outline is temporarily unavailable.', style: TextStyle(color: muted));
+          final modules = snapshot.data ?? [];
+          if (modules.isEmpty) return const Text('Course lessons are being prepared.', style: TextStyle(color: muted));
+          return Column(children: [
+            for (final module in modules) Card(color: panel, child: ExpansionTile(
+              initiallyExpanded: false,
+              title: Text((module['title'] ?? 'Module').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text('${(module['lessons'] as List).length} lessons', style: const TextStyle(color: muted, fontSize: 12)),
+              children: [
+                if ((module['description'] ?? '').toString().isNotEmpty)
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Text(module['description'].toString(), style: const TextStyle(color: muted))),
+                for (final lesson in module['lessons'] as List<Map<String, dynamic>>)
+                  ListTile(
+                    dense: true, leading: const Icon(Icons.play_circle_outline, color: emerald),
+                    title: Text((lesson['title'] ?? 'Lesson').toString()),
+                    subtitle: Text('${lesson['estimated_minutes'] ?? 0} min', style: const TextStyle(color: muted, fontSize: 11)),
+                    trailing: lesson['video_url'] == null || lesson['video_url'].toString().isEmpty
+                      ? null : const Icon(Icons.open_in_new, size: 16, color: muted),
+                    onTap: () async {
+                      final raw = lesson['video_url']?.toString() ?? '';
+                      final uri = Uri.tryParse(raw);
+                      if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http')) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      } else if ((lesson['content'] ?? '').toString().isNotEmpty && context.mounted) {
+                        showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel,
+                          builder: (_) => SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: Text(
+                            '${lesson['title']}\n\n${lesson['content']}', style: const TextStyle(height: 1.55)))));
+                      }
+                    },
+                  ),
+              ],
+            )),
+          ]);
+        }),
+      ]),
+    );
+  }
+}
+
 class CampusTab extends StatelessWidget {
   const CampusTab({super.key});
   @override
