@@ -1,0 +1,249 @@
+/* CreatorVerse Global Brand System — authoritative across every route.
+   Primary identity: deep forest green + champagne gold. Preserve all page content,
+   logos, layouts, component behaviour and route-specific imagery. */
+:root{
+ --cv-brand-bg:#07140f;
+ --cv-brand-bg-soft:#0a1b13;
+ --cv-brand-surface:#10291d;
+ --cv-brand-surface-2:#153a29;
+ --cv-brand-surface-3:#1b4933;
+ --cv-brand-green:#1d5138;
+ --cv-brand-gold:#d6b36a;
+ --cv-brand-gold-bright:#e7ca83;
+ --cv-brand-text:#edf5ec;
+ --cv-brand-muted:#b5c9b8;
+ --cv-brand-border:rgba(214,179,106,.24);
+ --cv-brand-glow:rgba(214,179,106,.12);
+ --bg:#07140f;--bg-2:#0a1b13;--deep-purple:#1d5138;--electric-purple:#d6b36a;
+ --dark-blue:#10291d;--white:#edf5ec;--soft-gray:#b5c9b8;
+ --line:rgba(214,179,106,.22);--glass:rgba(21,58,41,.72);
+ --accent-cyan:#d6b36a;--accent-pink:#e7ca83;--accent-orange:#c49a4f;--accent-lime:#9bc89f;
+}
+html,body{accent-color:var(--cv-brand-gold)}
+body{background:var(--cv-brand-bg)!important;color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"]{
+ color-scheme:dark!important;
+ --cv-brand-bg:#07140f;--cv-brand-surface:#10291d;--cv-brand-surface-2:#153a29;
+ --cv-brand-text:#edf5ec;--cv-brand-muted:#b5c9b8;
+}
+body[data-cv-theme="light"]{
+ color-scheme:light!important;
+ --cv-brand-bg:#f2f7f1;--cv-brand-surface:#ffffff;--cv-brand-surface-2:#e7f0e7;
+ --cv-brand-text:#173a27;--cv-brand-muted:#5d7864;
+ background:radial-gradient(ellipse at 50% -10%,rgba(214,179,106,.13),transparent 45%),#f2f7f1!important;
+ color:#173a27!important;
+}
+/* Shared page canvas and typography */
+body[data-cv-theme="dark"] .page,body[data-cv-theme="dark"] main,
+body[data-cv-theme="dark"] #content,body[data-cv-theme="dark"] .cv-hub,
+body[data-cv-theme="dark"] .cv-campus,body[data-cv-theme="dark"] .cv-marketplace,
+body[data-cv-theme="dark"] .community-page,body[data-cv-theme="dark"] .cv-messages-page,
+body[data-cv-theme="dark"] .tertiary-page,body[data-cv-theme="dark"] .ch-page,
+body[data-cv-theme="dark"] .cv-dash-shell,body[data-cv-theme="dark"] .adm,
+body[data-cv-theme="dark"] .cv-explore-page{color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"] h1,body[data-cv-theme="dark"] h2,body[data-cv-theme="dark"] h3,
+body[data-cv-theme="dark"] h4,body[data-cv-theme="dark"] .page h1,
+body[data-cv-theme="dark"] .page h2,body[data-cv-theme="dark"] .page h3{color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"] p,body[data-cv-theme="dark"] li,
+body[data-cv-theme="dark"] label,body[data-cv-theme="dark"] .muted,
+body[data-cv-theme="dark"] .cv-muted{color:var(--cv-brand-muted)}
+body[data-cv-theme="dark"] a{color:var(--cv-brand-gold-bright)}
+body[data-cv-theme="dark"] .eyebrow,body[data-cv-theme="dark"] .hub-eyebrow,
+body[data-cv-theme="dark"] .campus-eyebrow,body[data-cv-theme="dark"] .market-eyebrow,
+body[data-cv-theme="dark"] .msg-kicker,body[data-cv-theme="dark"] .community-kicker,
+body[data-cv-theme="dark"] .cv-kicker{color:var(--cv-brand-gold-bright)!important}
+/* Universal navigation, footer and floating utility surfaces */
+body[data-cv-theme="dark"] .nav,body[data-cv-theme="dark"] .nav.scrolled,
+body[data-cv-theme="dark"] #site-header .nav{
+ background:rgba(5,19,12,.96)!important;border-color:var(--cv-brand-border)!important;
+ color:var(--cv-brand-text)!important;box-shadow:0 8px 30px #0006!important;
+}
+body[data-cv-theme="dark"] .nav a,body[data-cv-theme="dark"] .brand-name,
+body[data-cv-theme="dark"] .brand-sub,body[data-cv-theme="dark"] .account-trigger,
+body[data-cv-theme="dark"] .menu-btn{color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"] .nav-center>a:hover,
+body[data-cv-theme="dark"] .nav-center>a.is-active,
+body[data-cv-theme="dark"] .nav-center>a.active{color:var(--cv-brand-gold-bright)!important;border-color:var(--cv-brand-gold)!important}
+body[data-cv-theme="dark"] .cv-search-trigger,body[data-cv-theme="dark"] .cv-notification-trigger,
+body[data-cv-theme="dark"] .account-trigger,body[data-cv-theme="dark"] .menu-btn,
+body[data-cv-theme="dark"] .adm-burger{
+ background:#10291d!important;border:1px solid var(--cv-brand-border)!important;color:var(--cv-brand-text)!important;
+}
+body[data-cv-theme="dark"] .account-panel,body[data-cv-theme="dark"] .cv-notification-panel,
+body[data-cv-theme="dark"] .mobile-menu,body[data-cv-theme="dark"] .adm-side{
+ background:#091b12!important;border-color:var(--cv-brand-border)!important;color:var(--cv-brand-text)!important;
+}
+body[data-cv-theme="dark"] .mobile-menu-links a{
+ background:#10291d!important;color:var(--cv-brand-text)!important;border-color:var(--cv-brand-border)!important;box-shadow:none!important;
+}
+body[data-cv-theme="dark"] .mobile-menu-links a:hover,
+body[data-cv-theme="dark"] .mobile-menu-links a.is-active{
+ background:#17432f!important;border-color:var(--cv-brand-gold)!important;
+}
+body[data-cv-theme="dark"] .bottom-nav{
+ background:rgba(5,19,12,.98)!important;border-color:var(--cv-brand-border)!important;box-shadow:0 -8px 28px #0008!important;
+}
+body[data-cv-theme="dark"] .bottom-nav a,body[data-cv-theme="dark"] .bottom-nav button{color:#a9c0ae!important}
+body[data-cv-theme="dark"] .bottom-nav a.active,
+body[data-cv-theme="dark"] .bottom-nav button[aria-expanded="true"]{
+ color:var(--cv-brand-gold-bright)!important;background:rgba(214,179,106,.1)!important;
+}
+body[data-cv-theme="dark"] .footer,body[data-cv-theme="dark"] #site-footer .footer{
+ background:#081b13!important;color:var(--cv-brand-muted)!important;border-color:var(--cv-brand-border)!important;
+}
+body[data-cv-theme="dark"] .footer p,body[data-cv-theme="dark"] .footer a,
+body[data-cv-theme="dark"] .copy{color:#b5c9b8!important}
+body[data-cv-theme="dark"] .footer h4{color:var(--cv-brand-gold)!important}
+body[data-cv-theme="dark"] .footer-social-links a{background:#10291d!important;border-color:var(--cv-brand-border)!important}
+body[data-cv-theme="dark"] .footer-social-links img{filter:brightness(0) invert(1)!important}
+/* Remap shared cards and page-specific light surfaces to the same green family. */
+body[data-cv-theme="dark"] .panel,body[data-cv-theme="dark"] .card,
+body[data-cv-theme="dark"] .skill-card,body[data-cv-theme="dark"] .panel-card,
+body[data-cv-theme="dark"] .hub-subcard,body[data-cv-theme="dark"] .hub-exam,
+body[data-cv-theme="dark"] .tertiary-section,body[data-cv-theme="dark"] .tertiary-cta,
+body[data-cv-theme="dark"] .tertiary-institution,body[data-cv-theme="dark"] .tertiary-tool-card,
+body[data-cv-theme="dark"] .campus-card,body[data-cv-theme="dark"] .ch-topbar,
+body[data-cv-theme="dark"] .ch-panel,body[data-cv-theme="dark"] .ch-results,
+body[data-cv-theme="dark"] .ch-filter-panel,body[data-cv-theme="dark"] .ch-empty,
+body[data-cv-theme="dark"] .market-category,body[data-cv-theme="dark"] .market-listing,
+body[data-cv-theme="dark"] .market-card,body[data-cv-theme="dark"] .market-seller-card,
+body[data-cv-theme="dark"] .market-enquiry,body[data-cv-theme="dark"] .community-composer,
+body[data-cv-theme="dark"] .community-post,body[data-cv-theme="dark"] .community-card,
+body[data-cv-theme="dark"] .community-panel,body[data-cv-theme="dark"] .community-sidebar,
+body[data-cv-theme="dark"] .community-feed-card,body[data-cv-theme="dark"] .community-side-card,
+body[data-cv-theme="dark"] .pin-card,body[data-cv-theme="dark"] .msg-stories-section,
+body[data-cv-theme="dark"] .msg-inbox,body[data-cv-theme="dark"] .msg-conversation,
+body[data-cv-theme="dark"] .msg-thread,body[data-cv-theme="dark"] .msg-chat-panel,
+body[data-cv-theme="dark"] .msg-contact-list,body[data-cv-theme="dark"] .msg-chat-area,
+body[data-cv-theme="dark"] .msg-compose,body[data-cv-theme="dark"] .msg-chat,
+body[data-cv-theme="dark"] .msg-workspace,body[data-cv-theme="dark"] .modal-box,
+body[data-cv-theme="dark"] .modal-card,body[data-cv-theme="dark"] .msg-modal-card,
+body[data-cv-theme="dark"] .msg-viewer-card,body[data-cv-theme="dark"] .market-dialog,
+body[data-cv-theme="dark"] .adm-view .panel,body[data-cv-theme="dark"] .qcard,
+body[data-cv-theme="dark"] .academy-admin-head,body[data-cv-theme="dark"] .academy-admin-stat,
+body[data-cv-theme="dark"] .academy-app-card,body[data-cv-theme="dark"] .brand-admin-card,
+body[data-cv-theme="dark"] .market-admin-card,body[data-cv-theme="dark"] .cv-dash-card,
+body[data-cv-theme="dark"] .cv-stat-card,body[data-cv-theme="dark"] .cv-course-card,
+body[data-cv-theme="dark"] .cv-settings-card,body[data-cv-theme="dark"] .cv-engagement-card,
+body[data-cv-theme="dark"] .cv-session-card,body[data-cv-theme="dark"] .cv-continue-card,
+body[data-cv-theme="dark"] .cv-achievement-card,body[data-cv-theme="dark"] .cv-activity-list,
+body[data-cv-theme="dark"] .category-tile,body[data-cv-theme="dark"] .category-topics li,
+body[data-cv-theme="dark"] .cv-space-card,body[data-cv-theme="dark"] .cv-home-quicklinks a,
+body[data-cv-theme="dark"] .cv-home-float{
+ background:linear-gradient(145deg,#153a29,#0c2418)!important;
+ color:var(--cv-brand-text)!important;border:1px solid var(--cv-brand-border)!important;
+ box-shadow:0 12px 30px rgba(0,0,0,.2)!important;
+}
+body[data-cv-theme="dark"] .panel h2,body[data-cv-theme="dark"] .panel h3,
+body[data-cv-theme="dark"] .card h2,body[data-cv-theme="dark"] .card h3,
+body[data-cv-theme="dark"] .skill-card h3,body[data-cv-theme="dark"] .campus-card h3,
+body[data-cv-theme="dark"] .market-card h3,body[data-cv-theme="dark"] .community-post h3,
+body[data-cv-theme="dark"] .cv-space-card h3{color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"] .panel p,body[data-cv-theme="dark"] .card p,
+body[data-cv-theme="dark"] .skill-card p,body[data-cv-theme="dark"] .campus-card p,
+body[data-cv-theme="dark"] .market-card p,body[data-cv-theme="dark"] .community-post p,
+body[data-cv-theme="dark"] .cv-space-card p{color:var(--cv-brand-muted)!important}
+body[data-cv-theme="dark"] .tertiary-hero,body[data-cv-theme="dark"] .market-hero,
+body[data-cv-theme="dark"] .community-hero,body[data-cv-theme="dark"] .msg-welcome,
+body[data-cv-theme="dark"] .ch-hero,body[data-cv-theme="dark"] .campus-hero,
+body[data-cv-theme="dark"] .hub-feature-panel,body[data-cv-theme="dark"] .cv-home-lower{
+ background:radial-gradient(circle at 85% 8%,rgba(214,179,106,.12),transparent 38%),
+ linear-gradient(120deg,#0d281c,#17432f 70%,#1b4933)!important;
+ border:1px solid var(--cv-brand-border)!important;color:var(--cv-brand-text)!important;
+ box-shadow:0 18px 45px rgba(0,0,0,.22)!important;
+}
+body[data-cv-theme="dark"] .tertiary-hero h1,body[data-cv-theme="dark"] .market-hero h1,
+body[data-cv-theme="dark"] .community-hero h1,body[data-cv-theme="dark"] .msg-welcome h1,
+body[data-cv-theme="dark"] .ch-hero h1,body[data-cv-theme="dark"] .campus-hero h1{color:var(--cv-brand-text)!important}
+body[data-cv-theme="dark"] .tertiary-hero p,body[data-cv-theme="dark"] .market-hero p,
+body[data-cv-theme="dark"] .community-hero p,body[data-cv-theme="dark"] .msg-welcome p,
+body[data-cv-theme="dark"] .ch-hero p,body[data-cv-theme="dark"] .campus-hero p{color:#c1d2c5!important}
+/* Buttons, badges, tabs, progress and selected states */
+body[data-cv-theme="dark"] .btn-primary,body[data-cv-theme="dark"] .btn-main,
+body[data-cv-theme="dark"] .cv-primary-btn,body[data-cv-theme="dark"] .cv-hero-btn,
+body[data-cv-theme="dark"] .learn-cta-button,body[data-cv-theme="dark"] .cv-home-primary,
+body[data-cv-theme="dark"] .cv-space-card .cv-space-action{
+ background:linear-gradient(120deg,#bd9349,#e7ca83)!important;
+ color:#172b1d!important;border:1px solid rgba(255,235,184,.42)!important;
+ box-shadow:0 8px 22px rgba(0,0,0,.18)!important;
+}
+body[data-cv-theme="dark"] .btn-outline,body[data-cv-theme="dark"] .btn-ghost,
+body[data-cv-theme="dark"] .cv-home-secondary{
+ background:rgba(214,179,106,.07)!important;border:1px solid var(--cv-brand-border)!important;
+ color:var(--cv-brand-gold-bright)!important;
+}
+body[data-cv-theme="dark"] .side-icon,body[data-cv-theme="dark"] .pin-category,
+body[data-cv-theme="dark"] .tertiary-pills span,body[data-cv-theme="dark"] .catalogue-status,
+body[data-cv-theme="dark"] .market-listing-tag,body[data-cv-theme="dark"] .cv-course-tag{
+ background:rgba(214,179,106,.13)!important;color:var(--cv-brand-gold-bright)!important;
+ border-color:var(--cv-brand-border)!important;
+}
+body[data-cv-theme="dark"] .community-tabs,body[data-cv-theme="dark"] .community-actions,
+body[data-cv-theme="dark"] .feed-heading select,body[data-cv-theme="dark"] .pin-comments,
+body[data-cv-theme="dark"] .comment-row,body[data-cv-theme="dark"] .msg-chat,
+body[data-cv-theme="dark"] .msg-thread,body[data-cv-theme="dark"] .msg-search,
+body[data-cv-theme="dark"] .msg-composer,body[data-cv-theme="dark"] .msg-chat-head,
+body[data-cv-theme="dark"] .msg-safety-note{
+ background:#0b2117!important;border-color:var(--cv-brand-border)!important;color:var(--cv-brand-text)!important;
+}
+body[data-cv-theme="dark"] .community-tabs button,body[data-cv-theme="dark"] .pin-action{
+ background:#153a29!important;color:#d5e4d8!important;border-color:var(--cv-brand-border)!important;
+}
+body[data-cv-theme="dark"] .community-tabs button.active,
+body[data-cv-theme="dark"] .pin-action.active{
+ background:#bd9349!important;color:#172b1d!important;border-color:var(--cv-brand-gold)!important;
+}
+body[data-cv-theme="dark"] .msg-bubble,body[data-cv-theme="dark"] .msg-message-bubble{
+ background:#1d5138!important;color:#edf5ec!important;
+}
+body[data-cv-theme="dark"] .msg-bubble.mine,body[data-cv-theme="dark"] .msg-message-bubble.mine{
+ background:#bd9349!important;color:#172b1d!important;
+}
+/* Inputs and tables across every section */
+body[data-cv-theme="dark"] input,body[data-cv-theme="dark"] select,
+body[data-cv-theme="dark"] textarea,body[data-cv-theme="dark"] .adm-view input,
+body[data-cv-theme="dark"] .adm-view select,body[data-cv-theme="dark"] .adm-view textarea{
+ background:#091d14!important;color:var(--cv-brand-text)!important;
+ border-color:var(--cv-brand-border)!important;
+}
+body[data-cv-theme="dark"] input::placeholder,body[data-cv-theme="dark"] textarea::placeholder{
+ color:#8da696!important;
+}
+body[data-cv-theme="dark"] input:focus,body[data-cv-theme="dark"] select:focus,
+body[data-cv-theme="dark"] textarea:focus{
+ border-color:var(--cv-brand-gold)!important;box-shadow:0 0 0 3px rgba(214,179,106,.12)!important;outline:none;
+}
+body[data-cv-theme="dark"] table,body[data-cv-theme="dark"] th,
+body[data-cv-theme="dark"] td,body[data-cv-theme="dark"] .tbl,
+body[data-cv-theme="dark"] .crow,body[data-cv-theme="dark"] .trow{
+ color:var(--cv-brand-text)!important;border-color:var(--cv-brand-border)!important;
+}
+body[data-cv-theme="dark"] .adm-link:hover,body[data-cv-theme="dark"] .adm-link.on{
+ background:rgba(214,179,106,.13)!important;color:var(--cv-brand-gold-bright)!important;
+ box-shadow:inset 3px 0 var(--cv-brand-gold)!important;
+}
+/* Light appearance remains available, but it uses the same green/gold identity. */
+body[data-cv-theme="light"] .nav,body[data-cv-theme="light"] .nav.scrolled,
+body[data-cv-theme="light"] .bottom-nav,body[data-cv-theme="light"] .footer{
+ background:#f5f8f1!important;border-color:rgba(151,120,57,.24)!important;color:#173a27!important;
+}
+body[data-cv-theme="light"] .nav a,body[data-cv-theme="light"] .brand-name,
+body[data-cv-theme="light"] .footer h4{color:#1d5138!important}
+body[data-cv-theme="light"] .nav-center>a:hover,body[data-cv-theme="light"] .nav-center>a.is-active,
+body[data-cv-theme="light"] .bottom-nav a.active{color:#987333!important}
+body[data-cv-theme="light"] .panel,body[data-cv-theme="light"] .card,
+body[data-cv-theme="light"] .skill-card,body[data-cv-theme="light"] .cv-space-card{
+ background:#fff!important;color:#173a27!important;border:1px solid rgba(151,120,57,.22)!important;
+}
+body[data-cv-theme="light"] h1,body[data-cv-theme="light"] h2,
+body[data-cv-theme="light"] h3,body[data-cv-theme="light"] h4{color:#173a27!important}
+body[data-cv-theme="light"] p,body[data-cv-theme="light"] li,
+body[data-cv-theme="light"] label{color:#5d7864}
+body[data-cv-theme="light"] a{color:#987333}
+body[data-cv-theme="light"] .btn-primary,body[data-cv-theme="light"] .cv-home-primary{
+ background:linear-gradient(120deg,#bd9349,#e7ca83)!important;color:#172b1d!important;
+}
+/* Do not tint the official CreatorVerse emblem, photos, videos or content imagery. */
+body img,body video,body iframe{filter:none}
+:focus-visible{outline:2px solid var(--cv-brand-gold-bright)!important;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}}
