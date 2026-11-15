@@ -905,10 +905,10 @@ class CampusTab extends StatelessWidget {
       ])),
     const SizedBox(height: 22), const Text('Explore campus spaces', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
     const SizedBox(height: 12),
-    FeatureTile(icon: Icons.home_work_outlined, title: 'Verified Housing & Roommates', detail: 'Planned verified accommodation and roommate matching.', path: '/housing'),
+    FeatureTile(icon: Icons.home_work_outlined, title: 'Verified Housing', detail: 'Browse approved room and rental listings from verified campus sellers.', path: '/housing'),
     FeatureTile(icon: Icons.storefront_outlined, title: 'Campus Marketplace', detail: 'Discover approved student products and services.', path: '/marketplace.html'),
     FeatureTile(icon: Icons.menu_book_outlined, title: 'Past Questions & Study Hub', detail: 'Explore academic resources and study materials.', path: '/academic.html'),
-    FeatureTile(icon: Icons.delivery_dining_outlined, title: 'Campus Errands & Delivery', detail: 'Planned food, printing and everyday campus deliveries.', path: '/delivery'),
+    FeatureTile(icon: Icons.delivery_dining_outlined, title: 'Campus Services & Delivery', detail: 'Browse approved campus services and delivery providers.', path: '/delivery'),
     const SizedBox(height: 8), const Text('Campus Life is being released in stages. Housing and delivery listings are not live yet; safety dispatch is not part of this release.', style: TextStyle(color: muted, height: 1.5, fontSize: 12)),
   ]);
 }
@@ -1005,6 +1005,47 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             }))),
       ]);
     });
+}
+
+class MarketplaceFilteredScreen extends StatefulWidget {
+  final String listingType,title,description;
+  const MarketplaceFilteredScreen({super.key,required this.listingType,required this.title,required this.description});
+  @override State<MarketplaceFilteredScreen> createState()=>_MarketplaceFilteredScreenState();
+}
+class _MarketplaceFilteredScreenState extends State<MarketplaceFilteredScreen>{
+  final db=Supabase.instance.client;final search=TextEditingController();late Future<List<Map<String,dynamic>>> rows;
+  @override void initState(){super.initState();rows=load();}
+  @override void dispose(){search.dispose();super.dispose();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final raw=await db.from('marketplace_listings').select('id,seller_id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
+      .eq('status','published').eq('listing_type',widget.listingType).order('created_at',ascending:false).limit(80);
+    return List<Map<String,dynamic>>.from(raw);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(widget.title),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Could not load listings: ${snap.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+      final all=snap.data??[];final term=search.text.trim().toLowerCase();
+      final items=all.where((r)=>'${r['title']??''} ${r['description']??''} ${r['campus']??''} ${r['institution']??''} ${r['location_label']??''}'.toLowerCase().contains(term)).toList();
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        Text(widget.description,style:const TextStyle(color:muted,height:1.5)),
+        const SizedBox(height:12),TextField(controller:search,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search listings or campus')),
+        const SizedBox(height:12),
+        if(items.isEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:44),child:flutter_ui.Column(children:[
+          Icon(widget.listingType=='rental'?Icons.home_work_outlined:Icons.delivery_dining_outlined,color:emerald,size:42),
+          const SizedBox(height:10),Text(all.isEmpty?'No approved listings have been published yet.':'No listings match your search.',style:const TextStyle(color:muted),textAlign:TextAlign.center),
+          const SizedBox(height:8),const Text('Only verified sellers and administrator-approved listings appear here.',style:TextStyle(color:muted,fontSize:11),textAlign:TextAlign.center),
+        ])),
+        for(final item in items)Card(color:panel,child:ListTile(
+          leading:const Icon(Icons.storefront_outlined,color:emerald,size:30),
+          title:Text((item['title']??'Listing').toString(),style:const TextStyle(fontWeight:FontWeight.w700)),
+          subtitle:Text('${item['campus']??item['institution']??item['location_label']??''}\n${item['description']??''}',maxLines:3,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted)),
+          trailing:Text(item['price_ngn']==null?'Ask':(item['price_ngn']==0?'FREE':'₦${item['price_ngn']}'),style:const TextStyle(color:emerald,fontWeight:FontWeight.w800)),
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
+        )),
+      ]));
+    }));
 }
 
 class MarketplaceListingScreen extends StatefulWidget {
@@ -2745,9 +2786,9 @@ void openFeature(BuildContext context, String path) {
     case '/marketplace.html':
       destination = const MarketplaceScreen(); title = 'Marketplace'; break;
     case '/housing':
-      destination = const NativeSpaceScreen(title: 'Verified Housing & Roommates', description: 'CreatorVerse is preparing verified accommodation and roommate matching. No verified housing or roommate listings are live yet.', icon: Icons.home_work_outlined); title = 'Housing & Roommates'; break;
+      destination = const MarketplaceFilteredScreen(listingType: 'rental', title: 'Verified Housing', description: 'Browse accommodation and rental listings published by verified CreatorVerse sellers.'); title = 'Verified Housing'; break;
     case '/delivery':
-      destination = const NativeSpaceScreen(title: 'Campus Errands & Delivery', description: 'Campus delivery and errand services are planned for a later CreatorVerse release.', icon: Icons.delivery_dining_outlined); title = 'Campus Delivery'; break;
+      destination = const MarketplaceFilteredScreen(listingType: 'service', title: 'Campus Services & Delivery', description: 'Browse approved services and delivery providers from verified campus sellers.'); title = 'Campus Services'; break;
     case '/profile.html':
       destination = const ProfileTab(); title = 'My profile'; break;
     case '/members':
