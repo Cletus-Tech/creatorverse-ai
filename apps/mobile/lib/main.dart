@@ -423,12 +423,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         ]),
         const SizedBox(height: 14),
         FutureBuilder<bool>(future: enrollment, builder: (context, enrolledSnap) {
-          if (enrolledSnap.connectionState == ConnectionState.waiting) return const LinearProgressIndicator(color: emerald);
+          if (enrolledSnap.connectionState == ConnectionState.waiting) {
+            return const LinearProgressIndicator(color: emerald);
+          }
           final enrolled = enrolledSnap.data == true;
-          if (enrolled) return const ListTile(leading: Icon(Icons.check_circle, color: emerald), title: Text('You are enrolled'), subtitle: Text('Your learning access is active.', style: TextStyle(color: muted)));
-          if (price == 0) return FilledButton.icon(onPressed: enrolling ? null : enrolFreeCourse,
+          if (enrolled) {
+            return const ListTile(leading: Icon(Icons.check_circle, color: emerald), title: Text('You are enrolled'), subtitle: Text('Your learning access is active.', style: TextStyle(color: muted)));
+          }
+          if (price == 0) {
+            return FilledButton.icon(onPressed: enrolling ? null : enrolFreeCourse,
             icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
-            label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
+              label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
+          }
           return const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
             subtitle: Text('Complete payment and have your enrolment confirmed before accessing the lessons.', style: TextStyle(color: muted)));
         }),
@@ -1232,8 +1238,8 @@ class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
       if (!mounted) return;
       setState(() {
         isFollowing = relation != null;
-        followerCount = followers.count ?? 0;
-        followingCount = following.count ?? 0;
+        followerCount = followers.count;
+        followingCount = following.count;
       });
     } catch (_) {
       if (mounted) {
