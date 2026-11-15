@@ -739,13 +739,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     future: catalogue,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
         mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.storefront_outlined, color: emerald, size: 46),
           const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings and seller applications will appear after that setup is completed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
           const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
-        ])));
+        ]))));
+      }
       final categories = snapshot.data?['categories'] as List<Map<String, dynamic>>? ?? [];
       final all = snapshot.data?['listings'] as List<Map<String, dynamic>>? ?? [];
       final term = search.text.trim().toLowerCase();
