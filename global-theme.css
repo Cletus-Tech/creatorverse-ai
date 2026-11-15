@@ -401,3 +401,15 @@ html[data-cv-theme="light"] body .ch-filter input{
 }
 html[data-cv-theme="light"] body .page select option{background:#f3f7ef!important;color:#203b2d!important}
 
+/* The navigation lockup uses the exact same emblem file as the animated loader. */
+body .nav-left .logo-mark{
+ width:44px!important;height:44px!important;padding:0!important;overflow:visible!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body .nav-left .logo-mark img{
+ display:block!important;width:44px!important;height:44px!important;
+ min-width:44px!important;min-height:44px!important;object-fit:contain!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body .footer-brand-lockup img,
+body .account-orb img{object-fit:contain!important;background:transparent!important}
