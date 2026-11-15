@@ -2235,11 +2235,23 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
         for(final entry in values.entries) entry.key:entry.value.isEmpty?null:entry.value,
       }).select('id').single();
       await db.from('academy_applications').update({'status':'submitted','submitted_at':now,'updated_at':now}).eq('id',inserted['id']);
+      try{await db.from('academy_application_events').insert({'application_id':inserted['id'],'actor_id':db.auth.currentUser!.id,'event_type':'submitted','from_status':'draft','to_status':'submitted','message':'Application submitted from the CreatorVerse mobile app.'});}catch(_){}
       await refresh();
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Application submitted. The CreatorVerse team will review it and contact you through notifications.')));
     }catch(e){
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit application: $e')));
     }finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> submitDraft(Map<String,dynamic> app) async {
+    setState(()=>busy=true);
+    try{
+      final now=DateTime.now().toUtc().toIso8601String();
+      await db.from('academy_applications').update({'status':'submitted','submitted_at':now,'updated_at':now}).eq('id',app['id']);
+      await db.from('academy_application_events').insert({'application_id':app['id'],'actor_id':db.auth.currentUser!.id,
+        'event_type':'submitted','from_status':'draft','to_status':'submitted','message':'Application submitted from the CreatorVerse mobile app.'});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit draft: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
   }
   Future<void> respondToInvitation(Map<String,dynamic> invitation,String response) async {
     setState(()=>busy=true);
@@ -2273,7 +2285,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
             leading:const Icon(Icons.assignment_turned_in_outlined,color:emerald),
             title:Text((app['application_no']??'Application').toString()),
             subtitle:Text('${app['application_type']} · ${app['status'].toString().replaceAll('_',' ')}\n${app['decision_reason']??'Your application is being handled by the Academy team.'}',style:const TextStyle(color:muted,height:1.5)),
-            trailing:const Icon(Icons.lock_outline,color:muted),
+            trailing:app['status']=='draft'?TextButton(onPressed:busy?null:()=>submitDraft(app),child:const Text('Submit draft')):const Icon(Icons.lock_outline,color:muted),
           )),
         ],
         if(offers.isNotEmpty)...[
