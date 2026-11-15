@@ -1261,7 +1261,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snap){
       if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(snap.hasError)return Center(child:Text('Marketplace moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
-      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>???[];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];
+      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
