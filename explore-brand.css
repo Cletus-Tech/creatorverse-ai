@@ -1,0 +1,221 @@
+/* CreatorVerse Explore — one complete evergreen and champagne design system.
+   Covers discovery, every dynamic learning card, category details and mobile layouts. */
+:root{
+ --cv-explore-bg:#07140f;
+ --cv-explore-panel:#10291d;
+ --cv-explore-panel-raised:#153a29;
+ --cv-explore-green:#1d5138;
+ --cv-explore-gold:#d6b36a;
+ --cv-explore-gold-bright:#e7ca83;
+ --cv-explore-text:#edf5ec;
+ --cv-explore-muted:#b5c9b8;
+ --cv-explore-line:rgba(214,179,106,.27);
+}
+body[data-page="learn"],body[data-page="category"]{
+ background:var(--cv-explore-bg)!important;color:var(--cv-explore-text)!important;
+}
+body[data-page="learn"]::before,body[data-page="category"]::before{display:none!important}
+body[data-page="learn"] #content.page,body[data-page="category"] #content.page{
+ width:min(100% - 40px,1440px)!important;max-width:1440px!important;
+ margin-inline:auto!important;padding:112px 0 76px!important;
+ background:transparent!important;color:var(--cv-explore-text)!important;
+}
+body[data-page="learn"] #site-header,body[data-page="category"] #site-header{position:relative;z-index:20}
+body[data-page="learn"] .footer,body[data-page="category"] .footer{
+ background:#081b13!important;border-top:1px solid var(--cv-explore-line)!important;
+}
+body[data-page="learn"] .footer h4,body[data-page="category"] .footer h4{color:var(--cv-explore-gold)!important}
+body[data-page="learn"] .footer a,body[data-page="learn"] .copy,
+body[data-page="category"] .footer a,body[data-page="category"] .copy{color:#b9cbbd!important}
+body[data-page="learn"] .learn-hero{
+ position:relative;isolation:isolate;overflow:hidden;
+ border:1px solid rgba(214,179,106,.34)!important;border-radius:30px!important;
+ background:radial-gradient(circle at 9% 0%,rgba(214,179,106,.16),transparent 34%),
+ radial-gradient(circle at 50% 100%,rgba(43,112,72,.38),transparent 43%),
+ linear-gradient(125deg,#0b2418 0%,#123a29 54%,#17432f 100%)!important;
+ box-shadow:0 28px 70px rgba(0,0,0,.28)!important;
+}
+body[data-page="learn"] .learn-hero::before{
+ border-color:rgba(231,202,131,.13)!important;
+ box-shadow:0 0 0 35px rgba(214,179,106,.035),0 0 0 75px rgba(214,179,106,.02)!important;
+}
+body[data-page="learn"] .learn-kicker,
+body[data-page="learn"] .learn-section-kicker{color:var(--cv-explore-gold-bright)!important}
+body[data-page="learn"] .learn-hero-title{color:#f4f7ef!important}
+body[data-page="learn"] .learn-hero-title span{color:var(--cv-explore-gold-bright)!important}
+body[data-page="learn"] .learn-hero-description{color:#c4d6c8!important}
+body[data-page="learn"] .learn-search{
+ border:1px solid rgba(214,179,106,.42)!important;background:#091e15!important;
+ box-shadow:0 12px 34px rgba(0,0,0,.22)!important;
+}
+body[data-page="learn"] .learn-search-icon{color:var(--cv-explore-gold)!important}
+body[data-page="learn"] .learn-search-input{color:var(--cv-explore-text)!important}
+body[data-page="learn"] .learn-search-input::placeholder{color:#9fb6a6!important}
+body[data-page="learn"] .learn-search-hint{
+ background:rgba(214,179,106,.16)!important;color:#e5c77e!important;
+}
+body[data-page="learn"] .learn-quick-links{color:var(--cv-explore-muted)!important}
+body[data-page="learn"] .learn-quick-chip{
+ border:1px solid rgba(214,179,106,.34)!important;border-radius:999px!important;
+ background:rgba(214,179,106,.07)!important;color:#f0e5c9!important;
+}
+body[data-page="learn"] .learn-quick-chip:hover,
+body[data-page="learn"] .learn-quick-chip:focus-visible{
+ background:rgba(214,179,106,.17)!important;border-color:var(--cv-explore-gold)!important;
+}
+body[data-page="learn"] .learn-hero-visual{
+ border:1px solid rgba(214,179,106,.28)!important;border-radius:23px!important;
+ box-shadow:0 24px 50px rgba(0,0,0,.34)!important;
+}
+body[data-page="learn"] .learn-hero-visual-shade{
+ background:linear-gradient(180deg,rgba(7,20,15,.02) 30%,rgba(7,20,15,.83))!important;
+}
+body[data-page="learn"] .learn-visual-tag{
+ border:1px solid rgba(214,179,106,.45)!important;background:rgba(8,29,19,.88)!important;
+ color:#f0dfb5!important;
+}
+body[data-page="learn"] .learn-visual-tag-dot{
+ background:var(--cv-explore-gold)!important;box-shadow:0 0 0 4px rgba(214,179,106,.16)!important;
+}
+body[data-page="learn"] .learn-visual-note strong{color:#f5f5e9!important}
+body[data-page="learn"] .learn-visual-note span{color:#d3dfd4!important}
+body[data-page="learn"] .learn-section-head{
+ display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+ margin:62px 0 24px!important;
+}
+body[data-page="learn"] .learn-section-head h2{color:var(--cv-explore-text)!important}
+body[data-page="learn"] .learn-section-head p{color:var(--cv-explore-muted)!important}
+body[data-page="learn"] .learn-category-count{
+ border:1px solid var(--cv-explore-line)!important;border-radius:15px!important;
+ background:linear-gradient(145deg,#153a29,#0d2419)!important;color:var(--cv-explore-muted)!important;
+}
+body[data-page="learn"] .learn-category-count strong{color:var(--cv-explore-gold-bright)!important}
+body[data-page="learn"] .category-grid.learn-category-grid{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px!important;
+ margin:26px 0 56px!important;
+}
+body[data-page="learn"] .category-tile{
+ position:relative;isolation:isolate;min-height:285px!important;padding:26px!important;
+ overflow:hidden;border:1px solid rgba(214,179,106,.27)!important;border-radius:20px!important;
+ color:var(--cv-explore-text)!important;
+ background:radial-gradient(circle at 88% 9%,rgba(214,179,106,.12),transparent 38%),
+ linear-gradient(145deg,#1d5138 0%,#123525 58%,#0b2117 100%)!important;
+ box-shadow:0 14px 36px rgba(0,0,0,.25)!important;
+ transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease!important;
+}
+body[data-page="learn"] .category-tile::before{
+ background:linear-gradient(0deg,rgba(5,19,13,.97),rgba(8,30,20,.74) 48%,rgba(8,30,20,.12))!important;
+}
+body[data-page="learn"] .category-tile::after{
+ content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
+ background:radial-gradient(circle at 85% 10%,rgba(214,179,106,.12),transparent 42%);
+}
+body[data-page="learn"] .category-tile:hover{
+ transform:translateY(-5px)!important;border-color:rgba(231,202,131,.66)!important;
+ box-shadow:0 22px 48px rgba(0,0,0,.32)!important;
+}
+body[data-page="learn"] .category-tile-image{
+ opacity:.56!important;filter:saturate(.78) contrast(1.04)!important;
+}
+body[data-page="learn"] .category-tile:hover .category-tile-image{opacity:.72!important}
+body[data-page="learn"] .category-tile-index{
+ color:#f0d99f!important;border:1px solid rgba(214,179,106,.48)!important;
+ background:rgba(7,24,16,.82)!important;backdrop-filter:blur(10px);
+}
+body[data-page="learn"] .learn-card-label{
+ color:var(--cv-explore-gold-bright)!important;letter-spacing:1.7px!important;
+}
+body[data-page="learn"] .category-tile h3{color:#f0f6ef!important}
+body[data-page="learn"] .category-tile p{color:#c1d2c5!important}
+body[data-page="learn"] .category-tile-link{
+ display:flex;align-items:center;justify-content:space-between;
+ color:var(--cv-explore-gold-bright)!important;
+}
+body[data-page="learn"] .learn-card-arrow{
+ display:grid;place-items:center;border:1px solid rgba(214,179,106,.62)!important;
+ color:var(--cv-explore-gold-bright)!important;
+}
+body[data-page="learn"] .learn-empty{
+ border:1px dashed rgba(214,179,106,.42)!important;border-radius:16px!important;
+ background:#10291d!important;color:#c1d2c5!important;
+}
+body[data-page="learn"] .learn-bottom-cta{
+ position:relative;overflow:hidden;border:1px solid rgba(214,179,106,.34)!important;
+ border-radius:25px!important;
+ background:radial-gradient(circle at 90% 10%,rgba(214,179,106,.14),transparent 35%),
+ linear-gradient(115deg,#0d281c,#17432f 68%,#1b4b35)!important;
+}
+body[data-page="learn"] .learn-bottom-cta::after{
+ border-color:rgba(231,202,131,.15)!important;
+ box-shadow:0 0 0 35px rgba(214,179,106,.035),0 0 0 75px rgba(214,179,106,.02)!important;
+}
+body[data-page="learn"] .learn-bottom-cta .learn-section-kicker{color:#e2c276!important}
+body[data-page="learn"] .learn-bottom-cta h2{color:#f0f6ef!important}
+body[data-page="learn"] .learn-bottom-cta p{color:#c4d6c8!important}
+body[data-page="learn"] .learn-cta-button{
+ background:linear-gradient(120deg,#c49a4f,#e4c77e)!important;color:#172d1e!important;
+ border:1px solid rgba(255,235,184,.4)!important;border-radius:12px!important;
+ box-shadow:0 8px 22px rgba(0,0,0,.2)!important;
+}
+body[data-page="learn"] .learn-cta-button:hover{filter:brightness(1.06)}
+/* Every category detail route follows the same visual system. */
+body[data-page="category"] .category-detail-hero{
+ border:1px solid rgba(214,179,106,.34)!important;border-radius:25px!important;
+ background:radial-gradient(circle at 85% 8%,rgba(214,179,106,.14),transparent 40%),
+ linear-gradient(135deg,#10291d,#17432f)!important;
+ box-shadow:0 20px 55px rgba(0,0,0,.26)!important;
+}
+body[data-page="category"] .category-detail-image{opacity:.5!important;filter:saturate(.78)!important}
+body[data-page="category"] .category-detail-shade{
+ background:linear-gradient(90deg,rgba(5,19,13,.96),rgba(5,19,13,.72) 58%,rgba(5,19,13,.24))!important;
+}
+body[data-page="category"] .category-eyebrow{color:var(--cv-explore-gold-bright)!important}
+body[data-page="category"] .category-detail-copy h1{color:#f0f6ef!important}
+body[data-page="category"] .category-detail-copy p{color:#c1d2c5!important}
+body[data-page="category"] .category-topics-title{color:var(--cv-explore-text)!important}
+body[data-page="category"] .category-topics li{
+ background:linear-gradient(120deg,#153a29,#10291d)!important;
+ border:1px solid rgba(214,179,106,.25)!important;color:#eaf2e9!important;
+ border-radius:14px!important;
+}
+body[data-page="category"] .btn-primary{
+ background:linear-gradient(120deg,#c49a4f,#e4c77e)!important;color:#172d1e!important;
+ border:1px solid rgba(255,235,184,.4)!important;
+}
+body[data-page="category"] .btn-outline{
+ border-color:rgba(214,179,106,.45)!important;color:#e4c77e!important;background:#10291d!important;
+}
+body[data-page="category"] #content>a.btn{margin-top:12px}
+body[data-page="learn"] a:focus-visible,
+body[data-page="learn"] button:focus-visible,
+body[data-page="learn"] input:focus-visible,
+body[data-page="category"] a:focus-visible,
+body[data-page="category"] button:focus-visible{
+ outline:2px solid var(--cv-explore-gold-bright)!important;outline-offset:3px;
+}
+@media(max-width:1000px){
+ body[data-page="learn"] .category-grid.learn-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:720px){
+ body[data-page="learn"] #content.page,body[data-page="category"] #content.page{
+  width:calc(100% - 30px)!important;padding:96px 0 58px!important;
+ }
+ body[data-page="learn"] .learn-hero{grid-template-columns:1fr!important;gap:24px!important;padding:28px 22px!important;border-radius:23px!important}
+ body[data-page="learn"] .learn-hero-title{font-size:clamp(40px,11vw,58px)!important;letter-spacing:-2.5px!important}
+ body[data-page="learn"] .learn-hero-visual{min-height:245px!important;height:245px!important}
+ body[data-page="learn"] .learn-section-head{align-items:flex-start!important;margin:45px 0 18px!important}
+ body[data-page="learn"] .learn-section-head h2{font-size:27px!important}
+ body[data-page="learn"] .learn-category-count{padding:9px 10px!important}
+ body[data-page="learn"] .category-grid.learn-category-grid{grid-template-columns:1fr!important;gap:14px!important}
+ body[data-page="learn"] .category-tile{min-height:235px!important;padding:22px!important}
+ body[data-page="learn"] .learn-bottom-cta{margin-top:48px!important;padding:28px 22px!important}
+ body[data-page="learn"] .learn-bottom-cta h2{font-size:31px!important}
+ body[data-page="category"] .category-detail-hero{min-height:290px!important;padding:25px!important}
+ body[data-page="category"] .category-topics{grid-template-columns:1fr!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-page="learn"] .learn-quick-chip,
+ body[data-page="learn"] .learn-cta-button,
+ body[data-page="learn"] .category-tile,
+ body[data-page="learn"] .category-tile-image{transition:none!important}
+}
