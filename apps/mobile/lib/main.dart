@@ -803,6 +803,8 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
         final order = data['order'] as Map<String, dynamic>?;
         final bankEnabled = settings['bank_transfer_enabled'] == true;
         final ussdEnabled = settings['ussd_enabled'] == true;
+        final bankReady = bankEnabled && ['bank_name','account_name','account_number'].every((key)=>(settings[key]??'').toString().trim().isNotEmpty);
+        final ussdReady = ussdEnabled && (settings['ussd_instructions']??'').toString().trim().isNotEmpty;
         final orderStatus = (order?['status'] ?? '').toString();
         final expiry = DateTime.tryParse((order?['expires_at'] ?? '').toString());
         final expired = expiry != null && expiry.isBefore(DateTime.now()) && orderStatus != 'confirmed';
@@ -841,7 +843,9 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
               padding: EdgeInsets.all(16), child: Text(
                 'Payments are not enabled at the moment. The administrator must configure bank transfer or USSD in CreatorVerse payment settings before checkout can begin.',
                 style: TextStyle(color: muted, height: 1.5)))),
-            if (bankEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
+            if (bankEnabled && !bankReady) const Card(color:panel,child:Padding(padding:EdgeInsets.all(16),child:Text('Bank transfer is enabled but the bank name, account name or account number is missing. Please contact the administrator.',style:TextStyle(color:muted,height:1.5)))),
+            if (ussdEnabled && !ussdReady) const Card(color:panel,child:Padding(padding:EdgeInsets.all(16),child:Text('USSD is enabled but payment instructions are missing. Please contact the administrator.',style:TextStyle(color:muted,height:1.5)))),
+            if (bankReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Bank transfer', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -853,7 +857,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
                   style: FilledButton.styleFrom(backgroundColor: emerald),
                   child: Text(creating ? 'Creating request…' : 'Create bank transfer request')),
               ]))),
-            if (ussdEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
+            if (ussdReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('USSD payment', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
