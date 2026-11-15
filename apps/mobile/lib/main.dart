@@ -253,29 +253,54 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
 }
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final n = Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'] as String?;
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22), gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
-        border: Border.all(color: emerald.withValues(alpha: .3))),
-        child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('YOUR NEXT CHAPTER STARTS HERE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12), Text('Hello${n == null || n.isEmpty ? '' : ', $n'}.', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8), const Text('Learn new skills, explore opportunities and find your community.', style: TextStyle(color: Colors.white70, height: 1.5)),
-          const SizedBox(height: 16), FilledButton(onPressed: () => openFeature(context, '/divisions.html'), style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Explore CreatorVerse'))])),
-      const SizedBox(height: 24), const Text('Explore your spaces', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 12),
-      const FeatureTile(icon: Icons.auto_awesome_outlined, title: 'Digital Skills', detail: 'Build practical and creative skills.', path: '/digital-skills.html'),
-      const FeatureTile(icon: Icons.school_outlined, title: 'Academic', detail: 'Find learning pathways and study resources.', path: '/academic.html'),
-      const FeatureTile(icon: Icons.apartment_outlined, title: 'Campus Life', detail: 'Discover accommodation and campus services.', path: '/campus.html'),
-      const FeatureTile(icon: Icons.storefront_outlined, title: 'Marketplace', detail: 'Explore the CreatorVerse marketplace.', path: '/marketplace.html'),
-      const FeatureTile(icon: Icons.groups_outlined, title: 'Community', detail: 'Connect with other learners and creators.', path: '/community.html')]);
-  }
+  @override State<HomeTab> createState()=>_HomeTabState();
 }
+class _HomeTabState extends State<HomeTab>{
+  late Future<Map<String,dynamic>> summary;
+  @override void initState(){super.initState();summary=loadSummary();}
+  Future<Map<String,dynamic>> loadSummary() async {
+    final db=Supabase.instance.client;final user=db.auth.currentUser;
+    if(user==null)return {'name':'','enrolled':0,'unread':0};
+    final profile=await db.from('profiles').select('full_name,role').eq('id',user.id).maybeSingle();
+    final enrolled=await db.from('enrolments').select('course_id').eq('user_id',user.id).count(CountOption.exact);
+    final unread=await db.from('cv_notifications').select('id').eq('user_id',user.id).isFilter('read_at',null).count(CountOption.exact);
+    return {'name':(profile?['full_name']??user.userMetadata?['full_name']??'').toString(),
+      'role':(profile?['role']??'student').toString(),'enrolled':enrolled.count,'unread':unread.count};
+  }
+  @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:summary,builder:(context,snapshot){
+    final data=snapshot.data??{};
+    final name=(data['name']??Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'').toString();
+    return ListView(padding:const EdgeInsets.all(20),children:[
+      Container(padding:const EdgeInsets.all(22),decoration:BoxDecoration(
+        borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[Color(0xFF123D35),panel]),
+        border:Border.all(color:emerald.withValues(alpha:.3))),
+        child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('YOUR NEXT CHAPTER STARTS HERE',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w800)),
+          const SizedBox(height:12),Text('Hello${name.isEmpty?'':', $name'}.',style:const TextStyle(fontSize:25,fontWeight:FontWeight.w800)),
+          const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,height:1.5)),
+          const SizedBox(height:16),FilledButton(onPressed:()=>openFeature(context,'/divisions.html'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Explore CreatorVerse')),
+        ])),
+      const SizedBox(height:16),
+      if(snapshot.connectionState==ConnectionState.waiting)const LinearProgressIndicator(color:emerald),
+      if(snapshot.hasError)const Text('Your learning summary will appear when the connection is restored.',style:TextStyle(color:muted,fontSize:12)),
+      if(snapshot.hasData)Row(children:[
+        Expanded(child:Card(color:panel,child:ListTile(leading:const Icon(Icons.menu_book_outlined,color:emerald),title:Text('${data['enrolled']??0}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),subtitle:const Text('Enrolled courses',style:TextStyle(color:muted,fontSize:11))))),
+        const SizedBox(width:8),
+        Expanded(child:Card(color:panel,child:ListTile(leading:const Icon(Icons.notifications_none,color:gold),title:Text('${data['unread']??0}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),subtitle:const Text('Unread alerts',style:TextStyle(color:muted,fontSize:11))))),
+      ]),
+      const SizedBox(height:12),const Text('Explore your spaces',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+      const SizedBox(height:12),
+      const FeatureTile(icon:Icons.auto_awesome_outlined,title:'Digital Skills',detail:'Build practical and creative skills.',path:'/digital-skills.html'),
+      const FeatureTile(icon:Icons.school_outlined,title:'Academic',detail:'Find learning pathways and study resources.',path:'/academic.html'),
+      const FeatureTile(icon:Icons.apartment_outlined,title:'Campus Life',detail:'Discover accommodation and campus services.',path:'/campus.html'),
+      const FeatureTile(icon:Icons.storefront_outlined,title:'Marketplace',detail:'Explore the CreatorVerse marketplace.',path:'/marketplace.html'),
+      const FeatureTile(icon:Icons.groups_outlined,title:'Community',detail:'Connect with other learners and creators.',path:'/community.html'),
+    ]);
+  });
+}
+
 class LearnTab extends StatefulWidget {
   const LearnTab({super.key});
   @override
