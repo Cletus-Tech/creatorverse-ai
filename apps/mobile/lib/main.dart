@@ -1197,6 +1197,96 @@ class _MarketplaceEnquiryThreadScreenState extends State<MarketplaceEnquiryThrea
   });
 }
 
+class MarketplaceAdminScreen extends StatefulWidget {
+  const MarketplaceAdminScreen({super.key});
+  @override State<MarketplaceAdminScreen> createState()=>_MarketplaceAdminScreenState();
+}
+class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
+  final db=Supabase.instance.client;
+  late Future<Map<String,dynamic>> data;
+  bool busy=false;
+  @override void initState(){super.initState();data=load();}
+  Future<Map<String,dynamic>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access is required.');
+    final sellers=await db.from('marketplace_sellers').select('id,user_id,display_name,seller_type,institution,campus,bio,status,created_at')
+      .eq('status','pending').order('created_at');
+    final listings=await db.from('marketplace_listings').select('id,title,description,price_ngn,listing_type,created_at,seller_id,marketplace_sellers(display_name,institution,campus),marketplace_categories(name)')
+      .eq('status','pending_review').order('created_at');
+    final cats=await db.from('marketplace_categories').select('id,name,active,position').order('position');
+    return {'sellers':List<Map<String,dynamic>>.from(sellers),'listings':List<Map<String,dynamic>>.from(listings),'categories':List<Map<String,dynamic>>.from(cats)};
+  }
+  Future<void> refresh() async {final next=load();setState(()=>data=next);await next;}
+  Future<String?> noteDialog(String title,String hint) async {
+    final controller=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:Text(title),
+      content:TextField(controller:controller,maxLines:3,decoration:InputDecoration(hintText:hint)),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Continue'))]));
+    final value=controller.text.trim();controller.dispose();return ok==true?value:null;
+  }
+  Future<void> reviewSeller(Map<String,dynamic> seller,String status) async {
+    final note=await noteDialog(status=='verified'?'Verify seller':'Reject seller','Optional review note');
+    if(note==null)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('marketplace_sellers').update({'status':status,'review_note':note.isEmpty?null:note}).eq('id',seller['id']);
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(status=='verified'?'Seller verified.':'Seller application rejected.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not review seller: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> reviewListing(Map<String,dynamic> listing,String status) async {
+    final note=await noteDialog(status=='published'?'Approve listing':'Reject listing','Optional moderation note');
+    if(note==null)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('marketplace_listings').update({
+        'status':status,'moderation_note':note.isEmpty?null:note,
+        if(status=='rejected')'reviewed_by':db.auth.currentUser!.id,
+        if(status=='rejected')'reviewed_at':DateTime.now().toUtc().toIso8601String(),
+      }).eq('id',listing['id']);
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(status=='published'?'Listing published in Marketplace.':'Listing rejected.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not review listing: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> toggleCategory(Map<String,dynamic> cat) async {
+    setState(()=>busy=true);
+    try{await db.from('marketplace_categories').update({'active':!(cat['active']==true)}).eq('id',cat['id']);await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update category: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Marketplace moderation'),actions:[IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Marketplace moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>???[];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
+        for(final s in sellers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((s['display_name']??'Seller').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          Text('${s['seller_type']} · ${s['campus']??''} · ${s['institution']??''}',style:const TextStyle(color:muted,fontSize:12)),
+          if((s['bio']??'').toString().isNotEmpty)Text(s['bio'].toString(),style:const TextStyle(height:1.4)),
+          Row(children:[Expanded(child:OutlinedButton(onPressed:busy?null:()=>reviewSeller(s,'rejected'),child:const Text('Reject'))),
+            const SizedBox(width:8),Expanded(child:FilledButton(onPressed:busy?null:()=>reviewSeller(s,'verified'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Verify')))]),
+        ]))),
+        const SizedBox(height:20),const Text('Listings awaiting approval',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(listings.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No listings awaiting review.',style:TextStyle(color:muted))),
+        for(final l in listings)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((l['title']??'Listing').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          Text('${l['marketplace_categories'] is Map?l['marketplace_categories']['name']:'Category'} · ${l['marketplace_sellers'] is Map?l['marketplace_sellers']['display_name']:'Seller'} · ₦${l['price_ngn']??'Ask'}',style:const TextStyle(color:muted,fontSize:12)),
+          const SizedBox(height:6),Text((l['description']??'').toString(),maxLines:4,overflow:TextOverflow.ellipsis,style:const TextStyle(height:1.4)),
+          Row(children:[Expanded(child:OutlinedButton(onPressed:busy?null:()=>reviewListing(l,'rejected'),child:const Text('Reject'))),
+            const SizedBox(width:8),Expanded(child:FilledButton(onPressed:busy?null:()=>reviewListing(l,'published'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Approve & publish')))]),
+        ]))),
+        const SizedBox(height:20),const Text('Marketplace categories',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        for(final cat in cats)SwitchListTile(value:cat['active']==true,title:Text(cat['name'].toString()),activeColor:emerald,onChanged:busy?null:(_)=>toggleCategory(cat)),
+      ]));
+    }));
+}
+
 class CommunityTab extends StatefulWidget {
   const CommunityTab({super.key});
   @override
@@ -1651,6 +1741,9 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
               appBar: AppBar(title: const Text('Payment review')), body: const AdminPaymentReviewScreen()))),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('Review payment requests'),
             style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceAdminScreen())),
+            icon: const Icon(Icons.store_mall_directory_outlined), label: const Text('Manage Marketplace')),
           const SizedBox(height: 22),
           const Text('Recent payment orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No payment orders found.', style: TextStyle(color: muted))),
