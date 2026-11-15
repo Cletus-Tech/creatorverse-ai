@@ -7,7 +7,7 @@ html[data-cv-theme="dark"] body,body[data-cv-theme="dark"]{background:radial-gra
 body[data-cv-theme="light"]{background:#f2f8f3!important;color:#183326!important}
 
 /* Global header, dropdowns, mobile navigation and footer */
-body[data-cv-theme="dark"] .nav,body[data-cv-theme="dark"] .nav.scrolled{background:rgba(5,16,35,.95)!important;border-color:#294c36!important;box-shadow:0 8px 30px #0006!important;color:#f2fff6!important}
+body[data-cv-theme="dark"] .nav,body[data-cv-theme="dark"] .nav.scrolled{background:rgba(5,19,12,.95)!important;border-color:#294c36!important;box-shadow:0 8px 30px #0006!important;color:#f2fff6!important}
 body[data-cv-theme="dark"] .nav-center>a,body[data-cv-theme="dark"] .brand-name,body[data-cv-theme="dark"] .brand-sub,body[data-cv-theme="dark"] .account-trigger,body[data-cv-theme="dark"] .menu-btn{color:#e3f5e8!important}
 body[data-cv-theme="dark"] .nav-center>a:hover,body[data-cv-theme="dark"] .nav-center>a.is-active{color:#72e7a0!important;border-color:#48d98b!important}
 body[data-cv-theme="dark"] .logo-mark{background:linear-gradient(145deg,#17482d,#071b11)!important;border-color:#3c7650!important}
@@ -21,7 +21,7 @@ body[data-cv-theme="dark"] .mobile-menu{background:#091b11!important;color:#f2ff
 body[data-cv-theme="dark"] .mobile-menu-links a{background:#10281a!important;color:#e3f5e8!important;border-color:#31563d!important;box-shadow:none!important}
 body[data-cv-theme="dark"] .mobile-menu-links a:hover,body[data-cv-theme="dark"] .mobile-menu-links a.is-active{background:#17482d!important;border-color:#48d98b!important}
 body[data-cv-theme="dark"] .mobile-menu .btn-ghost{background:transparent!important;color:#e3f5e8!important;border-color:#41634b!important}
-body[data-cv-theme="dark"] .bottom-nav{background:rgba(5,16,35,.98)!important;border-color:#294c36!important;box-shadow:0 -8px 28px #0008!important}
+body[data-cv-theme="dark"] .bottom-nav{background:rgba(5,19,12,.98)!important;border-color:#294c36!important;box-shadow:0 -8px 28px #0008!important}
 body[data-cv-theme="dark"] .bottom-nav a,body[data-cv-theme="dark"] .bottom-nav button{color:#a8c1af!important}
 body[data-cv-theme="dark"] .bottom-nav a.active,body[data-cv-theme="dark"] .bottom-nav button[aria-expanded="true"]{color:#72e7a0!important;background:#48d98b18!important}
 body[data-cv-theme="dark"] .footer{background:#08180f!important;color:#e3f5e8!important;border-color:#294c36!important}
@@ -98,7 +98,7 @@ body[data-cv-theme="dark"] .adm-brand small,body[data-cv-theme="dark"] .adm-who,
 body[data-cv-theme="dark"] .adm-link{color:#b9d8c2!important}
 body[data-cv-theme="dark"] .adm-link:hover,body[data-cv-theme="dark"] .adm-link.on{background:#17482d!important;color:#8ce9ad!important;box-shadow:inset 3px 0 #48d98b!important}
 body[data-cv-theme="dark"] .adm-link em{background:#17482d!important;color:#a8f3be!important}
-body[data-cv-theme="dark"] .adm-top{background:rgba(7,19,41,.95)!important;border-color:#294c36!important}
+body[data-cv-theme="dark"] .adm-top{background:rgba(5,19,12,.95)!important;border-color:#294c36!important}
 body[data-cv-theme="dark"] .adm-main{background:#07140f!important}
 body[data-cv-theme="dark"] .adm-burger{background:#10281a!important;border-color:#31563d!important;color:#e3f5e8!important}
 body[data-cv-theme="dark"] .adm-logo{background:#10281a!important;border-color:#31563d!important}
@@ -124,7 +124,7 @@ body[data-cv-theme="dark"] .home-bg-preview{background:#10281a!important;border-
 
 /* Light theme on every module, using the same blue accent family */
 body[data-cv-theme="light"] .panel,body[data-cv-theme="light"] .card,body[data-cv-theme="light"] .skill-card,body[data-cv-theme="light"] .panel-card,body[data-cv-theme="light"] .hub-subcard,body[data-cv-theme="light"] .hub-exam,body[data-cv-theme="light"] .tertiary-section,body[data-cv-theme="light"] .tertiary-cta,body[data-cv-theme="light"] .tertiary-institution,body[data-cv-theme="light"] .tertiary-tool-card,body[data-cv-theme="light"] .campus-card,body[data-cv-theme="light"] .ch-topbar,body[data-cv-theme="light"] .ch-panel,body[data-cv-theme="light"] .ch-results,body[data-cv-theme="light"] .ch-filter-panel,body[data-cv-theme="light"] .ch-empty,body[data-cv-theme="light"] .market-category,body[data-cv-theme="light"] .market-listing,body[data-cv-theme="light"] .market-card,body[data-cv-theme="light"] .market-seller-card,body[data-cv-theme="light"] .market-enquiry,body[data-cv-theme="light"] .community-composer,body[data-cv-theme="light"] .community-post,body[data-cv-theme="light"] .community-card,body[data-cv-theme="light"] .community-panel,body[data-cv-theme="light"] .community-sidebar,body[data-cv-theme="light"] .community-feed-card,body[data-cv-theme="light"] .community-side-card,body[data-cv-theme="light"] .pin-card,body[data-cv-theme="light"] .msg-stories-section,body[data-cv-theme="light"] .msg-inbox,body[data-cv-theme="light"] .msg-conversation,body[data-cv-theme="light"] .msg-thread,body[data-cv-theme="light"] .msg-chat-panel,body[data-cv-theme="light"] .msg-contact-list,body[data-cv-theme="light"] .msg-chat-area,body[data-cv-theme="light"] .msg-compose,body[data-cv-theme="light"] .msg-chat,body[data-cv-theme="light"] .msg-workspace,body[data-cv-theme="light"] .modal-box,body[data-cv-theme="light"] .adm-view .panel,body[data-cv-theme="light"] .qcard,body[data-cv-theme="light"] .academy-admin-stat,body[data-cv-theme="light"] .academy-app-card{
- background:#fff!important;color:#1b3457!important;border:1px solid #d9e9dd!important;box-shadow:0 8px 24px rgba(32,69,120,.06)!important;
+ background:#fff!important;color:#1b3457!important;border:1px solid #d9e9dd!important;box-shadow:0 8px 24px rgba(32,100,55,.06)!important;
 }
 body[data-cv-theme="light"] .panel h2,body[data-cv-theme="light"] .panel h3,body[data-cv-theme="light"] .card h2,body[data-cv-theme="light"] .card h3,body[data-cv-theme="light"] .skill-card h3,body[data-cv-theme="light"] .hub-subcard h2,body[data-cv-theme="light"] .campus-card h3,body[data-cv-theme="light"] .market-card h3,body[data-cv-theme="light"] .community-post h3{color:#183b27!important}
 body[data-cv-theme="light"] .tertiary-hero,body[data-cv-theme="light"] .market-hero,body[data-cv-theme="light"] .community-hero,body[data-cv-theme="light"] .msg-welcome,body[data-cv-theme="light"] .ch-hero,body[data-cv-theme="light"] .campus-hero{background:linear-gradient(120deg,#e5f5e9,#f7fcf8 72%,#eaf7ed)!important;border:1px solid #d4eadb!important;color:#183b27!important}
@@ -213,5 +213,5 @@ body[data-cv-theme="light"][data-page] .adm-view .panel,
 body[data-cv-theme="light"][data-page] .qcard,
 body[data-cv-theme="light"][data-page] .academy-admin-stat,
 body[data-cv-theme="light"][data-page] .academy-app-card{
- background:#fff!important;color:#1b3457!important;border:1px solid #d9e9dd!important;box-shadow:0 8px 24px rgba(32,69,120,.06)!important;
+ background:#fff!important;color:#1b3457!important;border:1px solid #d9e9dd!important;box-shadow:0 8px 24px rgba(32,100,55,.06)!important;
 }
