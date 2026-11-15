@@ -1097,7 +1097,7 @@ class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
     try {
       if (isFollowing!) {
         await db.from('community_follows').delete().eq('follower_id', me).eq('following_id', other);
-        if (mounted) setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30); });
+        if (mounted) setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30).toInt(); });
       } else {
         await db.from('community_follows').insert({'follower_id': me, 'following_id': other});
         if (mounted) setState(() { isFollowing = true; followerCount += 1; });
