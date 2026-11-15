@@ -435,8 +435,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
               label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
           }
-          return const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
-            subtitle: Text('Complete payment and have your enrolment confirmed before accessing the lessons.', style: TextStyle(color: muted)));
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
+              subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
+            OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))),
+              icon: const Icon(Icons.payments_outlined), label: const Text('View payment options')),
+          ]);
         }),
         const SizedBox(height: 22),
         const Text('Course curriculum', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
@@ -479,6 +483,197 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         }),
       ]),
     );
+  }
+}
+
+class CourseCheckoutScreen extends StatefulWidget {
+  final Map<String, dynamic> course;
+  const CourseCheckoutScreen({super.key, required this.course});
+  @override
+  State<CourseCheckoutScreen> createState() => _CourseCheckoutScreenState();
+}
+
+class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
+  final db = Supabase.instance.client;
+  final transferReference = TextEditingController();
+  late Future<Map<String, dynamic>> checkout;
+  bool creating = false;
+  bool submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    checkout = loadCheckout();
+  }
+
+  @override
+  void dispose() {
+    transferReference.dispose();
+    super.dispose();
+  }
+
+  Future<Map<String, dynamic>> loadCheckout() async {
+    final user = db.auth.currentUser;
+    if (user == null) {
+      throw StateError('Sign in to continue with course payment.');
+    }
+    final settings = await db.from('payment_settings').select(
+      'currency,payment_window_minutes,bank_transfer_enabled,ussd_enabled,bank_name,account_name,account_number,ussd_instructions'
+    ).eq('id', true).maybeSingle();
+    final rows = await db.from('payment_orders')
+      .select('id,method,status,reference,expires_at,transfer_reference,admin_note,created_at')
+      .eq('user_id', user.id).eq('course_id', widget.course['id'])
+      .inFilter('status', ['pending','proof_submitted','confirmed'])
+      .order('created_at', ascending: false).limit(1);
+    final currentOrder = rows.isEmpty ? null : rows.first;
+    if (currentOrder != null) {
+      transferReference.text = (currentOrder['transfer_reference'] ?? '').toString();
+    }
+    return {'settings': settings ?? {}, 'order': currentOrder};
+  }
+
+  Future<void> startPayment(String method, Map<String, dynamic> settings) async {
+    final user = db.auth.currentUser;
+    if (user == null || creating) return;
+    final price = (widget.course['price_ngn'] as num?)?.toInt() ?? 0;
+    if (price <= 0) return;
+    setState(() => creating = true);
+    try {
+      final window = (settings['payment_window_minutes'] as num?)?.toInt() ?? 30;
+      final now = DateTime.now();
+      await db.from('payment_orders').insert({
+        'user_id': user.id,
+        'course_id': widget.course['id'],
+        'amount_ngn': price,
+        'currency': (settings['currency'] ?? 'NGN').toString(),
+        'method': method,
+        'status': 'pending',
+        'reference': 'CV-MOBILE-PENDING',
+        'expires_at': now.add(Duration(minutes: window)).toIso8601String(),
+      });
+      if (!mounted) return;
+      setState(() => checkout = loadCheckout());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment request created. Follow the instructions below.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start payment: $e')));
+    } finally {
+      if (mounted) setState(() => creating = false);
+    }
+  }
+
+  Future<void> submitReference(Map<String, dynamic> order) async {
+    final reference = transferReference.text.trim();
+    if (reference.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter the transaction reference from your bank or USSD receipt.')));
+      return;
+    }
+    setState(() => submitting = true);
+    try {
+      await db.from('payment_orders').update({
+        'transfer_reference': reference,
+        'status': 'proof_submitted',
+      }).eq('id', order['id']).eq('user_id', db.auth.currentUser!.id);
+      if (!mounted) return;
+      setState(() => checkout = loadCheckout());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transfer reference submitted for administrator verification.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not submit reference: $e')));
+    } finally {
+      if (mounted) setState(() => submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final price = (widget.course['price_ngn'] as num?)?.toInt() ?? 0;
+    return Scaffold(appBar: AppBar(title: const Text('Course payment')), body: FutureBuilder<Map<String, dynamic>>(
+      future: checkout,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: emerald));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
+            'Payment options could not be loaded: ${snapshot.error}',
+            textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+        }
+        final data = snapshot.data ?? {};
+        final settings = data['settings'] as Map<String, dynamic>? ?? {};
+        final order = data['order'] as Map<String, dynamic>?;
+        final bankEnabled = settings['bank_transfer_enabled'] == true;
+        final ussdEnabled = settings['ussd_enabled'] == true;
+        final orderStatus = (order?['status'] ?? '').toString();
+        final expiry = DateTime.tryParse((order?['expires_at'] ?? '').toString());
+        final expired = expiry != null && expiry.isBefore(DateTime.now()) && orderStatus != 'confirmed';
+        return ListView(padding: const EdgeInsets.all(20), children: [
+          Text((widget.course['title'] ?? 'Course').toString(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text('Amount due: ₦${price.toString()}', style: const TextStyle(color: gold, fontSize: 19, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 18),
+          if (orderStatus == 'confirmed') const Card(color: panel, child: ListTile(
+            leading: Icon(Icons.check_circle, color: emerald),
+            title: Text('Payment confirmed'),
+            subtitle: Text('Your course enrolment has been activated.', style: TextStyle(color: muted)))),
+          if (order != null && orderStatus != 'confirmed') ...[
+            Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(expired ? 'Payment window expired' : 'Payment request · $orderStatus',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text('Reference: ${order['reference']}', style: const TextStyle(color: muted)),
+                if (expiry != null) Text('Deadline: ${expiry.toLocal()}', style: const TextStyle(color: muted, fontSize: 12)),
+                if (!expired && orderStatus == 'pending') ...[
+                  const SizedBox(height: 12),
+                  TextField(controller: transferReference, decoration: const InputDecoration(labelText: 'Bank / USSD transaction reference')),
+                  const SizedBox(height: 10),
+                  FilledButton(onPressed: submitting ? null : () => submitReference(order),
+                    style: FilledButton.styleFrom(backgroundColor: emerald),
+                    child: Text(submitting ? 'Submitting…' : 'Submit transfer reference')),
+                ],
+                if (orderStatus == 'proof_submitted') const Padding(padding: EdgeInsets.only(top: 10),
+                  child: Text('Your reference is awaiting administrator verification.', style: TextStyle(color: gold))),
+              ]))),
+          ],
+          if (order == null || expired) ...[
+            const SizedBox(height: 12),
+            if (!bankEnabled && !ussdEnabled) const Card(color: panel, child: Padding(
+              padding: EdgeInsets.all(16), child: Text(
+                'Payments are not enabled at the moment. The administrator must configure bank transfer or USSD in CreatorVerse payment settings before checkout can begin.',
+                style: TextStyle(color: muted, height: 1.5)))),
+            if (bankEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Bank transfer', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                Text('Bank: ${settings['bank_name'] ?? ''}'),
+                Text('Account name: ${settings['account_name'] ?? ''}'),
+                Text('Account number: ${settings['account_number'] ?? ''}'),
+                const SizedBox(height: 10),
+                FilledButton(onPressed: creating ? null : () => startPayment('bank_transfer', settings),
+                  style: FilledButton.styleFrom(backgroundColor: emerald),
+                  child: Text(creating ? 'Creating request…' : 'Create bank transfer request')),
+              ]))),
+            if (ussdEnabled) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('USSD payment', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                Text((settings['ussd_instructions'] ?? '').toString(), style: const TextStyle(color: muted, height: 1.5)),
+                const SizedBox(height: 10),
+                FilledButton(onPressed: creating ? null : () => startPayment('ussd', settings),
+                  style: FilledButton.styleFrom(backgroundColor: emerald),
+                  child: Text(creating ? 'Creating request…' : 'Create USSD payment request')),
+              ]))),
+          ],
+          const SizedBox(height: 16),
+          const Text('Do not submit a transfer reference until you have completed the payment. Course access is activated only after an administrator verifies receipt.',
+            style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
+        ]);
+      },
+    ));
   }
 }
 
