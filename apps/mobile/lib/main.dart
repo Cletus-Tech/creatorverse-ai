@@ -356,8 +356,36 @@ class CourseDetailScreen extends StatefulWidget {
 }
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late Future<List<Map<String, dynamic>>> curriculum;
+  late Future<bool> enrollment;
+  bool enrolling = false;
   @override
-  void initState() { super.initState(); curriculum = loadCurriculum(); }
+  void initState() { super.initState(); curriculum = loadCurriculum(); enrollment = loadEnrollment(); }
+
+  Future<bool> loadEnrollment() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
+    final row = await Supabase.instance.client.from('enrolments').select('course_id')
+      .eq('user_id', user.id).eq('course_id', widget.course['id']).maybeSingle();
+    return row != null;
+  }
+
+  Future<void> enrolFreeCourse() async {
+    final db = Supabase.instance.client;
+    final user = db.auth.currentUser;
+    if (user == null || enrolling) return;
+    if (((widget.course['price_ngn'] as num?)?.toInt() ?? 0) != 0) return;
+    setState(() => enrolling = true);
+    try {
+      await db.from('enrolments').insert({'user_id': user.id, 'course_id': widget.course['id']});
+      if (!mounted) return;
+      setState(() { enrollment = Future.value(true); });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are enrolled. Start learning!')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not enrol: $e')));
+    } finally {
+      if (mounted) setState(() => enrolling = false);
+    }
+  }
   Future<List<Map<String, dynamic>>> loadCurriculum() async {
     final db = Supabase.instance.client;
     final modulesRaw = await db.from('modules').select('id,title,description,position,duration_text,stage_number')
@@ -390,6 +418,17 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           Chip(label: Text((c['duration_text'] ?? 'Self-paced').toString())),
           Chip(label: Text(price == 0 ? 'Free course' : '₦${price.toString()}')),
         ]),
+        const SizedBox(height: 14),
+        FutureBuilder<bool>(future: enrollment, builder: (context, enrolledSnap) {
+          if (enrolledSnap.connectionState == ConnectionState.waiting) return const LinearProgressIndicator(color: emerald);
+          final enrolled = enrolledSnap.data == true;
+          if (enrolled) return const ListTile(leading: Icon(Icons.check_circle, color: emerald), title: Text('You are enrolled'), subtitle: Text('Your learning access is active.', style: TextStyle(color: muted)));
+          if (price == 0) return FilledButton.icon(onPressed: enrolling ? null : enrolFreeCourse,
+            icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
+            label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
+          return const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
+            subtitle: Text('Complete payment and have your enrolment confirmed before accessing the lessons.', style: TextStyle(color: muted)));
+        }),
         const SizedBox(height: 22),
         const Text('Course curriculum', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
