@@ -120,7 +120,7 @@ class _MainShellState extends State<MainShell> {
       appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-mark.svg', width: 30, height: 30),
         const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
         actions: [
-          IconButton(tooltip: 'Messages', onPressed: () => openLink('/messages.html'), icon: const Icon(Icons.chat_bubble_outline)),
+          IconButton(tooltip: 'Messages', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
           IconButton(tooltip: 'Notifications', onPressed: () => openLink('/notifications.html'), icon: const Icon(Icons.notifications_none))]),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
@@ -330,11 +330,348 @@ class CampusTab extends StatelessWidget {
   Widget build(BuildContext context) => const LinkPage(icon: Icons.location_city_outlined, title: 'Campus Life',
     description: 'Explore student accommodation, campus services and opportunities.', button: 'Explore Campus Life', path: '/campus.html');
 }
-class CommunityTab extends StatelessWidget {
+class CommunityTab extends StatefulWidget {
   const CommunityTab({super.key});
   @override
-  Widget build(BuildContext context) => const LinkPage(icon: Icons.forum_outlined, title: 'Community',
-    description: 'Connect with other CreatorVerse members.', button: 'Open Community', path: '/community.html');
+  State<CommunityTab> createState() => _CommunityTabState();
+}
+class _CommunityTabState extends State<CommunityTab> {
+  late Future<List<Map<String, dynamic>>> feed;
+  final db = Supabase.instance.client;
+  @override
+  void initState() { super.initState(); feed = loadFeed(); }
+  Future<List<Map<String, dynamic>>> loadFeed() async {
+    final raw = await db.from('community_posts')
+      .select('id,user_id,title,description,image_url,destination_url,category,tags,created_at')
+      .eq('status', 'published').order('created_at', ascending: false).limit(40);
+    final posts = List<Map<String, dynamic>>.from(raw);
+    if (posts.isEmpty) return posts;
+    final ids = posts.map((p) => p['id'].toString()).toList();
+    final users = posts.map((p) => p['user_id'].toString()).toSet().toList();
+    final profilesRaw = await db.from('public_profiles')
+      .select('id,full_name,username,avatar_url,verified_badge').inFilter('id', users);
+    final profiles = {for (final p in List<Map<String, dynamic>>.from(profilesRaw)) p['id'].toString(): p};
+    final likesRaw = await db.from('community_likes').select('post_id,user_id').inFilter('post_id', ids);
+    final likes = List<Map<String, dynamic>>.from(likesRaw);
+    final commentsRaw = await db.from('community_comments').select('post_id').inFilter('post_id', ids);
+    final comments = List<Map<String, dynamic>>.from(commentsRaw);
+    final me = db.auth.currentUser?.id;
+    for (final post in posts) {
+      final id = post['id'].toString();
+      post['author'] = profiles[post['user_id'].toString()] ?? {};
+      final postLikes = likes.where((l) => l['post_id'].toString() == id).toList();
+      post['like_count'] = postLikes.length;
+      post['liked'] = postLikes.any((l) => l['user_id'] == me);
+      post['comment_count'] = comments.where((c) => c['post_id'].toString() == id).length;
+    }
+    return posts;
+  }
+  Future<void> refresh() async { final next = loadFeed(); setState(() => feed = next); await next; }
+  Future<void> createPost() async {
+    final title = TextEditingController(), body = TextEditingController();
+    final ok = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+      backgroundColor: panel, title: const Text('Share with the community'),
+      content: SizedBox(width: 420, child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: title, maxLength: 120, decoration: const InputDecoration(labelText: 'Post title')),
+        const SizedBox(height: 10), TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
+          decoration: const InputDecoration(labelText: 'What would you like to share?')),
+      ])),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Publish'))]));
+    if (ok != true) { title.dispose(); body.dispose(); return; }
+    if (title.text.trim().length < 3 || body.text.trim().isEmpty) {
+      title.dispose(); body.dispose();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a title and some post content.')));
+      return;
+    }
+    try {
+      await db.from('community_posts').insert({'user_id': db.auth.currentUser!.id,
+        'title': title.text.trim(), 'description': body.text.trim(), 'category': 'General', 'tags': <String>[], 'status': 'published'});
+      title.dispose(); body.dispose(); await refresh();
+    } catch (e) {
+      title.dispose(); body.dispose();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not publish: $e')));
+    }
+  }
+  Future<void> toggleLike(Map<String, dynamic> post) async {
+    final me = db.auth.currentUser!.id, id = post['id'].toString();
+    final liked = post['liked'] == true;
+    setState(() { post['liked'] = !liked; post['like_count'] = ((post['like_count'] as int?) ?? 0) + (liked ? -1 : 1); });
+    try {
+      if (liked) { await db.from('community_likes').delete().eq('post_id', id).eq('user_id', me); }
+      else { await db.from('community_likes').insert({'post_id': id, 'user_id': me}); }
+    } catch (_) { if (mounted) await refresh(); }
+  }
+  Future<void> showComments(Map<String, dynamic> post) async {
+    await showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel,
+      builder: (_) => CommentsSheet(post: post));
+    if (mounted) await refresh();
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: feed, builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
+        const Text('Community is unavailable right now.'), const SizedBox(height: 12),
+        OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
+      final posts = snapshot.data ?? [];
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
+        Row(children: [const Expanded(child: Text('Community', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
+          FilledButton.icon(onPressed: createPost, icon: const Icon(Icons.add, size: 18), label: const Text('Post'),
+            style: FilledButton.styleFrom(backgroundColor: emerald))]),
+        const SizedBox(height: 6), const Text('Ideas, updates and conversations from CreatorVerse members.', style: TextStyle(color: muted)),
+        const SizedBox(height: 16),
+        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: Column(children: [
+          Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
+          Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
+        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post)),
+      ]));
+    });
+}
+class CommunityPostCard extends StatelessWidget {
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments});
+  @override
+  Widget build(BuildContext context) {
+    final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
+    final name = (author['full_name'] ?? author['username'] ?? 'CreatorVerse member').toString();
+    final avatar = author['avatar_url']?.toString() ?? '';
+    final image = post['image_url']?.toString() ?? '';
+    return Container(margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.all(14), child: Row(children: [
+          CircleAvatar(radius: 19, backgroundColor: emerald.withValues(alpha: .18),
+            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 20)),
+          const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
+              if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
+            Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
+          Text(_timeAgo(post['created_at']?.toString()), style: const TextStyle(color: muted, fontSize: 10)),
+        ])),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+        Padding(padding: const EdgeInsets.fromLTRB(14, 7, 14, 12), child: Text((post['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.45))),
+        if (image.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(image, width: double.infinity, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+        Padding(padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), child: Row(children: [
+          Text('${post['like_count'] ?? 0} likes', style: const TextStyle(color: muted, fontSize: 11)),
+          const Spacer(), Text('${post['comment_count'] ?? 0} comments', style: const TextStyle(color: muted, fontSize: 11))])),
+        const Divider(height: 1, color: Colors.white10),
+        Row(children: [
+          Expanded(child: TextButton.icon(onPressed: onLike, icon: Icon(post['liked'] == true ? Icons.favorite : Icons.favorite_border,
+            color: post['liked'] == true ? Colors.pinkAccent : muted, size: 18), label: const Text('Like', style: TextStyle(color: muted)))),
+          Expanded(child: TextButton.icon(onPressed: onComments, icon: const Icon(Icons.mode_comment_outlined, color: muted, size: 18),
+            label: const Text('Comment', style: TextStyle(color: muted)))),
+        ]),
+      ]));
+  }
+}
+String _timeAgo(String? raw) {
+  final date = DateTime.tryParse(raw ?? '')?.toLocal(); if (date == null) return '';
+  final delta = DateTime.now().difference(date);
+  if (delta.inMinutes < 1) return 'Just now';
+  if (delta.inHours < 1) return '${delta.inMinutes}m ago';
+  if (delta.inDays < 1) return '${delta.inHours}h ago';
+  if (delta.inDays < 7) return '${delta.inDays}d ago';
+  return '${date.day}/${date.month}/${date.year}';
+}
+class CommentsSheet extends StatefulWidget {
+  final Map<String, dynamic> post;
+  const CommentsSheet({super.key, required this.post});
+  @override
+  State<CommentsSheet> createState() => _CommentsSheetState();
+}
+class _CommentsSheetState extends State<CommentsSheet> {
+  final db = Supabase.instance.client; final input = TextEditingController();
+  late Future<List<Map<String, dynamic>>> comments;
+  bool sending = false;
+  @override
+  void initState() { super.initState(); comments = load(); }
+  @override
+  void dispose() { input.dispose(); super.dispose(); }
+  Future<List<Map<String, dynamic>>> load() async {
+    final raw = await db.from('community_comments').select('id,user_id,body,created_at')
+      .eq('post_id', widget.post['id']).order('created_at');
+    final rows = List<Map<String, dynamic>>.from(raw);
+    if (rows.isEmpty) return rows;
+    final ids = rows.map((r) => r['user_id'].toString()).toSet().toList();
+    final p = await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', ids);
+    final profiles = {for (final x in List<Map<String, dynamic>>.from(p)) x['id'].toString(): x};
+    for (final row in rows) { row['author'] = profiles[row['user_id'].toString()] ?? {}; }
+    return rows;
+  }
+  Future<void> send() async {
+    if (input.text.trim().isEmpty || sending) return;
+    setState(() => sending = true);
+    try {
+      await db.from('community_comments').insert({'post_id': widget.post['id'], 'user_id': db.auth.currentUser!.id, 'body': input.text.trim()});
+      input.clear(); setState(() => comments = load());
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Comment failed: $e'))); }
+    finally { if (mounted) setState(() => sending = false); }
+  }
+  @override
+  Widget build(BuildContext context) => SafeArea(child: Padding(padding: EdgeInsets.only(left: 18, right: 18, top: 18, bottom: MediaQuery.of(context).viewInsets.bottom + 18),
+    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: Column(children: [
+      const Text('Comments', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 12), Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: comments, builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+        if (snap.hasError) return const Center(child: Text('Could not load comments.', style: TextStyle(color: muted)));
+        final rows = snap.data ?? [];
+        if (rows.isEmpty) return const Center(child: Text('No comments yet. Start the conversation.', style: TextStyle(color: muted)));
+        return ListView(children: [for (final row in rows) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const CircleAvatar(radius: 15, backgroundColor: Color(0x3320B887), child: Icon(Icons.person, size: 16, color: emerald)),
+          const SizedBox(width: 9), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(((row['author'] as Map?)?['full_name'] ?? (row['author'] as Map?)?['username'] ?? 'Member').toString(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            const SizedBox(height: 3), Text(row['body'].toString(), style: const TextStyle(color: Colors.white70, height: 1.4))]))]))]);
+      })),
+      const SizedBox(height: 10), Row(children: [Expanded(child: TextField(controller: input, minLines: 1, maxLines: 3, decoration: const InputDecoration(hintText: 'Write a comment...'))),
+        const SizedBox(width: 8), IconButton(onPressed: sending ? null : send, icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald))]),
+    ]))));
+}
+class MessageInboxScreen extends StatefulWidget {
+  const MessageInboxScreen({super.key});
+  @override
+  State<MessageInboxScreen> createState() => _MessageInboxScreenState();
+}
+class _MessageInboxScreenState extends State<MessageInboxScreen> {
+  final db = Supabase.instance.client;
+  late Future<List<Map<String, dynamic>>> inbox;
+  @override
+  void initState() { super.initState(); inbox = loadInbox(); }
+  Future<List<Map<String, dynamic>>> loadInbox() async {
+    final me = db.auth.currentUser!.id;
+    final raw = await db.from('cv_conversations').select('id,user_a,user_b,last_message_at')
+      .or('user_a.eq.$me,user_b.eq.$me').order('last_message_at', ascending: false);
+    final conversations = List<Map<String, dynamic>>.from(raw);
+    if (conversations.isEmpty) return [];
+    final ids = conversations.map((c) => c['id'].toString()).toList();
+    final otherIds = conversations.map((c) => (c['user_a'] == me ? c['user_b'] : c['user_a']).toString()).toSet().toList();
+    final peopleRaw = await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', otherIds);
+    final people = {for (final p in List<Map<String, dynamic>>.from(peopleRaw)) p['id'].toString(): p};
+    final msgRaw = await db.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at')
+      .inFilter('conversation_id', ids).order('created_at', ascending: false);
+    final latest = <String, Map<String, dynamic>>{};
+    for (final m in List<Map<String, dynamic>>.from(msgRaw)) { latest.putIfAbsent(m['conversation_id'].toString(), () => m); }
+    for (final c in conversations) {
+      c['person'] = people[(c['user_a'] == me ? c['user_b'] : c['user_a']).toString()] ?? {};
+      c['latest'] = latest[c['id'].toString()];
+    }
+    return conversations;
+  }
+  Future<void> startChat() async {
+    final query = TextEditingController();
+    await showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: panel, title: const Text('Find a member'),
+      content: SizedBox(width: 420, child: TextField(controller: query, decoration: const InputDecoration(hintText: 'Search by name or username'))),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () async {
+          final q = query.text.trim(); if (q.length < 2) return;
+          try {
+            final found = await db.from('public_profiles').select('id,full_name,username,avatar_url')
+              .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id', db.auth.currentUser!.id).limit(12);
+            if (!mounted) return;
+            Navigator.pop(ctx);
+            await showDialog(context: context, builder: (pickCtx) => AlertDialog(backgroundColor: panel, title: const Text('Choose a member'),
+              content: SizedBox(width: 420, child: ListView(shrinkWrap: true, children: [
+                for (final person in List<Map<String, dynamic>>.from(found))
+                  ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text((person['full_name'] ?? person['username'] ?? 'Member').toString()),
+                    subtitle: Text('@${person['username'] ?? ''}'), onTap: () async {
+                      final me = db.auth.currentUser!.id, other = person['id'].toString();
+                      try {
+                        final existing = await db.from('cv_conversations').select('id')
+                          .or('and(user_a.eq.$me,user_b.eq.$other),and(user_a.eq.$other,user_b.eq.$me)').maybeSingle();
+                        String id;
+                        if (existing != null) { id = existing['id'].toString(); }
+                        else {
+                          final a = me.compareTo(other) < 0 ? me : other, b = me.compareTo(other) < 0 ? other : me;
+                          final created = await db.from('cv_conversations').insert({'user_a': a, 'user_b': b, 'created_by': me}).select('id').single();
+                          id = created['id'].toString();
+                        }
+                        if (!mounted) return;
+                        Navigator.pop(pickCtx);
+                        await Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
+                        if (mounted) setState(() => inbox = loadInbox());
+                      } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not start chat: $e'))); }
+                    }),
+              ]))));
+          } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Search failed: $e'))); }
+        }, child: const Text('Search'))]));
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Messages'), actions: [
+    IconButton(onPressed: startChat, tooltip: 'New message', icon: const Icon(Icons.edit_square, color: gold))]),
+    body: FutureBuilder<List<Map<String, dynamic>>>(future: inbox, builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snap.hasError) return Center(child: Text('Messages could not load: ${snap.error}', style: const TextStyle(color: muted)));
+      final rows = snap.data ?? [];
+      if (rows.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
+        const Text('No conversations yet'), const SizedBox(height: 8),
+        FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
+      return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+        itemBuilder: (context, i) {
+          final c = rows[i], person = Map<String, dynamic>.from(c['person'] as Map? ?? {}), latest = c['latest'] as Map?;
+          final name = (person['full_name'] ?? person['username'] ?? 'CreatorVerse member').toString();
+          return ListTile(leading: const CircleAvatar(backgroundColor: Color(0x3320B887), child: Icon(Icons.person, color: emerald)),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text((latest?['body'] ?? 'Start a conversation').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
+            trailing: const Icon(Icons.chevron_right, color: muted),
+            onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person))); if (mounted) setState(() => inbox = loadInbox()); });
+        });
+    }));
+}
+class MessageThreadScreen extends StatefulWidget {
+  final String conversationId; final Map<String, dynamic> person;
+  const MessageThreadScreen({super.key, required this.conversationId, required this.person});
+  @override
+  State<MessageThreadScreen> createState() => _MessageThreadScreenState();
+}
+class _MessageThreadScreenState extends State<MessageThreadScreen> {
+  final db = Supabase.instance.client, input = TextEditingController();
+  late Future<List<Map<String, dynamic>>> messages;
+  bool sending = false;
+  @override
+  void initState() { super.initState(); messages = loadMessages(); }
+  @override
+  void dispose() { input.dispose(); super.dispose(); }
+  Future<List<Map<String, dynamic>>> loadMessages() async {
+    final raw = await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at')
+      .eq('conversation_id', widget.conversationId).order('created_at');
+    return List<Map<String, dynamic>>.from(raw);
+  }
+  Future<void> send() async {
+    final body = input.text.trim(); if (body.isEmpty || sending) return;
+    setState(() => sending = true);
+    try {
+      await db.from('cv_direct_messages').insert({'conversation_id': widget.conversationId, 'sender_id': db.auth.currentUser!.id, 'body': body});
+      input.clear(); setState(() => messages = loadMessages());
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message not sent: $e'))); }
+    finally { if (mounted) setState(() => sending = false); }
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text((widget.person['full_name'] ?? widget.person['username'] ?? 'Chat').toString())),
+    body: Column(children: [
+      Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: messages, builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+        if (snap.hasError) return const Center(child: Text('Could not load this conversation.', style: TextStyle(color: muted)));
+        final rows = snap.data ?? [];
+        if (rows.isEmpty) return const Center(child: Text('Say hello to start the conversation.', style: TextStyle(color: muted)));
+        return ListView(padding: const EdgeInsets.all(14), children: [for (final m in rows) Align(
+          alignment: m['sender_id'] == db.auth.currentUser!.id ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(constraints: const BoxConstraints(maxWidth: 300), margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+            decoration: BoxDecoration(color: m['sender_id'] == db.auth.currentUser!.id ? const Color(0xFF155E48) : panel,
+              borderRadius: BorderRadius.circular(15)),
+            child: Text(m['body'].toString(), style: const TextStyle(height: 1.35))))]);
+      })),
+      SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 10), child: Row(children: [
+        Expanded(child: TextField(controller: input, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Message...'))),
+        const SizedBox(width: 8), IconButton(onPressed: sending ? null : send,
+          icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald)),
+      ]))),
+    ]));
+}
 }
 class LinkPage extends StatelessWidget {
   final IconData icon; final String title, description, button, path;
