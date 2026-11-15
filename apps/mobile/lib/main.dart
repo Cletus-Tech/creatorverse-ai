@@ -9,6 +9,9 @@ const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https:
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
 const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18A878), gold = Color(0xFFE6BC55), muted = Color(0xFF9BAEAA);
 
+List<String> parseSkillsInput(String input) => input.split(',')
+  .map((value) => value.trim()).where((value) => value.isNotEmpty).toList();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
@@ -996,7 +999,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   'full_name': name.text.trim(), 'username': username.text.trim(),
                   'bio': bio.text.trim(), 'location': location.text.trim(),
                   'website_url': website.text.trim(),
-                  'skills': skills.text.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList(),
+                  'skills': parseSkillsInput(skills.text),
                   'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', db.auth.currentUser!.id);
                 if (!dialogContext.mounted) return;
