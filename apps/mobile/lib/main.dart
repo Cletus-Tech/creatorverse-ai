@@ -848,8 +848,9 @@ class _ProfileTabState extends State<ProfileTab> {
                 await db.from('profiles').update({
                   'full_name': name.text.trim(), 'username': username.text.trim(),
                   'bio': bio.text.trim(), 'location': location.text.trim(),
-                  'website_url': website.text.trim(), 'skills': skills.text.trim(),
-                  'status_text': status.text.trim(), 'skills': skills.text.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList(), 'updated_at': DateTime.now().toIso8601String(),
+                  'website_url': website.text.trim(),
+                  'skills': skills.text.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList(),
+                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', db.auth.currentUser!.id);
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
@@ -870,12 +871,12 @@ class _ProfileTabState extends State<ProfileTab> {
     future: profile,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
         const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
         const SizedBox(height: 14), OutlinedButton.icon(onPressed: refresh, icon: const Icon(Icons.refresh), label: const Text('Try again')),
-      ])));
+      ]))); }
       final p = snapshot.data ?? {};
       final user = db.auth.currentUser;
       final name = (p['full_name'] ?? '').toString().trim();
@@ -953,8 +954,10 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
     await Navigator.push(context, MaterialPageRoute(builder: (_) =>
       MessageThreadScreen(conversationId: id, person: person)));
   } catch (e) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not open this conversation: $e')));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open this conversation: $e')));
+    }
   }
 }
 
