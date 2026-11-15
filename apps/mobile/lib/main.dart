@@ -1048,23 +1048,100 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
   ]);
 }
 
-class PublicMemberProfileScreen extends StatelessWidget {
+class PublicMemberProfileScreen extends StatefulWidget {
   final Map<String, dynamic> profile;
   const PublicMemberProfileScreen({super.key, required this.profile});
   @override
+  State<PublicMemberProfileScreen> createState() => _PublicMemberProfileScreenState();
+}
+
+class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
+  final db = Supabase.instance.client;
+  bool? isFollowing;
+  bool busy = false;
+  int followerCount = 0;
+  int followingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    loadRelationship();
+  }
+
+  Future<void> loadRelationship() async {
+    final me = db.auth.currentUser?.id;
+    final other = widget.profile['id']?.toString();
+    if (me == null || other == null) return;
+    try {
+      final result = await Future.wait([
+        db.from('community_follows').select('follower_id').eq('follower_id', me).eq('following_id', other).maybeSingle(),
+        db.from('community_follows').select('follower_id').eq('following_id', other).count(CountOption.exact),
+        db.from('community_follows').select('following_id').eq('follower_id', other).count(CountOption.exact),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        isFollowing = result[0] != null;
+        followerCount = (result[1] as dynamic).count as int;
+        followingCount = (result[2] as dynamic).count as int;
+      });
+    } catch (_) {
+      if (mounted) setState(() => isFollowing = false);
+    }
+  }
+
+  Future<void> toggleFollow() async {
+    final me = db.auth.currentUser?.id;
+    final other = widget.profile['id']?.toString();
+    if (me == null || other == null || busy || isFollowing == null) return;
+    setState(() => busy = true);
+    try {
+      if (isFollowing!) {
+        await db.from('community_follows').delete().eq('follower_id', me).eq('following_id', other);
+        if (mounted) setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30); });
+      } else {
+        await db.from('community_follows').insert({'follower_id': me, 'following_id': other});
+        if (mounted) setState(() { isFollowing = true; followerCount += 1; });
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update follow status: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final profile = widget.profile;
     final avatar = (profile['avatar_url'] ?? '').toString();
+    final me = db.auth.currentUser?.id;
+    final ownProfile = me == profile['id']?.toString();
     return Scaffold(appBar: AppBar(title: const Text('Member profile')), body: ListView(padding: const EdgeInsets.all(22), children: [
       Center(child: CircleAvatar(radius: 44, backgroundColor: const Color(0x3320B887),
         backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
         child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 42))),
-      const SizedBox(height: 14), Text((profile['full_name'] ?? 'CreatorVerse member').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 14),
+      Text((profile['full_name'] ?? 'CreatorVerse member').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
       const SizedBox(height: 4), Text('@${profile['username'] ?? 'member'}', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+      if ((profile['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(top: 6), child: Icon(Icons.verified, color: gold, size: 20)),
       if ((profile['bio'] ?? '').toString().isNotEmpty) ...[const SizedBox(height: 14), Text(profile['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5))],
       if ((profile['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(profile['location'].toString())),
-      const SizedBox(height: 16),
-      FilledButton.icon(onPressed: () => openDirectMessage(context, profile),
-        icon: const Icon(Icons.chat_bubble_outline), label: const Text('Message member'), style: FilledButton.styleFrom(backgroundColor: emerald)),
+      if (profile['skills'] is List && (profile['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((profile['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted))),
+      const SizedBox(height: 8),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text('$followerCount followers', style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(width: 18), Text('$followingCount following', style: const TextStyle(color: muted)),
+      ]),
+      const SizedBox(height: 18),
+      if (!ownProfile) Row(children: [
+        Expanded(child: OutlinedButton.icon(onPressed: busy || isFollowing == null ? null : toggleFollow,
+          icon: busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(isFollowing == true ? Icons.person_remove_outlined : Icons.person_add_alt_1),
+          label: Text(isFollowing == true ? 'Following' : 'Follow'))),
+        const SizedBox(width: 10),
+        Expanded(child: FilledButton.icon(onPressed: () => openDirectMessage(context, profile),
+          icon: const Icon(Icons.chat_bubble_outline), label: const Text('Message'),
+          style: FilledButton.styleFrom(backgroundColor: emerald))),
+      ]),
     ]));
   }
 }
