@@ -365,6 +365,7 @@ class CourseDetailScreen extends StatefulWidget {
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
 }
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
+  final db = Supabase.instance.client;
   late Future<List<Map<String, dynamic>>> curriculum;
   late Future<List<Map<String, dynamic>>> quizzes;
   late Future<bool> enrollment;
@@ -1279,6 +1280,7 @@ class _MarketplaceEnquiriesScreenState extends State<MarketplaceEnquiriesScreen>
     for(final row in [...List<Map<String,dynamic>>.from(buyerRows),...sellerRows]){combined[row['id'].toString()]=row;}
     final result=combined.values.toList()..sort((a,b)=>b['last_message_at'].toString().compareTo(a['last_message_at'].toString()));
     return result;
+  }
   Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Marketplace enquiries')),body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
     if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
