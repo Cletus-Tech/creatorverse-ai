@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/material.dart' as flutter_ui;
+import 'package:flutter/material.dart' as material_widgets_ui;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -191,7 +191,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(body: SafeArea(child: Center(child: SingleChildScrollView(
     padding: const EdgeInsets.all(24), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440),
-      child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Center(child: Container(width: 82, height: 82, padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(22)),
           child: SvgPicture.asset('assets/creatorverse-brand.svg'))),
@@ -202,7 +202,7 @@ class _SignInScreenState extends State<SignInScreen> {
         const SizedBox(height: 8),
         const Text('Learning, creativity and campus life in one place.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
         const SizedBox(height: 28),
-        Form(key: form, child: flutter_ui.Column(children: [
+        Form(key: form, child: material_widgets_ui.Column(children: [
           if (create) ...[
             TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Full name', prefixIcon: Icon(Icons.person_outline)),
               validator: (v) => v == null || v.trim().isEmpty ? 'Enter your name' : null),
@@ -242,8 +242,8 @@ class _MainShellState extends State<MainShell> {
       appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-brand.svg', width: 30, height: 30),
         const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
         actions: [
-          IconButton(tooltip: 'Messages', onPressed: () => flutter_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
-          IconButton(tooltip: 'Notifications', onPressed: () => flutter_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+          IconButton(tooltip: 'Messages', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
+          IconButton(tooltip: 'Notifications', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
             appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen()))), icon: const Icon(Icons.notifications_none))]),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
@@ -279,7 +279,7 @@ class _HomeTabState extends State<HomeTab>{
       Container(padding:const EdgeInsets.all(22),decoration:BoxDecoration(
         borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[Color(0xFF123D35),panel]),
         border:Border.all(color:emerald.withValues(alpha:.3))),
-        child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           const Text('YOUR NEXT CHAPTER STARTS HERE',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w800)),
           const SizedBox(height:12),Text('Hello${name.isEmpty?'':', $name'}.',style:const TextStyle(fontSize:25,fontWeight:FontWeight.w800)),
           const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,height:1.5)),
@@ -333,7 +333,7 @@ class _LearnTabState extends State<LearnTab> {
         return const Center(child: CircularProgressIndicator(color: emerald));
       }
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, size: 42, color: muted),
           const SizedBox(height: 12), const Text('Courses could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8), const Text('Check your connection and try again.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
@@ -376,13 +376,13 @@ class CourseCard extends StatelessWidget {
     final price = (course['price_ngn'] as num?)?.toInt() ?? 0;
     return Padding(padding: const EdgeInsets.only(bottom: 14), child: Material(
       color: panel, borderRadius: BorderRadius.circular(18), clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: () => flutter_ui.Navigator.of(context).push(MaterialPageRoute(
+      child: InkWell(onTap: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => CourseDetailScreen(course: course)),
-        ), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (image != null && image.startsWith('https://'))
             Image.network(image, height: 150, width: double.infinity, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(height: 90, color: const Color(0xFF17352F), child: const Icon(Icons.menu_book, color: emerald, size: 34))),
-          Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text((course['level'] ?? 'Course').toString(), style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w700))),
               Text(price == 0 ? 'FREE' : '₦${price.toString()}', style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
@@ -551,10 +551,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
               label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
           }
-          return flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          return material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
               subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
-            OutlinedButton.icon(onPressed: () async { await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
+            OutlinedButton.icon(onPressed: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
               icon: const Icon(Icons.payments_outlined), label: const Text('View payment options')),
           ]);
         }),
@@ -566,7 +566,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (snapshot.hasError) return const Text('The course outline is temporarily unavailable.', style: TextStyle(color: muted));
           final modules = snapshot.data ?? [];
           if (modules.isEmpty) return const Text('Course lessons are being prepared.', style: TextStyle(color: muted));
-          return flutter_ui.Column(children: [
+          return material_widgets_ui.Column(children: [
             for (final module in modules) Card(color: panel, child: ExpansionTile(
               initiallyExpanded: false,
               title: Text((module['title'] ?? 'Module').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -594,7 +594,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             if (quizSnap.connectionState == ConnectionState.waiting) return const LinearProgressIndicator(color: emerald);
             if (quizSnap.hasError || (quizSnap.data ?? []).isEmpty) return const SizedBox.shrink();
             final items=quizSnap.data ?? [];
-            return flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            return material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
               const Text('Course assessments',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
               for(final quiz in items)Card(color:panel,child:ListTile(
@@ -602,7 +602,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 title:Text((quiz['title']??'Course quiz').toString()),
                 subtitle:Text('Pass mark: ${quiz['pass_mark']}%',style:const TextStyle(color:muted)),
                 trailing:const Icon(Icons.chevron_right,color:emerald),
-                onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizScreen(quizId:quiz['id'].toString()))),
+                onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizScreen(quizId:quiz['id'].toString()))),
               )),
             ]);
           });
@@ -645,7 +645,7 @@ class _CourseQuizScreenState extends State<CourseQuizScreen>{
       if(mounted) { showDialog<void>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
         title:Text(outcome['passed']==true?'Assessment passed':'Assessment result'),
         content:Text('Score: ${outcome['score']}%\nCorrect: ${outcome['correct']} of ${outcome['total']}\nPass mark: ${outcome['pass_mark']}%\n\n${outcome['passed']==true?'Well done. Your result has been recorded.':'Review the lessons and try again.'}'),
-        actions:[FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx),child:const Text('Continue'))])); }
+        actions:[FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx),child:const Text('Continue'))])); }
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit assessment: $e')));}
     finally{if(mounted)setState(()=>submitting=false);}
   }
@@ -658,7 +658,7 @@ class _CourseQuizScreenState extends State<CourseQuizScreen>{
       const SizedBox(height:6),Text('Pass mark: ${data['pass_mark']}% · ${questions.length} questions',style:const TextStyle(color:muted)),
       const SizedBox(height:16),
       for(var i=0;i<questions.length;i++)...[
-        Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('Question ${i+1}',style:const TextStyle(color:gold,fontSize:11,fontWeight:FontWeight.w800)),
           const SizedBox(height:7),Text((questions[i]['question']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w700,height:1.4)),
           const SizedBox(height:8),
@@ -672,7 +672,7 @@ class _CourseQuizScreenState extends State<CourseQuizScreen>{
       if(result==null)FilledButton(onPressed:submitting?null:()=>submit(data),
         style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(48)),
         child:Text(submitting?'Submitting…':'Submit assessment'))
-      else OutlinedButton.icon(onPressed:()=>flutter_ui.Navigator.pop(context),icon:const Icon(Icons.arrow_back),label:const Text('Back to course')),
+      else OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(context),icon:const Icon(Icons.arrow_back),label:const Text('Back to course')),
       const SizedBox(height:12),
       const Text('Assessment results are recorded by CreatorVerse. Completing a quiz does not automatically issue a certificate; certificate approval remains an administrator decision.',style:TextStyle(color:muted,fontSize:12,height:1.5)),
     ]);
@@ -823,7 +823,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
             title: Text('Payment confirmed'),
             subtitle: Text('Your course enrolment has been activated.', style: TextStyle(color: muted)))),
           if (order != null && orderStatus != 'confirmed') ...[
-            Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
+            Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(expired ? 'Payment window expired' : 'Payment request · $orderStatus',
                   style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -850,7 +850,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
                 style: TextStyle(color: muted, height: 1.5)))),
             if (bankEnabled && !bankReady) const Card(color:panel,child:Padding(padding:EdgeInsets.all(16),child:Text('Bank transfer is enabled but the bank name, account name or account number is missing. Please contact the administrator.',style:TextStyle(color:muted,height:1.5)))),
             if (ussdEnabled && !ussdReady) const Card(color:panel,child:Padding(padding:EdgeInsets.all(16),child:Text('USSD is enabled but payment instructions are missing. Please contact the administrator.',style:TextStyle(color:muted,height:1.5)))),
-            if (bankReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
+            if (bankReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Bank transfer', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -862,7 +862,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
                   style: FilledButton.styleFrom(backgroundColor: emerald),
                   child: Text(creating ? 'Creating request…' : 'Create bank transfer request')),
               ]))),
-            if (ussdReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(
+            if (ussdReady) Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('USSD payment', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -907,7 +907,7 @@ class CampusTab extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
       border: Border.all(color: emerald.withValues(alpha: .3))),
-      child: const flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: const material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('THE STUDENT EXPERIENCE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
         SizedBox(height: 10), Text('Make campus life work better.', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
         SizedBox(height: 8), Text('Discover the spaces CreatorVerse is building around student life beyond the classroom.', style: TextStyle(color: Colors.white70, height: 1.5)),
@@ -953,7 +953,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(
         mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.storefront_outlined, color: emerald, size: 46),
           const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
@@ -970,21 +970,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           .map((v) => (v ?? '').toString().toLowerCase()).join(' ');
         return matchesCategory && (term.isEmpty || haystack.contains(term));
       }).toList();
-      return flutter_ui.Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 10), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      return material_widgets_ui.Column(children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 10), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Campus Marketplace', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
           const SizedBox(height: 5), const Text('Discover approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
           const SizedBox(height: 12), TextField(controller: search, onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search listings or campus')),
           const SizedBox(height: 10),
           SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
-            OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen())).then((_) => retry()),
+            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen())).then((_) => retry()),
               icon: const Icon(Icons.storefront_outlined), label: const Text('Sell')),
             const SizedBox(width: 8),
-            OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSavedScreen())),
+            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSavedScreen())),
               icon: const Icon(Icons.bookmark_border), label: const Text('Saved')),
             const SizedBox(width: 8),
-            OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen())),
+            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen())),
               icon: const Icon(Icons.chat_bubble_outline), label: const Text('Enquiries')),
           ])),
         ])),
@@ -1009,7 +1009,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 title: Text((item['title'] ?? 'Marketplace listing').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
                 subtitle: Text('${item['description'] ?? ''}\n${[item['campus'], item['institution']].where((v) => v != null && v.toString().isNotEmpty).join(' · ')}', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
                 trailing: Text(item['price_ngn'] == null ? 'Ask' : (item['price_ngn'] == 0 ? 'FREE' : '₦${item['price_ngn']}'), style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
-                onTap: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceListingScreen(listing: item))),
+                onTap: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceListingScreen(listing: item))),
               ));
             }))),
       ]);
@@ -1041,7 +1041,7 @@ class _MarketplaceFilteredScreenState extends State<MarketplaceFilteredScreen>{
         Text(widget.description,style:const TextStyle(color:muted,height:1.5)),
         const SizedBox(height:12),TextField(controller:search,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search listings or campus')),
         const SizedBox(height:12),
-        if(items.isEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:44),child:flutter_ui.Column(children:[
+        if(items.isEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:44),child:material_widgets_ui.Column(children:[
           Icon(widget.listingType=='rental'?Icons.home_work_outlined:Icons.delivery_dining_outlined,color:emerald,size:42),
           const SizedBox(height:10),Text(all.isEmpty?'No approved listings have been published yet.':'No listings match your search.',style:const TextStyle(color:muted),textAlign:TextAlign.center),
           const SizedBox(height:8),const Text('Only verified sellers and administrator-approved listings appear here.',style:TextStyle(color:muted,fontSize:11),textAlign:TextAlign.center),
@@ -1051,7 +1051,7 @@ class _MarketplaceFilteredScreenState extends State<MarketplaceFilteredScreen>{
           title:Text((item['title']??'Listing').toString(),style:const TextStyle(fontWeight:FontWeight.w700)),
           subtitle:Text('${item['campus']??item['institution']??item['location_label']??''}\n${item['description']??''}',maxLines:3,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted)),
           trailing:Text(item['price_ngn']==null?'Ask':(item['price_ngn']==0?'FREE':'₦${item['price_ngn']}'),style:const TextStyle(color:emerald,fontWeight:FontWeight.w800)),
-          onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
+          onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
         )),
       ]));
     }));
@@ -1110,8 +1110,8 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       content: TextField(controller: input, minLines: 3, maxLines: 6, maxLength: 2000,
         decoration: const InputDecoration(hintText: 'Ask a question about this listing...')),
       actions: [
-        TextButton(onPressed: () => flutter_ui.Navigator.pop(ctx, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => flutter_ui.Navigator.pop(ctx, true), child: const Text('Send enquiry')),
+        TextButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx, true), child: const Text('Send enquiry')),
       ],
     ));
     if (!mounted) { input.dispose(); return; }
@@ -1127,7 +1127,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
         'p_listing_id': widget.listing['id'], 'p_message': body,
       });
       if (!mounted) return;
-      flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: id.toString())));
+      material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: id.toString())));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send enquiry: $e')));
     } finally { if (mounted) setState(() => busy = false); }
@@ -1224,7 +1224,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     XFile? selectedImage;
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) => AlertDialog(
       backgroundColor: panel, title: const Text('Create a listing'),
-      content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+      content: SizedBox(width: 440, child: SingleChildScrollView(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: title, maxLength: 100, decoration: const InputDecoration(labelText: 'Listing title')),
         const SizedBox(height: 8), DropdownButtonFormField<String>(value: category, decoration: const InputDecoration(labelText: 'Category'),
           items: [for (final cat in cats) DropdownMenuItem(value: cat['id'].toString(), child: Text(cat['name'].toString()))],
@@ -1243,8 +1243,8 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         const SizedBox(height: 8), TextField(controller: campusField, decoration: const InputDecoration(labelText: 'Campus')),
         const SizedBox(height: 8), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location / pickup point')),
       ]))),
-      actions: [TextButton(onPressed: () => flutter_ui.Navigator.pop(ctx,false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => flutter_ui.Navigator.pop(ctx,true), child: const Text('Submit for review'))],
+      actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx,false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx,true), child: const Text('Submit for review'))],
     )));
     final titleText = title.text.trim(), descText = description.text.trim(), priceText = price.text.trim();
     final institutionText = institutionField.text.trim(), campusText = campusField.text.trim(), locationText = location.text.trim();
@@ -1350,7 +1350,7 @@ class _MarketplaceSavedScreenState extends State<MarketplaceSavedScreen> {
     return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(children:[for(final item in items) ListTile(
       title:Text((item['title']??'Listing').toString()),subtitle:Text((item['campus']??item['institution']??'Marketplace').toString(),style:const TextStyle(color:muted)),
       trailing:Text(item['price_ngn']==null?'Ask':'₦${item['price_ngn']}',style:const TextStyle(color:emerald)),
-      onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
+      onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceListingScreen(listing:item))),
     )]));
   }));
 }
@@ -1386,7 +1386,7 @@ class _MarketplaceEnquiriesScreenState extends State<MarketplaceEnquiriesScreen>
       ListTile(leading:const Icon(Icons.chat_bubble_outline,color:emerald),
         title:Text((item['marketplace_listings'] is Map?item['marketplace_listings']['title']:'Marketplace enquiry').toString()),
         subtitle:Text('${item['status']} · ${item['last_message_at']}',style:const TextStyle(color:muted,fontSize:12)),
-        onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceEnquiryThreadScreen(enquiryId:item['id'].toString()))).then((_)=>refresh()),
+        onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MarketplaceEnquiryThreadScreen(enquiryId:item['id'].toString()))).then((_)=>refresh()),
       )]));
   }));
 }
@@ -1419,7 +1419,7 @@ class _MarketplaceEnquiryThreadScreenState extends State<MarketplaceEnquiryThrea
   Future<void> closeThread() async {
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Close this enquiry?'),
       content:const Text('Both participants will no longer be able to send messages in this thread.'),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Keep open')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Close enquiry'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Keep open')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Close enquiry'))]));
     if(ok!=true)return;
     try{await db.rpc('marketplace_close_enquiry',params:{'p_enquiry_id':widget.enquiryId});await refresh();}
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not close enquiry: $e')));}
@@ -1431,7 +1431,7 @@ class _MarketplaceEnquiryThreadScreenState extends State<MarketplaceEnquiryThrea
     final closed=head['status']=='closed';
     return Scaffold(appBar:AppBar(title:Text((head['marketplace_listings'] is Map?head['marketplace_listings']['title']:'Marketplace enquiry').toString()),
       actions:[if(!closed)IconButton(onPressed:closeThread,icon:const Icon(Icons.lock_outline))]),
-      body:flutter_ui.Column(children:[
+      body:material_widgets_ui.Column(children:[
         Expanded(child:messages.isEmpty?const Center(child:Text('Start the conversation.',style:TextStyle(color:muted))):ListView(padding:const EdgeInsets.all(14),children:[
           for(final m in messages) Align(alignment:m['sender_id']==db.auth.currentUser?.id?Alignment.centerRight:Alignment.centerLeft,
             child:Container(constraints:const BoxConstraints(maxWidth:310),margin:const EdgeInsets.symmetric(vertical:4),padding:const EdgeInsets.all(12),
@@ -1472,7 +1472,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     final controller=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:Text(title),
       content:TextField(controller:controller,maxLines:3,decoration:InputDecoration(hintText:hint)),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Continue'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Continue'))]));
     final value=controller.text.trim();controller.dispose();return ok==true?value:null;
   }
   Future<void> reviewSeller(Map<String,dynamic> seller,String status) async {
@@ -1515,7 +1515,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
-        for(final s in sellers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        for(final s in sellers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text((s['display_name']??'Seller').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           Text('${s['seller_type']} · ${s['campus']??''} · ${s['institution']??''}',style:const TextStyle(color:muted,fontSize:12)),
           if((s['bio']??'').toString().isNotEmpty)Text(s['bio'].toString(),style:const TextStyle(height:1.4)),
@@ -1524,7 +1524,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
         ]))),
         const SizedBox(height:20),const Text('Listings awaiting approval',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(listings.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No listings awaiting review.',style:TextStyle(color:muted))),
-        for(final l in listings)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        for(final l in listings)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text((l['title']??'Listing').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           Text('${l['marketplace_categories'] is Map?l['marketplace_categories']['name']:'Category'} · ${l['marketplace_sellers'] is Map?l['marketplace_sellers']['display_name']:'Seller'} · ₦${l['price_ngn']??'Ask'}',style:const TextStyle(color:muted,fontSize:12)),
           const SizedBox(height:6),Text((l['description']??'').toString(),maxLines:4,overflow:TextOverflow.ellipsis,style:const TextStyle(height:1.4)),
@@ -1598,12 +1598,12 @@ class _CommunityTabState extends State<CommunityTab> {
   Future<void> createStory() async {
     final input=TextEditingController();XFile? photo;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Share a 24-hour story'),
-      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:input,minLines:3,maxLines:5,maxLength:500,decoration:const InputDecoration(hintText:'Add a message (optional with a photo)')),
         const SizedBox(height:8),TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog(()=>photo=picked);},
           icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(photo==null?'Add a photo':'Photo: ${photo!.name}')),
       ]),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Share story'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Share story'))])));
     if(!mounted){input.dispose();return;}
     final content=input.text.trim();input.dispose();
     if(ok!=true)return;
@@ -1632,7 +1632,7 @@ class _CommunityTabState extends State<CommunityTab> {
     if(!mounted)return;
     final author=Map<String,dynamic>.from(story['author'] as Map? ?? {});
     await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,
-      builder:(_)=>SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+      builder:(_)=>SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
         const SizedBox(height:8),
         if((story['media_url']??'').toString().startsWith('https://') && story['media_type']=='image')
@@ -1647,15 +1647,15 @@ class _CommunityTabState extends State<CommunityTab> {
     final title = TextEditingController(), body = TextEditingController();XFile? photo;
     final ok = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
       backgroundColor: panel, title: const Text('Share with the community'),
-      content: SizedBox(width: 420, child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+      content: SizedBox(width: 420, child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: title, maxLength: 120, decoration: const InputDecoration(labelText: 'Post title')),
         const SizedBox(height: 10), TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
           decoration: const InputDecoration(labelText: 'What would you like to share?')),
         const SizedBox(height:8),TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog(()=>photo=picked);},
           icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(photo==null?'Add a photo':'Photo: ${photo!.name}')),
       ])),
-      actions: [TextButton(onPressed: () => flutter_ui.Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => flutter_ui.Navigator.pop(dialogContext, true), child: const Text('Publish'))])));
+      actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, true), child: const Text('Publish'))])));
     if (!mounted) { title.dispose(); body.dispose(); return; }
     if (ok != true) { title.dispose(); body.dispose(); return; }
     final titleText=title.text.trim(),bodyText=body.text.trim();title.dispose();body.dispose();
@@ -1702,7 +1702,7 @@ class _CommunityTabState extends State<CommunityTab> {
     String reason='spam';final details=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,
       title:const Text('Report this post'),
-      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         DropdownButtonFormField<String>(value:reason,decoration:const InputDecoration(labelText:'Reason'),
           items:const [DropdownMenuItem(value:'spam',child:Text('Spam or misleading')),DropdownMenuItem(value:'harassment',child:Text('Harassment or bullying')),
             DropdownMenuItem(value:'scam',child:Text('Scam or fraud')),DropdownMenuItem(value:'inappropriate',child:Text('Inappropriate content')),
@@ -1710,7 +1710,7 @@ class _CommunityTabState extends State<CommunityTab> {
           onChanged:(v)=>setDialog(()=>reason=v??reason)),
         const SizedBox(height:10),TextField(controller:details,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'Additional details (optional)')),
       ]),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Submit report'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Submit report'))])));
     if(!mounted){details.dispose();return;}
     final note=details.text.trim();details.dispose();if(ok!=true)return;
     try{
@@ -1728,7 +1728,7 @@ class _CommunityTabState extends State<CommunityTab> {
     future: feed, builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
           const Text('Community is unavailable right now.'), const SizedBox(height: 12),
           OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
@@ -1745,11 +1745,11 @@ class _CommunityTabState extends State<CommunityTab> {
         FutureBuilder<List<Map<String,dynamic>>>(future:stories,builder:(context,storySnap){
           final items=storySnap.data??[];
           return SizedBox(height:104,child:ListView(scrollDirection:Axis.horizontal,children:[
-            InkWell(onTap:createStory,child:Container(width:78,margin:const EdgeInsets.only(right:10),child:flutter_ui.Column(children:[
+            InkWell(onTap:createStory,child:Container(width:78,margin:const EdgeInsets.only(right:10),child:material_widgets_ui.Column(children:[
               Container(width:62,height:62,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:gold,width:2),color:panel),child:const Icon(Icons.add,color:gold,size:28)),
               const SizedBox(height:6),const Text('Your story',style:TextStyle(fontSize:10,color:muted)),
             ]))),
-            for(final story in items)InkWell(onTap:()=>viewStory(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:flutter_ui.Column(children:[
+            for(final story in items)InkWell(onTap:()=>viewStory(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:material_widgets_ui.Column(children:[
               Container(width:62,height:62,padding:const EdgeInsets.all(3),decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:emerald,width:2)),
                 child:CircleAvatar(backgroundColor:const Color(0xFF174B3B),child:Text((((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString().isEmpty?'C':((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString()[0].toUpperCase()),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)))),
               const SizedBox(height:6),Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'Member').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:10,color:muted)),
@@ -1757,7 +1757,7 @@ class _CommunityTabState extends State<CommunityTab> {
           ]));
         }),
         const SizedBox(height: 14),
-        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: flutter_ui.Column(children: [
+        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
           Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
@@ -1775,12 +1775,12 @@ class CommunityPostCard extends StatelessWidget {
     final avatar = author['avatar_url']?.toString() ?? '';
     final image = post['image_url']?.toString() ?? '';
     return Container(margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)),
-      child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.all(14), child: Row(children: [
           CircleAvatar(radius: 19, backgroundColor: emerald.withValues(alpha: .18),
             backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
             child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 20)),
-          const SizedBox(width: 10), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 10), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
               if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
             Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
@@ -1853,7 +1853,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
   }
   @override
   Widget build(BuildContext context) => SafeArea(child: Padding(padding: EdgeInsets.only(left: 18, right: 18, top: 18, bottom: MediaQuery.of(context).viewInsets.bottom + 18),
-    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: flutter_ui.Column(children: [
+    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: material_widgets_ui.Column(children: [
       const Text('Comments', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12), Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: comments, builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
@@ -1862,7 +1862,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
         if (rows.isEmpty) return const Center(child: Text('No comments yet. Start the conversation.', style: TextStyle(color: muted)));
         return ListView(children: [for (final row in rows) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const CircleAvatar(radius: 15, backgroundColor: Color(0x3320B887), child: Icon(Icons.person, size: 16, color: emerald)),
-          const SizedBox(width: 9), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 9), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(((row['author'] as Map?)?['full_name'] ?? (row['author'] as Map?)?['username'] ?? 'Member').toString(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
             const SizedBox(height: 3), Text(row['body'].toString(), style: const TextStyle(color: Colors.white70, height: 1.4))]))]))]);
       })),
@@ -1904,14 +1904,14 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
     final query = TextEditingController();
     await showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: panel, title: const Text('Find a member'),
       content: SizedBox(width: 420, child: TextField(controller: query, decoration: const InputDecoration(hintText: 'Search by name or username'))),
-      actions: [TextButton(onPressed: () => flutter_ui.Navigator.pop(ctx), child: const Text('Cancel')),
+      actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx), child: const Text('Cancel')),
         FilledButton(onPressed: () async {
           final q = sanitizeSearchTerm(query.text); if (q.length < 2) return;
           try {
             final found = await db.from('public_profiles').select('id,full_name,username,avatar_url')
               .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id', db.auth.currentUser!.id).limit(12);
             if (!ctx.mounted) return;
-            flutter_ui.Navigator.pop(ctx);
+            material_widgets_ui.Navigator.pop(ctx);
             if (!mounted) return;
             await showDialog(context: context, builder: (pickCtx) => AlertDialog(backgroundColor: panel, title: const Text('Choose a member'),
               content: SizedBox(width: 420, child: ListView(shrinkWrap: true, children: [
@@ -1930,9 +1930,9 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                           id = created['id'].toString();
                         }
                         if (!pickCtx.mounted) return;
-                        flutter_ui.Navigator.pop(pickCtx);
+                        material_widgets_ui.Navigator.pop(pickCtx);
                         if (!mounted) return;
-                        await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
+                        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
                         if (mounted) setState(() => inbox = loadInbox());
                       } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not start chat: $e'))); }
                     }),
@@ -1948,7 +1948,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       if (snap.hasError) return Center(child: Text('Messages could not load: ${snap.error}', style: const TextStyle(color: muted)));
       final rows = snap.data ?? [];
       if (rows.isEmpty) {
-        return Center(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        return Center(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
           const Text('No conversations yet'), const SizedBox(height: 8),
           FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
@@ -1961,7 +1961,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
             title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text((latest?['body'] ?? 'Start a conversation').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
             trailing: const Icon(Icons.chevron_right, color: muted),
-            onTap: () async { await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person))); if (mounted) setState(() => inbox = loadInbox()); });
+            onTap: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person))); if (mounted) setState(() => inbox = loadInbox()); });
         });
     }));
 }
@@ -1995,7 +1995,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text((widget.person['full_name'] ?? widget.person['username'] ?? 'Chat').toString())),
-    body: flutter_ui.Column(children: [
+    body: material_widgets_ui.Column(children: [
       Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: messages, builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
         if (snap.hasError) return const Center(child: Text('Could not load this conversation.', style: TextStyle(color: muted)));
@@ -2081,7 +2081,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
         return const Center(child: CircularProgressIndicator(color: emerald));
       }
       if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(
           mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.admin_panel_settings_outlined, color: gold, size: 42),
             const SizedBox(height: 12),
@@ -2096,7 +2096,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
       final orders = data['orders'] as List<Map<String, dynamic>>? ?? [];
       final admissions = data['admissions'] as List<Map<String, dynamic>>? ?? [];
       Widget metric(String label, dynamic value, IconData icon) => Expanded(child: Card(
-        color: panel, child: Padding(padding: const EdgeInsets.all(14), child: flutter_ui.Column(
+        color: panel, child: Padding(padding: const EdgeInsets.all(14), child: material_widgets_ui.Column(
           crossAxisAlignment: CrossAxisAlignment.start, children: [
             Icon(icon, color: emerald), const SizedBox(height: 10),
             Text('$value', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
@@ -2118,24 +2118,24 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
             const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
           ]),
           const SizedBox(height: 12),
-          FilledButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+          FilledButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
               appBar: AppBar(title: const Text('Payment review')), body: const AdminPaymentReviewScreen()))),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('Review payment requests'),
             style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
           const SizedBox(height: 10),
-          OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceAdminScreen())),
+          OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceAdminScreen())),
             icon: const Icon(Icons.store_mall_directory_outlined), label: const Text('Manage Marketplace')),
           const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const CourseAdminScreen())),
+          OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const CourseAdminScreen())),
             icon: const Icon(Icons.menu_book_outlined), label: const Text('Manage Courses & Lessons')),
           const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCreatorApplicationsScreen())),
+          OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCreatorApplicationsScreen())),
             icon: const Icon(Icons.assignment_ind_outlined), label: const Text('Review Creator Applications')),
           const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCertificatesScreen())),
+          OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCertificatesScreen())),
             icon: const Icon(Icons.workspace_premium_outlined), label: const Text('Approve Certificates')),
           const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
+          OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
             icon: const Icon(Icons.flag_outlined), label: const Text('Moderate Community reports')),
           const SizedBox(height: 22),
           const Text('Recent payment orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -2169,7 +2169,7 @@ Future<void> openAcademyWebPage(BuildContext context,String path,{bool requiresM
     }
   }
   if(!context.mounted)return;
-  flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>AuthenticatedAcademyWebScreen(path:path)));
+  material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>AuthenticatedAcademyWebScreen(path:path)));
 }
 
 class AuthenticatedAcademyWebScreen extends StatefulWidget {
@@ -2200,7 +2200,7 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
   Future<void> closeRoom() async {
     if(closing)return;closing=true;
     try{await controller?.evaluateJavascript(source:"localStorage.removeItem('$sessionKey');");}catch(_){}
-    if(mounted)flutter_ui.Navigator.of(context).pop();
+    if(mounted)material_widgets_ui.Navigator.of(context).pop();
   }
   @override Widget build(BuildContext context)=>PopScope(
     canPop:false,
@@ -2258,7 +2258,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
     String type='creator',level='Beginner';bool consent=false;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
       backgroundColor:panel,title:const Text('Creator & Instructor application'),
-      content:SizedBox(width:460,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SizedBox(width:460,child:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         const Text('This pathway is for people applying to create, teach, instruct or exhibit work on CreatorVerse. Ordinary course learners should enrol or pay through the course catalogue instead.',style:TextStyle(color:muted,height:1.45,fontSize:12)),
         const SizedBox(height:12),DropdownButtonFormField<String>(value:type,decoration:const InputDecoration(labelText:'Application pathway'),
           items:const [DropdownMenuItem(value:'creator',child:Text('Creator')),DropdownMenuItem(value:'instructor',child:Text('Instructor')),DropdownMenuItem(value:'teacher',child:Text('Teacher')),DropdownMenuItem(value:'exhibitor',child:Text('Exhibitor / showcase applicant'))],
@@ -2284,7 +2284,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
           onChanged:(v)=>setDialog(()=>consent=v==true),
           title:const Text('I consent to CreatorVerse using the information in this application to assess my creator, instructor, teacher or exhibitor application.',style:TextStyle(fontSize:12,height:1.4))),
       ]))),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:consent?()=>flutter_ui.Navigator.pop(ctx,true):null,child:const Text('Submit application'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:consent?()=>material_widgets_ui.Navigator.pop(ctx,true):null,child:const Text('Submit application'))])));
     if(!mounted){
       for(final x in [first,last,phone,country,region,education,occupation,experience,portfolio,motivation,goals,certificate,specialty,work]){x.dispose();}
       return;
@@ -2366,7 +2366,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
         ],
         if(offers.isNotEmpty)...[
           const SizedBox(height:18),const Text('Admission offers',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
-          for(final offer in offers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          for(final offer in offers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text('Offer · ${offer['status']}',style:const TextStyle(fontWeight:FontWeight.w800)),
             if((offer['offer_message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(offer['offer_message'].toString(),style:const TextStyle(color:muted,height:1.5))),
             Text('Expires: ${offer['expires_at']}',style:const TextStyle(color:muted,fontSize:11)),
@@ -2375,7 +2375,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
         ],
         if(invitations.isNotEmpty)...[
           const SizedBox(height:18),const Text('Interview invitations',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
-          for(final inv in invitations)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          for(final inv in invitations)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text((inv['interview_type']??'Interview').toString().replaceAll('_',' ').toUpperCase(),style:const TextStyle(fontWeight:FontWeight.w800,color:gold)),
             const SizedBox(height:6),Text('${inv['starts_at']} · ${inv['timezone']}',style:const TextStyle(color:muted,fontSize:12)),
             if((inv['learner_instructions']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(inv['learner_instructions'].toString(),style:const TextStyle(height:1.5))),
@@ -2448,7 +2448,7 @@ class _AdminCertificatesScreenState extends State<AdminCertificatesScreen>{
     final course=Map<String,dynamic>.from(item['courses'] as Map? ?? {});
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Review certificate eligibility'),
       content:Text('Issue a certificate for ${profile['full_name']??profile['email']??'this student'} in ${course['title']??'this course'}?\n\nThe server will check every lesson, quiz and graded assignment. If any requirement is incomplete, it will refuse to issue the certificate.'),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Check & issue'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Check & issue'))]));
     if(ok!=true||!mounted)return;
     setState(()=>busy=true);
     try{
@@ -2496,7 +2496,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
     final reason=TextEditingController(text:(app['decision_reason']??'').toString());
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:Text('Set application to ${status.replaceAll('_',' ')}'),
       content:TextField(controller:reason,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Decision reason / feedback')),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Save decision'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Save decision'))]));
     if(!mounted){reason.dispose();return;}final note=reason.text.trim();reason.dispose();if(ok!=true)return;
     setState(()=>busy=true);
     try{
@@ -2509,7 +2509,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
   Future<void> grantCreator(Map<String,dynamic> app) async {
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Grant creator access?'),
       content:const Text('The server will verify that the application is approved and that at least one interview has been completed and scored before granting the Creator role.'),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Verify & grant'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Verify & grant'))]));
     if(ok!=true||!mounted)return;
     setState(()=>busy=true);
     try{
@@ -2528,7 +2528,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
         OutlinedButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-interviewer.html'),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
         const SizedBox(height:8),
-        for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('${app['application_no']} · ${app['application_type']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
           const SizedBox(height:5),Text('${app['first_name']} ${app['last_name']}',style:const TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
           Text('${app['specialty']??'No specialty'} · Proposed: ${app['proposed_level']}',style:const TextStyle(color:muted)),
@@ -2567,7 +2567,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
     final title=TextEditingController(),description=TextEditingController(),category=TextEditingController(),price=TextEditingController(text:'0'),duration=TextEditingController(text:'1');
     String level='Beginner';
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Create course'),
-      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SizedBox(width:440,child:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Course title')),
         const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Description')),
         const SizedBox(height:8),TextField(controller:category,decoration:const InputDecoration(labelText:'Category slug (e.g. digital-skills)')),
@@ -2577,7 +2577,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
         const SizedBox(height:8),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Price in naira (0 for free)')),
         const SizedBox(height:8),TextField(controller:duration,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Duration in months (1–36)')),
       ]))),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Create draft'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Create draft'))])));
     if(!mounted){title.dispose();description.dispose();category.dispose();price.dispose();duration.dispose();return;}
     final t=title.text.trim(),d=description.text.trim(),cat=category.text.trim(),p=price.text.trim(),months=duration.text.trim();
     title.dispose();description.dispose();category.dispose();price.dispose();duration.dispose();if(ok!=true)return;
@@ -2602,7 +2602,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
     String level=(course['level']??'Beginner').toString();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
       backgroundColor:panel,title:const Text('Edit course'),
-      content:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Title')),
         const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Description')),
         const SizedBox(height:8),TextField(controller:category,decoration:const InputDecoration(labelText:'Category slug')),
@@ -2611,7 +2611,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
           onChanged:(v)=>setDialog(()=>level=v??level)),
         const SizedBox(height:8),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Price in naira')),
       ])),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Save changes'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Save changes'))])));
     if(!mounted){title.dispose();description.dispose();category.dispose();price.dispose();return;}
     final t=title.text.trim(),d=description.text.trim(),cat=category.text.trim(),p=price.text.trim();
     title.dispose();description.dispose();category.dispose();price.dispose();
@@ -2653,7 +2653,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
           ListTile(title:Text((course['title']??'Course').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
             subtitle:Text('${course['level']} · ${course['price_ngn']==0?'Free':'₦${course['price_ngn']}'} · ${course['published']==true?'Published':'Draft'}',style:const TextStyle(color:muted)),
             trailing:IconButton(onPressed:busy?null:()=>editCourse(course),icon:const Icon(Icons.edit_outlined,color:gold)),
-            onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseModulesAdminScreen(course:course))).then((_)=>refresh())),
+            onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseModulesAdminScreen(course:course))).then((_)=>refresh())),
           Row(children:[
             Expanded(child:SwitchListTile(dense:true,title:const Text('Published',style:TextStyle(fontSize:12)),value:course['published']==true,activeColor:emerald,onChanged:busy?null:(_)=>toggleCourse(course,'published'))),
             Expanded(child:SwitchListTile(dense:true,title:const Text('Featured',style:TextStyle(fontSize:12)),value:course['featured']==true,activeColor:gold,onChanged:busy?null:(_)=>toggleCourse(course,'featured'))),
@@ -2681,11 +2681,11 @@ class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
     final title=TextEditingController(text:(module['title']??'').toString());
     final description=TextEditingController(text:(module['description']??'').toString());
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit module'),
-      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Module title')),
         const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Description')),
       ]),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Save'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Save'))]));
     if(!mounted){title.dispose();description.dispose();return;}
     final t=title.text.trim(),d=description.text.trim();title.dispose();description.dispose();if(ok!=true||t.length<3)return;
     setState(()=>busy=true);
@@ -2696,11 +2696,11 @@ class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
   Future<void> addModule() async {
     final title=TextEditingController(),description=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Add course module'),
-      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Module title')),
         const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Module description')),
       ]),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Add module'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Add module'))]));
     if(!mounted){title.dispose();description.dispose();return;}
     final t=title.text.trim(),d=description.text.trim();title.dispose();description.dispose();if(ok!=true||t.length<3)return;
     setState(()=>busy=true);
@@ -2721,12 +2721,12 @@ class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
       return ListView(padding:const EdgeInsets.all(16),children:[
         FilledButton.icon(onPressed:busy?null:addModule,icon:const Icon(Icons.add),label:const Text('Add module'),style:FilledButton.styleFrom(backgroundColor:emerald)),
         const SizedBox(height:8),
-        OutlinedButton.icon(onPressed:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizAdminScreen(course:widget.course))).then((_)=>refresh()),
+        OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizAdminScreen(course:widget.course))).then((_)=>refresh()),
           icon:const Icon(Icons.quiz_outlined),label:const Text('Manage assessments')),
         for(final module in rows)Card(color:panel,child:ListTile(title:Text((module['title']??'Module').toString()),
           subtitle:Text('${(module['lessons'] as List? ?? []).length} lessons · Stage ${module['stage_number']}',style:const TextStyle(color:muted)),
           trailing:IconButton(onPressed:busy?null:()=>editModule(module),icon:const Icon(Icons.edit_outlined,color:gold)),
-          onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseLessonsAdminScreen(module:module))).then((_)=>refresh()))),
+          onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseLessonsAdminScreen(module:module))).then((_)=>refresh()))),
       ]);
     }));
 }
@@ -2748,11 +2748,11 @@ class _CourseQuizAdminScreenState extends State<CourseQuizAdminScreen>{
   Future<void> addQuiz() async {
     final title=TextEditingController();final pass=TextEditingController(text:'70');
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Create assessment'),
-      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Assessment title')),
         const SizedBox(height:8),TextField(controller:pass,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Pass mark (1–100)')),
       ]),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Create'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Create'))]));
     if(!mounted){title.dispose();pass.dispose();return;}
     final t=title.text.trim(),p=int.tryParse(pass.text.trim())??70;title.dispose();pass.dispose();if(ok!=true||t.length<3||p<1||p>100)return;
     setState(()=>busy=true);
@@ -2771,7 +2771,7 @@ class _CourseQuizAdminScreenState extends State<CourseQuizAdminScreen>{
           title:Text((quiz['title']??'Assessment').toString()),
           subtitle:Text('Pass mark: ${quiz['pass_mark']}% · ${(quiz['quiz_questions'] as List? ?? []).length} questions',style:const TextStyle(color:muted)),
           trailing:const Icon(Icons.chevron_right,color:emerald),
-          onTap:()=>flutter_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizQuestionsAdminScreen(quiz:quiz))).then((_)=>refresh()),
+          onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizQuestionsAdminScreen(quiz:quiz))).then((_)=>refresh()),
         )),
       ]);
     }));
@@ -2794,7 +2794,7 @@ class _CourseQuizQuestionsAdminScreenState extends State<CourseQuizQuestionsAdmi
   Future<void> addQuestion() async {
     final question=TextEditingController();final options=List.generate(4,(_)=>TextEditingController());int correct=0;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Add quiz question'),
-      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SizedBox(width:440,child:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:question,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Question')),
         for(var i=0;i<4;i++)Padding(padding:const EdgeInsets.only(top:8),child:Row(children:[
           Expanded(child:TextField(controller:options[i],decoration:InputDecoration(labelText:'Option ${String.fromCharCode(65+i)}'))),
@@ -2802,7 +2802,7 @@ class _CourseQuizQuestionsAdminScreenState extends State<CourseQuizQuestionsAdmi
         ])),
         const SizedBox(height:6),const Text('Select the radio button beside the correct answer.',style:TextStyle(color:muted,fontSize:11)),
       ]))),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Save question'))])));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Save question'))])));
     if(!mounted){question.dispose();for(final x in options){x.dispose();}return;}
     final q=question.text.trim(),choices=options.map((x)=>x.text.trim()).toList();question.dispose();for(final x in options){x.dispose();}
     if(ok!=true||q.length<5||choices.any((v)=>v.isEmpty)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter a question and all four answer options.')));return;}
@@ -2848,13 +2848,13 @@ class _CourseLessonsAdminScreenState extends State<CourseLessonsAdminScreen>{
     final video=TextEditingController(text:(lesson['video_url']??'').toString());
     final minutes=TextEditingController(text:(lesson['estimated_minutes']??30).toString());
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit lesson'),
-      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SizedBox(width:440,child:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Lesson title')),
         const SizedBox(height:8),TextField(controller:content,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Lesson content')),
         const SizedBox(height:8),TextField(controller:video,decoration:const InputDecoration(labelText:'Video URL')),
         const SizedBox(height:8),TextField(controller:minutes,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Estimated minutes')),
       ]))),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Save changes'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Save changes'))]));
     if(!mounted){title.dispose();content.dispose();video.dispose();minutes.dispose();return;}
     final t=title.text.trim(),body=content.text.trim(),url=video.text.trim(),mins=int.tryParse(minutes.text.trim())??30;
     title.dispose();content.dispose();video.dispose();minutes.dispose();if(ok!=true||t.length<3||mins<5||mins>600)return;
@@ -2866,13 +2866,13 @@ class _CourseLessonsAdminScreenState extends State<CourseLessonsAdminScreen>{
   Future<void> addLesson() async {
     final title=TextEditingController(),content=TextEditingController(),video=TextEditingController(),minutes=TextEditingController(text:'30');
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Add lesson'),
-      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+      content:SizedBox(width:440,child:SingleChildScrollView(child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Lesson title')),
         const SizedBox(height:8),TextField(controller:content,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Lesson content / notes')),
         const SizedBox(height:8),TextField(controller:video,decoration:const InputDecoration(labelText:'Video URL (optional)')),
         const SizedBox(height:8),TextField(controller:minutes,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Estimated minutes (5–600)')),
       ]))),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Add lesson'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Add lesson'))]));
     if(!mounted){title.dispose();content.dispose();video.dispose();minutes.dispose();return;}
     final t=title.text.trim(),body=content.text.trim(),url=video.text.trim(),mins=int.tryParse(minutes.text.trim())??30;
     title.dispose();content.dispose();video.dispose();minutes.dispose();if(ok!=true||t.length<3||mins<5||mins>600)return;
@@ -2928,7 +2928,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen>{
     if(report['post_id']==null)return;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Hide this community post?'),
       content:const Text('The post will no longer appear in the public community feed.'),
-      actions:[TextButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>flutter_ui.Navigator.pop(ctx,true),child:const Text('Hide post'))]));
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Hide post'))]));
     if(ok!=true||!mounted)return;
     setState(()=>busy=true);
     try{
@@ -2945,7 +2945,7 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen>{
       final items=snap.data??[];
       if(items.isEmpty)return const Center(child:Text('No open community reports.',style:TextStyle(color:muted)));
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(14),children:[
-        for(final item in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        for(final item in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text((item['reason']??'Community report').toString().toUpperCase(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
           const SizedBox(height:6),Text((item['community_posts'] is Map?item['community_posts']['title']:'Reported post/comment').toString(),style:const TextStyle(fontSize:16,fontWeight:FontWeight.w700)),
           if((item['details']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:6),child:Text(item['details'].toString(),style:const TextStyle(color:muted))),
@@ -3011,8 +3011,8 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
         title: const Text('Confirm payment received?'),
         content: const Text('Only confirm after you have checked the actual bank or USSD transaction and verified that the full amount arrived. This will activate the course enrolment.'),
         actions: [
-          TextButton(onPressed: () => flutter_ui.Navigator.pop(dialogContext, false), child: const Text('Not yet')),
-          FilledButton(onPressed: () => flutter_ui.Navigator.pop(dialogContext, true),
+          TextButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, false), child: const Text('Not yet')),
+          FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('I verified the payment')),
         ],
       ));
@@ -3054,7 +3054,7 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
       }
       final all = snapshot.data ?? [];
       final visible = filter == 'all' ? all : all.where((o) => o['status'] == filter).toList();
-      return flutter_ui.Column(children: [
+      return material_widgets_ui.Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: filter,
@@ -3082,7 +3082,7 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
               final active = order['status'] == 'pending' || order['status'] == 'proof_submitted';
               final expiry = DateTime.tryParse((order['expires_at'] ?? '').toString());
               return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: Padding(
-                padding: const EdgeInsets.all(14), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                padding: const EdgeInsets.all(14), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text((course ?? 'Course payment').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 5),
                   Text('₦${order['amount_ngn']} · ${order['status']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w700)),
@@ -3272,7 +3272,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
     final targetPath = '$path${uri.hasQuery ? '?${uri.query}' : ''}';
     if (path.endsWith('/academy-status.html')) {
-      await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
       return;
     }
     if (path.endsWith('/academy-live-room.html') || path.endsWith('/academy-interviewer.html') ||
@@ -3288,14 +3288,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (path.endsWith('/marketplace-enquiries.html') || path == '/marketplace-enquiries.html') {
       final enquiryId = uri.queryParameters['id'];
       if (enquiryId != null && enquiryId.isNotEmpty) {
-        await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
+        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
       } else {
-        await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
+        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
       }
       return;
     }
     if (path == '/messages.html' || path == '/messages') {
-      await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     } else {
       openFeature(context, path);
     }
@@ -3309,7 +3309,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           const SnackBar(content: Text('This member profile is no longer available.')));
         return;
       }
-      await flutter_ui.Navigator.push(context, MaterialPageRoute(
+      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(
         builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
     } catch (e) {
       if (mounted) {
@@ -3351,7 +3351,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final rows = snapshot.data ?? [];
       final unread = rows.where((item) => item['read_at'] == null).length;
       if (rows.isEmpty) return const Center(child: Text('You are all caught up.', style: TextStyle(color: muted)));
-      return RefreshIndicator(color: emerald, onRefresh: refresh, child: flutter_ui.Column(children: [
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: material_widgets_ui.Column(children: [
         if (unread > 0) Align(alignment: Alignment.centerRight, child: TextButton(
           onPressed: () => markAllRead(rows), child: Text('Mark all as read ($unread)'))),
         Expanded(child: ListView.separated(itemCount: rows.length,
@@ -3380,7 +3380,7 @@ class LinkPage extends StatelessWidget {
   final IconData icon; final String title, description, button, path;
   const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 54, color: emerald), const SizedBox(height: 18), Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
     const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
     const SizedBox(height: 22), FilledButton(onPressed: () => openLink(path), child: Text(button))])));
@@ -3419,7 +3419,7 @@ class _ProfileTabState extends State<ProfileTab> {
     try {
       await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
         AlertDialog(backgroundColor: panel, title: const Text('Edit profile'),
-          content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+          content: SizedBox(width: 440, child: SingleChildScrollView(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
             const SizedBox(height: 10), TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
             const SizedBox(height: 10), TextField(controller: bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
@@ -3429,7 +3429,7 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(height: 10), TextField(controller: status, decoration: const InputDecoration(labelText: 'Status')),
           ]))),
           actions: [
-            TextButton(onPressed: saving ? null : () => flutter_ui.Navigator.pop(dialogContext), child: const Text('Cancel')),
+            TextButton(onPressed: saving ? null : () => material_widgets_ui.Navigator.pop(dialogContext), child: const Text('Cancel')),
             FilledButton(onPressed: saving ? null : () async {
               setDialogState(() => saving = true);
               try {
@@ -3441,7 +3441,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', db.auth.currentUser!.id);
                 if (!dialogContext.mounted) return;
-                flutter_ui.Navigator.pop(dialogContext);
+                material_widgets_ui.Navigator.pop(dialogContext);
                 await refresh();
                 if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Profile updated.')));
               } catch (e) {
@@ -3459,7 +3459,7 @@ class _ProfileTabState extends State<ProfileTab> {
     future: profile,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
         const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
@@ -3472,7 +3472,7 @@ class _ProfileTabState extends State<ProfileTab> {
       final avatar = (p['avatar_url'] ?? '').toString();
       final isAdmin = role == 'admin' || role == 'super_admin';
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
-        Center(child: flutter_ui.Column(children: [
+        Center(child: material_widgets_ui.Column(children: [
           CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
             backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
             child: avatar.startsWith('https://') ? null : const Icon(Icons.person, size: 40, color: emerald)),
@@ -3514,7 +3514,7 @@ class FeatureTile extends StatelessWidget {
     borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openFeature(context, path),
       child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
         Container(width: 44, height: 44, decoration: BoxDecoration(color: emerald.withValues(alpha: .13), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: emerald)),
-        const SizedBox(width: 14), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(width: 14), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), const SizedBox(height: 4),
           Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
         const Icon(Icons.chevron_right, color: muted)])))));
@@ -3539,7 +3539,7 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
       id = created['id'].toString();
     }
     if (!context.mounted) return;
-    await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) =>
+    await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) =>
       MessageThreadScreen(conversationId: id, person: person)));
   } catch (e) {
     if (context.mounted) {
@@ -3551,19 +3551,19 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 
 void openFeature(BuildContext context, String path) {
   if (path == '/certificates') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
+    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
     return;
   }
   if (path == '/academy-applications') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
     return;
   }
   if (path == '/messages.html' || path == '/messages') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     return;
   }
   if (path == '/notifications.html' || path == '/notifications') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
       appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
     return;
   }
@@ -3579,7 +3579,7 @@ void openFeature(BuildContext context, String path) {
       destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
     case '/academic-secondary.html':
     case '/academic-tertiary.html':
-      flutter_ui.Navigator.of(context).push(MaterialPageRoute(
+      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => AuthenticatedAcademyWebScreen(path: path)));
       return;
     case '/campus.html':
@@ -3605,7 +3605,7 @@ void openFeature(BuildContext context, String path) {
         icon: path.contains('marketplace') ? Icons.storefront_outlined : Icons.school_outlined);
       title = path.contains('marketplace') ? 'Marketplace' : 'Academic';
   }
-  flutter_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+  material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
     appBar: AppBar(title: Text(title)), body: destination!)));
 }
 
@@ -3613,7 +3613,7 @@ class NativeSpaceScreen extends StatelessWidget {
   final String title, description; final IconData icon;
   const NativeSpaceScreen({super.key, required this.title, required this.description, required this.icon});
   @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 54, color: emerald), const SizedBox(height: 18),
     Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
     const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
@@ -3642,7 +3642,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
   }
   void runSearch() => setState(() => members = loadMembers());
   @override
-  Widget build(BuildContext context) => flutter_ui.Column(children: [
+  Widget build(BuildContext context) => material_widgets_ui.Column(children: [
     Padding(padding: const EdgeInsets.all(16), child: TextField(controller: search, onSubmitted: (_) => runSearch(),
       decoration: InputDecoration(hintText: 'Search name or username', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(onPressed: runSearch, icon: const Icon(Icons.arrow_forward, color: emerald))))),
     Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: members, builder: (context, snap) {
@@ -3659,492 +3659,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
             title: Row(children: [Flexible(child: Text((p['full_name'] ?? 'CreatorVerse member').toString(), overflow: TextOverflow.ellipsis)),
               if ((p['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 16))]),
             subtitle: Text('@${p['username'] ?? 'member'} · ${p['role'] ?? 'student'}', style: const TextStyle(color: muted)),
-            onTap: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
-        });
-    })),
-  ]);
-}
-
-class PublicMemberProfileScreen extends StatefulWidget {
-  final Map<String, dynamic> profile;
-  const PublicMemberProfileScreen({super.key, required this.profile});
-  @override
-  State<PublicMemberProfileScreen> createState() => _PublicMemberProfileScreenState();
-}
-
-class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
-  final db = Supabase.instance.client;
-  bool? isFollowing;
-  bool busy = false;
-  int followerCount = 0;
-  int followingCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    loadRelationship();
-  }
-
-  Future<void> loadRelationship() async {
-    final me = db.auth.currentUser?.id;
-    final other = widget.profile['id']?.toString();
-    if (me == null || other == null) return;
-    try {
-      final relation = await db.from('community_follows').select('follower_id')
-        .eq('follower_id', me).eq('following_id', other).maybeSingle();
-      final followers = await db.from('community_follows').select('follower_id')
-        .eq('following_id', other).count(CountOption.exact);
-      final following = await db.from('community_follows').select('following_id')
-        .eq('follower_id', other).count(CountOption.exact);
-      if (!mounted) return;
-      setState(() {
-        isFollowing = relation != null;
-        followerCount = followers.count;
-        followingCount = following.count;
-      });
-    } catch (_) {
-      if (mounted) {
-        setState(() => isFollowing = false);
-      }
-    }
-  }
-
-  Future<void> toggleFollow() async {
-    final me = db.auth.currentUser?.id;
-    final other = widget.profile['id']?.toString();
-    if (me == null || other == null || busy || isFollowing == null) return;
-    setState(() => busy = true);
-    try {
-      if (isFollowing!) {
-        await db.from('community_follows').delete().eq('follower_id', me).eq('following_id', other);
-        if (mounted) {
-          setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30).toInt(); });
-        }
-      } else {
-        await db.from('community_follows').insert({'follower_id': me, 'following_id': other});
-        if (mounted) {
-          setState(() { isFollowing = true; followerCount += 1; });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update follow status: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => busy = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = widget.profile;
-    final avatar = (profile['avatar_url'] ?? '').toString();
-    final me = db.auth.currentUser?.id;
-    final ownProfile = me == profile['id']?.toString();
-    return Scaffold(appBar: AppBar(title: const Text('Member profile')), body: ListView(padding: const EdgeInsets.all(22), children: [
-      Center(child: CircleAvatar(radius: 44, backgroundColor: const Color(0x3320B887),
-        backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
-        child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 42))),
-      const SizedBox(height: 14),
-      Text((profile['full_name'] ?? 'CreatorVerse member').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 4), Text('@${profile['username'] ?? 'member'}', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
-      if ((profile['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(top: 6), child: Icon(Icons.verified, color: gold, size: 20)),
-      if ((profile['bio'] ?? '').toString().isNotEmpty) ...[const SizedBox(height: 14), Text(profile['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5))],
-      if ((profile['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(profile['location'].toString())),
-      if (profile['skills'] is List && (profile['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((profile['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted))),
-      const SizedBox(height: 8),
-      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text('$followerCount followers', style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(width: 18), Text('$followingCount following', style: const TextStyle(color: muted)),
-      ]),
-      const SizedBox(height: 18),
-      if (!ownProfile) Row(children: [
-        Expanded(child: OutlinedButton.icon(onPressed: busy || isFollowing == null ? null : toggleFollow,
-          icon: busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(isFollowing == true ? Icons.person_remove_outlined : Icons.person_add_alt_1),
-          label: Text(isFollowing == true ? 'Following' : 'Follow'))),
-        const SizedBox(width: 10),
-        Expanded(child: FilledButton.icon(onPressed: () => openDirectMessage(context, profile),
-          icon: const Icon(Icons.chat_bubble_outline), label: const Text('Message'),
-          style: FilledButton.styleFrom(backgroundColor: emerald))),
-      ]),
-    ]));
-  }
-}
-
-Future<void> openLink(String path) async {
-  await launchUrl(Uri.parse('https://creatorverse-ai.vercel.app$path'), mode: LaunchMode.externalApplication);
-}
-)
-        .hasMatch(target);
-      Map<String, dynamic>? row;
-      if (isUuid) {
-        row = await db.from('public_profiles')
-          .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
-          .eq('id', target).maybeSingle();
-      }
-      row ??= await db.from('public_profiles')
-        .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
-        .eq('username', target).maybeSingle();
-      if (!mounted) return;
-      if (row == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This member profile is no longer available.')));
-        return;
-      }
-      await flutter_ui.Navigator.push(context, MaterialPageRoute(
-        builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open member profile: $e')));
-      }
-    }
-  }
-
-  Future<void> markAllRead(List<Map<String, dynamic>> items) async {
-    final unread = items.where((item) => item['read_at'] == null).toList();
-    if (unread.isEmpty) {
-      return;
-    }
-    try {
-      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
-        .eq('user_id', db.auth.currentUser!.id).isFilter('read_at', null);
-      if (mounted) await refresh();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not mark notifications as read: $e')));
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
-    future: notifications,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator(color: emerald));
-      }
-      if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
-          'Notifications could not be loaded: ${snapshot.error}',
-          textAlign: TextAlign.center, style: const TextStyle(color: muted))));
-      }
-      final rows = snapshot.data ?? [];
-      final unread = rows.where((item) => item['read_at'] == null).length;
-      if (rows.isEmpty) return const Center(child: Text('You are all caught up.', style: TextStyle(color: muted)));
-      return RefreshIndicator(color: emerald, onRefresh: refresh, child: flutter_ui.Column(children: [
-        if (unread > 0) Align(alignment: Alignment.centerRight, child: TextButton(
-          onPressed: () => markAllRead(rows), child: Text('Mark all as read ($unread)'))),
-        Expanded(child: ListView.separated(itemCount: rows.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
-          itemBuilder: (context, index) {
-            final item = rows[index];
-            final read = item['read_at'] != null;
-            final title = (item['title'] ?? 'CreatorVerse update').toString();
-            final body = (item['body'] ?? '').toString();
-            return ListTile(
-              leading: CircleAvatar(backgroundColor: read ? panel : emerald.withValues(alpha: .16),
-                child: Icon(read ? Icons.notifications_none : Icons.notifications_active_outlined,
-                  color: read ? muted : emerald)),
-              title: Text(title, style: TextStyle(fontWeight: read ? FontWeight.w500 : FontWeight.w800)),
-              subtitle: Text(body, maxLines: 3, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: muted)),
-              trailing: read ? null : const Icon(Icons.circle, color: emerald, size: 9),
-              onTap: () => openNotification(item),
-            );
-          })),
-      ]));
-    });
-}
-
-class LinkPage extends StatelessWidget {
-  final IconData icon; final String title, description, button, path;
-  const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
-  @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-    Icon(icon, size: 54, color: emerald), const SizedBox(height: 18), Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-    const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
-    const SizedBox(height: 22), FilledButton(onPressed: () => openLink(path), child: Text(button))])));
-}
-class ProfileTab extends StatefulWidget {
-  const ProfileTab({super.key});
-  @override
-  State<ProfileTab> createState() => _ProfileTabState();
-}
-class _ProfileTabState extends State<ProfileTab> {
-  final db = Supabase.instance.client;
-  late Future<Map<String, dynamic>> profile;
-  @override
-  void initState() { super.initState(); profile = loadProfile(); }
-  Future<Map<String, dynamic>> loadProfile() async {
-    final user = db.auth.currentUser;
-    if (user == null) throw Exception('You are signed out.');
-    final row = await db.from('profiles')
-      .select('id,full_name,email,avatar_url,username,bio,cover_url,location,website_url,skills,status_text,verified_badge,role,created_at,updated_at')
-      .eq('id', user.id).maybeSingle();
-    if (row == null) {
-      return {'id': user.id, 'full_name': user.userMetadata?['full_name'] ?? '', 'email': user.email ?? '', 'role': 'student'};
-    }
-    return Map<String, dynamic>.from(row);
-  }
-  Future<void> refresh() async => setState(() => profile = loadProfile());
-  Future<void> editProfile(Map<String, dynamic> current) async {
-    final name = TextEditingController(text: (current['full_name'] ?? '').toString());
-    final username = TextEditingController(text: (current['username'] ?? '').toString());
-    final bio = TextEditingController(text: (current['bio'] ?? '').toString());
-    final location = TextEditingController(text: (current['location'] ?? '').toString());
-    final website = TextEditingController(text: (current['website_url'] ?? '').toString());
-    final skills = TextEditingController(text: current['skills'] is List ? (current['skills'] as List).join(', ') : (current['skills'] ?? '').toString());
-    final status = TextEditingController(text: (current['status_text'] ?? '').toString());
-    bool saving = false;
-    try {
-      await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
-        AlertDialog(backgroundColor: panel, title: const Text('Edit profile'),
-          content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
-            const SizedBox(height: 10), TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
-            const SizedBox(height: 10), TextField(controller: bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
-            const SizedBox(height: 10), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location')),
-            const SizedBox(height: 10), TextField(controller: website, decoration: const InputDecoration(labelText: 'Website URL')),
-            const SizedBox(height: 10), TextField(controller: skills, decoration: const InputDecoration(labelText: 'Skills')),
-            const SizedBox(height: 10), TextField(controller: status, decoration: const InputDecoration(labelText: 'Status')),
-          ]))),
-          actions: [
-            TextButton(onPressed: saving ? null : () => flutter_ui.Navigator.pop(dialogContext), child: const Text('Cancel')),
-            FilledButton(onPressed: saving ? null : () async {
-              setDialogState(() => saving = true);
-              try {
-                await db.from('profiles').update({
-                  'full_name': name.text.trim(), 'username': username.text.trim(),
-                  'bio': bio.text.trim(), 'location': location.text.trim(),
-                  'website_url': website.text.trim(),
-                  'skills': parseSkillsInput(skills.text),
-                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
-                }).eq('id', db.auth.currentUser!.id);
-                if (!dialogContext.mounted) return;
-                flutter_ui.Navigator.pop(dialogContext);
-                await refresh();
-                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Profile updated.')));
-              } catch (e) {
-                setDialogState(() => saving = false);
-                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text('Could not update profile: $e')));
-              }
-            }, child: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save changes')),
-          ])));
-    } finally {
-      name.dispose(); username.dispose(); bio.dispose(); location.dispose(); website.dispose(); skills.dispose(); status.dispose();
-    }
-  }
-  @override
-  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
-    future: profile,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
-        const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
-        const SizedBox(height: 14), OutlinedButton.icon(onPressed: refresh, icon: const Icon(Icons.refresh), label: const Text('Try again')),
-      ]))); }
-      final p = snapshot.data ?? {};
-      final user = db.auth.currentUser;
-      final name = (p['full_name'] ?? '').toString().trim();
-      final role = (p['role'] ?? 'student').toString();
-      final avatar = (p['avatar_url'] ?? '').toString();
-      final isAdmin = role == 'admin' || role == 'super_admin';
-      return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
-        Center(child: flutter_ui.Column(children: [
-          CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
-            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
-            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, size: 40, color: emerald)),
-          const SizedBox(height: 13),
-          Text(name.isEmpty ? 'CreatorVerse member' : name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
-          if ((p['username'] ?? '').toString().isNotEmpty) Text('@${p['username']}', style: const TextStyle(color: muted)),
-          const SizedBox(height: 4), Text(user?.email ?? '', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
-          const SizedBox(height: 10),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Chip(label: Text(role.replaceAll('_', ' ').toUpperCase()), backgroundColor: emerald.withValues(alpha: .15), side: BorderSide(color: emerald.withValues(alpha: .35))),
-            if ((p['verified_badge'] ?? 'none') != 'none') ...[const SizedBox(width: 6), const Icon(Icons.verified, color: gold, size: 20)],
-          ]),
-        ])),
-        if ((p['bio'] ?? '').toString().trim().isNotEmpty) ...[
-          const SizedBox(height: 16), Text(p['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5)),
-        ],
-        const SizedBox(height: 20),
-        FilledButton.icon(onPressed: () => editProfile(p), icon: const Icon(Icons.edit_outlined), label: const Text('Edit profile'),
-          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48))),
-        const SizedBox(height: 18),
-        if ((p['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(p['location'].toString()), dense: true),
-        if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
-        if (p['skills'] is List && (p['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((p['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
-        const SizedBox(height: 12),
-        if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Administrative tools for your account.', path: '/admin.html'),
-        FeatureTile(icon: Icons.people_outline, title: 'Find members', detail: 'Discover people using CreatorVerse.', path: '/members'),
-        FeatureTile(icon: Icons.settings_outlined, title: 'Account settings', detail: 'Review your account details.', path: '/settings'),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(onPressed: () => db.auth.signOut(), icon: const Icon(Icons.logout), label: const Text('Sign out'),
-          style: OutlinedButton.styleFrom(foregroundColor: gold, minimumSize: const Size.fromHeight(50))),
-      ]));
-    });
-}
-class FeatureTile extends StatelessWidget {
-  final IconData icon; final String title, detail, path;
-  const FeatureTile({super.key, required this.icon, required this.title, required this.detail, required this.path});
-  @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Material(color: panel,
-    borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openFeature(context, path),
-      child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-        Container(width: 44, height: 44, decoration: BoxDecoration(color: emerald.withValues(alpha: .13), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: emerald)),
-        const SizedBox(width: 14), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), const SizedBox(height: 4),
-          Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
-        const Icon(Icons.chevron_right, color: muted)])))));
-}
-
-Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person) async {
-  final db = Supabase.instance.client;
-  final me = db.auth.currentUser?.id;
-  final other = person['id']?.toString();
-  if (me == null || other == null || me == other) return;
-  try {
-    final existing = await db.from('cv_conversations').select('id')
-      .or('and(user_a.eq.$me,user_b.eq.$other),and(user_a.eq.$other,user_b.eq.$me)').maybeSingle();
-    String id;
-    if (existing != null) {
-      id = existing['id'].toString();
-    } else {
-      final a = me.compareTo(other) < 0 ? me : other;
-      final b = me.compareTo(other) < 0 ? other : me;
-      final created = await db.from('cv_conversations')
-        .insert({'user_a': a, 'user_b': b, 'created_by': me}).select('id').single();
-      id = created['id'].toString();
-    }
-    if (!context.mounted) return;
-    await flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) =>
-      MessageThreadScreen(conversationId: id, person: person)));
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open this conversation: $e')));
-    }
-  }
-}
-
-void openFeature(BuildContext context, String path) {
-  if (path == '/certificates') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
-    return;
-  }
-  if (path == '/academy-applications') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
-    return;
-  }
-  if (path == '/messages.html' || path == '/messages') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
-    return;
-  }
-  if (path == '/notifications.html' || path == '/notifications') {
-    flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
-      appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
-    return;
-  }
-  Widget? destination;
-  String title = 'CreatorVerse';
-  switch (path) {
-    case '/community.html':
-      destination = const CommunityTab(); title = 'Community'; break;
-    case '/digital-skills.html':
-    case '/divisions.html':
-      destination = const LearnTab(); title = 'Learn'; break;
-    case '/academic.html':
-      destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
-    case '/academic-secondary.html':
-    case '/academic-tertiary.html':
-      flutter_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => AuthenticatedAcademyWebScreen(path: path)));
-      return;
-    case '/campus.html':
-    case '/campus-life.html':
-      destination = const CampusTab(); title = 'Campus Life'; break;
-    case '/marketplace.html':
-      destination = const MarketplaceScreen(); title = 'Marketplace'; break;
-    case '/housing':
-      destination = const MarketplaceFilteredScreen(listingType: 'rental', title: 'Verified Housing', description: 'Browse accommodation and rental listings published by verified CreatorVerse sellers.'); title = 'Verified Housing'; break;
-    case '/delivery':
-      destination = const MarketplaceFilteredScreen(listingType: 'service', title: 'Campus Services & Delivery', description: 'Browse approved services and delivery providers from verified campus sellers.'); title = 'Campus Services'; break;
-    case '/profile.html':
-      destination = const ProfileTab(); title = 'My profile'; break;
-    case '/members':
-      destination = const MemberDirectoryScreen(); title = 'Find members'; break;
-    case '/settings':
-      destination = const AccountSettingsScreen(); title = 'Account settings'; break;
-    case '/admin.html':
-      destination = const AdminWorkspaceScreen(); title = 'Admin workspace'; break;
-    default:
-      destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
-        description: 'This section is part of CreatorVerse. Its native app experience is being built next; your website account and data remain shared.',
-        icon: path.contains('marketplace') ? Icons.storefront_outlined : Icons.school_outlined);
-      title = path.contains('marketplace') ? 'Marketplace' : 'Academic';
-  }
-  flutter_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
-    appBar: AppBar(title: Text(title)), body: destination!)));
-}
-
-class NativeSpaceScreen extends StatelessWidget {
-  final String title, description; final IconData icon;
-  const NativeSpaceScreen({super.key, required this.title, required this.description, required this.icon});
-  @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-    Icon(icon, size: 54, color: emerald), const SizedBox(height: 18),
-    Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
-    const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
-  ])));
-}
-
-class MemberDirectoryScreen extends StatefulWidget {
-  const MemberDirectoryScreen({super.key});
-  @override
-  State<MemberDirectoryScreen> createState() => _MemberDirectoryScreenState();
-}
-class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
-  final db = Supabase.instance.client;
-  final search = TextEditingController();
-  late Future<List<Map<String, dynamic>>> members;
-  @override
-  void initState() { super.initState(); members = loadMembers(); }
-  @override
-  void dispose() { search.dispose(); super.dispose(); }
-  Future<List<Map<String, dynamic>>> loadMembers() async {
-    var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge,role');
-    final term = sanitizeSearchTerm(search.text);
-    if (term.length >= 2) query = query.or('full_name.ilike.%$term%,username.ilike.%$term%');
-    final rows = await query.neq('id', db.auth.currentUser!.id).limit(40);
-    return List<Map<String, dynamic>>.from(rows);
-  }
-  void runSearch() => setState(() => members = loadMembers());
-  @override
-  Widget build(BuildContext context) => flutter_ui.Column(children: [
-    Padding(padding: const EdgeInsets.all(16), child: TextField(controller: search, onSubmitted: (_) => runSearch(),
-      decoration: InputDecoration(hintText: 'Search name or username', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(onPressed: runSearch, icon: const Icon(Icons.arrow_forward, color: emerald))))),
-    Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: members, builder: (context, snap) {
-      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snap.hasError) return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Member directory unavailable: ${snap.error}', textAlign: TextAlign.center, style: const TextStyle(color: muted))));
-      final rows = snap.data ?? [];
-      if (rows.isEmpty) return const Center(child: Text('No members found.', style: TextStyle(color: muted)));
-      return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
-        itemBuilder: (context, index) {
-          final p = rows[index]; final avatar = (p['avatar_url'] ?? '').toString();
-          return ListTile(leading: CircleAvatar(backgroundColor: const Color(0x3320B887),
-            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
-            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald)),
-            title: Row(children: [Flexible(child: Text((p['full_name'] ?? 'CreatorVerse member').toString(), overflow: TextOverflow.ellipsis)),
-              if ((p['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 16))]),
-            subtitle: Text('@${p['username'] ?? 'member'} · ${p['role'] ?? 'student'}', style: const TextStyle(color: muted)),
-            onTap: () => flutter_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
+            onTap: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
         });
     })),
   ]);
