@@ -54,19 +54,26 @@ jobs:
           p = Path('android/app/src/main/AndroidManifest.xml')
           p.write_text(p.read_text().replace('android:label="creatorverse_mobile"', 'android:label="CreatorVerse"'))
           PY
-      - name: Ensure Android internet permission
+      - name: Ensure Android internet and media permissions
         working-directory: apps/mobile
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('android/app/src/main/AndroidManifest.xml')
           s = p.read_text()
-          permission = '<uses-permission android:name="android.permission.INTERNET" />'
-          if permission not in s:
-              s = s.replace('<application', permission + '\n    <application', 1)
+          permissions = [
+              '<uses-permission android:name="android.permission.INTERNET" />',
+              '<uses-permission android:name="android.permission.CAMERA" />',
+              '<uses-permission android:name="android.permission.RECORD_AUDIO" />',
+          ]
+          for permission in permissions:
+              if permission not in s:
+                  s = s.replace('<application', permission + '\\n    <application', 1)
           p.write_text(s)
-          if permission not in p.read_text():
-              raise SystemExit('Android INTERNET permission was not added')
+          result = p.read_text()
+          for permission in permissions:
+              if permission not in result:
+                  raise SystemExit(f'Android permission was not added: {permission}')
           PY
       - name: Install packages
         working-directory: apps/mobile
