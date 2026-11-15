@@ -3337,6 +3337,3 @@ class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
 Future<void> openLink(String path) async {
   await launchUrl(Uri.parse('https://creatorverse-ai.vercel.app$path'), mode: LaunchMode.externalApplication);
 }
-Future<void> openLink(String path) async {
-  await launchUrl(Uri.parse('https://creatorverse-ai.vercel.app$path'), mode: LaunchMode.externalApplication);
-}
