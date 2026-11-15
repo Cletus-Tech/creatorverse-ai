@@ -297,6 +297,7 @@ class _HomeTabState extends State<HomeTab>{
       const FeatureTile(icon:Icons.apartment_outlined,title:'Campus Life',detail:'Discover accommodation and campus services.',path:'/campus.html'),
       const FeatureTile(icon:Icons.storefront_outlined,title:'Marketplace',detail:'Explore the CreatorVerse marketplace.',path:'/marketplace.html'),
       const FeatureTile(icon:Icons.assignment_ind_outlined,title:'Creator / Instructor Pathway',detail:'Apply to create, teach or showcase work on CreatorVerse.',path:'/academy-applications'),
+      const FeatureTile(icon:Icons.workspace_premium_outlined,title:'My Certificates',detail:'View certificates issued after Academy review.',path:'/certificates'),
       const FeatureTile(icon:Icons.groups_outlined,title:'Community',detail:'Connect with other learners and creators.',path:'/community.html'),
     ]);
   });
@@ -2128,6 +2129,9 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCreatorApplicationsScreen())),
             icon: const Icon(Icons.assignment_ind_outlined), label: const Text('Review Creator Applications')),
           const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCertificatesScreen())),
+            icon: const Icon(Icons.workspace_premium_outlined), label: const Text('Approve Certificates')),
+          const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
             icon: const Icon(Icons.flag_outlined), label: const Text('Moderate Community reports')),
           const SizedBox(height: 22),
@@ -2313,6 +2317,84 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
           ]))),
         ],
         if(applications.isEmpty&&offers.isEmpty&&invitations.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:22),child:Text('No applications or invitations yet. Ordinary course learners can continue directly through Learn.',style:TextStyle(color:muted,height:1.5))),
+      ]));
+    }));
+}
+
+class MyCertificatesScreen extends StatefulWidget {
+  const MyCertificatesScreen({super.key});
+  @override State<MyCertificatesScreen> createState()=>_MyCertificatesScreenState();
+}
+class _MyCertificatesScreenState extends State<MyCertificatesScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> certificates;
+  @override void initState(){super.initState();certificates=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final rows=await db.from('certificates').select('id,certificate_no,student_name,course_title,issued_at,revoked')
+      .eq('user_id',user.id).order('issued_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>certificates=next);await next;}
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('My certificates'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:certificates,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Certificates unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final items=snap.data??[];
+      if(items.isEmpty)return const Center(child:Padding(padding:EdgeInsets.all(24),child:Text('No certificates have been issued to your account yet. Course completion and certificate approval are reviewed by CreatorVerse Academy administrators.',textAlign:TextAlign.center,style:TextStyle(color:muted,height:1.5))));
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        for(final item in items)Card(color:panel,child:ListTile(
+          leading:Icon(item['revoked']==true?Icons.cancel_outlined:Icons.workspace_premium_outlined,color:item['revoked']==true?Colors.red:gold,size:30),
+          title:Text((item['course_title']??'Course certificate').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          subtitle:Text('${item['certificate_no']}\nIssued: ${item['issued_at']}\n${item['revoked']==true?'Revoked':'Verified record'}',style:const TextStyle(color:muted,height:1.5)),
+        )),
+      ]));
+    }));
+}
+
+class AdminCertificatesScreen extends StatefulWidget {
+  const AdminCertificatesScreen({super.key});
+  @override State<AdminCertificatesScreen> createState()=>_AdminCertificatesScreenState();
+}
+class _AdminCertificatesScreenState extends State<AdminCertificatesScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> enrolments;bool busy=false;
+  @override void initState(){super.initState();enrolments=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access required.');
+    final rows=await db.from('enrolments').select('user_id,course_id,created_at,profiles(full_name,email),courses(title,published)')
+      .order('created_at',ascending:false).limit(250);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>enrolments=next);await next;}
+  Future<void> issue(Map<String,dynamic> item) async {
+    final profile=Map<String,dynamic>.from(item['profiles'] as Map? ?? {});
+    final course=Map<String,dynamic>.from(item['courses'] as Map? ?? {});
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Review certificate eligibility'),
+      content:Text('Issue a certificate for ${profile['full_name']??profile['email']??'this student'} in ${course['title']??'this course'}?\n\nThe server will check every lesson, quiz and graded assignment. If any requirement is incomplete, it will refuse to issue the certificate.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Check & issue'))]));
+    if(ok!=true||!mounted)return;
+    setState(()=>busy=true);
+    try{
+      final result=await db.rpc('admin_issue_certificate',params:{'p_user_id':item['user_id'],'p_course_id':item['course_id']});
+      final cert=Map<String,dynamic>.from(result as Map);
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Certificate ${cert['certificate_no']} ${cert['already_issued']==true?'was already issued':'issued successfully'}.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Certificate not issued: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Certificate approval'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:enrolments,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Certificate review unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final items=snap.data??[];
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Text('Certificate issuance is administrator-controlled. The database verifies enrolment, all lesson completions, passed quizzes and graded assignments before issuing.',style:TextStyle(color:muted,height:1.5)),
+        for(final item in items)Card(color:panel,child:ListTile(
+          title:Text(((item['profiles'] as Map?)?['full_name']??(item['profiles'] as Map?)?['email']??'Student').toString()),
+          subtitle:Text('${(item['courses'] as Map?)?['title']??'Course'} · ${((item['courses'] as Map?)?['published']==true)?'Published':'Unpublished'}',style:const TextStyle(color:muted)),
+          trailing:IconButton(onPressed:busy||((item['courses'] as Map?)?['published']!=true)?null:()=>issue(item),icon:const Icon(Icons.workspace_premium_outlined,color:gold)),
+        )),
       ]));
     }));
 }
@@ -3359,6 +3441,10 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 }
 
 void openFeature(BuildContext context, String path) {
+  if (path == '/certificates') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
+    return;
+  }
   if (path == '/academy-applications') {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
     return;
