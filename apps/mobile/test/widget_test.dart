@@ -17,4 +17,14 @@ void main() {
           ['Prompt engineering', 'Social media management']);
     });
   });
+
+  group('sanitizeSearchTerm', () {
+    test('removes PostgREST filter syntax from search input', () {
+      expect(sanitizeSearchTerm('Ada, (admin). %'), 'Ada  admin');
+    });
+
+    test('keeps ordinary names and usernames searchable', () {
+      expect(sanitizeSearchTerm('Cletus-Tech 2026'), 'Cletus-Tech 2026');
+    });
+  });
 }
