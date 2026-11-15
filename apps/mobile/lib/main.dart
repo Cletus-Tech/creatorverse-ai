@@ -825,26 +825,114 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     });
 }
 
-class MarketplaceListingScreen extends StatelessWidget {
+class MarketplaceListingScreen extends StatefulWidget {
   final Map<String, dynamic> listing;
   const MarketplaceListingScreen({super.key, required this.listing});
   @override
+  State<MarketplaceListingScreen> createState() => _MarketplaceListingScreenState();
+}
+class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
+  final db = Supabase.instance.client;
+  bool saved = false, loadingSave = true, busy = false;
+  Map<String, dynamic>? seller;
+  @override
+  void initState() { super.initState(); loadDetails(); }
+  Future<void> loadDetails() async {
+    try {
+      final user = db.auth.currentUser;
+      if (user != null) {
+        final row = await db.from('marketplace_saved_listings').select('listing_id')
+          .eq('user_id', user.id).eq('listing_id', widget.listing['id']).maybeSingle();
+        if (mounted) setState(() => saved = row != null);
+      }
+      final profile = await db.from('marketplace_public_sellers').select(
+        'id,display_name,seller_type,institution,campus,bio'
+      ).eq('id', widget.listing['seller_id']).maybeSingle();
+      if (mounted) setState(() => seller = profile);
+    } catch (_) {
+      // Listing discovery remains available even if optional seller metadata fails.
+    } finally { if (mounted) setState(() => loadingSave = false); }
+  }
+  Future<void> toggleSaved() async {
+    final user = db.auth.currentUser;
+    if (user == null || busy) return;
+    setState(() => busy = true);
+    try {
+      if (saved) {
+        await db.from('marketplace_saved_listings').delete()
+          .eq('user_id', user.id).eq('listing_id', widget.listing['id']);
+      } else {
+        await db.from('marketplace_saved_listings').insert({
+          'user_id': user.id, 'listing_id': widget.listing['id'],
+        });
+      }
+      if (mounted) setState(() => saved = !saved);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update saved listings: $e')));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+  Future<void> startEnquiry() async {
+    final input = TextEditingController();
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      backgroundColor: panel, title: const Text('Contact seller'),
+      content: TextField(controller: input, minLines: 3, maxLines: 6, maxLength: 2000,
+        decoration: const InputDecoration(hintText: 'Ask a question about this listing...')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Send enquiry')),
+      ],
+    ));
+    final body = input.text.trim(); input.dispose();
+    if (ok != true) return;
+    if (body.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Write at least five characters.')));
+      return;
+    }
+    setState(() => busy = true);
+    try {
+      final id = await db.rpc('marketplace_start_enquiry', params: {
+        'p_listing_id': widget.listing['id'], 'p_message': body,
+      });
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: id.toString())));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send enquiry: $e')));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+  @override
   Widget build(BuildContext context) {
+    final listing = widget.listing;
     final images = listing['image_urls'] is List ? listing['image_urls'] as List : const [];
     final photo = images.isNotEmpty ? images.first.toString() : '';
     final price = listing['price_ngn'];
     final location = [listing['campus'], listing['institution'], listing['location_label']]
       .where((v) => v != null && v.toString().isNotEmpty).join(' · ');
-    return Scaffold(appBar: AppBar(title: const Text('Marketplace listing')), body: ListView(padding: const EdgeInsets.all(18), children: [
+    return Scaffold(appBar: AppBar(title: const Text('Marketplace listing'), actions: [
+      IconButton(onPressed: loadingSave || busy ? null : toggleSaved,
+        icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border, color: gold)),
+    ]), body: ListView(padding: const EdgeInsets.all(18), children: [
       if (photo.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(photo, height: 220, fit: BoxFit.cover)),
       const SizedBox(height: 14), Text((listing['title'] ?? '').toString(), style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
       const SizedBox(height: 8), Text(price == null ? 'Price on request' : (price == 0 ? 'Free' : '₦$price'), style: const TextStyle(color: emerald, fontSize: 18, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12), Text((listing['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.55)),
       const SizedBox(height: 14), ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(location.isEmpty ? 'Campus listing' : location)),
-      const SizedBox(height: 12), const Text('Native buyer enquiries and seller tools are still being added; this listing is currently for discovery only.', style: TextStyle(color: muted, height: 1.5)),
+      if (seller != null) Card(color: panel, child: ListTile(
+        leading: const CircleAvatar(backgroundColor: Color(0xFF174B3B), child: Icon(Icons.storefront_outlined, color: gold)),
+        title: Text((seller!['display_name'] ?? 'Verified seller').toString()),
+        subtitle: Text([seller!['seller_type'], seller!['campus'], seller!['institution']]
+          .where((v) => v != null && v.toString().isNotEmpty).join(' · '), style: const TextStyle(color: muted)),
+      )),
+      const SizedBox(height: 14),
+      FilledButton.icon(onPressed: busy ? null : startEnquiry,
+        style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48)),
+        icon: const Icon(Icons.chat_bubble_outline), label: Text(busy ? 'Please wait…' : 'Contact seller')),
+      const SizedBox(height: 8),
+      const Text('Keep your conversation inside CreatorVerse. Never send passwords, verification codes or sensitive financial information to a seller.',
+        style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
     ]));
   }
 }
+
 class CommunityTab extends StatefulWidget {
   const CommunityTab({super.key});
   @override
