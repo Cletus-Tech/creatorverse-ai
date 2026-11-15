@@ -3270,7 +3270,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
-    final targetPath = '${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
+    final targetPath = '$path${uri.hasQuery ? '?${uri.query}' : ''}';
     if (path.endsWith('/academy-status.html')) {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
       return;
