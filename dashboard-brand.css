@@ -1,0 +1,226 @@
+/* CreatorVerse student dashboard — authoritative evergreen + champagne skin.
+   Loaded after page, shell and global styles so this page has one final visual authority.
+   This file changes presentation only; dashboard markup, data and interactions remain untouched. */
+body[data-page="dashboard"]{
+  --dash-bg:#07140f;
+  --dash-panel:#10291d;
+  --dash-panel-raised:#153a29;
+  --dash-panel-soft:#1b4933;
+  --dash-border:rgba(214,179,106,.22);
+  --dash-gold:#d6b36a;
+  --dash-gold-bright:#e7ca83;
+  --dash-text:#edf5ec;
+  --dash-muted:#b5c9b8;
+  background:var(--dash-bg)!important;
+  color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] #content,
+body[data-page="dashboard"] .page.cv-student{
+  background:transparent!important;color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] .cv-dash-shell{
+  background:
+    radial-gradient(ellipse at 78% 0%,rgba(214,179,106,.075),transparent 31%),
+    radial-gradient(ellipse at 18% 32%,rgba(31,105,67,.14),transparent 42%),
+    var(--dash-bg)!important;
+  color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] .cv-dash-side{
+  background:linear-gradient(180deg,#0b1d14 0%,#091810 100%)!important;
+  border-color:var(--dash-border)!important;
+}
+body[data-page="dashboard"] .cv-side-brand{
+  color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] .cv-side-brand:after{color:var(--dash-gold)!important}
+body[data-page="dashboard"] .cv-side-label,
+body[data-page="dashboard"] .cv-kicker,
+body[data-page="dashboard"] .cv-engagement-overline{
+  color:var(--dash-gold)!important;
+}
+body[data-page="dashboard"] .cv-side-link{
+  color:var(--dash-muted)!important;background:transparent!important;box-shadow:none!important;
+}
+body[data-page="dashboard"] .cv-side-link:hover,
+body[data-page="dashboard"] .cv-side-link.active{
+  color:#f6e7c2!important;
+  background:linear-gradient(100deg,rgba(214,179,106,.16),rgba(214,179,106,.035))!important;
+  box-shadow:inset 2px 0 var(--dash-gold)!important;
+}
+body[data-page="dashboard"] .cv-side-explore{
+  border:1px solid var(--dash-border)!important;color:var(--dash-gold-bright)!important;
+}
+body[data-page="dashboard"] .cv-side-mini{color:#93aa99!important}
+body[data-page="dashboard"] .cv-logout{
+  background:rgba(214,179,106,.08)!important;border-color:rgba(214,179,106,.28)!important;
+  color:#e6c77f!important;
+}
+body[data-page="dashboard"] .cv-dash-top{
+  background:rgba(8,25,17,.9)!important;border-color:var(--dash-border)!important;
+}
+body[data-page="dashboard"] .cv-breadcrumb{color:#a5bba9!important}
+body[data-page="dashboard"] .cv-top-user{color:var(--dash-text)!important}
+body[data-page="dashboard"] .cv-top-user img,
+body[data-page="dashboard"] .cv-avatar-sm{
+  border-color:rgba(214,179,106,.55)!important;
+}
+body[data-page="dashboard"] .cv-avatar-sm{
+  background:linear-gradient(145deg,#d6b36a,#9d793b)!important;color:#172b1d!important;
+}
+body[data-page="dashboard"] .cv-welcome{
+  border:1px solid rgba(214,179,106,.32)!important;
+  background:
+    radial-gradient(circle at 88% 4%,rgba(214,179,106,.2),transparent 32%),
+    linear-gradient(112deg,rgba(8,37,24,.96) 0%,rgba(15,67,43,.92) 58%,rgba(21,77,49,.86) 100%),
+    url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1800&q=85') center 44%/cover!important;
+  box-shadow:0 24px 65px rgba(0,0,0,.24)!important;
+}
+body[data-page="dashboard"] .cv-welcome:before{background:rgba(214,179,106,.13)!important}
+body[data-page="dashboard"] .cv-welcome:after{background:rgba(43,130,79,.22)!important}
+body[data-page="dashboard"] .cv-welcome .cv-kicker{color:var(--dash-gold-bright)!important}
+body[data-page="dashboard"] .cv-welcome h1{color:#f5f7ed!important}
+body[data-page="dashboard"] .cv-welcome p{color:#d0dfd2!important}
+body[data-page="dashboard"] .cv-hero-btn,
+body[data-page="dashboard"] .cv-secondary-btn{
+  background:linear-gradient(120deg,#c49a4f,#e7ca83)!important;
+  border:1px solid rgba(255,235,184,.4)!important;color:#172b1d!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.2)!important;
+}
+body[data-page="dashboard"] .cv-hero-btn:hover,
+body[data-page="dashboard"] .cv-secondary-btn:hover{filter:brightness(1.06)!important}
+body[data-page="dashboard"] .cv-art-mark{
+  background:linear-gradient(145deg,#d6b36a,#94713b)!important;color:#14291c!important;
+  box-shadow:0 15px 40px rgba(0,0,0,.34)!important;
+}
+body[data-page="dashboard"] .cv-orbit{border-color:rgba(231,202,131,.42)!important}
+body[data-page="dashboard"] .cv-stat,
+body[data-page="dashboard"] .cv-continue-card,
+body[data-page="dashboard"] .cv-course-card,
+body[data-page="dashboard"] .cv-empty,
+body[data-page="dashboard"] .cv-activity-list,
+body[data-page="dashboard"] .cv-achievement-card,
+body[data-page="dashboard"] .cv-settings-card,
+body[data-page="dashboard"] .cv-engagement-card,
+body[data-page="dashboard"] .cv-session-card{
+  background:linear-gradient(145deg,rgba(21,58,41,.97),rgba(12,37,25,.98))!important;
+  border:1px solid var(--dash-border)!important;
+  color:var(--dash-text)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.16)!important;
+}
+body[data-page="dashboard"] .cv-stat:hover,
+body[data-page="dashboard"] .cv-course-card:hover{
+  border-color:rgba(231,202,131,.52)!important;
+  box-shadow:0 18px 36px rgba(0,0,0,.22)!important;
+}
+body[data-page="dashboard"] .cv-stat-label,
+body[data-page="dashboard"] .cv-stat small,
+body[data-page="dashboard"] .cv-section-heading p,
+body[data-page="dashboard"] .cv-muted,
+body[data-page="dashboard"] .cv-continue-info p,
+body[data-page="dashboard"] .cv-course-card-body p,
+body[data-page="dashboard"] .cv-empty p,
+body[data-page="dashboard"] .cv-activity-row small,
+body[data-page="dashboard"] .cv-certificate-row small,
+body[data-page="dashboard"] .cv-settings-title p,
+body[data-page="dashboard"] .cv-photo-row p,
+body[data-page="dashboard"] .cv-engagement-message,
+body[data-page="dashboard"] .cv-engagement-goal small,
+body[data-page="dashboard"] .cv-engagement-details small,
+body[data-page="dashboard"] .cv-session-card p{
+  color:var(--dash-muted)!important;
+}
+body[data-page="dashboard"] .cv-stat-value,
+body[data-page="dashboard"] .cv-section-heading h2,
+body[data-page="dashboard"] .cv-continue-info h3,
+body[data-page="dashboard"] .cv-course-card h3,
+body[data-page="dashboard"] .cv-empty h3,
+body[data-page="dashboard"] .cv-activity-row strong,
+body[data-page="dashboard"] .cv-certificate-row strong,
+body[data-page="dashboard"] .cv-settings-title h3,
+body[data-page="dashboard"] .cv-achievement-card strong,
+body[data-page="dashboard"] .cv-engagement-card h3,
+body[data-page="dashboard"] .cv-session-card h3{
+  color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] .cv-text-link,
+body[data-page="dashboard"] .cv-course-tag,
+body[data-page="dashboard"] .cv-course-meta strong,
+body[data-page="dashboard"] .cv-ach-icon,
+body[data-page="dashboard"] .cv-result-pill{
+  color:var(--dash-gold-bright)!important;
+}
+body[data-page="dashboard"] .cv-progress,
+body[data-page="dashboard"] .cv-engagement-track{
+  background:rgba(220,235,221,.13)!important;
+}
+body[data-page="dashboard"] .cv-progress span,
+body[data-page="dashboard"] .cv-engagement-track span{
+  background:linear-gradient(90deg,#b58b45,#e7ca83)!important;box-shadow:0 0 12px rgba(214,179,106,.18)!important;
+}
+body[data-page="dashboard"] .cv-course-cover{background:#153a29!important}
+body[data-page="dashboard"] .cv-course-placeholder{
+  color:#f1d99e!important;background:radial-gradient(circle at 20% 20%,#477b55,#173c2a 65%,#0b2117)!important;
+}
+body[data-page="dashboard"] .cv-course-meta{color:#a9bcae!important}
+body[data-page="dashboard"] .cv-course-card{overflow:hidden}
+body[data-page="dashboard"] .cv-activity-row,
+body[data-page="dashboard"] .cv-certificate-row,
+body[data-page="dashboard"] .cv-photo-row{
+  border-color:rgba(214,179,106,.16)!important;
+}
+body[data-page="dashboard"] .cv-activity-check{
+  background:rgba(214,179,106,.14)!important;color:var(--dash-gold-bright)!important;
+}
+body[data-page="dashboard"] .cv-achievement-card small{color:var(--dash-muted)!important}
+body[data-page="dashboard"] .cv-photo-row strong{color:var(--dash-text)!important}
+body[data-page="dashboard"] .cv-avatar-preview{
+  border-color:rgba(214,179,106,.65)!important;background:#153a29!important;
+}
+body[data-page="dashboard"] .cv-avatar-fallback{
+  background:linear-gradient(135deg,#d6b36a,#94713b)!important;color:#172b1d!important;
+}
+body[data-page="dashboard"] .cv-upload-btn{
+  background:rgba(214,179,106,.12)!important;border-color:var(--dash-border)!important;color:#e7ca83!important;
+}
+body[data-page="dashboard"] .cv-field span{color:#d3dfd4!important}
+body[data-page="dashboard"] .cv-field input{
+  background:#091d14!important;border-color:rgba(214,179,106,.25)!important;color:var(--dash-text)!important;
+}
+body[data-page="dashboard"] .cv-field input:focus{
+  border-color:var(--dash-gold)!important;box-shadow:0 0 0 3px rgba(214,179,106,.12)!important;
+}
+body[data-page="dashboard"] .cv-field input::placeholder{color:#8da696!important}
+body[data-page="dashboard"] .cv-field-help,
+body[data-page="dashboard"] .cv-feedback{color:#a9bcae!important}
+body[data-page="dashboard"] .cv-feedback.success{color:#b7d9a8!important}
+body[data-page="dashboard"] .cv-feedback.error{color:#f1a5a5!important}
+body[data-page="dashboard"] .cv-secondary-btn{
+  background:rgba(214,179,106,.12)!important;border-color:rgba(214,179,106,.34)!important;color:#f0d99e!important;
+}
+body[data-page="dashboard"] .cv-dash-footer{
+  color:#91a997!important;border-color:var(--dash-border)!important;
+}
+body[data-page="dashboard"] .footer{
+  background:#081b13!important;border-top:1px solid var(--dash-border)!important;color:var(--dash-muted)!important;
+}
+body[data-page="dashboard"] .footer h4{color:var(--dash-gold)!important}
+body[data-page="dashboard"] .footer a{color:#b9cbbd!important}
+body[data-page="dashboard"] button:focus-visible,
+body[data-page="dashboard"] a:focus-visible,
+body[data-page="dashboard"] input:focus-visible{
+  outline:2px solid var(--dash-gold-bright)!important;outline-offset:3px;
+}
+@media(max-width:900px){
+ body[data-page="dashboard"] .cv-dash-side{background:#0b1d14!important;border-bottom:1px solid var(--dash-border)!important}
+}
+@media(max-width:700px){
+ body[data-page="dashboard"] .cv-dash-content{padding:18px 14px 30px!important}
+ body[data-page="dashboard"] .cv-welcome{padding:23px 20px!important;min-height:0}
+ body[data-page="dashboard"] .cv-stat{padding:13px 10px!important}
+ body[data-page="dashboard"] .cv-continue-card{background:linear-gradient(145deg,#153a29,#0c2519)!important}
+ body[data-page="dashboard"] .cv-settings-card{padding:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-page="dashboard"] .cv-course-card,
+ body[data-page="dashboard"] .cv-stat{transition:none!important}
+}
