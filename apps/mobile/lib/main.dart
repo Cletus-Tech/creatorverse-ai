@@ -937,6 +937,10 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
             metric('Pending payments', data['pending_payments'], Icons.payments_outlined),
             const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
           ]),
+          const SizedBox(height: 12),
+          FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPaymentReviewScreen())),
+            icon: const Icon(Icons.fact_check_outlined), label: const Text('Review payment requests'),
+            style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
           const SizedBox(height: 22),
           const Text('Recent payment orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No payment orders found.', style: TextStyle(color: muted))),
@@ -957,6 +961,156 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
               style: const TextStyle(color: gold, fontSize: 11)),
           )),
         ]));
+    });
+}
+
+class AdminPaymentReviewScreen extends StatefulWidget {
+  const AdminPaymentReviewScreen({super.key});
+  @override
+  State<AdminPaymentReviewScreen> createState() => _AdminPaymentReviewScreenState();
+}
+
+class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
+  final db = Supabase.instance.client;
+  final Map<String, String> notes = {};
+  late Future<List<Map<String, dynamic>>> orders;
+  String filter = 'pending';
+  bool busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    orders = loadOrders();
+  }
+
+  Future<List<Map<String, dynamic>>> loadOrders() async {
+    final user = db.auth.currentUser;
+    if (user == null) {
+      throw StateError('Sign in to continue.');
+    }
+    final profile = await db.from('profiles').select('role').eq('id', user.id).single();
+    final role = (profile['role'] ?? '').toString();
+    if (role != 'admin' && role != 'super_admin') {
+      throw StateError('Administrator access is required.');
+    }
+    final rows = await db.from('payment_orders')
+      .select('id,user_id,amount_ngn,status,reference,created_at,expires_at,transfer_reference,proof_url,admin_note,courses(title)')
+      .order('created_at', ascending: false).limit(100);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  Future<void> refresh() async {
+    final next = loadOrders();
+    setState(() => orders = next);
+    await next;
+  }
+
+  Future<void> updateOrder(Map<String, dynamic> order, String status) async {
+    final id = order['id'].toString();
+    final message = notes[id]?.trim() ?? '';
+    if (status == 'confirmed') {
+      final verified = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+        backgroundColor: panel,
+        title: const Text('Confirm payment received?'),
+        content: const Text('Only confirm after you have checked the actual bank or USSD transaction and verified that the full amount arrived. This will activate the course enrolment.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not yet')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('I verified the payment')),
+        ],
+      ));
+      if (verified != true) return;
+    }
+    setState(() => busy = true);
+    try {
+      await db.from('payment_orders').update({
+        'status': status,
+        'admin_note': message.isEmpty ? null : message,
+      }).eq('id', id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        status == 'confirmed' ? 'Payment confirmed. Course enrolment is activated by the database workflow.' : 'Payment request rejected.')));
+      await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update payment request: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: orders,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
+          'Payment review is unavailable: ${snapshot.error}',
+          textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+      }
+      final all = snapshot.data ?? [];
+      final visible = filter == 'all' ? all : all.where((o) => o['status'] == filter).toList();
+      return Column(children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [
+          Expanded(child: DropdownButtonFormField<String>(
+            value: filter,
+            decoration: const InputDecoration(labelText: 'Payment status'),
+            items: const [
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'proof_submitted', child: Text('Proof submitted')),
+              DropdownMenuItem(value: 'confirmed', child: Text('Confirmed')),
+              DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+              DropdownMenuItem(value: 'expired', child: Text('Expired')),
+              DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+              DropdownMenuItem(value: 'all', child: Text('All statuses')),
+            ],
+            onChanged: busy ? null : (value) => setState(() => filter = value ?? 'pending'),
+          )),
+          const SizedBox(width: 8),
+          IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh)),
+        ])),
+        Expanded(child: visible.isEmpty
+          ? const Center(child: Text('No payment requests in this status.', style: TextStyle(color: muted)))
+          : ListView.builder(padding: const EdgeInsets.all(14), itemCount: visible.length, itemBuilder: (context, index) {
+              final order = visible[index];
+              final id = order['id'].toString();
+              final course = order['courses'] is Map ? order['courses']['title'] : 'Course payment';
+              final active = order['status'] == 'pending' || order['status'] == 'proof_submitted';
+              final expiry = DateTime.tryParse((order['expires_at'] ?? '').toString());
+              return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: Padding(
+                padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text((course ?? 'Course payment').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 5),
+                  Text('₦${order['amount_ngn']} · ${order['status']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 5),
+                  Text('Reference: ${order['reference']}', style: const TextStyle(color: muted, fontSize: 12)),
+                  if ((order['transfer_reference'] ?? '').toString().isNotEmpty)
+                    Text('Transfer reference: ${order['transfer_reference']}', style: const TextStyle(color: muted, fontSize: 12)),
+                  if (expiry != null) Text('Expires: ${expiry.toLocal()}', style: const TextStyle(color: muted, fontSize: 12)),
+                  if ((order['proof_url'] ?? '').toString().startsWith('https://'))
+                    TextButton.icon(onPressed: () => launchUrl(Uri.parse(order['proof_url'].toString()), mode: LaunchMode.externalApplication),
+                      icon: const Icon(Icons.receipt_long_outlined), label: const Text('View payment proof')),
+                  if (active) ...[
+                    const SizedBox(height: 8),
+                    TextFormField(initialValue: (order['admin_note'] ?? '').toString(),
+                      decoration: const InputDecoration(labelText: 'Optional note to student'),
+                      onChanged: (value) => notes[id] = value),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(child: FilledButton(onPressed: busy ? null : () => updateOrder(order, 'confirmed'),
+                        style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Confirm received'))),
+                      const SizedBox(width: 8),
+                      Expanded(child: OutlinedButton(onPressed: busy ? null : () => updateOrder(order, 'rejected'),
+                        child: const Text('Reject'))),
+                    ]),
+                  ],
+                ]),
+              ));
+            })),
+      ]);
     });
 }
 
