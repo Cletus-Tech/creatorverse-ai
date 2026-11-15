@@ -689,8 +689,126 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
 class CampusTab extends StatelessWidget {
   const CampusTab({super.key});
   @override
-  Widget build(BuildContext context) => const LinkPage(icon: Icons.location_city_outlined, title: 'Campus Life',
-    description: 'Explore student accommodation, campus services and opportunities.', button: 'Explore Campus Life', path: '/campus.html');
+  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [
+    Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
+      border: Border.all(color: emerald.withValues(alpha: .3))),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('THE STUDENT EXPERIENCE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
+        SizedBox(height: 10), Text('Make campus life work better.', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+        SizedBox(height: 8), Text('Discover the spaces CreatorVerse is building around student life beyond the classroom.', style: TextStyle(color: Colors.white70, height: 1.5)),
+      ])),
+    const SizedBox(height: 22), const Text('Explore campus spaces', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 12),
+    FeatureTile(icon: Icons.home_work_outlined, title: 'Verified Housing & Roommates', detail: 'Planned verified accommodation and roommate matching.', path: '/housing'),
+    FeatureTile(icon: Icons.storefront_outlined, title: 'Campus Marketplace', detail: 'Discover approved student products and services.', path: '/marketplace.html'),
+    FeatureTile(icon: Icons.menu_book_outlined, title: 'Past Questions & Study Hub', detail: 'Explore academic resources and study materials.', path: '/academic.html'),
+    FeatureTile(icon: Icons.delivery_dining_outlined, title: 'Campus Errands & Delivery', detail: 'Planned food, printing and everyday campus deliveries.', path: '/delivery'),
+    const SizedBox(height: 8), const Text('Campus Life is being released in stages. Housing and delivery listings are not live yet; safety dispatch is not part of this release.', style: TextStyle(color: muted, height: 1.5, fontSize: 12)),
+  ]);
+}
+
+class MarketplaceScreen extends StatefulWidget {
+  const MarketplaceScreen({super.key});
+  @override
+  State<MarketplaceScreen> createState() => _MarketplaceScreenState();
+}
+class _MarketplaceScreenState extends State<MarketplaceScreen> {
+  final db = Supabase.instance.client;
+  final search = TextEditingController();
+  late Future<Map<String, dynamic>> catalogue;
+  String categoryId = '';
+  @override
+  void initState() { super.initState(); catalogue = loadCatalogue(); }
+  @override
+  void dispose() { search.dispose(); super.dispose(); }
+
+  Future<Map<String, dynamic>> loadCatalogue() async {
+    final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
+    final rows = await db.from('marketplace_listings')
+      .select('id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
+      .eq('status', 'published').order('created_at', ascending: false).limit(80);
+    return {'categories': List<Map<String, dynamic>>.from(cats), 'listings': List<Map<String, dynamic>>.from(rows)};
+  }
+
+  void retry() => setState(() => catalogue = loadCatalogue());
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+    future: catalogue,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
+        mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.storefront_outlined, color: emerald, size: 46),
+          const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings and seller applications will appear after that setup is completed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
+          const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
+        ])));
+      final categories = snapshot.data?['categories'] as List<Map<String, dynamic>>? ?? [];
+      final all = snapshot.data?['listings'] as List<Map<String, dynamic>>? ?? [];
+      final term = search.text.trim().toLowerCase();
+      final rows = all.where((item) {
+        final matchesCategory = categoryId.isEmpty || item['category_id'] == categoryId;
+        final haystack = [item['title'], item['description'], item['institution'], item['campus'], item['location_label']]
+          .map((v) => (v ?? '').toString().toLowerCase()).join(' ');
+        return matchesCategory && (term.isEmpty || haystack.contains(term));
+      }).toList();
+      return Column(children: [
+        Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Campus Marketplace', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5), const Text('Approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
+          const SizedBox(height: 12), TextField(controller: search, onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search listings or campus')),
+        ])),
+        if (categories.isNotEmpty) SizedBox(height: 48, child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(label: const Text('All'), selected: categoryId.isEmpty, onSelected: (_) => setState(() => categoryId = ''))),
+          for (final cat in categories) Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(
+            label: Text((cat['name'] ?? '').toString()), selected: categoryId == cat['id'],
+            onSelected: (_) => setState(() => categoryId = cat['id'].toString()))),
+        ])),
+        Expanded(child: rows.isEmpty ? Center(child: Text(all.isEmpty ? 'No approved listings have been published yet.' : 'No listings match your search.', style: const TextStyle(color: muted)))
+          : RefreshIndicator(color: emerald, onRefresh: () async { retry(); }, child: ListView.builder(
+            padding: const EdgeInsets.all(14), itemCount: rows.length, itemBuilder: (context, index) {
+              final item = rows[index];
+              final images = item['image_urls'] is List ? item['image_urls'] as List : const [];
+              final photo = images.isNotEmpty ? images.first.toString() : '';
+              return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: photo.startsWith('https://') ? ClipRRect(borderRadius: BorderRadius.circular(10),
+                  child: Image.network(photo, width: 68, height: 68, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(width: 68, height: 68, child: Icon(Icons.storefront_outlined, color: emerald))))
+                  : const SizedBox(width: 68, height: 68, child: Icon(Icons.storefront_outlined, color: emerald, size: 32)),
+                title: Text((item['title'] ?? 'Marketplace listing').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text('${item['description'] ?? ''}\n${[item['campus'], item['institution']].where((v) => v != null && v.toString().isNotEmpty).join(' · ')}', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
+                trailing: Text(item['price_ngn'] == null ? 'Ask' : (item['price_ngn'] == 0 ? 'FREE' : '₦${item['price_ngn']}'), style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceListingScreen(listing: item))),
+              ));
+            }))),
+      ]);
+    });
+}
+
+class MarketplaceListingScreen extends StatelessWidget {
+  final Map<String, dynamic> listing;
+  const MarketplaceListingScreen({super.key, required this.listing});
+  @override
+  Widget build(BuildContext context) {
+    final images = listing['image_urls'] is List ? listing['image_urls'] as List : const [];
+    final photo = images.isNotEmpty ? images.first.toString() : '';
+    final price = listing['price_ngn'];
+    final location = [listing['campus'], listing['institution'], listing['location_label']]
+      .where((v) => v != null && v.toString().isNotEmpty).join(' · ');
+    return Scaffold(appBar: AppBar(title: const Text('Marketplace listing')), body: ListView(padding: const EdgeInsets.all(18), children: [
+      if (photo.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(photo, height: 220, fit: BoxFit.cover)),
+      const SizedBox(height: 14), Text((listing['title'] ?? '').toString(), style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8), Text(price == null ? 'Price on request' : (price == 0 ? 'Free' : '₦$price'), style: const TextStyle(color: emerald, fontSize: 18, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 12), Text((listing['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.55)),
+      const SizedBox(height: 14), ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(location.isEmpty ? 'Campus listing' : location)),
+      const SizedBox(height: 12), const Text('Buyer enquiries and seller contact will be available when the Marketplace services are enabled.', style: TextStyle(color: muted, height: 1.5)),
+    ]));
+  }
 }
 class CommunityTab extends StatefulWidget {
   const CommunityTab({super.key});
@@ -1707,6 +1825,12 @@ void openFeature(BuildContext context, String path) {
     case '/campus.html':
     case '/campus-life.html':
       destination = const CampusTab(); title = 'Campus Life'; break;
+    case '/marketplace.html':
+      destination = const MarketplaceScreen(); title = 'Marketplace'; break;
+    case '/housing':
+      destination = const NativeSpaceScreen(title: 'Verified Housing & Roommates', description: 'CreatorVerse is preparing verified accommodation and roommate matching. No verified housing or roommate listings are live yet.', icon: Icons.home_work_outlined); title = 'Housing & Roommates'; break;
+    case '/delivery':
+      destination = const NativeSpaceScreen(title: 'Campus Errands & Delivery', description: 'Campus delivery and errand services are planned for a later CreatorVerse release.', icon: Icons.delivery_dining_outlined); title = 'Campus Delivery'; break;
     case '/marketplace.html':
       destination = const MarketplaceScreen(); title = 'Marketplace'; break;
     case '/housing':
