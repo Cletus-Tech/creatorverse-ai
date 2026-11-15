@@ -1567,7 +1567,12 @@ class _CommunityTabState extends State<CommunityTab> {
     await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,
       builder:(_)=>SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
-        const SizedBox(height:8),Text((story['content']??'').toString(),style:const TextStyle(fontSize:20,height:1.5)),
+        const SizedBox(height:8),
+        if((story['media_url']??'').toString().startsWith('https://') && story['media_type']=='image')
+          ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(story['media_url'].toString(),fit:BoxFit.cover)),
+        if((story['media_url']??'').toString().startsWith('https://') && story['media_type']=='video')
+          OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(story['media_url'].toString()),mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open story video')),
+        if((story['content']??'').toString().isNotEmpty)Text((story['content']??'').toString(),style:const TextStyle(fontSize:20,height:1.5)),
         const SizedBox(height:18),Align(alignment:Alignment.centerRight,child:Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:muted,fontSize:11))),
       ]))));
   }
@@ -1639,7 +1644,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ]))),
             for(final story in items)InkWell(onTap:()=>viewStory(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:flutter_ui.Column(children:[
               Container(width:62,height:62,padding:const EdgeInsets.all(3),decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:emerald,width:2)),
-                child:CircleAvatar(backgroundColor:const Color(0xFF174B3B),child:Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString().characters.first.toUpperCase(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)))),
+                child:CircleAvatar(backgroundColor:const Color(0xFF174B3B),child:Text((((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString().isEmpty?'C':((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString()[0].toUpperCase()),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)))),
               const SizedBox(height:6),Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'Member').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:10,color:muted)),
             ]))),
           ]));
