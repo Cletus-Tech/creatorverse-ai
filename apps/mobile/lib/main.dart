@@ -1032,10 +1032,14 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
         status == 'confirmed' ? 'Payment confirmed. Course enrolment is activated by the database workflow.' : 'Payment request rejected.')));
       await refresh();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update payment request: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update payment request: $e')));
+      }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() => busy = false);
+      }
     }
   }
 
