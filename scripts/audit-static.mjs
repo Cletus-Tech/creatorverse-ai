@@ -1,4 +1,4 @@
-import { readdir, access } from 'node:fs/promises';
+import { readdir, readFile, access } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -24,16 +24,16 @@ const failures = [];
 for (const file of jsFiles) {
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
   if (result.status !== 0) {
-    failures.push(`JavaScript syntax error: ${path.relative(root, file)}\n${result.stderr || result.stdout}`);
+    failures.push('JavaScript syntax error: ' + path.relative(root, file) + '\n' + (result.stderr || result.stdout));
   }
 }
 
 for (const file of htmlFiles) {
-  const source = await (await import('node:fs/promises')).readFile(file, 'utf8');
+  const source = await readFile(file, 'utf8');
   const refs = source.matchAll(/(?:src|href)\\s*=\\s*(['"])(.*?)\\1/gi);
   for (const match of refs) {
     const raw = match[2].trim();
-    if (!raw || /^(?:[a-z][a-z0-9+.-]*:|\\/|#)/i.test(raw)) continue;
+    if (!raw || /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('/') || raw.startsWith('#')) continue;
     const local = raw.split(/[?#]/, 1)[0];
     if (!/\\.(?:js|mjs|css|html|json|svg|png|jpe?g|webp|woff2?)$/i.test(local)) continue;
     let decoded;
@@ -41,11 +41,11 @@ for (const file of htmlFiles) {
     const target = path.resolve(path.dirname(file), decoded);
     if (!target.startsWith(root + path.sep)) continue;
     try { await access(target); }
-    catch { failures.push(`Missing local reference: ${path.relative(root, file)} -> ${raw}`); }
+    catch { failures.push('Missing local reference: ' + path.relative(root, file) + ' -> ' + raw); }
   }
 }
 
-console.log(`Checked ${jsFiles.length} JavaScript files and ${htmlFiles.length} HTML pages.`);
+console.log('Checked ' + jsFiles.length + ' JavaScript files and ' + htmlFiles.length + ' HTML pages.');
 if (failures.length) {
   console.error(failures.join('\n\n'));
   process.exitCode = 1;
