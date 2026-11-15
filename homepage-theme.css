@@ -148,3 +148,98 @@ body.cv-home-page{
  .cv-home-page .cv-home-lower{margin-top:52px}
 }
 @media(prefers-reduced-motion:reduce){.cv-home-page .cv-home *{animation:none!important;transition:none!important}}
+
+
+/* Homepage refinement: open editorial layout, without the framed-panel look.
+   Scoped to the public landing page; navigation, content and app workflows stay intact. */
+.cv-home-page .cv-home{
+  width:min(1320px,calc(100% - 64px));
+  padding-top:clamp(34px,5vw,66px);
+}
+.cv-home-page .cv-home-hero{
+  min-height:clamp(540px,62vw,680px);
+  padding:clamp(30px,4vw,58px) 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+  gap:clamp(24px,4vw,64px);
+}
+.cv-home-page .cv-home-visual{min-height:450px}
+.cv-home-page .cv-home-orbit{opacity:.58}
+.cv-home-page .cv-home-core{
+  width:220px;height:220px;border:0;border-radius:0;
+  background:transparent;box-shadow:none;
+}
+.cv-home-page .cv-home-core img{width:112px;height:112px}
+.cv-home-page .cv-home-core strong{font-size:21px}
+.cv-home-page .cv-home-core small{font-size:8px;letter-spacing:.19em}
+.cv-home-page .cv-home-float{
+  min-width:0;padding:10px 12px 10px 14px;
+  border:0;border-left:2px solid #159b70;border-radius:0;
+  background:transparent;box-shadow:none;backdrop-filter:none;
+}
+.cv-home-page .float-campus{border-left-color:#d87936}
+.cv-home-page .float-connect{border-left-color:#5798d8}
+.cv-home-page .float-market{border-left-color:#9a78c8}
+.cv-home-page .cv-home-section{padding:64px 0 8px}
+.cv-home-page .cv-section-heading{margin-bottom:18px}
+.cv-home-page .cv-space-grid{gap:0 34px}
+.cv-home-page .cv-space-card{
+  min-height:270px;padding:23px 4px 20px;
+  border:0;border-top:1px solid var(--home-line);
+  border-radius:0;background:transparent;box-shadow:none;
+  overflow:visible;transform:none;
+}
+.cv-home-page .cv-space-card:hover{
+  border-color:var(--home-line);box-shadow:none;transform:none;
+}
+.cv-home-page .cv-space-art{height:58px;margin:10px 0 12px}
+.cv-home-page .cv-space-art span{
+  width:auto;height:auto;padding:0;border:0;border-radius:0;
+  background:transparent;font-size:31px;letter-spacing:-.06em;
+}
+.cv-home-page .cv-space-art i{left:0;top:0;width:90px;height:54px;filter:blur(28px);opacity:.2}
+.cv-home-page .cv-space-card h3{font-size:22px}
+.cv-home-page .cv-space-card p{max-width:360px;line-height:1.75}
+.cv-home-page .cv-space-card>b{
+  padding-top:8px;border:0;justify-content:flex-start;gap:12px;
+}
+.cv-home-page .cv-home-lower{
+  margin-top:70px;padding:38px 0;
+  border:0;border-top:1px solid var(--home-line);
+  border-radius:0;background:transparent;box-shadow:none;
+  gap:clamp(28px,5vw,72px);
+}
+.cv-home-page .cv-home-quicklinks{gap:0 22px}
+.cv-home-page .cv-home-quicklinks a{
+  min-height:78px;padding:14px 2px;
+  border:0;border-bottom:1px solid var(--home-line);
+  border-radius:0;background:transparent;
+}
+.cv-home-page .cv-home-quicklinks a:hover{background:transparent}
+@media(max-width:900px){
+  .cv-home-page .cv-home-hero{min-height:0;padding:35px 0 18px}
+  .cv-home-page .cv-home-visual{min-height:370px}
+  .cv-home-page .cv-home-lower{padding:30px 0}
+}
+@media(max-width:580px){
+  .cv-home-page .cv-home{width:calc(100% - 36px);padding:22px 0 calc(76px + env(safe-area-inset-bottom))}
+  .cv-home-page .cv-home-hero{padding:25px 0 8px;gap:0}
+  .cv-home-page .cv-home-copy h1{font-size:clamp(39px,11vw,56px)}
+  .cv-home-page .cv-home-visual{min-height:285px;margin:4px -8px 0}
+  .cv-home-page .cv-home-core{width:150px;height:150px}
+  .cv-home-page .cv-home-core img{width:82px;height:82px}
+  .cv-home-page .cv-home-core strong{font-size:17px}
+  .cv-home-page .cv-home-float{padding:8px 8px 8px 10px}
+  .cv-home-page .cv-home-float b{font-size:12px}
+  .cv-home-page .cv-home-float small{font-size:9px}
+  .cv-home-page .cv-home-section{padding:48px 0 4px}
+  .cv-home-page .cv-space-grid{grid-template-columns:1fr;gap:0}
+  .cv-home-page .cv-space-card{min-height:0;padding:20px 2px 18px}
+  .cv-home-page .cv-space-card p{margin-bottom:10px}
+  .cv-home-page .cv-home-lower{margin-top:50px;padding:26px 0;gap:22px}
+  .cv-home-page .cv-home-quicklinks{grid-template-columns:1fr 1fr;gap:0 18px}
+  .cv-home-page .cv-home-quicklinks a{min-height:72px;padding:12px 1px}
+}
