@@ -1,7 +1,10 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart' as flutter_ui;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -2157,6 +2160,75 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
     });
 }
 
+Future<void> openAcademyWebPage(BuildContext context,String path,{bool requiresMedia=true}) async {
+  if(requiresMedia){
+    final statuses=await [Permission.camera,Permission.microphone].request();
+    if(!statuses.values.every((status)=>status.isGranted)){
+      if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Camera and microphone permissions are needed for this interview room.')));
+      return;
+    }
+  }
+  if(!context.mounted)return;
+  Navigator.push(context,MaterialPageRoute(builder:(_)=>AuthenticatedAcademyWebScreen(path:path)));
+}
+
+class AuthenticatedAcademyWebScreen extends StatefulWidget {
+  final String path;
+  const AuthenticatedAcademyWebScreen({super.key,required this.path});
+  @override State<AuthenticatedAcademyWebScreen> createState()=>_AuthenticatedAcademyWebScreenState();
+}
+class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebScreen>{
+  InAppWebViewController? controller;
+  bool injected=false,closing=false;
+  static const sessionKey='sb-xgdngnekihhnkzurhvpe-auth-token';
+  static const origin='https://creatorverse-ai.vercel.app';
+  String get targetUrl=>'$origin${widget.path}';
+  String get pageTitle=>widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
+  Future<void> injectSessionAndOpen() async {
+    if(injected||controller==null)return;
+    final session=Supabase.instance.client.auth.currentSession;
+    if(session==null){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Your CreatorVerse session has expired. Sign in again.')));
+      return;
+    }
+    final sessionJson=jsonEncode(session.toJson());
+    final script="localStorage.setItem('$sessionKey', ${jsonEncode(sessionJson)});";
+    await controller!.evaluateJavascript(source:script);
+    injected=true;
+    await controller!.loadUrl(urlRequest:URLRequest(url:WebUri(targetUrl)));
+  }
+  Future<void> closeRoom() async {
+    if(closing)return;closing=true;
+    try{await controller?.evaluateJavascript(source:"localStorage.removeItem('$sessionKey');");}catch(_){}
+    if(mounted)Navigator.of(context).pop();
+  }
+  @override Widget build(BuildContext context)=>PopScope(
+    canPop:false,
+    onPopInvokedWithResult:(didPop,result){if(!didPop)closeRoom();},
+    child:Scaffold(appBar:AppBar(title:Text(pageTitle),leading:IconButton(onPressed:closeRoom,icon:const Icon(Icons.arrow_back))),
+      body:InAppWebView(
+        initialUrlRequest:URLRequest(url:WebUri('$origin/mobile-session-bridge.html')),
+        initialSettings:InAppWebViewSettings(
+          javaScriptEnabled:true,domStorageEnabled:true,mediaPlaybackRequiresUserGesture:false,
+          allowsInlineMediaPlayback:true,supportZoom:false,thirdPartyCookiesEnabled:true,
+        ),
+        onWebViewCreated:(webController)=>controller=webController,
+        onLoadStop:(webController,url) async {
+          if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/mobile-session-bridge.html'){
+            try{await injectSessionAndOpen();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open secure interview room: $e')));}
+          }
+        },
+        onPermissionRequest:(webController,request) async {
+          final allowed=request.resources.where((resource)=>resource==PermissionResourceType.CAMERA||resource==PermissionResourceType.MICROPHONE).toList();
+          if(allowed.length!=request.resources.length){
+            return PermissionResponse(resources:allowed,action:PermissionResponseAction.DENY);
+          }
+          return PermissionResponse(resources:allowed,action:PermissionResponseAction.GRANT);
+        },
+      )),
+  );
+}
+
 class MyAcademyApplicationsScreen extends StatefulWidget {
   const MyAcademyApplicationsScreen({super.key});
   @override State<MyAcademyApplicationsScreen> createState()=>_MyAcademyApplicationsScreenState();
@@ -2312,8 +2384,11 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
               OutlinedButton(onPressed:busy?null:()=>respondToInvitation(inv,'reschedule_requested'),child:const Text('Request reschedule')),
               if(inv['status']=='scheduled')FilledButton(onPressed:busy?null:()=>respondToInvitation(inv,'confirmed'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Confirm attendance')),
             ]),
-            if((inv['meeting_join_url']??'').toString().startsWith('https://'))OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(inv['meeting_join_url'].toString()),mode:LaunchMode.externalApplication),icon:const Icon(Icons.video_call_outlined),label:const Text('Join interview room')),
-            if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse('https://creatorverse-ai.vercel.app/academy-interview.html?interview=${inv['interview_id']}'),mode:LaunchMode.externalApplication),icon:const Icon(Icons.mic_outlined),label:const Text('Open recorded response studio')),
+            if(inv['interview_type']=='live')FilledButton.icon(onPressed:busy?null:()=>openAcademyWebPage(context,'/academy-live-room.html?interview=${inv['interview_id']}'),
+              style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure in-app interview room')),
+            if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:busy?null:()=>openAcademyWebPage(context,'/academy-interview.html?interview=${inv['interview_id']}'),
+              icon:const Icon(Icons.mic_outlined),label:const Text('Open in-app response studio')),
+            if((inv['meeting_join_url']??'').toString().startsWith('https://')&&inv['interview_type']!='live')TextButton(onPressed:()=>launchUrl(Uri.parse(inv['meeting_join_url'].toString()),mode:LaunchMode.externalApplication),child:const Text('Open additional meeting link')),
           ]))),
         ],
         if(applications.isEmpty&&offers.isEmpty&&invitations.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:22),child:Text('No applications or invitations yet. Ordinary course learners can continue directly through Learn.',style:TextStyle(color:muted,height:1.5))),
@@ -2451,7 +2526,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
       final items=snap.data??[];
       if(items.isEmpty)return const Center(child:Text('No creator or instructor applications yet.',style:TextStyle(color:muted)));
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
-        OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse('https://creatorverse-ai.vercel.app/academy-interviewer.html'),mode:LaunchMode.externalApplication),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
+        OutlinedButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-interviewer.html',requiresMedia:false),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
         const SizedBox(height:8),
         for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('${app['application_no']} · ${app['application_type']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
