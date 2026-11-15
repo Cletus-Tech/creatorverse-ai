@@ -1570,7 +1570,7 @@ class _CommunityTabState extends State<CommunityTab> {
       }
       final now=DateTime.now().toUtc();
       await db.from('cv_stories').insert({'user_id':userId,'content':content,'media_url':mediaUrl,
-        'media_type':mediaUrl==null?null:'image','background':'#123D35','expires_at':now.add(const Duration(hours:24)).toIso8601String()});
+        'media_type':mediaUrl==null?'text':'image','background':'#123D35','expires_at':now.add(const Duration(hours:24)).toIso8601String()});
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not publish story: $e')));}
   }
