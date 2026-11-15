@@ -14,7 +14,8 @@ List<String> parseSkillsInput(String input) => input.split(',')
   .map((value) => value.trim()).where((value) => value.isNotEmpty).toList();
 
 String sanitizeSearchTerm(String input) => input
-  .replaceAll(RegExp(r'[^A-Za-z0-9À-ÿ _-]'), ' ').trim();
+  .replaceAll(RegExp(r'[^A-Za-z0-9À-ÿ _-]'), ' ')
+  .replaceAll(RegExp(r'\s+'), ' ').trim();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
