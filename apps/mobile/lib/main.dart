@@ -266,7 +266,7 @@ class HomeTab extends StatelessWidget {
           const Text('YOUR NEXT CHAPTER STARTS HERE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12), Text('Hello${n == null || n.isEmpty ? '' : ', $n'}.', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8), const Text('Learn new skills, explore opportunities and find your community.', style: TextStyle(color: Colors.white70, height: 1.5)),
-          const SizedBox(height: 16), FilledButton(onPressed: () => openLink('/divisions.html'), style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Explore CreatorVerse'))])),
+          const SizedBox(height: 16), FilledButton(onPressed: () => openFeature(context, '/divisions.html'), style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Explore CreatorVerse'))])),
       const SizedBox(height: 24), const Text('Explore your spaces', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12),
       const FeatureTile(icon: Icons.auto_awesome_outlined, title: 'Digital Skills', detail: 'Build practical and creative skills.', path: '/digital-skills.html'),
@@ -453,14 +453,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       }
       final content=(lesson['content']??'').toString().trim();
       final resources=lesson['resources'] as List<Map<String,dynamic>>? ?? [];
-      if(content.isNotEmpty || resources.isNotEmpty) {
+      if(content.isNotEmpty || resources.isNotEmpty || (uri != null && raw.isNotEmpty)) {
         if(!mounted)return;
         await showModalBottomSheet(context:context,isScrollControlled:true,backgroundColor:panel,
           builder:(_)=>SafeArea(child:FractionallySizedBox(heightFactor:.82,child:ListView(padding:const EdgeInsets.all(22),children:[
             Text((lesson['title']??'Lesson').toString(),style:const TextStyle(fontSize:21,fontWeight:FontWeight.w800)),
             const SizedBox(height:14),if(content.isNotEmpty)Text(content,style:const TextStyle(height:1.6,color:Colors.white70)),
-            if(raw.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:OutlinedButton.icon(
-              onPressed:()=>launchUrl(uri!,mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open lesson video'))),
+            if(uri!=null && raw.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:OutlinedButton.icon(
+              onPressed:()=>launchUrl(uri,mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open lesson video'))),
             if(resources.isNotEmpty)...[
               const SizedBox(height:18),const Text('Lesson resources',style:TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
               for(final resource in resources)ListTile(leading:const Icon(Icons.attach_file,color:emerald),
