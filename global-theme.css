@@ -146,3 +146,72 @@ body[data-cv-theme="light"] .bottom-nav a.active{color:#1768d4!important;backgro
 body[data-cv-theme="light"] .cv-global-theme-toggle{background:#f6f9ff;border-color:#d7e3f3;color:#28466d}
 @media(max-width:700px){.cv-global-theme-toggle{min-height:36px;width:38px;padding:0;gap:0}.cv-global-theme-toggle span{display:none}.cv-global-theme-toggle svg{width:18px;height:18px}.nav-right{gap:7px}}
 @media(prefers-reduced-motion:reduce){.cv-global-theme-toggle{transition:none}}
+
+
+/* Specificity guard: several legacy admin/module selectors use body[data-page] and !important.
+   These matching page-level selectors ensure the active global theme wins on those routes too. */
+body[data-cv-theme="dark"][data-page] .page .panel,
+body[data-cv-theme="dark"][data-page] .page .card,
+body[data-cv-theme="dark"][data-page] .page .skill-card,
+body[data-cv-theme="dark"][data-page] .page .panel-card,
+body[data-cv-theme="dark"][data-page] .adm-view .panel,
+body[data-cv-theme="dark"][data-page] .adm-view .table-wrap,
+body[data-cv-theme="dark"][data-page] .qcard,
+body[data-cv-theme="dark"][data-page] .academy-admin-head,
+body[data-cv-theme="dark"][data-page] .academy-admin-stat,
+body[data-cv-theme="dark"][data-page] .academy-app-card,
+body[data-cv-theme="dark"][data-page] .academy-admin-workspace .panel,
+body[data-cv-theme="dark"][data-page] .brand-admin-card,
+body[data-cv-theme="dark"][data-page] .market-admin-card,
+body[data-cv-theme="dark"][data-page] .adm-view .academy-panel,
+body[data-cv-theme="dark"][data-page] .cv-dash-shell .cv-dash-card,
+body[data-cv-theme="dark"][data-page] .cv-dash-shell .cv-stat-card,
+body[data-cv-theme="dark"][data-page] .cv-dash-shell .cv-course-card{
+ background:linear-gradient(145deg,#102544,#0a1a32)!important;color:#eaf2ff!important;border:1px solid #294568!important;box-shadow:0 12px 32px rgba(0,0,0,.24)!important;
+}
+body[data-cv-theme="dark"][data-page] .page .panel h2,
+body[data-cv-theme="dark"][data-page] .page .panel h3,
+body[data-cv-theme="dark"][data-page] .adm-view .panel h3,
+body[data-cv-theme="dark"][data-page] .academy-admin-head h2,
+body[data-cv-theme="dark"][data-page] .academy-admin-stat strong,
+body[data-cv-theme="dark"][data-page] .academy-app-card strong,
+body[data-cv-theme="dark"][data-page] .academy-admin-workspace h2,
+body[data-cv-theme="dark"][data-page] .academy-admin-workspace h3{color:#edf4ff!important}
+body[data-cv-theme="dark"][data-page] .page .panel p,
+body[data-cv-theme="dark"][data-page] .academy-admin-head p,
+body[data-cv-theme="dark"][data-page] .academy-admin-stat span,
+body[data-cv-theme="dark"][data-page] .academy-app-card small{color:#afc0d9!important}
+body[data-cv-theme="dark"][data-page] .cv-hub .hub-subcard,
+body[data-cv-theme="dark"][data-page] .cv-hub .hub-exam,
+body[data-cv-theme="dark"][data-page] .cv-campus .campus-card,
+body[data-cv-theme="dark"][data-page] .community-page .community-side-card,
+body[data-cv-theme="dark"][data-page] .community-page .pin-card,
+body[data-cv-theme="dark"][data-page] .cv-marketplace .market-listing,
+body[data-cv-theme="dark"][data-page] .cv-marketplace .market-card,
+body[data-cv-theme="dark"][data-page] .cv-messages-page .msg-workspace,
+body[data-cv-theme="dark"][data-page] .cv-messages-page .msg-inbox,
+body[data-cv-theme="dark"][data-page] .cv-messages-page .msg-chat{
+ background:linear-gradient(145deg,#102544,#0a1a32)!important;color:#eaf2ff!important;border:1px solid #294568!important;box-shadow:0 12px 32px rgba(0,0,0,.24)!important;
+}
+body[data-cv-theme="dark"][data-page] .page input,
+body[data-cv-theme="dark"][data-page] .page select,
+body[data-cv-theme="dark"][data-page] .page textarea,
+body[data-cv-theme="dark"][data-page] .adm-view input,
+body[data-cv-theme="dark"][data-page] .adm-view select,
+body[data-cv-theme="dark"][data-page] .adm-view textarea{
+ background:#0a1b33!important;color:#edf4ff!important;border-color:#35537a!important;
+}
+body[data-cv-theme="dark"][data-page] .page input::placeholder,
+body[data-cv-theme="dark"][data-page] .page textarea::placeholder,
+body[data-cv-theme="dark"][data-page] .adm-view input::placeholder,
+body[data-cv-theme="dark"][data-page] .adm-view textarea::placeholder{color:#8198b9!important}
+body[data-cv-theme="light"][data-page] .page .panel,
+body[data-cv-theme="light"][data-page] .page .card,
+body[data-cv-theme="light"][data-page] .page .skill-card,
+body[data-cv-theme="light"][data-page] .page .panel-card,
+body[data-cv-theme="light"][data-page] .adm-view .panel,
+body[data-cv-theme="light"][data-page] .qcard,
+body[data-cv-theme="light"][data-page] .academy-admin-stat,
+body[data-cv-theme="light"][data-page] .academy-app-card{
+ background:#fff!important;color:#1b3457!important;border:1px solid #dce6f3!important;box-shadow:0 8px 24px rgba(32,69,120,.06)!important;
+}
