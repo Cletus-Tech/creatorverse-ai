@@ -466,30 +466,5 @@ body.cv-home-page[data-cv-theme="light"] .cv-home-ground{background:linear-gradi
 body.cv-home-page[data-cv-theme="light"] .cv-ground-edge{background:linear-gradient(180deg,#247849,#0b3b23)!important}
 @media(max-width:700px){body.cv-home-page .cv-home-hero{padding:22px 0 12px!important}body.cv-home-page .cv-home-copy{padding:0!important}body.cv-home-page .cv-home-ground{left:-22%!important;right:-22%!important;height:52%!important;bottom:-5%!important}}
 
-/* Solid mini-screen panels: replace the floating pill look with compact desktop-style dashboard tiles. */
-body.cv-home-page .cv-home-float{
-  width:clamp(158px,14vw,184px);min-width:0;min-height:112px;padding:25px 14px 13px;
-  border:1px solid rgba(130,226,160,.46);border-radius:8px;
-  background:linear-gradient(155deg,rgba(20,65,40,.98),rgba(5,28,18,.99));
-  box-shadow:0 16px 32px rgba(0,0,0,.48),0 0 0 3px rgba(63,191,112,.08),inset 0 1px rgba(235,255,240,.12);
-  backdrop-filter:none;-webkit-backdrop-filter:none;animation:cv-float-card 6s ease-in-out infinite;
-}
-body.cv-home-page .cv-home-float:before{
-  content:"";position:absolute;top:9px;left:11px;width:34px;height:5px;border-radius:2px;
-  background:linear-gradient(90deg,#55e394 0 22%,#b5e9c4 22% 28%,transparent 28% 38%,#b5e9c4 38% 44%,transparent 44% 54%,#b5e9c4 54% 60%,transparent 60%);
-  opacity:.9;
-}
-body.cv-home-page .cv-home-float:after{
-  content:"";position:absolute;left:13px;right:13px;bottom:10px;height:17px;border-top:1px solid rgba(147,221,166,.2);
-  background:linear-gradient(90deg,rgba(82,211,132,.35) 0 28%,transparent 28% 34%,rgba(157,215,171,.2) 34% 61%,transparent 61% 67%,rgba(82,211,132,.22) 67% 100%);
-  opacity:.85;
-}
-body.cv-home-page .cv-home-float span{font-size:7px;letter-spacing:.15em}
-body.cv-home-page .cv-home-float b{font-size:14px;margin:6px 0 3px}
-body.cv-home-page .cv-home-float small{font-size:9px;line-height:1.35}
-@media(max-width:700px){
- body.cv-home-page .cv-home-float{width:clamp(122px,36vw,148px);min-width:0;min-height:94px;padding:22px 10px 11px;border-radius:7px}
- body.cv-home-page .cv-home-float b{font-size:12px}
- body.cv-home-page .cv-home-float small{font-size:8px}
- body.cv-home-page .cv-home-float:after{height:13px;bottom:8px}
-}
+/* Homepage feature panels: adjust only the corner shape; preserve their existing styling and content. */
+body.cv-home-page .cv-home-float{border-radius:5px!important}
