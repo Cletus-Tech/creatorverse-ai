@@ -749,7 +749,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   Future<Map<String, dynamic>> loadCatalogue() async {
     final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
     final rows = await db.from('marketplace_listings')
-      .select('id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
+      .select('id,seller_id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
       .eq('status', 'published').order('created_at', ascending: false).limit(80);
     return {'categories': List<Map<String, dynamic>>.from(cats), 'listings': List<Map<String, dynamic>>.from(rows)};
   }
@@ -780,11 +780,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         return matchesCategory && (term.isEmpty || haystack.contains(term));
       }).toList();
       return flutter_ui.Column(children: [
-        Padding(padding: const EdgeInsets.all(16), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 10), child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Campus Marketplace', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 5), const Text('Approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
+          const SizedBox(height: 5), const Text('Discover approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
           const SizedBox(height: 12), TextField(controller: search, onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search listings or campus')),
+          const SizedBox(height: 10),
+          SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+            OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen())).then((_) => retry()),
+              icon: const Icon(Icons.storefront_outlined), label: const Text('Sell')),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSavedScreen())),
+              icon: const Icon(Icons.bookmark_border), label: const Text('Saved')),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen())),
+              icon: const Icon(Icons.chat_bubble_outline), label: const Text('Enquiries')),
+          ])),
         ])),
         if (categories.isNotEmpty) SizedBox(height: 48, child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(label: const Text('All'), selected: categoryId.isEmpty, onSelected: (_) => setState(() => categoryId = ''))),
