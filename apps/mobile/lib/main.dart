@@ -1514,6 +1514,9 @@ class _CommunityTabState extends State<CommunityTab> {
     final commentsRaw = await db.from('community_comments').select('post_id').inFilter('post_id', ids);
     final comments = List<Map<String, dynamic>>.from(commentsRaw);
     final me = db.auth.currentUser?.id;
+    final savesRaw = me == null ? <Map<String,dynamic>>[] : List<Map<String,dynamic>>.from(
+      await db.from('community_saves').select('post_id').eq('user_id',me).inFilter('post_id',ids));
+    final savedIds=savesRaw.map((r)=>r['post_id'].toString()).toSet();
     for (final post in posts) {
       final id = post['id'].toString();
       post['author'] = profiles[post['user_id'].toString()] ?? {};
@@ -1521,6 +1524,7 @@ class _CommunityTabState extends State<CommunityTab> {
       post['like_count'] = postLikes.length;
       post['liked'] = postLikes.any((l) => l['user_id'] == me);
       post['comment_count'] = comments.where((c) => c['post_id'].toString() == id).length;
+      post['saved'] = savedIds.contains(id);
     }
     return posts;
   }
@@ -1635,6 +1639,15 @@ class _CommunityTabState extends State<CommunityTab> {
       else { await db.from('community_likes').insert({'post_id': id, 'user_id': me}); }
     } catch (_) { if (mounted) await refresh(); }
   }
+  Future<void> toggleSave(Map<String,dynamic> post) async {
+    final me=db.auth.currentUser!.id,id=post['id'].toString();
+    final saved=post['saved']==true;
+    setState(()=>post['saved']=!saved);
+    try{
+      if(saved){await db.from('community_saves').delete().eq('user_id',me).eq('post_id',id);}
+      else{await db.from('community_saves').insert({'user_id':me,'post_id':id});}
+    }catch(_){if(mounted)await refresh();}
+  }
   Future<void> showComments(Map<String, dynamic> post) async {
     await showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel,
       builder: (_) => CommentsSheet(post: post));
@@ -1678,13 +1691,13 @@ class _CommunityTabState extends State<CommunityTab> {
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
           Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post)),
+        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post)),
       ]));
     });
 }
 class CommunityPostCard extends StatelessWidget {
-  final Map<String, dynamic> post; final VoidCallback onLike, onComments;
-  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments});
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave});
   @override
   Widget build(BuildContext context) {
     final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
@@ -1716,6 +1729,8 @@ class CommunityPostCard extends StatelessWidget {
             color: post['liked'] == true ? Colors.pinkAccent : muted, size: 18), label: const Text('Like', style: TextStyle(color: muted)))),
           Expanded(child: TextButton.icon(onPressed: onComments, icon: const Icon(Icons.mode_comment_outlined, color: muted, size: 18),
             label: const Text('Comment', style: TextStyle(color: muted)))),
+          Expanded(child: TextButton.icon(onPressed: onSave, icon: Icon(post['saved']==true?Icons.bookmark:Icons.bookmark_border,color:post['saved']==true?gold:muted,size:18),
+            label:Text(post['saved']==true?'Saved':'Save',style:const TextStyle(color:muted)))),
         ]),
       ]));
   }
