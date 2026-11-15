@@ -2526,7 +2526,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
       final items=snap.data??[];
       if(items.isEmpty)return const Center(child:Text('No creator or instructor applications yet.',style:TextStyle(color:muted)));
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
-        OutlinedButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-interviewer.html',requiresMedia:false),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
+        OutlinedButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-interviewer.html'),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
         const SizedBox(height:8),
         for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('${app['application_no']} · ${app['application_type']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
