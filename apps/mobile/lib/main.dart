@@ -1253,7 +1253,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     try {
       final inserted = await db.from('marketplace_listings').insert({
         'seller_id': seller['id'], 'category_id': category, 'title': titleText, 'description': descText,
-        'listing_type': type, 'price_ngn': priceText.isEmpty ? null : int.parse(priceText),
+        'listing_type': type, 'price_ngn': type == 'free' ? 0 : (priceText.isEmpty ? null : int.parse(priceText)),
         'institution': institutionText.isEmpty ? null : institutionText,
         'campus': campusText.isEmpty ? null : campusText,
         'location_label': locationText.isEmpty ? null : locationText,
