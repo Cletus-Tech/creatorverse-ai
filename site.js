@@ -6,7 +6,7 @@ if(CC.supabaseUrl&&CC.supabaseAnonKey){try{var rr=await fetch(CC.supabaseUrl+'/r
 // Centralised, admin-managed CreatorVerse brand configuration.
 var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{}}catch(e){brand={}}
 (function(){
- var primary=brand.logo_url||'assets/creatorverse-mark.svg?v=20261111-globe2',dark=brand.logo_dark_url||primary,light=brand.logo_light_url||primary;
+ var canonicalLogo='assets/creatorverse-brand.svg?v=20261115-connected-world-3d';function normalizeLogo(value){value=String(value||'').trim();return !value||/(^|\\/)creatorverse-mark\\.svg(?:[?#]|$)/i.test(value)?canonicalLogo:value}var primary=normalizeLogo(brand.logo_url),dark=normalizeLogo(brand.logo_dark_url||primary),light=normalizeLogo(brand.logo_light_url||primary);
  document.querySelectorAll('.nav-left .logo-mark img,.footer-brand-lockup img,.adm-logo img,.cv-clean-mark,.cv-gate-brand img,#authLoader .cv-auth-brand img,.brand-row .logo-mark img').forEach(function(im){
   var lightSurface=im.closest('.footer')||im.closest('.footer-brand-lockup');im.src=lightSurface?light:dark;im.onerror=function(){im.onerror=null;im.src=primary};
   if(brand.logo_size&&im.matches('.cv-clean-mark,.cv-gate-brand img,.cv-gate-sign img')){im.style.width=Math.max(28,Math.min(96,Number(brand.logo_size)))+'px';im.style.height=im.style.width}
@@ -20,7 +20,7 @@ var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{
  document.querySelectorAll('.cv-clean-status,.cv-gate-caption,.cv-auth-caption').forEach(function(n){if(n.classList.contains('cv-auth-caption'))n.textContent='Verifying your secure session…';else n.textContent=caption});
  document.querySelectorAll('.brand-name').forEach(function(n){n.textContent=brand.wordmark||'CreatorVerse'});
  document.querySelectorAll('.brand-sub,.cv-gate-sign small').forEach(function(n){n.textContent=brand.tagline||'LEARN · CREATE · EARN · GROW'});
- var favicon=brand.favicon_url||primary;document.querySelectorAll('link[rel~="icon"]').forEach(function(n){n.href=favicon});
+ var favicon=normalizeLogo(brand.favicon_url||primary);document.querySelectorAll('link[rel~="icon"]').forEach(function(n){n.href=favicon});
  var style=document.createElement('style');style.textContent='.cv-universal-gate .cv-gate-brand img,.cv-page-loader .cv-clean-mark{animation:'+(brand.gate_animation==='none'?'none':brand.gate_animation==='pulse'?'cvBrandPulse 2.2s ease-in-out infinite':'cvBrandFloat 2.8s ease-in-out infinite')+'!important} @keyframes cvBrandPulse{0%,100%{filter:drop-shadow(0 0 5px #3989ff44)}50%{filter:drop-shadow(0 0 20px #3989ffaa)}}';document.head.appendChild(style);
 })();
 if(sc.founder_photo)cfg.founderPhoto=sc.founder_photo;if(sc.intro_video)cfg.introVideo=sc.intro_video;
