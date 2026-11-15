@@ -836,6 +836,130 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ]))),
     ]));
 }
+class AdminWorkspaceScreen extends StatefulWidget {
+  const AdminWorkspaceScreen({super.key});
+  @override
+  State<AdminWorkspaceScreen> createState() => _AdminWorkspaceScreenState();
+}
+
+class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
+  final db = Supabase.instance.client;
+  late Future<Map<String, dynamic>> overview;
+
+  @override
+  void initState() {
+    super.initState();
+    overview = loadOverview();
+  }
+
+  Future<Map<String, dynamic>> loadOverview() async {
+    final user = db.auth.currentUser;
+    if (user == null) {
+      throw StateError('Sign in to access the admin workspace.');
+    }
+    final ownProfile = await db.from('profiles').select('role')
+      .eq('id', user.id).single();
+    final role = (ownProfile['role'] ?? '').toString();
+    if (role != 'admin' && role != 'super_admin') {
+      throw StateError('This account does not have administrator access.');
+    }
+    final users = await db.from('profiles').select('id').count(CountOption.exact);
+    final courses = await db.from('courses').select('id')
+      .eq('published', true).count(CountOption.exact);
+    final pendingPayments = await db.from('payment_orders').select('id')
+      .eq('status', 'pending').count(CountOption.exact);
+    final applications = await db.from('academy_applications').select('id')
+      .count(CountOption.exact);
+    final orders = await db.from('payment_orders')
+      .select('id,user_id,amount_ngn,status,reference,created_at,transfer_reference,courses(title)')
+      .order('created_at', ascending: false).limit(8);
+    final admissions = await db.from('academy_applications')
+      .select('id,application_no,first_name,last_name,application_type,status,submitted_at')
+      .order('submitted_at', ascending: false).limit(8);
+    return {
+      'users': users.count,
+      'courses': courses.count,
+      'pending_payments': pendingPayments.count,
+      'applications': applications.count,
+      'orders': List<Map<String, dynamic>>.from(orders),
+      'admissions': List<Map<String, dynamic>>.from(admissions),
+      'role': role,
+    };
+  }
+
+  Future<void> refresh() async {
+    final next = loadOverview();
+    setState(() => overview = next);
+    await next;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+    future: overview,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
+          mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.admin_panel_settings_outlined, color: gold, size: 42),
+            const SizedBox(height: 12),
+            const Text('Admin workspace unavailable', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(onPressed: refresh, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+          ])));
+      }
+      final data = snapshot.data ?? {};
+      final orders = data['orders'] as List<Map<String, dynamic>>? ?? [];
+      final admissions = data['admissions'] as List<Map<String, dynamic>>? ?? [];
+      Widget metric(String label, dynamic value, IconData icon) => Expanded(child: Card(
+        color: panel, child: Padding(padding: const EdgeInsets.all(14), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, color: emerald), const SizedBox(height: 10),
+            Text('$value', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(label, style: const TextStyle(color: muted, fontSize: 11)),
+          ]))));
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(
+        padding: const EdgeInsets.all(18), children: [
+          Row(children: [
+            const Expanded(child: Text('Operations overview', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
+            Chip(label: Text((data['role'] ?? 'admin').toString().toUpperCase())),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            metric('Members', data['users'], Icons.people_outline),
+            const SizedBox(width: 8), metric('Published courses', data['courses'], Icons.menu_book_outlined),
+          ]),
+          Row(children: [
+            metric('Pending payments', data['pending_payments'], Icons.payments_outlined),
+            const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
+          ]),
+          const SizedBox(height: 22),
+          const Text('Recent payment orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No payment orders found.', style: TextStyle(color: muted))),
+          for (final order in orders) Card(color: panel, child: ListTile(
+            title: Text((order['courses'] is Map ? order['courses']['title'] : null) ?? 'Course payment'),
+            subtitle: Text('${order['reference']} · ${order['status']}',
+              style: const TextStyle(color: muted, fontSize: 12)),
+            trailing: Text('₦${order['amount_ngn']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w700)),
+          )),
+          const SizedBox(height: 22),
+          const Text('Recent applications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          if (admissions.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No applications found.', style: TextStyle(color: muted))),
+          for (final application in admissions) Card(color: panel, child: ListTile(
+            title: Text('${application['first_name'] ?? ''} ${application['last_name'] ?? ''}'.trim()),
+            subtitle: Text('${application['application_no'] ?? ''} · ${application['application_type'] ?? ''}',
+              style: const TextStyle(color: muted, fontSize: 12)),
+            trailing: Text((application['status'] ?? 'unknown').toString(),
+              style: const TextStyle(color: gold, fontSize: 11)),
+          )),
+        ]));
+    });
+}
+
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
   @override
@@ -1221,8 +1345,7 @@ void openFeature(BuildContext context, String path) {
     case '/settings':
       destination = const AccountSettingsScreen(); title = 'Account settings'; break;
     case '/admin.html':
-      destination = const NativeSpaceScreen(title: 'Admin workspace', description: 'Your account has administrator access. Native admin tools are being added in a protected module.', icon: Icons.admin_panel_settings_outlined);
-      title = 'Admin workspace'; break;
+      destination = const AdminWorkspaceScreen(); title = 'Admin workspace'; break;
     default:
       destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
         description: 'This section is part of CreatorVerse. Its native app experience is being built next; your website account and data remain shared.',
