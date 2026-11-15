@@ -1664,7 +1664,7 @@ class _CommunityTabState extends State<CommunityTab> {
     if(!mounted){details.dispose();return;}
     final note=details.text.trim();details.dispose();if(ok!=true)return;
     try{
-      await db.from('community_reports').insert({'reporter_id':db.auth.currentUser!.id,'post_id':post['id'],'reason':reason,'details':note.isEmpty?null:note,'status':'pending'});
+      await db.from('community_reports').insert({'reporter_id':db.auth.currentUser!.id,'post_id':post['id'],'reason':reason,'details':note.isEmpty?null:note,'status':'open'});
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Report submitted to the moderation team.')));
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit report: $e')));}
   }
