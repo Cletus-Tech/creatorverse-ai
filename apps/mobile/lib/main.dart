@@ -845,7 +845,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<List<Map<String, dynamic>>> loadNotifications() async {
     final userId = db.auth.currentUser?.id;
-    if (userId == null) return [];
+    if (userId == null) {
+      return [];
+    }
     final rows = await db.from('cv_notifications')
       .select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id')
       .eq('user_id', userId).order('created_at', ascending: false).limit(60);
@@ -859,27 +861,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> markRead(Map<String, dynamic> item) async {
-    if (item['read_at'] != null) return;
+    if (item['read_at'] != null) {
+      return;
+    }
     try {
       await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
         .eq('id', item['id']).eq('user_id', db.auth.currentUser!.id);
-      if (mounted) await refresh();
+      if (mounted) {
+        await refresh();
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update notification: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update notification: $e')));
+      }
     }
   }
 
   Future<void> markAllRead(List<Map<String, dynamic>> items) async {
     final unread = items.where((item) => item['read_at'] == null).toList();
-    if (unread.isEmpty) return;
+    if (unread.isEmpty) {
+      return;
+    }
     try {
       await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
         .eq('user_id', db.auth.currentUser!.id).isFilter('read_at', null);
       if (mounted) await refresh();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not mark notifications as read: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not mark notifications as read: $e')));
+      }
     }
   }
 
