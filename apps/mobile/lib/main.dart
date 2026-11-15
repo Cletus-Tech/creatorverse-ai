@@ -1599,8 +1599,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     var path = uri.path;
     if (!path.startsWith('/')) path = '/$path';
     if (path == '/messages.html' || path == '/messages') {
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(
-        appBar: AppBar(title: Text('Messages')), body: MessageInboxScreen())));
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     } else {
       openFeature(context, path);
     }
@@ -1837,6 +1836,10 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 }
 
 void openFeature(BuildContext context, String path) {
+  if (path == '/messages.html' || path == '/messages') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+    return;
+  }
   Widget? destination;
   String title = 'CreatorVerse';
   switch (path) {
@@ -1854,12 +1857,6 @@ void openFeature(BuildContext context, String path) {
       destination = const NativeSpaceScreen(title: 'Verified Housing & Roommates', description: 'CreatorVerse is preparing verified accommodation and roommate matching. No verified housing or roommate listings are live yet.', icon: Icons.home_work_outlined); title = 'Housing & Roommates'; break;
     case '/delivery':
       destination = const NativeSpaceScreen(title: 'Campus Errands & Delivery', description: 'Campus delivery and errand services are planned for a later CreatorVerse release.', icon: Icons.delivery_dining_outlined); title = 'Campus Delivery'; break;
-    case '/messages.html':
-    case '/messages':
-      destination = const MessageInboxScreen(); title = 'Messages'; break;
-    case '/notifications.html':
-    case '/notifications':
-      destination = const NotificationsScreen(); title = 'Notifications'; break;
     case '/profile.html':
       destination = const ProfileTab(); title = 'My profile'; break;
     case '/members':
