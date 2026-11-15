@@ -2346,6 +2346,7 @@ class _MyCertificatesScreenState extends State<MyCertificatesScreen>{
           leading:Icon(item['revoked']==true?Icons.cancel_outlined:Icons.workspace_premium_outlined,color:item['revoked']==true?Colors.red:gold,size:30),
           title:Text((item['course_title']??'Course certificate').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           subtitle:Text('${item['certificate_no']}\nIssued: ${item['issued_at']}\n${item['revoked']==true?'Revoked':'Verified record'}',style:const TextStyle(color:muted,height:1.5)),
+          onTap:item['revoked']==true?null:()=>launchUrl(Uri.parse('https://creatorverse-ai.vercel.app/certificate.html?n=${Uri.encodeComponent(item['certificate_no'].toString())}'),mode:LaunchMode.externalApplication),
         )),
       ]));
     }));
