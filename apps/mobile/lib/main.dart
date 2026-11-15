@@ -1585,6 +1585,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> openNotification(Map<String, dynamic> item) async {
+    await markRead(item);
+    if (!mounted) return;
+    final href = (item['href'] ?? '').toString().trim();
+    if (href.isEmpty) return;
+    final uri = Uri.tryParse(href);
+    if (uri == null) return;
+    if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+    var path = uri.path;
+    if (!path.startsWith('/')) path = '/$path';
+    if (path == '/messages.html' || path == '/messages') {
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(
+        appBar: AppBar(title: Text('Messages')), body: MessageInboxScreen())));
+    } else {
+      openFeature(context, path);
+    }
+  }
+
   Future<void> markAllRead(List<Map<String, dynamic>> items) async {
     final unread = items.where((item) => item['read_at'] == null).toList();
     if (unread.isEmpty) {
@@ -1635,7 +1656,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               subtitle: Text(body, maxLines: 3, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: muted)),
               trailing: read ? null : const Icon(Icons.circle, color: emerald, size: 9),
-              onTap: () => markRead(item),
+              onTap: () => openNotification(item),
             );
           })),
       ]));
@@ -1833,6 +1854,12 @@ void openFeature(BuildContext context, String path) {
       destination = const NativeSpaceScreen(title: 'Verified Housing & Roommates', description: 'CreatorVerse is preparing verified accommodation and roommate matching. No verified housing or roommate listings are live yet.', icon: Icons.home_work_outlined); title = 'Housing & Roommates'; break;
     case '/delivery':
       destination = const NativeSpaceScreen(title: 'Campus Errands & Delivery', description: 'Campus delivery and errand services are planned for a later CreatorVerse release.', icon: Icons.delivery_dining_outlined); title = 'Campus Delivery'; break;
+    case '/messages.html':
+    case '/messages':
+      destination = const MessageInboxScreen(); title = 'Messages'; break;
+    case '/notifications.html':
+    case '/notifications':
+      destination = const NotificationsScreen(); title = 'Notifications'; break;
     case '/profile.html':
       destination = const ProfileTab(); title = 'My profile'; break;
     case '/members':
