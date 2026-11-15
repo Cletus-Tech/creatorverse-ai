@@ -123,3 +123,36 @@ body[data-cv-theme="light"] #cv-helper-greeting,
 body[data-cv-theme="light"] #cv-helper-panel{color:#edf5ec!important}
 body[data-cv-theme="light"] #cv-helper-log .cv-helper-msg.assistant{color:#edf5ec!important}
 body[data-cv-theme="light"] #cv-helper-input{color:#fff!important}
+
+/* High-specificity safety net for legacy page styles that declare old colours
+   with !important. These rules intentionally win over page-level typography. */
+html[data-cv-theme="dark"] body[data-cv-theme="dark"] :is(h1,h2,h3,h4,h5,h6){
+  color:#f4f8f2!important;-webkit-text-fill-color:currentColor!important;
+}
+html[data-cv-theme="light"] body[data-cv-theme="light"] :is(h1,h2,h3,h4,h5,h6){
+  color:#153a27!important;-webkit-text-fill-color:currentColor!important;
+}
+html[data-cv-theme="dark"] body[data-cv-theme="dark"] :is(p,li,label,figcaption,blockquote,.muted,.cv-muted,.description,.subtitle,.helper-text,.form-hint,.field-hint,.empty-state,.meta,.metadata,.breadcrumb,.course-meta,.stat-label){
+  color:#b9cbbd!important;
+}
+html[data-cv-theme="light"] body[data-cv-theme="light"] :is(p,li,label,figcaption,blockquote,.muted,.cv-muted,.description,.subtitle,.helper-text,.form-hint,.field-hint,.empty-state,.meta,.metadata,.breadcrumb,.course-meta,.stat-label){
+  color:#496653!important;
+}
+html[data-cv-theme="dark"] body[data-cv-theme="dark"] :is(small,.text-muted,.text-secondary,.hint,.caption,.timestamp,.nav-description){
+  color:#9eb4a4!important;
+}
+html[data-cv-theme="light"] body[data-cv-theme="light"] :is(small,.text-muted,.text-secondary,.hint,.caption,.timestamp,.nav-description){
+  color:#617b68!important;
+}
+html[data-cv-theme="dark"] body[data-cv-theme="dark"] .hub-page-head h1 em,
+html[data-cv-theme="dark"] body[data-cv-theme="dark"] .hub-welcome h1 em{
+  background:linear-gradient(95deg,#e7ca83,#f4e5b8 55%,#b7d9bd)!important;
+  background-clip:text!important;-webkit-background-clip:text!important;
+  color:transparent!important;-webkit-text-fill-color:transparent!important;
+}
+html[data-cv-theme="light"] body[data-cv-theme="light"] .hub-page-head h1 em,
+html[data-cv-theme="light"] body[data-cv-theme="light"] .hub-welcome h1 em{
+  background:linear-gradient(95deg,#176b43,#987333)!important;
+  background-clip:text!important;-webkit-background-clip:text!important;
+  color:transparent!important;-webkit-text-fill-color:transparent!important;
+}
