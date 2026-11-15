@@ -68,7 +68,7 @@ jobs:
           ]
           for permission in permissions:
               if permission not in s:
-                  s = s.replace('<application', permission + '\\n    <application', 1)
+                  s = s.replace('<application', permission + '\n    <application', 1)
           p.write_text(s)
           result = p.read_text()
           for permission in permissions:
