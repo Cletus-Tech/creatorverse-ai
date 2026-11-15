@@ -556,10 +556,14 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Payment request created. Follow the instructions below.')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start payment: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start payment: $e')));
+      }
     } finally {
-      if (mounted) setState(() => creating = false);
+      if (mounted) {
+        setState(() => creating = false);
+      }
     }
   }
 
@@ -581,10 +585,14 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Transfer reference submitted for administrator verification.')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not submit reference: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not submit reference: $e')));
+      }
     } finally {
-      if (mounted) setState(() => submitting = false);
+      if (mounted) {
+        setState(() => submitting = false);
+      }
     }
   }
 
