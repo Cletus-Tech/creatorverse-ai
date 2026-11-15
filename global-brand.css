@@ -247,3 +247,82 @@ body[data-cv-theme="light"] .btn-primary,body[data-cv-theme="light"] .cv-home-pr
 body img,body video,body iframe{filter:none}
 :focus-visible{outline:2px solid var(--cv-brand-gold-bright)!important;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}}
+
+
+/* AI workspace: align its former blue/violet product skin with the global green/gold identity. */
+body.cv-ai-page .cv-ai-side,body.cv-ai-page .cv-ai-main{
+ background:linear-gradient(155deg,#10291d,#091b12)!important;
+ border-color:rgba(214,179,106,.24)!important;
+ color:#edf5ec!important;
+}
+body.cv-ai-page .cv-ai-brand strong,body.cv-ai-page .cv-ai-top h1,
+body.cv-ai-page .cv-ai-welcome h2,body.cv-ai-page .cv-ai-side-foot b,
+body.cv-ai-page .cv-ai-mode b{color:#edf5ec!important}
+body.cv-ai-page .cv-ai-brand small,body.cv-ai-page .cv-ai-side-foot p,
+body.cv-ai-page .cv-ai-mode small,body.cv-ai-page .cv-ai-top p,
+body.cv-ai-page .cv-ai-welcome>p,body.cv-ai-page .cv-ai-disclaimer{
+ color:#b5c9b8!important;
+}
+body.cv-ai-page .cv-ai-orb,body.cv-ai-page .cv-ai-title-mark,
+body.cv-ai-page .cv-ai-mode.active .cv-ai-mode-icon,
+body.cv-ai-page .cv-ai-suggestion-icon,
+body.cv-ai-page .cv-ai-suggestions button:nth-child(2) .cv-ai-suggestion-icon,
+body.cv-ai-page .cv-ai-suggestions button:nth-child(3) .cv-ai-suggestion-icon{
+ background:linear-gradient(145deg,#bd9349,#e7ca83)!important;color:#173522!important;
+ box-shadow:0 7px 22px rgba(0,0,0,.22)!important;
+}
+body.cv-ai-page .cv-ai-new,body.cv-ai-page .cv-ai-composer>div>button{
+ background:linear-gradient(120deg,#bd9349,#e7ca83)!important;color:#172b1d!important;
+ border:1px solid rgba(255,235,184,.42)!important;
+}
+body.cv-ai-page .cv-ai-mode.active{
+ background:linear-gradient(110deg,#17432f,#10291d)!important;
+ border-color:rgba(214,179,106,.48)!important;
+}
+body.cv-ai-page .cv-ai-mode:hover{background:rgba(214,179,106,.08)!important}
+body.cv-ai-page .cv-ai-mode-icon{
+ background:#153a29!important;color:#e7ca83!important;
+}
+body.cv-ai-page .cv-ai-side-label,body.cv-ai-page .cv-ai-breadcrumb b,
+body.cv-ai-page .cv-ai-welcome-kicker{color:#e7ca83!important}
+body.cv-ai-page .cv-ai-breadcrumb{color:#b5c9b8!important}
+body.cv-ai-page .cv-ai-status{
+ background:#10291d!important;border-color:rgba(214,179,106,.3)!important;color:#e7ca83!important;
+}
+body.cv-ai-page .cv-ai-status i{background:#d6b36a!important;box-shadow:0 0 0 3px rgba(214,179,106,.16)!important}
+body.cv-ai-page .cv-ai-welcome-kicker span{background:#d6b36a!important;box-shadow:0 0 0 4px rgba(214,179,106,.16)!important}
+body.cv-ai-page .cv-ai-welcome h2 em{
+ background:linear-gradient(90deg,#d6b36a,#f0d99c)!important;
+ background-clip:text!important;-webkit-background-clip:text!important;color:transparent!important;
+}
+body.cv-ai-page .cv-ai-suggestions button{
+ background:linear-gradient(145deg,#153a29,#0c2418)!important;
+ border-color:rgba(214,179,106,.25)!important;color:#edf5ec!important;
+}
+body.cv-ai-page .cv-ai-suggestions button:hover{border-color:rgba(231,202,131,.65)!important}
+body.cv-ai-page .cv-ai-suggestions b{color:#edf5ec!important}
+body.cv-ai-page .cv-ai-suggestions small{color:#b5c9b8!important}
+body.cv-ai-page .cv-ai-suggestion-arrow{color:#e7ca83!important}
+body.cv-ai-page .cv-ai-thread{background:transparent!important}
+body.cv-ai-page .cv-ai-bubble,body.cv-ai-page .cv-ai-message.assistant .cv-ai-bubble{
+ background:#153a29!important;color:#edf5ec!important;border-color:rgba(214,179,106,.2)!important;
+}
+body.cv-ai-page .cv-ai-message.user .cv-ai-bubble{
+ background:linear-gradient(120deg,#bd9349,#d6b36a)!important;color:#172b1d!important;
+}
+body.cv-ai-page .cv-ai-meta,body.cv-ai-page .cv-ai-sources{color:#b5c9b8!important}
+body.cv-ai-page .cv-ai-composer{
+ background:linear-gradient(145deg,#0d2419,#10291d)!important;
+ border-color:rgba(214,179,106,.35)!important;
+}
+body.cv-ai-page .cv-ai-composer:focus-within{
+ border-color:#d6b36a!important;box-shadow:0 0 0 3px rgba(214,179,106,.13)!important;
+}
+body.cv-ai-page .cv-ai-composer textarea{color:#edf5ec!important}
+body.cv-ai-page .cv-ai-composer textarea::placeholder{color:#9eb6a4!important}
+body.cv-ai-page .cv-ai-composer-bottom,body.cv-ai-page .cv-ai-composer-bottom kbd{
+ color:#b5c9b8!important;border-color:rgba(214,179,106,.25)!important;
+}
+body.cv-ai-page .cv-ai-composer-bottom kbd{background:#153a29!important}
+body.cv-ai-page .cv-ai-side-foot{border-color:rgba(214,179,106,.2)!important}
+body.cv-ai-page .cv-ai-shield{background:#d6b36a!important;color:#173522!important}
