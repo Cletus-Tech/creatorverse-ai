@@ -2186,7 +2186,7 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
     setState(()=>busy=true);
     try{
       await db.from('courses').insert({'title':t,'slug':slug,'description':d,'category_slug':cat.isEmpty?null:cat,
-        'level':level,'price_ngn':int.parse(p),'duration_months':int.parse(months),'duration_text':'${months} months',
+        'level':level,'price_ngn':int.parse(p),'duration_months':int.parse(months),'duration_text':'$months months',
         'published':false,'featured':false});
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not create course: $e')));}
