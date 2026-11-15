@@ -6,7 +6,7 @@ if(CC.supabaseUrl&&CC.supabaseAnonKey){try{var rr=await fetch(CC.supabaseUrl+'/r
 // Centralised, admin-managed CreatorVerse brand configuration.
 var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{}}catch(e){brand={}}
 (function(){
- var canonicalLogo='assets/creatorverse-brand.svg?v=20261115-connected-world-3d';function normalizeLogo(value){value=String(value||'').trim();return !value||/(^|\\/)creatorverse-mark\\.svg(?:[?#]|$)/i.test(value)?canonicalLogo:value}var primary=normalizeLogo(brand.logo_url),dark=normalizeLogo(brand.logo_dark_url||primary),light=normalizeLogo(brand.logo_light_url||primary);
+ var canonicalLogo='assets/creatorverse-brand.svg?v=20261115-connected-world-3d';function normalizeLogo(value){value=String(value||'').trim();return !value||value.indexOf('creatorverse-mark.svg')!==-1?canonicalLogo:value}var primary=normalizeLogo(brand.logo_url),dark=normalizeLogo(brand.logo_dark_url||primary),light=normalizeLogo(brand.logo_light_url||primary);
  document.querySelectorAll('.nav-left .logo-mark img,.footer-brand-lockup img,.adm-logo img,.cv-clean-mark,.cv-gate-brand img,#authLoader .cv-auth-brand img,.brand-row .logo-mark img').forEach(function(im){
   var lightSurface=im.closest('.footer')||im.closest('.footer-brand-lockup');im.src=lightSurface?light:dark;im.onerror=function(){im.onerror=null;im.src=primary};
   if(brand.logo_size&&im.matches('.cv-clean-mark,.cv-gate-brand img,.cv-gate-sign img')){im.style.width=Math.max(28,Math.min(96,Number(brand.logo_size)))+'px';im.style.height=im.style.width}
