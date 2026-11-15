@@ -3582,9 +3582,10 @@ void openFeature(BuildContext context, String path) {
     case '/academic.html':
       destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
     case '/academic-secondary.html':
-      destination = const NativeSpaceScreen(title: 'Secondary School', description: 'Secondary school examination resources and organised subject learning are being prepared for the native app.', icon: Icons.school_outlined); title = 'Secondary School'; break;
     case '/academic-tertiary.html':
-      destination = const NativeSpaceScreen(title: 'Tertiary Institutions', description: 'University and higher-institution academic resources are being prepared for the native app.', icon: Icons.account_balance_outlined); title = 'Tertiary Institutions'; break;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AuthenticatedAcademyWebScreen(path: path)));
+      return;
     case '/campus.html':
     case '/campus-life.html':
       destination = const CampusTab(); title = 'Campus Life'; break;
