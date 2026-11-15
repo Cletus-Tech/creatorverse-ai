@@ -2075,6 +2075,9 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           const SizedBox(height: 10),
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceAdminScreen())),
             icon: const Icon(Icons.store_mall_directory_outlined), label: const Text('Manage Marketplace')),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
+            icon: const Icon(Icons.flag_outlined), label: const Text('Moderate Community reports')),
           const SizedBox(height: 22),
           const Text('Recent payment orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           if (orders.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('No payment orders found.', style: TextStyle(color: muted))),
@@ -2096,6 +2099,65 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           )),
         ]));
     });
+}
+
+class CommunityModerationScreen extends StatefulWidget {
+  const CommunityModerationScreen({super.key});
+  @override State<CommunityModerationScreen> createState()=>_CommunityModerationScreenState();
+}
+class _CommunityModerationScreenState extends State<CommunityModerationScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> reports;bool busy=false;
+  @override void initState(){super.initState();reports=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin','moderator'].contains(p['role']))throw StateError('Moderation access is required.');
+    final raw=await db.from('community_reports').select('id,reporter_id,post_id,comment_id,reason,details,status,created_at,community_posts(title,description)')
+      .inFilter('status',['open','reviewing']).order('created_at',ascending:false).limit(100);
+    return List<Map<String,dynamic>>.from(raw);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>reports=next);await next;}
+  Future<void> updateReport(Map<String,dynamic> report,String status) async {
+    setState(()=>busy=true);
+    try{await db.from('community_reports').update({'status':status}).eq('id',report['id']);await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update report: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> hidePost(Map<String,dynamic> report) async {
+    if(report['post_id']==null)return;
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Hide this community post?'),
+      content:const Text('The post will no longer appear in the public community feed.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Hide post'))]));
+    if(ok!=true||!mounted)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('community_posts').update({'status':'hidden'}).eq('id',report['post_id']);
+      await db.from('community_reports').update({'status':'resolved'}).eq('id',report['id']);
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not hide post: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Community moderation'),actions:[IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:reports,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final items=snap.data??[];
+      if(items.isEmpty)return const Center(child:Text('No open community reports.',style:TextStyle(color:muted)));
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(14),children:[
+        for(final item in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((item['reason']??'Community report').toString().toUpperCase(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
+          const SizedBox(height:6),Text((item['community_posts'] is Map?item['community_posts']['title']:'Reported post/comment').toString(),style:const TextStyle(fontSize:16,fontWeight:FontWeight.w700)),
+          if((item['details']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:6),child:Text(item['details'].toString(),style:const TextStyle(color:muted))),
+          const SizedBox(height:8),Text('Status: ${item['status']} · ${_timeAgo(item['created_at']?.toString())}',style:const TextStyle(color:muted,fontSize:11)),
+          Wrap(spacing:8,runSpacing:6,children:[
+            OutlinedButton(onPressed:busy?null:()=>updateReport(item,'reviewing'),child:const Text('Mark reviewing')),
+            OutlinedButton(onPressed:busy?null:()=>updateReport(item,'dismissed'),child:const Text('Dismiss')),
+            if(item['post_id']!=null)FilledButton(onPressed:busy?null:()=>hidePost(item),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Hide post & resolve'))
+            else FilledButton(onPressed:busy?null:()=>updateReport(item,'resolved'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Resolve')),
+          ]),
+        ]))),
+      ]));
+    }));
 }
 
 class AdminPaymentReviewScreen extends StatefulWidget {
