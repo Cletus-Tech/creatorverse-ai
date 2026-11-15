@@ -87,6 +87,7 @@ if(f==='learn.html'||f==='category.html'){var exploreBrandCss=document.createEle
 if(f==='divisions.html'){var divisionsBrandCss=document.createElement('link');divisionsBrandCss.rel='stylesheet';divisionsBrandCss.href='divisions-brand.css?v=20261115-all-spaces-1';document.head.appendChild(divisionsBrandCss);}
  /* One authoritative palette layer, last in the cascade on every route. */
  var cvGlobalBrandCss=document.createElement('link');cvGlobalBrandCss.rel='stylesheet';cvGlobalBrandCss.href='global-brand.css?v=20261115-forest-champagne-global-1';document.head.appendChild(cvGlobalBrandCss);
+ var cvTextContrastCss=document.createElement('link');cvTextContrastCss.rel='stylesheet';cvTextContrastCss.href='text-contrast.css?v=20261115-text-contrast-1';document.head.appendChild(cvTextContrastCss);
 (function(){
  var key='cv-home-theme',html=document.documentElement,body=document.body;
  function apply(theme,save){
