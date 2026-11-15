@@ -366,10 +366,11 @@ class CourseDetailScreen extends StatefulWidget {
 }
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late Future<List<Map<String, dynamic>>> curriculum;
+  late Future<List<Map<String, dynamic>>> quizzes;
   late Future<bool> enrollment;
   bool enrolling = false;
   @override
-  void initState() { super.initState(); curriculum = loadCurriculum(); enrollment = loadEnrollment(); }
+  void initState() { super.initState(); enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); }
 
   Future<bool> loadEnrollment() async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -388,7 +389,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     try {
       await db.from('enrolments').insert({'user_id': user.id, 'course_id': widget.course['id']});
       if (!mounted) return;
-      setState(() { enrollment = Future.value(true); });
+      setState(() { enrollment = Future.value(true); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are enrolled. Start learning!')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not enrol: $e')));
@@ -403,14 +404,72 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final modules = List<Map<String, dynamic>>.from(modulesRaw);
     if (modules.isEmpty) return [];
     final ids = modules.map((m) => m['id']).toList();
+    final user = db.auth.currentUser;
+    final enrolled = user != null && await db.from('enrolments').select('course_id')
+      .eq('user_id', user.id).eq('course_id', widget.course['id']).maybeSingle() != null;
+    if (!enrolled) {
+      for (final module in modules) { module['lessons'] = <Map<String,dynamic>>[]; }
+      return modules;
+    }
     final lessonsRaw = await db.from('lessons')
       .select('id,module_id,title,video_url,content,position,estimated_minutes,chapter_number,topic_outline')
       .inFilter('module_id', ids).order('position');
     final lessons = List<Map<String, dynamic>>.from(lessonsRaw);
+    if (lessons.isNotEmpty && user != null) {
+      final lessonIds = lessons.map((l) => l['id']).toList();
+      final resourcesRaw = await db.from('lesson_resources').select('id,lesson_id,title,url,position')
+        .inFilter('lesson_id', lessonIds).order('position');
+      final resources = List<Map<String,dynamic>>.from(resourcesRaw);
+      final progressRaw = await db.from('lesson_progress').select('lesson_id,completed_at')
+        .eq('user_id', user.id).inFilter('lesson_id', lessonIds);
+      final completed = List<Map<String,dynamic>>.from(progressRaw).map((r)=>r['lesson_id'].toString()).toSet();
+      for (final lesson in lessons) {
+        lesson['resources'] = resources.where((r)=>r['lesson_id']==lesson['id']).toList();
+        lesson['completed'] = completed.contains(lesson['id'].toString());
+      }
+    }
     for (final module in modules) {
       module['lessons'] = lessons.where((l) => l['module_id'] == module['id']).toList();
     }
     return modules;
+  }
+
+  Future<List<Map<String,dynamic>>> loadQuizzes() async {
+    final rows = await db.from('quizzes').select('id,title,pass_mark')
+      .eq('course_id',widget.course['id']).order('created_at');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+
+  Future<void> openLesson(Map<String,dynamic> lesson) async {
+    final db=Supabase.instance.client;
+    try {
+      await db.rpc('record_academy_lesson_view',params:{'p_lesson_id':lesson['id']});
+      final raw=(lesson['video_url']??'').toString().trim();
+      final uri=Uri.tryParse(raw);
+      if(uri!=null&&(uri.scheme=='https'||uri.scheme=='http')) {
+        await launchUrl(uri,mode:LaunchMode.externalApplication);
+      }
+      final content=(lesson['content']??'').toString().trim();
+      final resources=lesson['resources'] as List<Map<String,dynamic>>? ?? [];
+      if(content.isNotEmpty || resources.isNotEmpty) {
+        if(!mounted)return;
+        await showModalBottomSheet(context:context,isScrollControlled:true,backgroundColor:panel,
+          builder:(_)=>SafeArea(child:FractionallySizedBox(heightFactor:.82,child:ListView(padding:const EdgeInsets.all(22),children:[
+            Text((lesson['title']??'Lesson').toString(),style:const TextStyle(fontSize:21,fontWeight:FontWeight.w800)),
+            const SizedBox(height:14),if(content.isNotEmpty)Text(content,style:const TextStyle(height:1.6,color:Colors.white70)),
+            if(raw.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:OutlinedButton.icon(
+              onPressed:()=>launchUrl(uri!,mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open lesson video'))),
+            if(resources.isNotEmpty)...[
+              const SizedBox(height:18),const Text('Lesson resources',style:TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
+              for(final resource in resources)ListTile(leading:const Icon(Icons.attach_file,color:emerald),
+                title:Text((resource['title']??'Resource').toString()),
+                onTap:()=>launchUrl(Uri.parse(resource['url'].toString()),mode:LaunchMode.externalApplication)),
+            ],
+          ]))));
+      }
+    } catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open lesson: $e')));
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -461,32 +520,42 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             for (final module in modules) Card(color: panel, child: ExpansionTile(
               initiallyExpanded: false,
               title: Text((module['title'] ?? 'Module').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text('${(module['lessons'] as List).length} lessons', style: const TextStyle(color: muted, fontSize: 12)),
+              subtitle: Text((module['lessons'] as List).isEmpty ? 'Enrol to unlock lessons' : '${(module['lessons'] as List).where((l)=>l['completed']==true).length}/${(module['lessons'] as List).length} lessons completed', style: const TextStyle(color: muted, fontSize: 12)),
               children: [
                 if ((module['description'] ?? '').toString().isNotEmpty)
                   Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Text(module['description'].toString(), style: const TextStyle(color: muted))),
                 for (final lesson in module['lessons'] as List<Map<String, dynamic>>)
                   ListTile(
-                    dense: true, leading: const Icon(Icons.play_circle_outline, color: emerald),
+                    dense: true, leading: Icon(lesson['completed']==true?Icons.check_circle:Icons.play_circle_outline, color: emerald),
                     title: Text((lesson['title'] ?? 'Lesson').toString()),
                     subtitle: Text('${lesson['estimated_minutes'] ?? 0} min', style: const TextStyle(color: muted, fontSize: 11)),
                     trailing: lesson['video_url'] == null || lesson['video_url'].toString().isEmpty
                       ? null : const Icon(Icons.open_in_new, size: 16, color: muted),
-                    onTap: () async {
-                      final raw = lesson['video_url']?.toString() ?? '';
-                      final uri = Uri.tryParse(raw);
-                      if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http')) {
-                        await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      } else if ((lesson['content'] ?? '').toString().isNotEmpty && context.mounted) {
-                        showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel,
-                          builder: (_) => SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(22), child: Text(
-                            '${lesson['title']}\n\n${lesson['content']}', style: const TextStyle(height: 1.55)))));
-                      }
-                    },
+                    onTap: () => openLesson(lesson),
                   ),
               ],
             )),
           ]);
+        }),
+        const SizedBox(height: 22),
+        FutureBuilder<bool>(future: enrollment, builder: (context, enrolled) {
+          if (enrolled.data != true) return const SizedBox.shrink();
+          return FutureBuilder<List<Map<String,dynamic>>>(future: quizzes, builder: (context, quizSnap) {
+            if (quizSnap.connectionState == ConnectionState.waiting) return const LinearProgressIndicator(color: emerald);
+            if (quizSnap.hasError || (quizSnap.data ?? []).isEmpty) return const SizedBox.shrink();
+            final items=quizSnap.data ?? [];
+            return flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              const Text('Course assessments',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+              const SizedBox(height:8),
+              for(final quiz in items)Card(color:panel,child:ListTile(
+                leading:const Icon(Icons.quiz_outlined,color:gold),
+                title:Text((quiz['title']??'Course quiz').toString()),
+                subtitle:Text('Pass mark: ${quiz['pass_mark']}%',style:const TextStyle(color:muted)),
+                trailing:const Icon(Icons.chevron_right,color:emerald),
+                onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizScreen(quizId:quiz['id'].toString()))),
+              )),
+            ]);
+          });
         }),
       ]),
     );
