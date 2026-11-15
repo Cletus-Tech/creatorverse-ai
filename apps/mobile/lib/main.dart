@@ -296,6 +296,7 @@ class _HomeTabState extends State<HomeTab>{
       const FeatureTile(icon:Icons.school_outlined,title:'Academic',detail:'Find learning pathways and study resources.',path:'/academic.html'),
       const FeatureTile(icon:Icons.apartment_outlined,title:'Campus Life',detail:'Discover accommodation and campus services.',path:'/campus.html'),
       const FeatureTile(icon:Icons.storefront_outlined,title:'Marketplace',detail:'Explore the CreatorVerse marketplace.',path:'/marketplace.html'),
+      const FeatureTile(icon:Icons.assignment_ind_outlined,title:'Creator / Instructor Pathway',detail:'Apply to create, teach or showcase work on CreatorVerse.',path:'/academy-applications'),
       const FeatureTile(icon:Icons.groups_outlined,title:'Community',detail:'Connect with other learners and creators.',path:'/community.html'),
     ]);
   });
@@ -2124,6 +2125,9 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CourseAdminScreen())),
             icon: const Icon(Icons.menu_book_outlined), label: const Text('Manage Courses & Lessons')),
           const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCreatorApplicationsScreen())),
+            icon: const Icon(Icons.assignment_ind_outlined), label: const Text('Review Creator Applications')),
+          const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityModerationScreen())),
             icon: const Icon(Icons.flag_outlined), label: const Text('Moderate Community reports')),
           const SizedBox(height: 22),
@@ -2147,6 +2151,227 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           )),
         ]));
     });
+}
+
+class MyAcademyApplicationsScreen extends StatefulWidget {
+  const MyAcademyApplicationsScreen({super.key});
+  @override State<MyAcademyApplicationsScreen> createState()=>_MyAcademyApplicationsScreenState();
+}
+class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScreen>{
+  final db=Supabase.instance.client;late Future<Map<String,dynamic>> data;
+  bool busy=false;
+  @override void initState(){super.initState();data=load();}
+  Future<Map<String,dynamic>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to continue.');
+    final applications=await db.from('academy_applications').select('id,application_no,application_type,status,first_name,last_name,specialty,proposed_level,submitted_at,decision_reason,created_at')
+      .eq('user_id',user.id).order('created_at',ascending:false);
+    final offers=await db.from('academy_admission_offers').select('id,application_id,course_id,status,issued_at,expires_at,offer_message')
+      .eq('user_id',user.id).order('created_at',ascending:false);
+    final invitations=await db.from('academy_interview_invitations').select('id,interview_id,application_id,interview_type,status,starts_at,ends_at,timezone,learner_instructions,meeting_join_url,response_due_at')
+      .eq('user_id',user.id).not('published_at','is',null).order('starts_at',ascending:false);
+    return {'applications':List<Map<String,dynamic>>.from(applications),'offers':List<Map<String,dynamic>>.from(offers),'invitations':List<Map<String,dynamic>>.from(invitations)};
+  }
+  Future<void> refresh() async {final next=load();setState(()=>data=next);await next;}
+  Future<void> createApplication() async {
+    final first=TextEditingController(text:(db.auth.currentUser?.userMetadata?['first_name']??'').toString());
+    final last=TextEditingController(text:(db.auth.currentUser?.userMetadata?['last_name']??'').toString());
+    final phone=TextEditingController(),country=TextEditingController(text:'Nigeria'),region=TextEditingController();
+    final education=TextEditingController(),occupation=TextEditingController(),experience=TextEditingController();
+    final portfolio=TextEditingController(),motivation=TextEditingController(),goals=TextEditingController();
+    final certificate=TextEditingController(),specialty=TextEditingController(),work=TextEditingController();
+    String type='creator',level='Beginner';bool consent=false;
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
+      backgroundColor:panel,title:const Text('Creator & Instructor application'),
+      content:SizedBox(width:460,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        const Text('This pathway is for people applying to create, teach, instruct or exhibit work on CreatorVerse. Ordinary course learners should enrol or pay through the course catalogue instead.',style:TextStyle(color:muted,height:1.45,fontSize:12)),
+        const SizedBox(height:12),DropdownButtonFormField<String>(value:type,decoration:const InputDecoration(labelText:'Application pathway'),
+          items:const [DropdownMenuItem(value:'creator',child:Text('Creator')),DropdownMenuItem(value:'instructor',child:Text('Instructor')),DropdownMenuItem(value:'teacher',child:Text('Teacher')),DropdownMenuItem(value:'exhibitor',child:Text('Exhibitor / showcase applicant'))],
+          onChanged:(v)=>setDialog(()=>type=v??type)),
+        const SizedBox(height:8),TextField(controller:first,decoration:const InputDecoration(labelText:'First name')),
+        const SizedBox(height:8),TextField(controller:last,decoration:const InputDecoration(labelText:'Last name')),
+        const SizedBox(height:8),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'Phone number')),
+        const SizedBox(height:8),TextField(controller:country,decoration:const InputDecoration(labelText:'Country')),
+        const SizedBox(height:8),TextField(controller:region,decoration:const InputDecoration(labelText:'State / region')),
+        const SizedBox(height:8),TextField(controller:education,decoration:const InputDecoration(labelText:'Highest education (optional)')),
+        const SizedBox(height:8),TextField(controller:occupation,decoration:const InputDecoration(labelText:'Current role / occupation')),
+        const SizedBox(height:8),TextField(controller:specialty,decoration:const InputDecoration(labelText:'Specialty / area of contribution')),
+        const SizedBox(height:8),DropdownButtonFormField<String>(value:level,decoration:const InputDecoration(labelText:'Your proposed experience level'),
+          items:const [DropdownMenuItem(value:'Beginner',child:Text('Beginner')),DropdownMenuItem(value:'Foundation',child:Text('Foundation')),DropdownMenuItem(value:'Intermediate',child:Text('Intermediate')),DropdownMenuItem(value:'Advanced',child:Text('Advanced')),DropdownMenuItem(value:'Professional',child:Text('Professional'))],
+          onChanged:(v)=>setDialog(()=>level=v??level)),
+        const SizedBox(height:8),TextField(controller:experience,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Relevant experience')),
+        const SizedBox(height:8),TextField(controller:portfolio,decoration:const InputDecoration(labelText:'Portfolio URL (optional)')),
+        const SizedBox(height:8),TextField(controller:work,minLines:2,maxLines:3,decoration:const InputDecoration(labelText:'Work sample links (optional)')),
+        const SizedBox(height:8),TextField(controller:motivation,minLines:3,maxLines:5,decoration:const InputDecoration(labelText:'Why do you want to join CreatorVerse?')),
+        const SizedBox(height:8),TextField(controller:goals,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'What will you contribute or teach?')),
+        const SizedBox(height:8),TextField(controller:certificate,decoration:const InputDecoration(labelText:'Preferred name for future certificate')),
+        const SizedBox(height:12),CheckboxListTile(value:consent,activeColor:emerald,contentPadding:EdgeInsets.zero,
+          onChanged:(v)=>setDialog(()=>consent=v==true),
+          title:const Text('I consent to CreatorVerse using the information in this application to assess my creator, instructor, teacher or exhibitor application.',style:TextStyle(fontSize:12,height:1.4))),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:consent?()=>Navigator.pop(ctx,true):null,child:const Text('Submit application'))])));
+    if(!mounted){
+      for(final x in [first,last,phone,country,region,education,occupation,experience,portfolio,motivation,goals,certificate,specialty,work]){x.dispose();}
+      return;
+    }
+    final values={
+      'first_name':first.text.trim(),'last_name':last.text.trim(),'phone':phone.text.trim(),'country':country.text.trim(),
+      'region':region.text.trim(),'education_level':education.text.trim(),'occupation':occupation.text.trim(),
+      'prior_experience':experience.text.trim(),'portfolio_url':portfolio.text.trim(),'motivation':motivation.text.trim(),
+      'learning_goals':goals.text.trim(),'certificate_name':certificate.text.trim(),'specialty':specialty.text.trim(),
+      'work_sample_urls':work.text.trim(),
+    };
+    for(final x in [first,last,phone,country,region,education,occupation,experience,portfolio,motivation,goals,certificate,specialty,work]){x.dispose();}
+    if(ok!=true)return;
+    if(values['first_name']!.length<2||values['last_name']!.length<2||values['motivation']!.length<20||values['learning_goals']!.length<10){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Please complete your name, motivation and contribution details.')));return;
+    }
+    setState(()=>busy=true);
+    try{
+      final course=await db.from('courses').select('id').eq('slug','creator-partner-application').eq('published',false).single();
+      final now=DateTime.now().toUtc().toIso8601String();
+      final inserted=await db.from('academy_applications').insert({
+        'user_id':db.auth.currentUser!.id,'course_id':course['id'],'application_type':type,
+        'status':'draft','proposed_level':level,'consented_at':now,'privacy_version':'creatorverse-academy-partner-privacy-v1',
+        for(final entry in values.entries) entry.key:entry.value.isEmpty?null:entry.value,
+      }).select('id').single();
+      await db.from('academy_applications').update({'status':'submitted','submitted_at':now,'updated_at':now}).eq('id',inserted['id']);
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Application submitted. The CreatorVerse team will review it and contact you through notifications.')));
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit application: $e')));
+    }finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> respondToInvitation(Map<String,dynamic> invitation,String response) async {
+    setState(()=>busy=true);
+    try{await db.rpc('respond_to_academy_interview_invitation',params:{'p_invitation_id':invitation['id'],'p_response':response});await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update interview invitation: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> acceptOffer(Map<String,dynamic> offer) async {
+    setState(()=>busy=true);
+    try{
+      final result=await db.rpc('accept_academy_admission_offer',params:{'p_offer_id':offer['id']});
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text((result is Map?result['message']:'Admission response recorded.').toString())));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not accept offer: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Creator & Instructor Pathway'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Academy application data unavailable: ${snap.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+      final d=snap.data??{};final applications=d['applications'] as List<Map<String,dynamic>>? ?? [];
+      final offers=d['offers'] as List<Map<String,dynamic>>? ?? [];final invitations=d['invitations'] as List<Map<String,dynamic>>? ?? [];
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(18),children:[
+        const Text('CreatorVerse Academy',style:TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
+        const SizedBox(height:6),const Text('This application is only for creators, instructors, teachers and exhibitors. It is separate from ordinary paid course enrolment.',style:TextStyle(color:muted,height:1.5)),
+        const SizedBox(height:14),
+        if(applications.isEmpty)FilledButton.icon(onPressed:busy?null:createApplication,style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.assignment_outlined),label:const Text('Start creator / instructor application')),
+        if(applications.isNotEmpty)...[
+          const Text('Your application',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+          for(final app in applications)Card(color:panel,child:ListTile(
+            leading:const Icon(Icons.assignment_turned_in_outlined,color:emerald),
+            title:Text((app['application_no']??'Application').toString()),
+            subtitle:Text('${app['application_type']} · ${app['status'].toString().replaceAll('_',' ')}\n${app['decision_reason']??'Your application is being handled by the Academy team.'}',style:const TextStyle(color:muted,height:1.5)),
+            trailing:const Icon(Icons.lock_outline,color:muted),
+          )),
+        ],
+        if(offers.isNotEmpty)...[
+          const SizedBox(height:18),const Text('Admission offers',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+          for(final offer in offers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('Offer · ${offer['status']}',style:const TextStyle(fontWeight:FontWeight.w800)),
+            if((offer['offer_message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(offer['offer_message'].toString(),style:const TextStyle(color:muted,height:1.5))),
+            Text('Expires: ${offer['expires_at']}',style:const TextStyle(color:muted,fontSize:11)),
+            if(offer['status']=='offered')FilledButton(onPressed:busy?null:()=>acceptOffer(offer),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Accept admission offer')),
+          ]))),
+        ],
+        if(invitations.isNotEmpty)...[
+          const SizedBox(height:18),const Text('Interview invitations',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+          for(final inv in invitations)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text((inv['interview_type']??'Interview').toString().replaceAll('_',' ').toUpperCase(),style:const TextStyle(fontWeight:FontWeight.w800,color:gold)),
+            const SizedBox(height:6),Text('${inv['starts_at']} · ${inv['timezone']}',style:const TextStyle(color:muted,fontSize:12)),
+            if((inv['learner_instructions']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(inv['learner_instructions'].toString(),style:const TextStyle(height:1.5))),
+            Text('Status: ${inv['status']}',style:const TextStyle(color:muted)),
+            if(['scheduled','confirmed'].contains(inv['status']))Wrap(spacing:8,children:[
+              OutlinedButton(onPressed:busy?null:()=>respondToInvitation(inv,'reschedule_requested'),child:const Text('Request reschedule')),
+              if(inv['status']=='scheduled')FilledButton(onPressed:busy?null:()=>respondToInvitation(inv,'confirmed'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Confirm attendance')),
+            ]),
+            if((inv['meeting_join_url']??'').toString().startsWith('https://'))OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(inv['meeting_join_url'].toString()),mode:LaunchMode.externalApplication),icon:const Icon(Icons.video_call_outlined),label:const Text('Join interview room')),
+            if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse('https://creatorverse-ai.vercel.app/academy-interview.html?interview=${inv['interview_id']}'),mode:LaunchMode.externalApplication),icon:const Icon(Icons.mic_outlined),label:const Text('Open recorded response studio')),
+          ]))),
+        ],
+        if(applications.isEmpty&&offers.isEmpty&&invitations.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:22),child:Text('No applications or invitations yet. Ordinary course learners can continue directly through Learn.',style:TextStyle(color:muted,height:1.5))),
+      ]));
+    }));
+}
+
+class AdminCreatorApplicationsScreen extends StatefulWidget {
+  const AdminCreatorApplicationsScreen({super.key});
+  @override State<AdminCreatorApplicationsScreen> createState()=>_AdminCreatorApplicationsScreenState();
+}
+class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplicationsScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> rows;bool busy=false;
+  @override void initState(){super.initState();rows=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access required.');
+    final apps=await db.from('academy_applications').select('id,application_no,user_id,application_type,status,first_name,last_name,phone,country,region,specialty,proposed_level,prior_experience,portfolio_url,motivation,learning_goals,work_sample_urls,decision_reason,created_at,submitted_at')
+      .inFilter('application_type',['creator','instructor','teacher','exhibitor']).order('created_at',ascending:false).limit(200);
+    return List<Map<String,dynamic>>.from(apps);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
+  Future<void> review(Map<String,dynamic> app,String status) async {
+    final reason=TextEditingController(text:(app['decision_reason']??'').toString());
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:Text('Set application to ${status.replaceAll('_',' ')}'),
+      content:TextField(controller:reason,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Decision reason / feedback')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save decision'))]));
+    if(!mounted){reason.dispose();return;}final note=reason.text.trim();reason.dispose();if(ok!=true)return;
+    setState(()=>busy=true);
+    try{
+      await db.from('academy_applications').update({'status':status,'decision_reason':note.isEmpty?null:note,'reviewed_by':db.auth.currentUser!.id,'reviewed_at':DateTime.now().toUtc().toIso8601String(),'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',app['id']);
+      await db.from('academy_application_events').insert({'application_id':app['id'],'actor_id':db.auth.currentUser!.id,'event_type':'admin_review','from_status':app['status'],'to_status':status,'message':note.isEmpty?'Application status updated.':note});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update application: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> grantCreator(Map<String,dynamic> app) async {
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Grant creator access?'),
+      content:const Text('The server will verify that the application is approved and that at least one interview has been completed and scored before granting the Creator role.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Verify & grant'))]));
+    if(ok!=true||!mounted)return;
+    setState(()=>busy=true);
+    try{
+      await db.rpc('admin_grant_creator_access',params:{'p_application_id':app['id']});
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Creator access granted by the server.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creator access was not granted: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Creator applications'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Applications unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final items=snap.data??[];
+      if(items.isEmpty)return const Center(child:Text('No creator or instructor applications yet.',style:TextStyle(color:muted)));
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:flutter_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text('${app['application_no']} · ${app['application_type']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
+          const SizedBox(height:5),Text('${app['first_name']} ${app['last_name']}',style:const TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
+          Text('${app['specialty']??'No specialty'} · Proposed: ${app['proposed_level']}',style:const TextStyle(color:muted)),
+          Text('Status: ${app['status']}',style:const TextStyle(color:muted,fontSize:12)),
+          if((app['motivation']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Text(app['motivation'].toString(),maxLines:3,overflow:TextOverflow.ellipsis,style:const TextStyle(height:1.4))),
+          if((app['portfolio_url']??'').toString().startsWith('https://'))TextButton(onPressed:()=>launchUrl(Uri.parse(app['portfolio_url'].toString()),mode:LaunchMode.externalApplication),child:const Text('Open portfolio')),
+          Wrap(spacing:8,runSpacing:6,children:[
+            OutlinedButton(onPressed:busy?null:()=>review(app,'under_review'),child:const Text('Under review')),
+            OutlinedButton(onPressed:busy?null:()=>review(app,'more_information_requested'),child:const Text('Request info')),
+            OutlinedButton(onPressed:busy?null:()=>review(app,'rejected'),child:const Text('Reject')),
+            FilledButton(onPressed:busy?null:()=>review(app,'approved'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Approve')),
+            if(app['status']=='approved')OutlinedButton(onPressed:busy?null:()=>grantCreator(app),child:const Text('Grant Creator role')),
+          ]),
+        ]))),
+      ]));
+    }));
 }
 
 class CourseAdminScreen extends StatefulWidget {
@@ -3119,6 +3344,10 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 }
 
 void openFeature(BuildContext context, String path) {
+  if (path == '/academy-applications') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+    return;
+  }
   if (path == '/messages.html' || path == '/messages') {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     return;
