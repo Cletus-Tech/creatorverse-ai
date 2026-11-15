@@ -198,7 +198,6 @@ class _LearnTabState extends State<LearnTab> {
           for (final course in items) CourseCard(course: course),
         ]));
     });
-  }
 }
 
 class CourseCard extends StatelessWidget {
