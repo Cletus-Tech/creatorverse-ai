@@ -2246,13 +2246,14 @@ class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
     final t=title.text.trim(),d=description.text.trim();title.dispose();description.dispose();if(ok!=true||t.length<3)return;
     setState(()=>busy=true);
     try{
+      final existing=await db.from('modules').select('id').eq('course_id',widget.course['id']);
+      final nextPosition=existing.length+1;
       await db.from('modules').insert({'course_id':widget.course['id'],'title':t,'description':d.isEmpty?null:d,
-        'position':(modulesResultLength??0)+1,'stage_number':(modulesResultLength??0)+1});
+        'position':nextPosition,'stage_number':nextPosition});
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add module: $e')));}
     finally{if(mounted)setState(()=>busy=false);}
   }
-  int? get modulesResultLength => null;
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text((widget.course['title']??'Course modules').toString()),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<List<Map<String,dynamic>>>(future:modules,builder:(context,snap){
       if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
@@ -2297,13 +2298,13 @@ class _CourseLessonsAdminScreenState extends State<CourseLessonsAdminScreen>{
     title.dispose();content.dispose();video.dispose();minutes.dispose();if(ok!=true||t.length<3||mins<5||mins>600)return;
     setState(()=>busy=true);
     try{
+      final existing=await db.from('lessons').select('id').eq('module_id',widget.module['id']);
       await db.from('lessons').insert({'module_id':widget.module['id'],'title':t,'content':body.isEmpty?null:body,
-        'video_url':url.isEmpty?null:url,'estimated_minutes':mins,'position':(lessonsResultLength??0)+1,'chapter_number':1});
+        'video_url':url.isEmpty?null:url,'estimated_minutes':mins,'position':existing.length+1,'chapter_number':1});
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add lesson: $e')));}
     finally{if(mounted)setState(()=>busy=false);}
   }
-  int? get lessonsResultLength => null;
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text((widget.module['title']??'Lessons').toString()),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<List<Map<String,dynamic>>>(future:lessons,builder:(context,snap){
       if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
