@@ -231,7 +231,7 @@ class _MainShellState extends State<MainShell> {
         const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
         actions: [
           IconButton(tooltip: 'Messages', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
-          IconButton(tooltip: 'Notifications', onPressed: () => openLink('/notifications.html'), icon: const Icon(Icons.notifications_none))]),
+          IconButton(tooltip: 'Notifications', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())), icon: const Icon(Icons.notifications_none))]),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
         backgroundColor: panel, indicatorColor: emerald.withValues(alpha: .2),
@@ -788,6 +788,102 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ]))),
     ]));
 }
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final db = Supabase.instance.client;
+  late Future<List<Map<String, dynamic>>> notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    notifications = loadNotifications();
+  }
+
+  Future<List<Map<String, dynamic>>> loadNotifications() async {
+    final userId = db.auth.currentUser?.id;
+    if (userId == null) return [];
+    final rows = await db.from('cv_notifications')
+      .select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id')
+      .eq('user_id', userId).order('created_at', ascending: false).limit(60);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  Future<void> refresh() async {
+    final next = loadNotifications();
+    setState(() => notifications = next);
+    await next;
+  }
+
+  Future<void> markRead(Map<String, dynamic> item) async {
+    if (item['read_at'] != null) return;
+    try {
+      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
+        .eq('id', item['id']).eq('user_id', db.auth.currentUser!.id);
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update notification: $e')));
+    }
+  }
+
+  Future<void> markAllRead(List<Map<String, dynamic>> items) async {
+    final unread = items.where((item) => item['read_at'] == null).toList();
+    if (unread.isEmpty) return;
+    try {
+      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
+        .eq('user_id', db.auth.currentUser!.id).isFilter('read_at', null);
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not mark notifications as read: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: notifications,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
+          'Notifications could not be loaded: ${snapshot.error}',
+          textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+      }
+      final rows = snapshot.data ?? [];
+      final unread = rows.where((item) => item['read_at'] == null).length;
+      if (rows.isEmpty) return const Center(child: Text('You are all caught up.', style: TextStyle(color: muted)));
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: Column(children: [
+        if (unread > 0) Align(alignment: Alignment.centerRight, child: TextButton(
+          onPressed: () => markAllRead(rows), child: Text('Mark all as read ($unread)'))),
+        Expanded(child: ListView.separated(itemCount: rows.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+          itemBuilder: (context, index) {
+            final item = rows[index];
+            final read = item['read_at'] != null;
+            final title = (item['title'] ?? 'CreatorVerse update').toString();
+            final body = (item['body'] ?? '').toString();
+            return ListTile(
+              leading: CircleAvatar(backgroundColor: read ? panel : emerald.withValues(alpha: .16),
+                child: Icon(read ? Icons.notifications_none : Icons.notifications_active_outlined,
+                  color: read ? muted : emerald)),
+              title: Text(title, style: TextStyle(fontWeight: read ? FontWeight.w500 : FontWeight.w800)),
+              subtitle: Text(body, maxLines: 3, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: muted)),
+              trailing: read ? null : const Icon(Icons.circle, color: emerald, size: 9),
+              onTap: () => markRead(item),
+            );
+          })),
+      ]));
+    });
+}
+
 class LinkPage extends StatelessWidget {
   final IconData icon; final String title, description, button, path;
   const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
