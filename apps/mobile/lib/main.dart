@@ -1210,7 +1210,7 @@ class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
 
   Future<void> updateOrder(Map<String, dynamic> order, String status) async {
     final id = order['id'].toString();
-    final message = notes[id]?.trim() ?? '';
+    final message = notes[id]?.trim() ?? (order['admin_note'] ?? '').toString().trim();
     if (status == 'confirmed') {
       final verified = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
         backgroundColor: panel,
