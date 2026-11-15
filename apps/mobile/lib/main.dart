@@ -418,7 +418,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       .select('id,module_id,title,video_url,content,position,estimated_minutes,chapter_number,topic_outline')
       .inFilter('module_id', ids).order('position');
     final lessons = List<Map<String, dynamic>>.from(lessonsRaw);
-    if (lessons.isNotEmpty && user != null) {
+    if (lessons.isNotEmpty) {
       final lessonIds = lessons.map((l) => l['id']).toList();
       final resourcesRaw = await db.from('lesson_resources').select('id,lesson_id,title,url,position')
         .inFilter('lesson_id', lessonIds).order('position');
@@ -595,10 +595,10 @@ class _CourseQuizScreenState extends State<CourseQuizScreen>{
       });
       final outcome=Map<String,dynamic>.from(raw as Map);
       if(mounted)setState(()=>result=outcome);
-      if(mounted)showDialog<void>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
+      if(mounted) { showDialog<void>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
         title:Text(outcome['passed']==true?'Assessment passed':'Assessment result'),
         content:Text('Score: ${outcome['score']}%\nCorrect: ${outcome['correct']} of ${outcome['total']}\nPass mark: ${outcome['pass_mark']}%\n\n${outcome['passed']==true?'Well done. Your result has been recorded.':'Review the lessons and try again.'}'),
-        actions:[FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Continue'))]));
+        actions:[FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Continue'))])); }
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit assessment: $e')));}
     finally{if(mounted)setState(()=>submitting=false);}
   }
@@ -1022,6 +1022,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Send enquiry')),
       ],
     ));
+    if (!mounted) { input.dispose(); return; }
     final body = input.text.trim(); input.dispose();
     if (ok != true) return;
     if (body.length < 5) {
