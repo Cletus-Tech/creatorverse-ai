@@ -30,12 +30,12 @@ for (const file of jsFiles) {
 
 for (const file of htmlFiles) {
   const source = await readFile(file, 'utf8');
-  const refs = source.matchAll(/(?:src|href)\\s*=\\s*(['"])(.*?)\\1/gi);
+  const refs = source.matchAll(/(?:src|href)\s*=\s*(['"])(.*?)\1/gi);
   for (const match of refs) {
     const raw = match[2].trim();
     if (!raw || /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('/') || raw.startsWith('#')) continue;
     const local = raw.split(/[?#]/, 1)[0];
-    if (!/\\.(?:js|mjs|css|html|json|svg|png|jpe?g|webp|woff2?)$/i.test(local)) continue;
+    if (!/\.(?:js|mjs|css|html|json|svg|png|jpe?g|webp|woff2?)$/i.test(local)) continue;
     let decoded;
     try { decoded = decodeURIComponent(local); } catch { decoded = local; }
     const target = path.resolve(path.dirname(file), decoded);
