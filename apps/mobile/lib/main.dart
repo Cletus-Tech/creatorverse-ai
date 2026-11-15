@@ -1344,6 +1344,12 @@ void openFeature(BuildContext context, String path) {
     case '/campus.html':
     case '/campus-life.html':
       destination = const CampusTab(); title = 'Campus Life'; break;
+    case '/marketplace.html':
+      destination = const MarketplaceScreen(); title = 'Marketplace'; break;
+    case '/housing':
+      destination = const NativeSpaceScreen(title: 'Verified Housing & Roommates', description: 'CreatorVerse is preparing verified accommodation and roommate matching. No verified housing or roommate listings are live yet.', icon: Icons.home_work_outlined); title = 'Housing & Roommates'; break;
+    case '/delivery':
+      destination = const NativeSpaceScreen(title: 'Campus Errands & Delivery', description: 'Campus delivery and errand services are planned for a later CreatorVerse release.', icon: Icons.delivery_dining_outlined); title = 'Campus Delivery'; break;
     case '/profile.html':
       destination = const ProfileTab(); title = 'My profile'; break;
     case '/members':
