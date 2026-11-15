@@ -530,7 +530,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
     if (currentOrder != null) {
       transferReference.text = (currentOrder['transfer_reference'] ?? '').toString();
     }
-    return {'settings': settings ?? {}, 'order': currentOrder};
+    return {'settings': settings ?? <String, dynamic>{}, 'order': currentOrder};
   }
 
   Future<void> startPayment(String method, Map<String, dynamic> settings) async {
