@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart' as flutter_ui;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -766,7 +767,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.storefront_outlined, color: emerald, size: 46),
           const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings can load after setup; seller onboarding and buyer enquiries still need their native app workflows.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
+          const SizedBox(height: 8), const Text('The Marketplace service could not be reached. Check your connection and try again; your account and listing data have not been changed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
           const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
         ])));
       }
@@ -988,6 +989,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       institutionField = TextEditingController(text: (seller['institution'] ?? '').toString()),
       location = TextEditingController();
     String category = cats.first['id'].toString(), type = 'product';
+    XFile? selectedImage;
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) => AlertDialog(
       backgroundColor: panel, title: const Text('Create a listing'),
       content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1000,6 +1002,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
           onChanged: (v) => setDialog(() => type = v ?? type)),
         const SizedBox(height: 8), TextField(controller: description, minLines: 3, maxLines: 5, maxLength: 3000,
           decoration: const InputDecoration(labelText: 'Description (at least 10 characters)')),
+        const SizedBox(height: 8), Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+          onPressed: () async { final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 82, maxWidth: 1600); if (picked != null) setDialog(() => selectedImage = picked); },
+          icon: const Icon(Icons.add_photo_alternate_outlined), label: Text(selectedImage == null ? 'Add listing photo' : 'Photo: ${selectedImage!.name}'))),
         const SizedBox(height: 8), TextField(controller: price, keyboardType: TextInputType.number,
           decoration: const InputDecoration(labelText: 'Price in naira (leave blank if negotiable / on request)')),
         const SizedBox(height: 8), TextField(controller: institutionField, decoration: const InputDecoration(labelText: 'Institution')),
@@ -1027,6 +1032,16 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         'location_label': locationText.isEmpty ? null : locationText,
         'status': 'draft',
       }).select('id').single();
+      if (selectedImage != null) {
+        final extension = selectedImage!.name.split('.').last.toLowerCase();
+        final safeExtension = ['jpg','jpeg','png','webp','avif'].contains(extension) ? extension : 'jpg';
+        final contentType = safeExtension == 'png' ? 'image/png' : safeExtension == 'webp' ? 'image/webp' : safeExtension == 'avif' ? 'image/avif' : 'image/jpeg';
+        final objectPath = '${db.auth.currentUser!.id}/${inserted['id']}/${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+        await db.storage.from('marketplace-listing-images').uploadBinary(objectPath, await selectedImage!.readAsBytes(),
+          fileOptions: FileOptions(contentType: contentType, upsert: false));
+        final publicUrl = db.storage.from('marketplace-listing-images').getPublicUrl(objectPath);
+        await db.from('marketplace_listings').update({'image_urls': [publicUrl]}).eq('id', inserted['id']);
+      }
       await db.rpc('marketplace_submit_listing', params: {'p_listing_id': inserted['id']});
       await refresh();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing submitted. It will appear in Marketplace after administrator approval.')));
