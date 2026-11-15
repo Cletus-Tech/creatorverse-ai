@@ -3303,9 +3303,488 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> openMemberFromNotification(String target) async {
     try {
-      var row = await db.from('public_profiles')
-        .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
-        .eq('id', target).maybeSingle();
+      final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}      if (!mounted) return;
+      if (row == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This member profile is no longer available.')));
+        return;
+      }
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open member profile: $e')));
+      }
+    }
+  }
+
+  Future<void> markAllRead(List<Map<String, dynamic>> items) async {
+    final unread = items.where((item) => item['read_at'] == null).toList();
+    if (unread.isEmpty) {
+      return;
+    }
+    try {
+      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
+        .eq('user_id', db.auth.currentUser!.id).isFilter('read_at', null);
+      if (mounted) await refresh();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not mark notifications as read: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: notifications,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
+          'Notifications could not be loaded: ${snapshot.error}',
+          textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+      }
+      final rows = snapshot.data ?? [];
+      final unread = rows.where((item) => item['read_at'] == null).length;
+      if (rows.isEmpty) return const Center(child: Text('You are all caught up.', style: TextStyle(color: muted)));
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: flutter_ui.Column(children: [
+        if (unread > 0) Align(alignment: Alignment.centerRight, child: TextButton(
+          onPressed: () => markAllRead(rows), child: Text('Mark all as read ($unread)'))),
+        Expanded(child: ListView.separated(itemCount: rows.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+          itemBuilder: (context, index) {
+            final item = rows[index];
+            final read = item['read_at'] != null;
+            final title = (item['title'] ?? 'CreatorVerse update').toString();
+            final body = (item['body'] ?? '').toString();
+            return ListTile(
+              leading: CircleAvatar(backgroundColor: read ? panel : emerald.withValues(alpha: .16),
+                child: Icon(read ? Icons.notifications_none : Icons.notifications_active_outlined,
+                  color: read ? muted : emerald)),
+              title: Text(title, style: TextStyle(fontWeight: read ? FontWeight.w500 : FontWeight.w800)),
+              subtitle: Text(body, maxLines: 3, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: muted)),
+              trailing: read ? null : const Icon(Icons.circle, color: emerald, size: 9),
+              onTap: () => openNotification(item),
+            );
+          })),
+      ]));
+    });
+}
+
+class LinkPage extends StatelessWidget {
+  final IconData icon; final String title, description, button, path;
+  const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+    Icon(icon, size: 54, color: emerald), const SizedBox(height: 18), Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
+    const SizedBox(height: 22), FilledButton(onPressed: () => openLink(path), child: Text(button))])));
+}
+class ProfileTab extends StatefulWidget {
+  const ProfileTab({super.key});
+  @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+class _ProfileTabState extends State<ProfileTab> {
+  final db = Supabase.instance.client;
+  late Future<Map<String, dynamic>> profile;
+  @override
+  void initState() { super.initState(); profile = loadProfile(); }
+  Future<Map<String, dynamic>> loadProfile() async {
+    final user = db.auth.currentUser;
+    if (user == null) throw Exception('You are signed out.');
+    final row = await db.from('profiles')
+      .select('id,full_name,email,avatar_url,username,bio,cover_url,location,website_url,skills,status_text,verified_badge,role,created_at,updated_at')
+      .eq('id', user.id).maybeSingle();
+    if (row == null) {
+      return {'id': user.id, 'full_name': user.userMetadata?['full_name'] ?? '', 'email': user.email ?? '', 'role': 'student'};
+    }
+    return Map<String, dynamic>.from(row);
+  }
+  Future<void> refresh() async => setState(() => profile = loadProfile());
+  Future<void> editProfile(Map<String, dynamic> current) async {
+    final name = TextEditingController(text: (current['full_name'] ?? '').toString());
+    final username = TextEditingController(text: (current['username'] ?? '').toString());
+    final bio = TextEditingController(text: (current['bio'] ?? '').toString());
+    final location = TextEditingController(text: (current['location'] ?? '').toString());
+    final website = TextEditingController(text: (current['website_url'] ?? '').toString());
+    final skills = TextEditingController(text: current['skills'] is List ? (current['skills'] as List).join(', ') : (current['skills'] ?? '').toString());
+    final status = TextEditingController(text: (current['status_text'] ?? '').toString());
+    bool saving = false;
+    try {
+      await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
+        AlertDialog(backgroundColor: panel, title: const Text('Edit profile'),
+          content: SizedBox(width: 440, child: SingleChildScrollView(child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
+            const SizedBox(height: 10), TextField(controller: username, decoration: const InputDecoration(labelText: 'Username')),
+            const SizedBox(height: 10), TextField(controller: bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
+            const SizedBox(height: 10), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location')),
+            const SizedBox(height: 10), TextField(controller: website, decoration: const InputDecoration(labelText: 'Website URL')),
+            const SizedBox(height: 10), TextField(controller: skills, decoration: const InputDecoration(labelText: 'Skills')),
+            const SizedBox(height: 10), TextField(controller: status, decoration: const InputDecoration(labelText: 'Status')),
+          ]))),
+          actions: [
+            TextButton(onPressed: saving ? null : () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            FilledButton(onPressed: saving ? null : () async {
+              setDialogState(() => saving = true);
+              try {
+                await db.from('profiles').update({
+                  'full_name': name.text.trim(), 'username': username.text.trim(),
+                  'bio': bio.text.trim(), 'location': location.text.trim(),
+                  'website_url': website.text.trim(),
+                  'skills': parseSkillsInput(skills.text),
+                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
+                }).eq('id', db.auth.currentUser!.id);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                await refresh();
+                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Profile updated.')));
+              } catch (e) {
+                setDialogState(() => saving = false);
+                if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text('Could not update profile: $e')));
+              }
+            }, child: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save changes')),
+          ])));
+    } finally {
+      name.dispose(); username.dispose(); bio.dispose(); location.dispose(); website.dispose(); skills.dispose(); status.dispose();
+    }
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+    future: profile,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snapshot.hasError) { return Center(child: Padding(padding: const EdgeInsets.all(24), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.cloud_off_outlined, color: muted, size: 42), const SizedBox(height: 12),
+        const Text('Your profile could not be loaded', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8), Text(snapshot.error.toString(), textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+        const SizedBox(height: 14), OutlinedButton.icon(onPressed: refresh, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+      ]))); }
+      final p = snapshot.data ?? {};
+      final user = db.auth.currentUser;
+      final name = (p['full_name'] ?? '').toString().trim();
+      final role = (p['role'] ?? 'student').toString();
+      final avatar = (p['avatar_url'] ?? '').toString();
+      final isAdmin = role == 'admin' || role == 'super_admin';
+      return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
+        Center(child: flutter_ui.Column(children: [
+          CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
+            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, size: 40, color: emerald)),
+          const SizedBox(height: 13),
+          Text(name.isEmpty ? 'CreatorVerse member' : name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+          if ((p['username'] ?? '').toString().isNotEmpty) Text('@${p['username']}', style: const TextStyle(color: muted)),
+          const SizedBox(height: 4), Text(user?.email ?? '', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+          const SizedBox(height: 10),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Chip(label: Text(role.replaceAll('_', ' ').toUpperCase()), backgroundColor: emerald.withValues(alpha: .15), side: BorderSide(color: emerald.withValues(alpha: .35))),
+            if ((p['verified_badge'] ?? 'none') != 'none') ...[const SizedBox(width: 6), const Icon(Icons.verified, color: gold, size: 20)],
+          ]),
+        ])),
+        if ((p['bio'] ?? '').toString().trim().isNotEmpty) ...[
+          const SizedBox(height: 16), Text(p['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5)),
+        ],
+        const SizedBox(height: 20),
+        FilledButton.icon(onPressed: () => editProfile(p), icon: const Icon(Icons.edit_outlined), label: const Text('Edit profile'),
+          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48))),
+        const SizedBox(height: 18),
+        if ((p['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(p['location'].toString()), dense: true),
+        if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
+        if (p['skills'] is List && (p['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((p['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
+        const SizedBox(height: 12),
+        if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Administrative tools for your account.', path: '/admin.html'),
+        FeatureTile(icon: Icons.people_outline, title: 'Find members', detail: 'Discover people using CreatorVerse.', path: '/members'),
+        FeatureTile(icon: Icons.settings_outlined, title: 'Account settings', detail: 'Review your account details.', path: '/settings'),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(onPressed: () => db.auth.signOut(), icon: const Icon(Icons.logout), label: const Text('Sign out'),
+          style: OutlinedButton.styleFrom(foregroundColor: gold, minimumSize: const Size.fromHeight(50))),
+      ]));
+    });
+}
+class FeatureTile extends StatelessWidget {
+  final IconData icon; final String title, detail, path;
+  const FeatureTile({super.key, required this.icon, required this.title, required this.detail, required this.path});
+  @override
+  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Material(color: panel,
+    borderRadius: BorderRadius.circular(16), child: InkWell(borderRadius: BorderRadius.circular(16), onTap: () => openFeature(context, path),
+      child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+        Container(width: 44, height: 44, decoration: BoxDecoration(color: emerald.withValues(alpha: .13), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: emerald)),
+        const SizedBox(width: 14), Expanded(child: flutter_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), const SizedBox(height: 4),
+          Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
+        const Icon(Icons.chevron_right, color: muted)])))));
+}
+
+Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person) async {
+  final db = Supabase.instance.client;
+  final me = db.auth.currentUser?.id;
+  final other = person['id']?.toString();
+  if (me == null || other == null || me == other) return;
+  try {
+    final existing = await db.from('cv_conversations').select('id')
+      .or('and(user_a.eq.$me,user_b.eq.$other),and(user_a.eq.$other,user_b.eq.$me)').maybeSingle();
+    String id;
+    if (existing != null) {
+      id = existing['id'].toString();
+    } else {
+      final a = me.compareTo(other) < 0 ? me : other;
+      final b = me.compareTo(other) < 0 ? other : me;
+      final created = await db.from('cv_conversations')
+        .insert({'user_a': a, 'user_b': b, 'created_by': me}).select('id').single();
+      id = created['id'].toString();
+    }
+    if (!context.mounted) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) =>
+      MessageThreadScreen(conversationId: id, person: person)));
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open this conversation: $e')));
+    }
+  }
+}
+
+void openFeature(BuildContext context, String path) {
+  if (path == '/certificates') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
+    return;
+  }
+  if (path == '/academy-applications') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+    return;
+  }
+  if (path == '/messages.html' || path == '/messages') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+    return;
+  }
+  if (path == '/notifications.html' || path == '/notifications') {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+      appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
+    return;
+  }
+  Widget? destination;
+  String title = 'CreatorVerse';
+  switch (path) {
+    case '/community.html':
+      destination = const CommunityTab(); title = 'Community'; break;
+    case '/digital-skills.html':
+    case '/divisions.html':
+      destination = const LearnTab(); title = 'Learn'; break;
+    case '/academic.html':
+      destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
+    case '/academic-secondary.html':
+    case '/academic-tertiary.html':
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AuthenticatedAcademyWebScreen(path: path)));
+      return;
+    case '/campus.html':
+    case '/campus-life.html':
+      destination = const CampusTab(); title = 'Campus Life'; break;
+    case '/marketplace.html':
+      destination = const MarketplaceScreen(); title = 'Marketplace'; break;
+    case '/housing':
+      destination = const MarketplaceFilteredScreen(listingType: 'rental', title: 'Verified Housing', description: 'Browse accommodation and rental listings published by verified CreatorVerse sellers.'); title = 'Verified Housing'; break;
+    case '/delivery':
+      destination = const MarketplaceFilteredScreen(listingType: 'service', title: 'Campus Services & Delivery', description: 'Browse approved services and delivery providers from verified campus sellers.'); title = 'Campus Services'; break;
+    case '/profile.html':
+      destination = const ProfileTab(); title = 'My profile'; break;
+    case '/members':
+      destination = const MemberDirectoryScreen(); title = 'Find members'; break;
+    case '/settings':
+      destination = const AccountSettingsScreen(); title = 'Account settings'; break;
+    case '/admin.html':
+      destination = const AdminWorkspaceScreen(); title = 'Admin workspace'; break;
+    default:
+      destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
+        description: 'This section is part of CreatorVerse. Its native app experience is being built next; your website account and data remain shared.',
+        icon: path.contains('marketplace') ? Icons.storefront_outlined : Icons.school_outlined);
+      title = path.contains('marketplace') ? 'Marketplace' : 'Academic';
+  }
+  Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+    appBar: AppBar(title: Text(title)), body: destination!)));
+}
+
+class NativeSpaceScreen extends StatelessWidget {
+  final String title, description; final IconData icon;
+  const NativeSpaceScreen({super.key, required this.title, required this.description, required this.icon});
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(28), child: flutter_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+    Icon(icon, size: 54, color: emerald), const SizedBox(height: 18),
+    Text(title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 10), Text(description, textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
+  ])));
+}
+
+class MemberDirectoryScreen extends StatefulWidget {
+  const MemberDirectoryScreen({super.key});
+  @override
+  State<MemberDirectoryScreen> createState() => _MemberDirectoryScreenState();
+}
+class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
+  final db = Supabase.instance.client;
+  final search = TextEditingController();
+  late Future<List<Map<String, dynamic>>> members;
+  @override
+  void initState() { super.initState(); members = loadMembers(); }
+  @override
+  void dispose() { search.dispose(); super.dispose(); }
+  Future<List<Map<String, dynamic>>> loadMembers() async {
+    var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge,role');
+    final term = sanitizeSearchTerm(search.text);
+    if (term.length >= 2) query = query.or('full_name.ilike.%$term%,username.ilike.%$term%');
+    final rows = await query.neq('id', db.auth.currentUser!.id).limit(40);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+  void runSearch() => setState(() => members = loadMembers());
+  @override
+  Widget build(BuildContext context) => flutter_ui.Column(children: [
+    Padding(padding: const EdgeInsets.all(16), child: TextField(controller: search, onSubmitted: (_) => runSearch(),
+      decoration: InputDecoration(hintText: 'Search name or username', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(onPressed: runSearch, icon: const Icon(Icons.arrow_forward, color: emerald))))),
+    Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: members, builder: (context, snap) {
+      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
+      if (snap.hasError) return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Member directory unavailable: ${snap.error}', textAlign: TextAlign.center, style: const TextStyle(color: muted))));
+      final rows = snap.data ?? [];
+      if (rows.isEmpty) return const Center(child: Text('No members found.', style: TextStyle(color: muted)));
+      return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+        itemBuilder: (context, index) {
+          final p = rows[index]; final avatar = (p['avatar_url'] ?? '').toString();
+          return ListTile(leading: CircleAvatar(backgroundColor: const Color(0x3320B887),
+            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald)),
+            title: Row(children: [Flexible(child: Text((p['full_name'] ?? 'CreatorVerse member').toString(), overflow: TextOverflow.ellipsis)),
+              if ((p['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 16))]),
+            subtitle: Text('@${p['username'] ?? 'member'} · ${p['role'] ?? 'student'}', style: const TextStyle(color: muted)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
+        });
+    })),
+  ]);
+}
+
+class PublicMemberProfileScreen extends StatefulWidget {
+  final Map<String, dynamic> profile;
+  const PublicMemberProfileScreen({super.key, required this.profile});
+  @override
+  State<PublicMemberProfileScreen> createState() => _PublicMemberProfileScreenState();
+}
+
+class _PublicMemberProfileScreenState extends State<PublicMemberProfileScreen> {
+  final db = Supabase.instance.client;
+  bool? isFollowing;
+  bool busy = false;
+  int followerCount = 0;
+  int followingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    loadRelationship();
+  }
+
+  Future<void> loadRelationship() async {
+    final me = db.auth.currentUser?.id;
+    final other = widget.profile['id']?.toString();
+    if (me == null || other == null) return;
+    try {
+      final relation = await db.from('community_follows').select('follower_id')
+        .eq('follower_id', me).eq('following_id', other).maybeSingle();
+      final followers = await db.from('community_follows').select('follower_id')
+        .eq('following_id', other).count(CountOption.exact);
+      final following = await db.from('community_follows').select('following_id')
+        .eq('follower_id', other).count(CountOption.exact);
+      if (!mounted) return;
+      setState(() {
+        isFollowing = relation != null;
+        followerCount = followers.count;
+        followingCount = following.count;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => isFollowing = false);
+      }
+    }
+  }
+
+  Future<void> toggleFollow() async {
+    final me = db.auth.currentUser?.id;
+    final other = widget.profile['id']?.toString();
+    if (me == null || other == null || busy || isFollowing == null) return;
+    setState(() => busy = true);
+    try {
+      if (isFollowing!) {
+        await db.from('community_follows').delete().eq('follower_id', me).eq('following_id', other);
+        if (mounted) {
+          setState(() { isFollowing = false; followerCount = (followerCount - 1).clamp(0, 1 << 30).toInt(); });
+        }
+      } else {
+        await db.from('community_follows').insert({'follower_id': me, 'following_id': other});
+        if (mounted) {
+          setState(() { isFollowing = true; followerCount += 1; });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update follow status: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = widget.profile;
+    final avatar = (profile['avatar_url'] ?? '').toString();
+    final me = db.auth.currentUser?.id;
+    final ownProfile = me == profile['id']?.toString();
+    return Scaffold(appBar: AppBar(title: const Text('Member profile')), body: ListView(padding: const EdgeInsets.all(22), children: [
+      Center(child: CircleAvatar(radius: 44, backgroundColor: const Color(0x3320B887),
+        backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+        child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 42))),
+      const SizedBox(height: 14),
+      Text((profile['full_name'] ?? 'CreatorVerse member').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4), Text('@${profile['username'] ?? 'member'}', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
+      if ((profile['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(top: 6), child: Icon(Icons.verified, color: gold, size: 20)),
+      if ((profile['bio'] ?? '').toString().isNotEmpty) ...[const SizedBox(height: 14), Text(profile['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5))],
+      if ((profile['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(profile['location'].toString())),
+      if (profile['skills'] is List && (profile['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((profile['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted))),
+      const SizedBox(height: 8),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text('$followerCount followers', style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(width: 18), Text('$followingCount following', style: const TextStyle(color: muted)),
+      ]),
+      const SizedBox(height: 18),
+      if (!ownProfile) Row(children: [
+        Expanded(child: OutlinedButton.icon(onPressed: busy || isFollowing == null ? null : toggleFollow,
+          icon: busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(isFollowing == true ? Icons.person_remove_outlined : Icons.person_add_alt_1),
+          label: Text(isFollowing == true ? 'Following' : 'Follow'))),
+        const SizedBox(width: 10),
+        Expanded(child: FilledButton.icon(onPressed: () => openDirectMessage(context, profile),
+          icon: const Icon(Icons.chat_bubble_outline), label: const Text('Message'),
+          style: FilledButton.styleFrom(backgroundColor: emerald))),
+      ]),
+    ]));
+  }
+}
+
+Future<void> openLink(String path) async {
+  await launchUrl(Uri.parse('https://creatorverse-ai.vercel.app$path'), mode: LaunchMode.externalApplication);
+}
+)
+        .hasMatch(target);
+      Map<String, dynamic>? row;
+      if (isUuid) {
+        row = await db.from('public_profiles')
+          .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
+          .eq('id', target).maybeSingle();
+      }
       row ??= await db.from('public_profiles')
         .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
         .eq('username', target).maybeSingle();
