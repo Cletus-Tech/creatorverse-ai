@@ -1010,6 +1010,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         FilledButton(onPressed: () => Navigator.pop(ctx,true), child: const Text('Submit for review'))],
     )));
     final titleText = title.text.trim(), descText = description.text.trim(), priceText = price.text.trim();
+    final institutionText = institutionField.text.trim(), campusText = campusField.text.trim(), locationText = location.text.trim();
     title.dispose(); description.dispose(); price.dispose(); campusField.dispose(); institutionField.dispose(); location.dispose();
     if (ok != true) return;
     if (titleText.length < 4 || descText.length < 10 || (priceText.isNotEmpty && int.tryParse(priceText) == null)) {
@@ -1021,9 +1022,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       final inserted = await db.from('marketplace_listings').insert({
         'seller_id': seller['id'], 'category_id': category, 'title': titleText, 'description': descText,
         'listing_type': type, 'price_ngn': priceText.isEmpty ? null : int.parse(priceText),
-        'institution': institutionField.text.trim().isEmpty ? null : institutionField.text.trim(),
-        'campus': campusField.text.trim().isEmpty ? null : campusField.text.trim(),
-        'location_label': location.text.trim().isEmpty ? null : location.text.trim(),
+        'institution': institutionText.isEmpty ? null : institutionText,
+        'campus': campusText.isEmpty ? null : campusText,
+        'location_label': locationText.isEmpty ? null : locationText,
         'status': 'draft',
       }).select('id').single();
       await db.rpc('marketplace_submit_listing', params: {'p_listing_id': inserted['id']});
@@ -1114,15 +1115,17 @@ class _MarketplaceEnquiriesScreenState extends State<MarketplaceEnquiriesScreen>
   @override void initState(){super.initState();rows=load();}
   Future<List<Map<String,dynamic>>> load() async {
     final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to view enquiries.');
-    final data=await db.from('marketplace_enquiries').select('id,listing_id,buyer_id,seller_id,status,last_message_at,marketplace_listings(title),marketplace_sellers(display_name,user_id)')
-      .or('buyer_id.eq.${user.id},seller_id.in.(${await sellerIds(user.id)})')
-      .order('last_message_at',ascending:false);
-    return List<Map<String,dynamic>>.from(data);
-  }
-  Future<String> sellerIds(String userId) async {
-    final result=await db.from('marketplace_sellers').select('id').eq('user_id',userId);
-    return List<Map<String,dynamic>>.from(result).map((r)=>r['id'].toString()).join(',');
-  }
+    final sellers=await db.from('marketplace_sellers').select('id').eq('user_id',user.id);
+    final ids=List<Map<String,dynamic>>.from(sellers).map((r)=>r['id']).toList();
+    final buyerRows=await db.from('marketplace_enquiries').select('id,listing_id,buyer_id,seller_id,status,last_message_at,marketplace_listings(title)')
+      .eq('buyer_id',user.id).order('last_message_at',ascending:false);
+    final sellerRows=ids.isEmpty ? <Map<String,dynamic>>[] : List<Map<String,dynamic>>.from(await db.from('marketplace_enquiries')
+      .select('id,listing_id,buyer_id,seller_id,status,last_message_at,marketplace_listings(title)')
+      .inFilter('seller_id',ids).order('last_message_at',ascending:false));
+    final combined=<String,Map<String,dynamic>>{};
+    for(final row in [...List<Map<String,dynamic>>.from(buyerRows),...sellerRows]){combined[row['id'].toString()]=row;}
+    final result=combined.values.toList()..sort((a,b)=>b['last_message_at'].toString().compareTo(a['last_message_at'].toString()));
+    return result;
   Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Marketplace enquiries')),body:FutureBuilder<List<Map<String,dynamic>>>(future:rows,builder:(context,snap){
     if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
