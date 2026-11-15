@@ -4,7 +4,7 @@
 #cv-helper-launch:focus-visible{outline:3px solid #e7ca83;outline-offset:4px}
 .cv-helper-robot{width:39px;height:39px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#fff2cf,#d6b36a);box-shadow:inset 0 1px 2px #fff}
 .cv-helper-robot svg{width:34px;height:34px;fill:none;stroke:#173522;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.cv-helper-online{position:absolute;width:10px;height:10px;right:2px;bottom:3px;border:2px solid #10284e;border-radius:50%;background:#51dfad}
+.cv-helper-online{position:absolute;width:10px;height:10px;right:2px;bottom:3px;border:2px solid #10291d;border-radius:50%;background:#51dfad}
 .cv-helper-orbit{position:absolute;inset:-5px;border:1px solid rgba(214,179,106,.4);border-radius:50%;pointer-events:none}
 #cv-helper-greeting{position:absolute;right:0;bottom:70px;width:min(290px,calc(100vw - 32px));padding:13px 15px;border:1px solid rgba(214,179,106,.42);border-radius:15px;background:linear-gradient(145deg,rgba(16,41,29,.99),rgba(7,20,15,.99));color:#edf5ec;font-size:12px;line-height:1.55;box-shadow:0 14px 38px #000b,0 0 0 1px #8bb8ff18;pointer-events:auto;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(10px) scale(.97);transition:opacity .32s ease,transform .32s ease,visibility .32s ease}
 #cv-helper-greeting.is-visible{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
