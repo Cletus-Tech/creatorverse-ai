@@ -301,8 +301,8 @@ function analytics(){
         var sel=h('select',{'aria-label':'Role'},['student','creator','instructor','moderator','admin','super_admin'].map(function(x){return h('option',{value:x,text:x.replace('_',' ')})}));
         sel.value=p.role;if(role!=='super_admin'||p.id===user.id)sel.disabled=true;
         var badge=h('select',{'aria-label':'Verification tick'});[['none','No tick'],['blue','Blue tick']].forEach(function(x){badge.appendChild(h('option',{value:x[0],text:x[1]}))});badge.value=p.verified_badge&&p.verified_badge!=='none'?'blue':'none';if(role!=='super_admin'||p.id===user.id)badge.disabled=true;
-        badge.addEventListener('change',function(){sb.from('profiles').update({verified_badge:badge.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);badge.value=p.verified_badge||'none'}else p.verified_badge=badge.value})});
-        sel.addEventListener('change',function(){sb.from('profiles').update({role:sel.value}).eq('id',p.id).then(function(u){if(u.error){alert(u.error.message);sel.value=p.role}else p.role=sel.value})});
+        badge.addEventListener('change',function(){sb.rpc('admin_set_profile_access',{p_user_id:p.id,p_role:null,p_verified_badge:badge.value}).then(function(u){if(u.error){alert(u.error.message);badge.value=p.verified_badge||'none'}else p.verified_badge=badge.value})});
+        sel.addEventListener('change',function(){sb.rpc('admin_set_profile_access',{p_user_id:p.id,p_role:sel.value,p_verified_badge:null}).then(function(u){if(u.error){alert(u.error.message);sel.value=p.role}else p.role=sel.value})});
         var name=h('button',{type:'button',class:'btn btn-outline',text:p.full_name||'(no name)',on:function(){showStudent(p)}});
         tb.appendChild(h('div',{class:'trow'},[h('span',{},[name,h('small',{text:p.email||''})]),h('small',{text:(ec[p.id]||0)+' enrolled'}),h('small',{text:new Date(p.created_at).toLocaleDateString()}),sel,badge]));
       })
