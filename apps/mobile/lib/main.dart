@@ -2089,6 +2089,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
+    if (uri.path.endsWith('/marketplace-enquiries.html') || uri.path == 'marketplace-enquiries.html') {
+      final enquiryId = uri.queryParameters['id'];
+      if (enquiryId != null && enquiryId.isNotEmpty) {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
+      } else {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
+      }
+      return;
+    }
     var path = uri.path;
     if (!path.startsWith('/')) path = '/$path';
     if (path == '/messages.html' || path == '/messages') {
