@@ -1648,6 +1648,26 @@ class _CommunityTabState extends State<CommunityTab> {
       else{await db.from('community_saves').insert({'user_id':me,'post_id':id});}
     }catch(_){if(mounted)await refresh();}
   }
+  Future<void> reportPost(Map<String,dynamic> post) async {
+    String reason='spam';final details=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,
+      title:const Text('Report this post'),
+      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        DropdownButtonFormField<String>(value:reason,decoration:const InputDecoration(labelText:'Reason'),
+          items:const [DropdownMenuItem(value:'spam',child:Text('Spam or misleading')),DropdownMenuItem(value:'harassment',child:Text('Harassment or bullying')),
+            DropdownMenuItem(value:'scam',child:Text('Scam or fraud')),DropdownMenuItem(value:'inappropriate',child:Text('Inappropriate content')),
+            DropdownMenuItem(value:'other',child:Text('Other'))],
+          onChanged:(v)=>setDialog(()=>reason=v??reason)),
+        const SizedBox(height:10),TextField(controller:details,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'Additional details (optional)')),
+      ]),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Submit report'))])));
+    if(!mounted){details.dispose();return;}
+    final note=details.text.trim();details.dispose();if(ok!=true)return;
+    try{
+      await db.from('community_reports').insert({'reporter_id':db.auth.currentUser!.id,'post_id':post['id'],'reason':reason,'details':note.isEmpty?null:note,'status':'pending'});
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Report submitted to the moderation team.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not submit report: $e')));}
+  }
   Future<void> showComments(Map<String, dynamic> post) async {
     await showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel,
       builder: (_) => CommentsSheet(post: post));
@@ -1691,13 +1711,13 @@ class _CommunityTabState extends State<CommunityTab> {
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
           Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post)),
+        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onReport: () => reportPost(post)),
       ]));
     });
 }
 class CommunityPostCard extends StatelessWidget {
-  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave;
-  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave});
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport});
   @override
   Widget build(BuildContext context) {
     final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
@@ -1715,6 +1735,9 @@ class CommunityPostCard extends StatelessWidget {
               if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
             Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
           Text(_timeAgo(post['created_at']?.toString()), style: const TextStyle(color: muted, fontSize: 10)),
+          PopupMenuButton<String>(onSelected:(value){if(value=='report')onReport();},itemBuilder:(_)=>const [
+            PopupMenuItem(value:'report',child:Row(children:[Icon(Icons.flag_outlined,size:18),SizedBox(width:8),Text('Report post')]))]),
+
         ])),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         Padding(padding: const EdgeInsets.fromLTRB(14, 7, 14, 12), child: Text((post['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.45))),
