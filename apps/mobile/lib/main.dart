@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -143,7 +144,7 @@ class HomeTab extends StatelessWidget {
         border: Border.all(color: emerald.withValues(alpha: .3))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('YOUR NEXT CHAPTER STARTS HERE', style: TextStyle(color: gold, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12), Text('Hello' + (n == null || n.isEmpty ? '' : ', $n') + '.', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12), Text('Hello${n == null || n.isEmpty ? '' : ', $n'}.', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8), const Text('Learn new skills, explore opportunities and find your community.', style: TextStyle(color: Colors.white70, height: 1.5)),
           const SizedBox(height: 16), FilledButton(onPressed: () => openLink('/divisions.html'), style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Explore CreatorVerse'))])),
       const SizedBox(height: 24), const Text('Explore your spaces', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
