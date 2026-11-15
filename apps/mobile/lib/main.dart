@@ -686,6 +686,23 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
   }
 }
 
+class AcademicHubScreen extends StatelessWidget {
+  const AcademicHubScreen({super.key});
+  @override
+  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [
+    const Text('Academic Learning', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 8),
+    const Text('Choose the education level that matches you. Secondary and tertiary learning have separate spaces and resources.', style: TextStyle(color: muted, height: 1.5)),
+    const SizedBox(height: 18),
+    FeatureTile(icon: Icons.school_outlined, title: 'Secondary School',
+      detail: 'Prepare for recognised school-leaving and entrance examinations with organised subjects and study resources.',
+      path: '/academic-secondary.html'),
+    FeatureTile(icon: Icons.account_balance_outlined, title: 'Tertiary Institutions',
+      detail: 'A dedicated academic space for universities and other higher institutions.',
+      path: '/academic-tertiary.html'),
+  ]);
+}
+
 class CampusTab extends StatelessWidget {
   const CampusTab({super.key});
   @override
@@ -1853,6 +1870,12 @@ void openFeature(BuildContext context, String path) {
     case '/digital-skills.html':
     case '/divisions.html':
       destination = const LearnTab(); title = 'Learn'; break;
+    case '/academic.html':
+      destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
+    case '/academic-secondary.html':
+      destination = const NativeSpaceScreen(title: 'Secondary School', description: 'Secondary school examination resources and organised subject learning are being prepared for the native app.', icon: Icons.school_outlined); title = 'Secondary School'; break;
+    case '/academic-tertiary.html':
+      destination = const NativeSpaceScreen(title: 'Tertiary Institutions', description: 'University and higher-institution academic resources are being prepared for the native app.', icon: Icons.account_balance_outlined); title = 'Tertiary Institutions'; break;
     case '/campus.html':
     case '/campus-life.html':
       destination = const CampusTab(); title = 'Campus Life'; break;
