@@ -825,7 +825,7 @@ class _ProfileTabState extends State<ProfileTab> {
     final bio = TextEditingController(text: (current['bio'] ?? '').toString());
     final location = TextEditingController(text: (current['location'] ?? '').toString());
     final website = TextEditingController(text: (current['website_url'] ?? '').toString());
-    final skills = TextEditingController(text: (current['skills'] ?? '').toString());
+    final skills = TextEditingController(text: current['skills'] is List ? (current['skills'] as List).join(', ') : (current['skills'] ?? '').toString());
     final status = TextEditingController(text: (current['status_text'] ?? '').toString());
     bool saving = false;
     try {
@@ -849,7 +849,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   'full_name': name.text.trim(), 'username': username.text.trim(),
                   'bio': bio.text.trim(), 'location': location.text.trim(),
                   'website_url': website.text.trim(), 'skills': skills.text.trim(),
-                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
+                  'status_text': status.text.trim(), 'skills': skills.text.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList(), 'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', db.auth.currentUser!.id);
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
@@ -929,6 +929,33 @@ class FeatureTile extends StatelessWidget {
           Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), const SizedBox(height: 4),
           Text(detail, style: const TextStyle(color: muted, fontSize: 12, height: 1.4))])),
         const Icon(Icons.chevron_right, color: muted)])))));
+}
+
+Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person) async {
+  final db = Supabase.instance.client;
+  final me = db.auth.currentUser?.id;
+  final other = person['id']?.toString();
+  if (me == null || other == null || me == other) return;
+  try {
+    final existing = await db.from('cv_conversations').select('id')
+      .or('and(user_a.eq.$me,user_b.eq.$other),and(user_a.eq.$other,user_b.eq.$me)').maybeSingle();
+    String id;
+    if (existing != null) {
+      id = existing['id'].toString();
+    } else {
+      final a = me.compareTo(other) < 0 ? me : other;
+      final b = me.compareTo(other) < 0 ? other : me;
+      final created = await db.from('cv_conversations')
+        .insert({'user_a': a, 'user_b': b, 'created_by': me}).select('id').single();
+      id = created['id'].toString();
+    }
+    if (!context.mounted) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) =>
+      MessageThreadScreen(conversationId: id, person: person)));
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not open this conversation: $e')));
+  }
 }
 
 void openFeature(BuildContext context, String path) {
@@ -1035,8 +1062,8 @@ class PublicMemberProfileScreen extends StatelessWidget {
       if ((profile['bio'] ?? '').toString().isNotEmpty) ...[const SizedBox(height: 14), Text(profile['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5))],
       if ((profile['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(profile['location'].toString())),
       const SizedBox(height: 16),
-      FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen())),
-        icon: const Icon(Icons.chat_bubble_outline), label: const Text('Open messages'), style: FilledButton.styleFrom(backgroundColor: emerald)),
+      FilledButton.icon(onPressed: () => openDirectMessage(context, profile),
+        icon: const Icon(Icons.chat_bubble_outline), label: const Text('Message member'), style: FilledButton.styleFrom(backgroundColor: emerald)),
     ]));
   }
 }
