@@ -766,7 +766,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.storefront_outlined, color: emerald, size: 46),
           const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings and seller applications will appear after that setup is completed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
+          const SizedBox(height: 8), const Text('The Marketplace database migrations are not deployed to the shared account yet. Live listings can load after setup; seller onboarding and buyer enquiries still need their native app workflows.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
           const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
         ])));
       }
@@ -830,7 +830,7 @@ class MarketplaceListingScreen extends StatelessWidget {
       const SizedBox(height: 8), Text(price == null ? 'Price on request' : (price == 0 ? 'Free' : '₦$price'), style: const TextStyle(color: emerald, fontSize: 18, fontWeight: FontWeight.w800)),
       const SizedBox(height: 12), Text((listing['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.55)),
       const SizedBox(height: 14), ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(location.isEmpty ? 'Campus listing' : location)),
-      const SizedBox(height: 12), const Text('Buyer enquiries and seller contact will be available when the Marketplace services are enabled.', style: TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 12), const Text('Native buyer enquiries and seller tools are still being added; this listing is currently for discovery only.', style: TextStyle(color: muted, height: 1.5)),
     ]));
   }
 }
