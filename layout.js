@@ -86,7 +86,7 @@ var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThem
  var key='cv-home-theme',html=document.documentElement,body=document.body;
  function apply(theme,save){
   theme=theme==='light'?'light':'dark';
-  html.setAttribute('data-cv-theme',theme);
+  html.setAttribute('data-cv-theme',theme);html.setAttribute('data-cv-home-theme',theme);
   body.setAttribute('data-cv-theme',theme);
   if(save){try{localStorage.setItem(key,theme)}catch(e){}}
   var meta=document.querySelector('meta[name="theme-color"]');
