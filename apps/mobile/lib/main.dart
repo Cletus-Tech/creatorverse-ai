@@ -1134,11 +1134,11 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     final user = db.auth.currentUser;
     if (user == null) throw StateError('Sign in to manage a seller profile.');
     final seller = await db.from('marketplace_sellers').select(
-      'id,user_id,display_name,seller_type,institution,campus,bio,status,review_note,created_at'
+      'id,user_id,display_name,seller_type,institution,campus,bio,status,created_at'
     ).eq('user_id', user.id).maybeSingle();
     if (seller == null) return {'seller': null, 'listings': <Map<String,dynamic>>[]};
     final rows = await db.from('marketplace_listings').select(
-      'id,title,description,status,price_ngn,created_at,moderation_note'
+      'id,title,description,status,price_ngn,created_at'
     ).eq('seller_id', seller['id']).order('created_at', ascending: false).limit(50);
     return {'seller': seller, 'listings': List<Map<String,dynamic>>.from(rows)};
   }
@@ -1257,7 +1257,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       const SizedBox(height:10),Card(color:panel,child:ListTile(
         leading:Icon(status=='verified'?Icons.verified:Icons.storefront_outlined,color:status=='verified'?emerald:gold),
         title:Text((seller['display_name']??'Seller').toString()),
-        subtitle:Text('Status: ${status.toUpperCase()}\n${seller['review_note']??'Your profile is reviewed by the Marketplace team.'}',style:const TextStyle(color:muted,height:1.5)),
+        subtitle:Text('Status: ${status.toUpperCase()}\n${status=='verified'?'Your seller profile is approved.':'Your profile is reviewed by the Marketplace team.'}',style:const TextStyle(color:muted,height:1.5)),
       )),
       if(status=='verified') ...[
         const SizedBox(height:12),FilledButton.icon(onPressed:busy?null:()=>createListing(seller),style:FilledButton.styleFrom(backgroundColor:emerald),
@@ -1267,7 +1267,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not submitted any listings yet.',style:TextStyle(color:muted))),
       for(final listing in listings) Card(color:panel,child:ListTile(
         title:Text((listing['title']??'Untitled listing').toString()),
-        subtitle:Text('${listing['status']} · ${listing['moderation_note']??''}',style:const TextStyle(color:muted)),
+        subtitle:Text((listing['status']??'').toString(),style:const TextStyle(color:muted)),
         trailing:Text(listing['price_ngn']==null?'Ask':'₦${listing['price_ngn']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w700)),
       )),
     ]));
