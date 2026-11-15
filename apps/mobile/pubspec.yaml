@@ -22,7 +22,7 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: assets/creatorverse-icon.png
   adaptive_icon_background: "#06130C"
   adaptive_icon_foreground: assets/creatorverse-icon.png
