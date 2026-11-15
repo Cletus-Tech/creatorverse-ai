@@ -2207,14 +2207,14 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
     onPopInvokedWithResult:(didPop,result){if(!didPop)closeRoom();},
     child:Scaffold(appBar:AppBar(title:Text(pageTitle),leading:IconButton(onPressed:closeRoom,icon:const Icon(Icons.arrow_back))),
       body:InAppWebView(
-        initialUrlRequest:URLRequest(url:WebUri('$origin/mobile-session-bridge.html')),
+        initialUrlRequest:URLRequest(url:WebUri('$origin/certificate.html')),
         initialSettings:InAppWebViewSettings(
           javaScriptEnabled:true,domStorageEnabled:true,mediaPlaybackRequiresUserGesture:false,
           allowsInlineMediaPlayback:true,supportZoom:false,thirdPartyCookiesEnabled:true,
         ),
         onWebViewCreated:(webController)=>controller=webController,
         onLoadStop:(webController,url) async {
-          if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/mobile-session-bridge.html'){
+          if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/certificate.html'){
             try{await injectSessionAndOpen();}catch(e){if(!context.mounted)return;ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open secure interview room: $e')));}
           }
         },
