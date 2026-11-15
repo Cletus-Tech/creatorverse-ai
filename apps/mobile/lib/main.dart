@@ -3303,7 +3303,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> openMemberFromNotification(String target) async {
     try {
-      final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}      if (!mounted) return;
+      final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+          .hasMatch(target);
+      Map<String, dynamic>? row;
+      if (isUuid) {
+        row = await db.from('public_profiles')
+          .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
+          .eq('id', target).maybeSingle();
+      }
+      row ??= await db.from('public_profiles')
+        .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
+        .eq('username', target).maybeSingle();
+      if (!mounted) return;
       if (row == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This member profile is no longer available.')));
