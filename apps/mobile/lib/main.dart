@@ -672,7 +672,6 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ]))),
     ]));
 }
-}
 class LinkPage extends StatelessWidget {
   final IconData icon; final String title, description, button, path;
   const LinkPage({super.key, required this.icon, required this.title, required this.description, required this.button, required this.path});
