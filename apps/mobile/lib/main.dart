@@ -1494,9 +1494,10 @@ class CommunityTab extends StatefulWidget {
 }
 class _CommunityTabState extends State<CommunityTab> {
   late Future<List<Map<String, dynamic>>> feed;
+  late Future<List<Map<String, dynamic>>> stories;
   final db = Supabase.instance.client;
   @override
-  void initState() { super.initState(); feed = loadFeed(); }
+  void initState() { super.initState(); feed = loadFeed(); stories = loadStories(); }
   Future<List<Map<String, dynamic>>> loadFeed() async {
     final raw = await db.from('community_posts')
       .select('id,user_id,title,description,image_url,destination_url,category,tags,created_at')
@@ -1523,7 +1524,53 @@ class _CommunityTabState extends State<CommunityTab> {
     }
     return posts;
   }
-  Future<void> refresh() async { final next = loadFeed(); setState(() => feed = next); await next; }
+  Future<List<Map<String,dynamic>>> loadStories() async {
+    final now=DateTime.now().toUtc().toIso8601String();
+    final raw=await db.from('cv_stories').select('id,user_id,content,media_url,media_type,background,created_at,expires_at')
+      .gt('expires_at',now).order('created_at',ascending:false).limit(30);
+    final rows=List<Map<String,dynamic>>.from(raw);
+    if(rows.isEmpty)return rows;
+    final ids=rows.map((r)=>r['user_id'].toString()).toSet().toList();
+    final profiles=await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
+    final byId={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
+    for(final row in rows){row['author']=byId[row['user_id'].toString()]??{};}
+    return rows;
+  }
+  Future<void> refresh() async {
+    final nextFeed=loadFeed(),nextStories=loadStories();
+    setState((){feed=nextFeed;stories=nextStories;});
+    await Future.wait([nextFeed,nextStories]);
+  }
+  Future<void> createStory() async {
+    final input=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Share a 24-hour story'),
+      content:TextField(controller:input,minLines:3,maxLines:5,maxLength:500,decoration:const InputDecoration(hintText:'What would you like your community to see?')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Share story'))]));
+    if(!mounted){input.dispose();return;}
+    final content=input.text.trim();input.dispose();
+    if(ok!=true)return;
+    if(content.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Write something before sharing.')));return;}
+    try{
+      final now=DateTime.now().toUtc();
+      await db.from('cv_stories').insert({'user_id':db.auth.currentUser!.id,'content':content,
+        'background':'#123D35','expires_at':now.add(const Duration(hours:24)).toIso8601String()});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not publish story: $e')));}
+  }
+  Future<void> viewStory(Map<String,dynamic> story) async {
+    final me=db.auth.currentUser?.id;
+    if(me!=null&&story['user_id']!=me){
+      try{await db.from('cv_story_views').insert({'story_id':story['id'],'viewer_id':me});}catch(_){}
+    }
+    if(!mounted)return;
+    final author=Map<String,dynamic>.from(story['author'] as Map? ?? {});
+    await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,
+      builder:(_)=>SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
+        const SizedBox(height:8),Text((story['content']??'').toString(),style:const TextStyle(fontSize:20,height:1.5)),
+        const SizedBox(height:18),Align(alignment:Alignment.centerRight,child:Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:muted,fontSize:11))),
+      ]))));
+  }
   Future<void> createPost() async {
     final title = TextEditingController(), body = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
@@ -1577,10 +1624,27 @@ class _CommunityTabState extends State<CommunityTab> {
       final posts = snapshot.data ?? [];
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
         Row(children: [const Expanded(child: Text('Community', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
+          TextButton.icon(onPressed:createStory,icon:const Icon(Icons.add_circle_outline,color:gold,size:18),label:const Text('Story')),
+          const SizedBox(width:4),
           FilledButton.icon(onPressed: createPost, icon: const Icon(Icons.add, size: 18), label: const Text('Post'),
             style: FilledButton.styleFrom(backgroundColor: emerald))]),
         const SizedBox(height: 6), const Text('Ideas, updates and conversations from CreatorVerse members.', style: TextStyle(color: muted)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        FutureBuilder<List<Map<String,dynamic>>>(future:stories,builder:(context,storySnap){
+          final items=storySnap.data??[];
+          return SizedBox(height:104,child:ListView(scrollDirection:Axis.horizontal,children:[
+            InkWell(onTap:createStory,child:Container(width:78,margin:const EdgeInsets.only(right:10),child:flutter_ui.Column(children:[
+              Container(width:62,height:62,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:gold,width:2),color:panel),child:const Icon(Icons.add,color:gold,size:28)),
+              const SizedBox(height:6),const Text('Your story',style:TextStyle(fontSize:10,color:muted)),
+            ]))),
+            for(final story in items)InkWell(onTap:()=>viewStory(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:flutter_ui.Column(children:[
+              Container(width:62,height:62,padding:const EdgeInsets.all(3),decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:emerald,width:2)),
+                child:CircleAvatar(backgroundColor:const Color(0xFF174B3B),child:Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString().characters.first.toUpperCase(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)))),
+              const SizedBox(height:6),Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'Member').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:10,color:muted)),
+            ]))),
+          ]));
+        }),
+        const SizedBox(height: 14),
         if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: flutter_ui.Column(children: [
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
           Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
