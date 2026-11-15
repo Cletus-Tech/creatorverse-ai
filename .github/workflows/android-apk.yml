@@ -78,6 +78,24 @@ jobs:
       - name: Install packages
         working-directory: apps/mobile
         run: flutter pub get
+      - name: Patch Android webview plugin ProGuard configuration
+        working-directory: apps/mobile
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          plugin_dirs = list((Path.home() / '.pub-cache/hosted/pub.dev').glob('flutter_inappwebview_android-*/android'))
+          if not plugin_dirs:
+              raise SystemExit('flutter_inappwebview_android Gradle file was not found in the pub cache')
+          for plugin_dir in plugin_dirs:
+              gradle_file = plugin_dir / 'build.gradle'
+              source = gradle_file.read_text()
+              updated = source.replace("'proguard-android.txt'", "'proguard-android-optimize.txt'")
+              updated = updated.replace('"proguard-android.txt"', '"proguard-android-optimize.txt"')
+              if updated == source and 'proguard-android-optimize.txt' not in source:
+                  raise SystemExit(f'Unexpected ProGuard configuration in {gradle_file}')
+              if updated != source:
+                  gradle_file.write_text(updated)
+          PY
       - name: Generate original CreatorVerse launcher icon
         working-directory: apps/mobile
         run: |
