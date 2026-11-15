@@ -906,7 +906,7 @@ class _ProfileTabState extends State<ProfileTab> {
         const SizedBox(height: 18),
         if ((p['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(p['location'].toString()), dense: true),
         if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
-        if ((p['skills'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text(p['skills'].toString()), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
+        if (p['skills'] is List && (p['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((p['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
         const SizedBox(height: 12),
         if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Administrative tools for your account.', path: '/admin.html'),
         FeatureTile(icon: Icons.people_outline, title: 'Find members', detail: 'Discover people using CreatorVerse.', path: '/members'),
@@ -961,8 +961,6 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 void openFeature(BuildContext context, String path) {
   Widget? destination;
   String title = 'CreatorVerse';
-  String detail = 'This space is being prepared for the native app.';
-  IconData icon = Icons.auto_awesome_outlined;
   switch (path) {
     case '/community.html':
       destination = const CommunityTab(); title = 'Community'; break;
@@ -977,7 +975,7 @@ void openFeature(BuildContext context, String path) {
     case '/members':
       destination = const MemberDirectoryScreen(); title = 'Find members'; break;
     case '/settings':
-      destination = const AccountSettingsScreen(); title = 'Account settings'; break;
+      destination = const NativeSpaceScreen(title: 'Account settings', description: 'Your sign-in is secured by your shared CreatorVerse account. Profile information can be edited from My Profile. Password and security controls will be connected here in the next account-security pass.', icon: Icons.settings_outlined); title = 'Account settings'; break;
     case '/admin.html':
       destination = const NativeSpaceScreen(title: 'Admin workspace', description: 'Your account has administrator access. Native admin tools are being added in a protected module.', icon: Icons.admin_panel_settings_outlined);
       title = 'Admin workspace'; break;
