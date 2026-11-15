@@ -3264,11 +3264,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (href.isEmpty) return;
     final uri = Uri.tryParse(href);
     if (uri == null) return;
-    if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+    if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host != 'creatorverse-ai.vercel.app') {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
-    if (uri.path.endsWith('/marketplace-enquiries.html') || uri.path == 'marketplace-enquiries.html') {
+    final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
+    final targetPath = '${uri.path}${uri.hasQuery ? '?\u0024{uri.query}' : ''}';
+    if (path.endsWith('/academy-status.html')) {
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+      return;
+    }
+    if (path.endsWith('/academy-live-room.html') || path.endsWith('/academy-interviewer.html') ||
+        path.endsWith('/academy-interview.html')) {
+      await openAcademyWebPage(context, targetPath);
+      return;
+    }
+    if (path.endsWith('/profile.html') || path == '/profile') {
+      final target = (uri.queryParameters['u'] ?? uri.queryParameters['id'] ?? '').trim();
+      if (target.isNotEmpty) await openMemberFromNotification(target);
+      return;
+    }
+    if (path.endsWith('/marketplace-enquiries.html') || path == '/marketplace-enquiries.html') {
       final enquiryId = uri.queryParameters['id'];
       if (enquiryId != null && enquiryId.isNotEmpty) {
         await Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
@@ -3277,12 +3294,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       return;
     }
-    var path = uri.path;
-    if (!path.startsWith('/')) path = '/$path';
     if (path == '/messages.html' || path == '/messages') {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     } else {
       openFeature(context, path);
+    }
+  }
+
+  Future<void> openMemberFromNotification(String target) async {
+    try {
+      var row = await db.from('public_profiles')
+        .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
+        .eq('id', target).maybeSingle();
+      row ??= await db.from('public_profiles')
+        .select('id,full_name,username,avatar_url,bio,location,skills,verified_badge,role')
+        .eq('username', target).maybeSingle();
+      if (!mounted) return;
+      if (row == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This member profile is no longer available.')));
+        return;
+      }
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open member profile: $e')));
     }
   }
 
