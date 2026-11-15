@@ -13,6 +13,9 @@ const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18
 List<String> parseSkillsInput(String input) => input.split(',')
   .map((value) => value.trim()).where((value) => value.isNotEmpty).toList();
 
+String sanitizeSearchTerm(String input) => input
+  .replaceAll(RegExp(r'[^A-Za-z0-9À-ÿ _-]'), ' ').trim();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
@@ -1068,7 +1071,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       content: SizedBox(width: 420, child: TextField(controller: query, decoration: const InputDecoration(hintText: 'Search by name or username'))),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
         FilledButton(onPressed: () async {
-          final q = query.text.trim(); if (q.length < 2) return;
+          final q = sanitizeSearchTerm(query.text); if (q.length < 2) return;
           try {
             final found = await db.from('public_profiles').select('id,full_name,username,avatar_url')
               .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id', db.auth.currentUser!.id).limit(12);
@@ -1930,7 +1933,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
   void dispose() { search.dispose(); super.dispose(); }
   Future<List<Map<String, dynamic>>> loadMembers() async {
     var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge,role');
-    final term = search.text.trim();
+    final term = sanitizeSearchTerm(search.text);
     if (term.length >= 2) query = query.or('full_name.ilike.%$term%,username.ilike.%$term%');
     final rows = await query.neq('id', db.auth.currentUser!.id).limit(40);
     return List<Map<String, dynamic>>.from(rows);
