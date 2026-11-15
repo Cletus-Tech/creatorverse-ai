@@ -2198,7 +2198,8 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
     final category=TextEditingController(text:(course['category_slug']??'').toString());
     final price=TextEditingController(text:(course['price_ngn']??0).toString());
     String level=(course['level']??'Beginner').toString();
-    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Edit course'),
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
+      backgroundColor:panel,title:const Text('Edit course'),
       content:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:title,decoration:const InputDecoration(labelText:'Title')),
         const SizedBox(height:8),TextField(controller:description,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Description')),
@@ -2211,13 +2212,32 @@ class _CourseAdminScreenState extends State<CourseAdminScreen>{
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save changes'))])));
     if(!mounted){title.dispose();description.dispose();category.dispose();price.dispose();return;}
     final t=title.text.trim(),d=description.text.trim(),cat=category.text.trim(),p=price.text.trim();
-    title.dispose();description.dispose();category.dispose();price.dispose();if(ok!=true)return;
-    if(t.length<4||d.length<10||int.tryParse(p)==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Check the course title, description and price.')));return;}
-    final slug=t.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'-').replaceAll(RegExp(r'^-+|-+
+    title.dispose();description.dispose();category.dispose();price.dispose();
+    if(ok!=true)return;
+    if(t.length<4||d.length<10||int.tryParse(p)==null){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Check the course title, description and price.')));
+      return;
+    }
+    var slug=t.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'),'-');
+    while(slug.startsWith('-')){slug=slug.substring(1);}
+    while(slug.endsWith('-')){slug=slug.substring(0,slug.length-1);}
     setState(()=>busy=true);
-    try{await db.from('courses').update({field:!(course[field]==true)}).eq('id',course['id']);await refresh();}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update course: $e')));}
-    finally{if(mounted)setState(()=>busy=false);}
+    try{
+      await db.from('courses').update({'title':t,'slug':slug,'description':d,
+        'category_slug':cat.isEmpty?null:cat,'level':level,'price_ngn':int.parse(p)}).eq('id',course['id']);
+      await refresh();
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update course: $e')));
+    }finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> toggleCourse(Map<String,dynamic> course,String field) async {
+    setState(()=>busy=true);
+    try{
+      await db.from('courses').update({field:!(course[field]==true)}).eq('id',course['id']);
+      await refresh();
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update course: $e')));
+    }finally{if(mounted)setState(()=>busy=false);}
   }
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Course administration'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<List<Map<String,dynamic>>>(future:courses,builder:(context,snap){
