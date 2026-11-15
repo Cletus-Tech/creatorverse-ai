@@ -1197,16 +1197,18 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     if (snapshot.hasError) return Center(child:Padding(padding:const EdgeInsets.all(22),child:Text('Seller workspace unavailable: ${snapshot.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
     final seller = snapshot.data?['seller'] as Map<String,dynamic>?;
     final listings = snapshot.data?['listings'] as List<Map<String,dynamic>>? ?? [];
-    if (seller == null) return ListView(padding:const EdgeInsets.all(20),children:[
-      const Icon(Icons.storefront_outlined,color:emerald,size:46),const SizedBox(height:12),
-      const Text('Become a CreatorVerse seller',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
-      const SizedBox(height:8),const Text('Apply to sell products or offer services to the community. An administrator verifies every seller before listings can be submitted.',style:TextStyle(color:muted,height:1.5)),
-      const SizedBox(height:18),TextField(controller:name,decoration:const InputDecoration(labelText:'Seller / business display name')),
-      const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution')),
-      const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus')),
-      const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide?')),
-      const SizedBox(height:16),FilledButton(onPressed:busy?null:apply,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(busy?'Submitting…':'Submit seller application')),
-    ]);
+    if (seller == null) {
+      return ListView(padding:const EdgeInsets.all(20),children:[
+        const Icon(Icons.storefront_outlined,color:emerald,size:46),const SizedBox(height:12),
+        const Text('Become a CreatorVerse seller',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
+        const SizedBox(height:8),const Text('Apply to sell products or offer services to the community. An administrator verifies every seller before listings can be submitted.',style:TextStyle(color:muted,height:1.5)),
+        const SizedBox(height:18),TextField(controller:name,decoration:const InputDecoration(labelText:'Seller / business display name')),
+        const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution')),
+        const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus')),
+        const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide?')),
+        const SizedBox(height:16),FilledButton(onPressed:busy?null:apply,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(busy?'Submitting…':'Submit seller application')),
+      ]);
+    }
     final status = (seller['status'] ?? 'pending').toString();
     return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(18),children:[
       const Text('Your seller profile',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
