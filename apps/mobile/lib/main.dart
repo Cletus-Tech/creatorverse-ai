@@ -308,6 +308,8 @@ class LearnTab extends StatefulWidget {
 }
 class _LearnTabState extends State<LearnTab> {
   late Future<List<Map<String, dynamic>>> courses;
+  final search = TextEditingController();
+  String category = '';
   @override
   void initState() { super.initState(); courses = loadCourses(); }
   Future<List<Map<String, dynamic>>> loadCourses() async {
@@ -316,7 +318,8 @@ class _LearnTabState extends State<LearnTab> {
       .eq('published', true).order('featured', ascending: false).order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(rows);
   }
-  void reload() => setState(() => courses = loadCourses());
+  @override void dispose() { search.dispose(); super.dispose(); }
+  Future<void> reload() async { final next = loadCourses(); setState(() => courses = next); await next; }
   @override
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
     future: courses,
@@ -333,14 +336,28 @@ class _LearnTabState extends State<LearnTab> {
         ])));
       }
       final items = snapshot.data ?? [];
-      return RefreshIndicator(color: emerald, onRefresh: () async => reload(),
+      final categories = items.map((c)=>(c['category_slug']??'').toString()).where((v)=>v.isNotEmpty).toSet().toList()..sort();
+      final term=search.text.trim().toLowerCase();
+      final filtered=items.where((c){
+        final matchesCategory=category.isEmpty||(c['category_slug']??'').toString()==category;
+        final haystack='${c['title']??''} ${c['description']??''} ${c['level']??''}'.toLowerCase();
+        return matchesCategory&&(term.isEmpty||haystack.contains(term));
+      }).toList();
+      return RefreshIndicator(color: emerald, onRefresh: reload,
         child: ListView(padding: const EdgeInsets.all(18), children: [
           const Text('Learn and grow', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           const SizedBox(height: 6),
           const Text('Explore programmes published by CreatorVerse.', style: TextStyle(color: muted)),
+          const SizedBox(height: 14),
+          TextField(controller:search,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search courses, skills or topics')),
+          if(categories.isNotEmpty)Padding(padding:const EdgeInsets.only(top:10),child:Wrap(spacing:7,runSpacing:6,children:[
+            ChoiceChip(label:const Text('All'),selected:category.isEmpty,onSelected:(_)=>setState(()=>category='')),
+            for(final item in categories)ChoiceChip(label:Text(item.replaceAll('-',' ')),selected:category==item,onSelected:(_)=>setState(()=>category=item)),
+          ])),
           const SizedBox(height: 18),
-          if (items.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No published courses are available yet.', textAlign: TextAlign.center, style: TextStyle(color: muted))),
-          for (final course in items) CourseCard(course: course),
+          if(items.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No published courses are available yet.', textAlign: TextAlign.center, style: TextStyle(color: muted))),
+          if(items.isNotEmpty&&filtered.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Text('No courses match your search.',textAlign:TextAlign.center,style:TextStyle(color:muted))),
+          for (final course in filtered) CourseCard(course: course),
         ]));
     });
 }
