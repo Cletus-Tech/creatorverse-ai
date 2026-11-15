@@ -215,3 +215,189 @@ body[data-cv-theme="light"][data-page] .academy-admin-stat,
 body[data-cv-theme="light"][data-page] .academy-app-card{
  background:#fff!important;color:#1b3457!important;border:1px solid #d9e9dd!important;box-shadow:0 8px 24px rgba(32,100,55,.06)!important;
 }
+
+/* Harmonize remaining hard-coded white surfaces with the evergreen theme.
+   Dark mode uses layered forest/sage panels; light mode uses warm, soft sage
+   rather than stark white. These selectors intentionally follow legacy page CSS. */
+html[data-cv-theme="dark"] body .page .panel,
+html[data-cv-theme="dark"] body .page .card,
+html[data-cv-theme="dark"] body .page .skill-card,
+html[data-cv-theme="dark"] body .page .panel-card,
+html[data-cv-theme="dark"] body .page .admin-card,
+html[data-cv-theme="dark"] body .hub-subcard,
+html[data-cv-theme="dark"] body .hub-exam,
+html[data-cv-theme="dark"] body .tertiary-section,
+html[data-cv-theme="dark"] body .tertiary-cta,
+html[data-cv-theme="dark"] body .tertiary-institution,
+html[data-cv-theme="dark"] body .tertiary-tool-card,
+html[data-cv-theme="dark"] body .campus-card,
+html[data-cv-theme="dark"] body .ch-topbar,
+html[data-cv-theme="dark"] body .ch-panel,
+html[data-cv-theme="dark"] body .ch-results,
+html[data-cv-theme="dark"] body .ch-filter-panel,
+html[data-cv-theme="dark"] body .ch-empty,
+html[data-cv-theme="dark"] body .market-category,
+html[data-cv-theme="dark"] body .market-listing,
+html[data-cv-theme="dark"] body .market-card,
+html[data-cv-theme="dark"] body .market-seller-card,
+html[data-cv-theme="dark"] body .market-enquiry,
+html[data-cv-theme="dark"] body .community-composer,
+html[data-cv-theme="dark"] body .community-post,
+html[data-cv-theme="dark"] body .community-card,
+html[data-cv-theme="dark"] body .community-panel,
+html[data-cv-theme="dark"] body .community-sidebar,
+html[data-cv-theme="dark"] body .community-feed-card,
+html[data-cv-theme="dark"] body .community-side-card,
+html[data-cv-theme="dark"] body .community-modal-box,
+html[data-cv-theme="dark"] body .pin-card,
+html[data-cv-theme="dark"] body .msg-stories-section,
+html[data-cv-theme="dark"] body .msg-inbox,
+html[data-cv-theme="dark"] body .msg-conversation,
+html[data-cv-theme="dark"] body .msg-thread,
+html[data-cv-theme="dark"] body .msg-chat-panel,
+html[data-cv-theme="dark"] body .msg-contact-list,
+html[data-cv-theme="dark"] body .msg-chat-area,
+html[data-cv-theme="dark"] body .msg-compose,
+html[data-cv-theme="dark"] body .msg-chat,
+html[data-cv-theme="dark"] body .msg-workspace,
+html[data-cv-theme="dark"] body .msg-modal-card,
+html[data-cv-theme="dark"] body .modal-box,
+html[data-cv-theme="dark"] body .qcard,
+html[data-cv-theme="dark"] body .academy-admin-stat,
+html[data-cv-theme="dark"] body .academy-app-card,
+html[data-cv-theme="dark"] body .cv-space-card{
+ background:linear-gradient(145deg,#172d20 0%,#102218 100%)!important;
+ color:#eaf5ec!important;border-color:#355b40!important;
+ box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px rgba(194,238,202,.035)!important;
+}
+html[data-cv-theme="dark"] body[data-page="admin"] .page .panel,
+html[data-cv-theme="dark"] body[data-page="admin"] .page .card,
+html[data-cv-theme="dark"] body[data-page="admin"] .page .admin-card{
+ background:linear-gradient(145deg,#172d20,#102218)!important;color:#eaf5ec!important;border-color:#355b40!important;
+}
+html[data-cv-theme="dark"] body .tertiary-hero,
+html[data-cv-theme="dark"] body .market-hero,
+html[data-cv-theme="dark"] body .community-hero,
+html[data-cv-theme="dark"] body .msg-welcome,
+html[data-cv-theme="dark"] body .ch-hero,
+html[data-cv-theme="dark"] body .campus-hero,
+html[data-cv-theme="dark"] body .hub-feature-panel{
+ background:linear-gradient(120deg,#1b3b28 0%,#12271a 72%,#102117 100%)!important;
+ color:#eaf5ec!important;border-color:#3a6848!important;
+}
+html[data-cv-theme="dark"] body .page .panel h1,
+html[data-cv-theme="dark"] body .page .panel h2,
+html[data-cv-theme="dark"] body .page .panel h3,
+html[data-cv-theme="dark"] body .page .card h2,
+html[data-cv-theme="dark"] body .page .card h3,
+html[data-cv-theme="dark"] body .page .skill-card h3,
+html[data-cv-theme="dark"] body .community-post h3,
+html[data-cv-theme="dark"] body .market-card h3,
+html[data-cv-theme="dark"] body .campus-card h3{color:#f0faf1!important}
+html[data-cv-theme="dark"] body .page .panel p,
+html[data-cv-theme="dark"] body .page .card p,
+html[data-cv-theme="dark"] body .page .skill-card p,
+html[data-cv-theme="dark"] body .community-post p,
+html[data-cv-theme="dark"] body .market-card p{color:#b8cdbb!important}
+html[data-cv-theme="dark"] body .page input,
+html[data-cv-theme="dark"] body .page textarea,
+html[data-cv-theme="dark"] body .page select,
+html[data-cv-theme="dark"] body .community-actions input,
+html[data-cv-theme="dark"] body .feed-heading select,
+html[data-cv-theme="dark"] body .comment-form input,
+html[data-cv-theme="dark"] body .market-search input,
+html[data-cv-theme="dark"] body .market-filter select,
+html[data-cv-theme="dark"] body .tertiary-search input,
+html[data-cv-theme="dark"] body .tertiary-filter select,
+html[data-cv-theme="dark"] body .ch-campus-select select,
+html[data-cv-theme="dark"] body .ch-filter select,
+html[data-cv-theme="dark"] body .ch-filter input,
+html[data-cv-theme="dark"] body .msg-composer textarea{
+ background:#0b1b11!important;color:#eaf5ec!important;border-color:#355b40!important;
+}
+html[data-cv-theme="dark"] body .page select option{background:#102218!important;color:#eaf5ec!important}
+html[data-cv-theme="dark"] body .btn-ghost,
+html[data-cv-theme="dark"] body .btn-outline{background:#14291b!important;color:#ccebd2!important;border-color:#426c4b!important}
+html[data-cv-theme="dark"] body .msg-chat-head,
+html[data-cv-theme="dark"] body .msg-composer,
+html[data-cv-theme="dark"] body .community-tabs{background:#102218!important;border-color:#355b40!important;color:#eaf5ec!important}
+html[data-cv-theme="dark"] body .feed-empty,
+html[data-cv-theme="dark"] body .community-loading,
+html[data-cv-theme="dark"] body .msg-chat-empty{background:#13271a!important;color:#a9c1b0!important;border-color:#355b40!important}
+
+/* A softer botanical-neutral canvas for the light palette. */
+html[data-cv-theme="light"] body .page .panel,
+html[data-cv-theme="light"] body .page .card,
+html[data-cv-theme="light"] body .page .skill-card,
+html[data-cv-theme="light"] body .page .panel-card,
+html[data-cv-theme="light"] body .page .admin-card,
+html[data-cv-theme="light"] body .hub-subcard,
+html[data-cv-theme="light"] body .hub-exam,
+html[data-cv-theme="light"] body .tertiary-section,
+html[data-cv-theme="light"] body .tertiary-cta,
+html[data-cv-theme="light"] body .tertiary-institution,
+html[data-cv-theme="light"] body .tertiary-tool-card,
+html[data-cv-theme="light"] body .campus-card,
+html[data-cv-theme="light"] body .ch-topbar,
+html[data-cv-theme="light"] body .ch-panel,
+html[data-cv-theme="light"] body .ch-results,
+html[data-cv-theme="light"] body .ch-filter-panel,
+html[data-cv-theme="light"] body .ch-empty,
+html[data-cv-theme="light"] body .market-category,
+html[data-cv-theme="light"] body .market-listing,
+html[data-cv-theme="light"] body .market-card,
+html[data-cv-theme="light"] body .market-seller-card,
+html[data-cv-theme="light"] body .market-enquiry,
+html[data-cv-theme="light"] body .community-composer,
+html[data-cv-theme="light"] body .community-post,
+html[data-cv-theme="light"] body .community-card,
+html[data-cv-theme="light"] body .community-panel,
+html[data-cv-theme="light"] body .community-sidebar,
+html[data-cv-theme="light"] body .community-feed-card,
+html[data-cv-theme="light"] body .community-side-card,
+html[data-cv-theme="light"] body .community-modal-box,
+html[data-cv-theme="light"] body .pin-card,
+html[data-cv-theme="light"] body .msg-stories-section,
+html[data-cv-theme="light"] body .msg-inbox,
+html[data-cv-theme="light"] body .msg-conversation,
+html[data-cv-theme="light"] body .msg-thread,
+html[data-cv-theme="light"] body .msg-chat-panel,
+html[data-cv-theme="light"] body .msg-contact-list,
+html[data-cv-theme="light"] body .msg-chat-area,
+html[data-cv-theme="light"] body .msg-compose,
+html[data-cv-theme="light"] body .msg-chat,
+html[data-cv-theme="light"] body .msg-workspace,
+html[data-cv-theme="light"] body .msg-modal-card,
+html[data-cv-theme="light"] body .modal-box,
+html[data-cv-theme="light"] body .qcard,
+html[data-cv-theme="light"] body .academy-admin-stat,
+html[data-cv-theme="light"] body .academy-app-card{
+ background:#f3f7ef!important;color:#203b2d!important;border-color:#d7e5d4!important;
+ box-shadow:0 8px 24px rgba(37,85,49,.055)!important;
+}
+html[data-cv-theme="light"] body .tertiary-hero,
+html[data-cv-theme="light"] body .market-hero,
+html[data-cv-theme="light"] body .community-hero,
+html[data-cv-theme="light"] body .msg-welcome,
+html[data-cv-theme="light"] body .ch-hero,
+html[data-cv-theme="light"] body .campus-hero,
+html[data-cv-theme="light"] body .hub-feature-panel{
+ background:linear-gradient(120deg,#e5f0df,#f4f7ed 72%,#eaf2e5)!important;color:#214a30!important;border-color:#d3e2d0!important;
+}
+html[data-cv-theme="light"] body .page input,
+html[data-cv-theme="light"] body .page textarea,
+html[data-cv-theme="light"] body .page select,
+html[data-cv-theme="light"] body .community-actions input,
+html[data-cv-theme="light"] body .feed-heading select,
+html[data-cv-theme="light"] body .comment-form input,
+html[data-cv-theme="light"] body .market-search input,
+html[data-cv-theme="light"] body .market-filter select,
+html[data-cv-theme="light"] body .tertiary-search input,
+html[data-cv-theme="light"] body .tertiary-filter select,
+html[data-cv-theme="light"] body .ch-campus-select select,
+html[data-cv-theme="light"] body .ch-filter select,
+html[data-cv-theme="light"] body .ch-filter input{
+ background:#fbfcf7!important;color:#203b2d!important;border-color:#d3e2d0!important;
+}
+html[data-cv-theme="light"] body .page select option{background:#f3f7ef!important;color:#203b2d!important}
+
