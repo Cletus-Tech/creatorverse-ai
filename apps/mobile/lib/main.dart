@@ -2215,7 +2215,7 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
         onWebViewCreated:(webController)=>controller=webController,
         onLoadStop:(webController,url) async {
           if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/mobile-session-bridge.html'){
-            try{await injectSessionAndOpen();}catch(e){if(!mounted)return;ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open secure interview room: $e')));}
+            try{await injectSessionAndOpen();}catch(e){if(!context.mounted)return;ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open secure interview room: $e')));}
           }
         },
         onPermissionRequest:(webController,request) async {
