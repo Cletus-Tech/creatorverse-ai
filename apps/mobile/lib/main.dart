@@ -2298,10 +2298,110 @@ class _CourseModulesAdminScreenState extends State<CourseModulesAdminScreen>{
       final rows=snap.data??[];
       return ListView(padding:const EdgeInsets.all(16),children:[
         FilledButton.icon(onPressed:busy?null:addModule,icon:const Icon(Icons.add),label:const Text('Add module'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+        const SizedBox(height:8),
+        OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizAdminScreen(course:widget.course))).then((_)=>refresh()),
+          icon:const Icon(Icons.quiz_outlined),label:const Text('Manage assessments')),
         for(final module in rows)Card(color:panel,child:ListTile(title:Text((module['title']??'Module').toString()),
           subtitle:Text('${(module['lessons'] as List? ?? []).length} lessons · Stage ${module['stage_number']}',style:const TextStyle(color:muted)),
           trailing:IconButton(onPressed:busy?null:()=>editModule(module),icon:const Icon(Icons.edit_outlined,color:gold)),
           onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseLessonsAdminScreen(module:module))).then((_)=>refresh()))),
+      ]);
+    }));
+}
+
+class CourseQuizAdminScreen extends StatefulWidget {
+  final Map<String,dynamic> course;
+  const CourseQuizAdminScreen({super.key,required this.course});
+  @override State<CourseQuizAdminScreen> createState()=>_CourseQuizAdminScreenState();
+}
+class _CourseQuizAdminScreenState extends State<CourseQuizAdminScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> quizzes;bool busy=false;
+  @override void initState(){super.initState();quizzes=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final rows=await db.from('quizzes').select('id,course_id,title,pass_mark,created_at,quiz_questions(id)')
+      .eq('course_id',widget.course['id']).order('created_at');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>quizzes=next);await next;}
+  Future<void> addQuiz() async {
+    final title=TextEditingController();final pass=TextEditingController(text:'70');
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Create assessment'),
+      content:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:title,decoration:const InputDecoration(labelText:'Assessment title')),
+        const SizedBox(height:8),TextField(controller:pass,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Pass mark (1–100)')),
+      ]),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Create'))]));
+    if(!mounted){title.dispose();pass.dispose();return;}
+    final t=title.text.trim(),p=int.tryParse(pass.text.trim())??70;title.dispose();pass.dispose();if(ok!=true||t.length<3||p<1||p>100)return;
+    setState(()=>busy=true);
+    try{await db.from('quizzes').insert({'course_id':widget.course['id'],'title':t,'pass_mark':p});await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not create assessment: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Course assessments'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:quizzes,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Assessments unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final rows=snap.data??[];
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        FilledButton.icon(onPressed:busy?null:addQuiz,icon:const Icon(Icons.add),label:const Text('Create assessment'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+        for(final quiz in rows)Card(color:panel,child:ListTile(
+          title:Text((quiz['title']??'Assessment').toString()),
+          subtitle:Text('Pass mark: ${quiz['pass_mark']}% · ${(quiz['quiz_questions'] as List? ?? []).length} questions',style:const TextStyle(color:muted)),
+          trailing:const Icon(Icons.chevron_right,color:emerald),
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CourseQuizQuestionsAdminScreen(quiz:quiz))).then((_)=>refresh()),
+        )),
+      ]);
+    }));
+}
+
+class CourseQuizQuestionsAdminScreen extends StatefulWidget {
+  final Map<String,dynamic> quiz;
+  const CourseQuizQuestionsAdminScreen({super.key,required this.quiz});
+  @override State<CourseQuizQuestionsAdminScreen> createState()=>_CourseQuizQuestionsAdminScreenState();
+}
+class _CourseQuizQuestionsAdminScreenState extends State<CourseQuizQuestionsAdminScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> questions;bool busy=false;
+  @override void initState(){super.initState();questions=load();}
+  Future<List<Map<String,dynamic>>> load() async {
+    final rows=await db.from('quiz_questions').select('id,quiz_id,question,options,correct_index,position')
+      .eq('quiz_id',widget.quiz['id']).order('position');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final next=load();setState(()=>questions=next);await next;}
+  Future<void> addQuestion() async {
+    final question=TextEditingController();final options=List.generate(4,(_)=>TextEditingController());int correct=0;
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Add quiz question'),
+      content:SizedBox(width:440,child:SingleChildScrollView(child:flutter_ui.Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:question,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Question')),
+        for(var i=0;i<4;i++)Padding(padding:const EdgeInsets.only(top:8),child:Row(children:[
+          Expanded(child:TextField(controller:options[i],decoration:InputDecoration(labelText:'Option ${String.fromCharCode(65+i)}'))),
+          Radio<int>(value:i,groupValue:correct,activeColor:emerald,onChanged:(v)=>setDialog(()=>correct=v??correct)),
+        ])),
+        const SizedBox(height:6),const Text('Select the radio button beside the correct answer.',style:TextStyle(color:muted,fontSize:11)),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save question'))])));
+    if(!mounted){question.dispose();for(final x in options){x.dispose();}return;}
+    final q=question.text.trim(),choices=options.map((x)=>x.text.trim()).toList();question.dispose();for(final x in options){x.dispose();}
+    if(ok!=true||q.length<5||choices.any((v)=>v.isEmpty)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter a question and all four answer options.')));return;}
+    setState(()=>busy=true);
+    try{
+      await db.from('quiz_questions').insert({'quiz_id':widget.quiz['id'],'question':q,'options':choices,'correct_index':correct,'position':(await db.from('quiz_questions').select('id').eq('quiz_id',widget.quiz['id'])).length+1});
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add question: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text((widget.quiz['title']??'Questions').toString()),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:questions,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(snap.hasError)return Center(child:Text('Questions unavailable: ${snap.error}',style:const TextStyle(color:muted)));
+      final rows=snap.data??[];
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        FilledButton.icon(onPressed:busy?null:addQuestion,icon:const Icon(Icons.add),label:const Text('Add question'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+        for(var i=0;i<rows.length;i++)Card(color:panel,child:ListTile(
+          title:Text('${i+1}. ${rows[i]['question']}'),
+          subtitle:Text((rows[i]['options'] as List? ?? []).asMap().entries.map((e)=>'${String.fromCharCode(65+e.key)}. ${e.value}').join('\n'),style:const TextStyle(color:muted)),
+        )),
       ]);
     }));
 }
