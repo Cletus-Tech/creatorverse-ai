@@ -1,0 +1,20 @@
+name: creatorverse_mobile
+description: CreatorVerse native mobile application for Android and iOS.
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: 2.2.0
+  supabase_flutter: 2.18.3
+  url_launcher: 6.3.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 5.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/creatorverse-mark.svg
