@@ -376,9 +376,15 @@ class CourseCard extends StatelessWidget {
     final price = (course['price_ngn'] as num?)?.toInt() ?? 0;
     return Padding(padding: const EdgeInsets.only(bottom: 14), child: Material(
       color: panel, borderRadius: BorderRadius.circular(18), clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => CourseDetailScreen(course: course)),
-        ), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: InkWell(onTap: () {
+        if (price <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('This course is temporarily unavailable while its price is being set.')));
+          return;
+        }
+        material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => CourseCheckoutScreen(course: course)));
+      }, child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (image != null && image.startsWith('https://'))
             Image.network(image, height: 150, width: double.infinity, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(height: 90, color: const Color(0xFF17352F), child: const Icon(Icons.menu_book, color: emerald, size: 34))),
@@ -416,7 +422,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late Future<List<Map<String, dynamic>>> curriculum;
   late Future<List<Map<String, dynamic>>> quizzes;
   late Future<bool> enrollment;
-  bool enrolling = false;
   @override
   void initState() { super.initState(); enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); }
 
@@ -430,23 +435,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   void refreshCourse() => setState(() { enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
 
-  Future<void> enrolFreeCourse() async {
-    final db = Supabase.instance.client;
-    final user = db.auth.currentUser;
-    if (user == null || enrolling) return;
-    if (((widget.course['price_ngn'] as num?)?.toInt() ?? 0) != 0) return;
-    setState(() => enrolling = true);
-    try {
-      await db.from('enrolments').insert({'user_id': user.id, 'course_id': widget.course['id']});
-      if (!mounted) return;
-      setState(() { enrollment = Future.value(true); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You are enrolled. Start learning!')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not enrol: $e')));
-    } finally {
-      if (mounted) setState(() => enrolling = false);
-    }
-  }
   Future<List<Map<String, dynamic>>> loadCurriculum() async {
     final db = Supabase.instance.client;
     final modulesRaw = await db.from('modules').select('id,title,description,position,duration_text,stage_number')
@@ -546,16 +534,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (enrolled) {
             return const ListTile(leading: Icon(Icons.check_circle, color: emerald), title: Text('You are enrolled'), subtitle: Text('Your learning access is active.', style: TextStyle(color: muted)));
           }
-          if (price == 0) {
-            return FilledButton.icon(onPressed: enrolling ? null : enrolFreeCourse,
-            icon: enrolling ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.school_outlined),
-              label: Text(enrolling ? 'Enrolling…' : 'Enrol in free course'), style: FilledButton.styleFrom(backgroundColor: emerald));
+          if (price <= 0) {
+            return const ListTile(leading: Icon(Icons.lock_outline, color: gold),
+              title: Text('Course temporarily unavailable'),
+              subtitle: Text('The administrator must set a course price before enrolment can open.', style: TextStyle(color: muted)));
           }
           return material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
               subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
             OutlinedButton.icon(onPressed: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
-              icon: const Icon(Icons.payments_outlined), label: const Text('View payment options')),
+              icon: const Icon(Icons.payments_outlined), label: const Text('Continue to payment')),
           ]);
         }),
         const SizedBox(height: 22),
