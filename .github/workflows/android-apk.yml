@@ -45,6 +45,20 @@ jobs:
       - name: Install packages
         working-directory: apps/mobile
         run: flutter pub get
+      - name: Generate original CreatorVerse launcher icon
+        working-directory: apps/mobile
+        run: |
+          python3 -m pip install --quiet cairosvg
+          python3 - <<'PY'
+          import cairosvg
+          cairosvg.svg2png(
+              url='assets/creatorverse-brand.svg',
+              write_to='assets/creatorverse-icon.png',
+              output_width=1024,
+              output_height=1024,
+          )
+          PY
+          dart run flutter_launcher_icons
       - name: Analyze
         working-directory: apps/mobile
         run: flutter analyze
