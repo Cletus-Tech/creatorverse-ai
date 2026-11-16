@@ -494,7 +494,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Future<void> openLesson(Map<String,dynamic> lesson) async {
     final db=Supabase.instance.client;
     try {
-      await db.rpc('record_academy_lesson_view',params:{'p_lesson_id':lesson['id']});
+      // Lesson viewing is recorded when online, but must never block cached offline reading.
+      try { await db.rpc('record_academy_lesson_view',params:{'p_lesson_id':lesson['id']}); } catch (_) {}
       final raw=(lesson['video_url']??'').toString().trim();
       final uri=Uri.tryParse(raw);
       if(uri!=null&&(uri.scheme=='https'||uri.scheme=='http')) {
