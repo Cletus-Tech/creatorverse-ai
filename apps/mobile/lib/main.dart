@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart' as material_widgets_ui;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://xgdngnekihhnkzurhvpe.supabase.co');
@@ -26,6 +27,21 @@ Future<void> main() async {
   await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
   runApp(const CreatorVerseApp());
 }
+
+class OfflineCourseCache {
+ static const maxAge=Duration(days:7);
+ static String _ck(String u,String c)=>'cv_offline_course_${u}_${c}';
+ static String _nk(String u)=>'cv_notifications_${u}';
+ static String _pk(String u)=>'cv_pending_reads_${u}';
+ static Future<void> saveCourse(String u,String c,List<Map<String,dynamic>> m) async {final p=await SharedPreferences.getInstance();await p.setString(_ck(u,c),jsonEncode({'saved_at':DateTime.now().toUtc().toIso8601String(),'modules':m}));}
+ static Future<List<Map<String,dynamic>>?> readCourse(String u,String c) async {final p=await SharedPreferences.getInstance();final raw=p.getString(_ck(u,c));if(raw==null)return null;try{final d=jsonDecode(raw) as Map<String,dynamic>;final at=DateTime.tryParse((d['saved_at']??'').toString());if(at==null||DateTime.now().toUtc().difference(at)>maxAge){await p.remove(_ck(u,c));return null;}return (d['modules'] as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();}catch(_){await p.remove(_ck(u,c));return null;}}
+ static Future<void> clearCourse(String u,String c) async {final p=await SharedPreferences.getInstance();await p.remove(_ck(u,c));}
+ static Future<void> saveNotifications(String u,List<Map<String,dynamic>> rows) async {final p=await SharedPreferences.getInstance();await p.setString(_nk(u),jsonEncode(rows));}
+ static Future<List<Map<String,dynamic>>> readNotifications(String u) async {final p=await SharedPreferences.getInstance();final raw=p.getString(_nk(u));if(raw==null)return [];try{return (jsonDecode(raw) as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();}catch(_){return [];}}
+ static Future<void> queueRead(String u,String id) async {final p=await SharedPreferences.getInstance();final ids=p.getStringList(_pk(u))??<String>[];if(!ids.contains(id))ids.add(id);await p.setStringList(_pk(u),ids);}
+ static Future<void> syncPendingReads(SupabaseClient db,String u) async {final p=await SharedPreferences.getInstance();final key=_pk(u);final ids=p.getStringList(key)??<String>[];if(ids.isEmpty)return;final remain=<String>[];for(final id in ids){try{await db.from('cv_notifications').update({'read_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id).eq('user_id',u);}catch(_){remain.add(id);}}await p.setStringList(key,remain);}
+}
+
 class CreatorVerseApp extends StatelessWidget {
   const CreatorVerseApp({super.key});
   @override
@@ -426,50 +442,33 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   void initState() { super.initState(); enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); }
 
   Future<bool> loadEnrollment() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return false;
-    final row = await Supabase.instance.client.from('enrolments').select('course_id')
-      .eq('user_id', user.id).eq('course_id', widget.course['id']).maybeSingle();
-    return row != null;
+    final user=db.auth.currentUser;if(user==null)return false;
+    try{final row=await db.from('enrolments').select('course_id').eq('user_id',user.id).eq('course_id',widget.course['id']).maybeSingle();if(row==null){await OfflineCourseCache.clearCourse(user.id,widget.course['id'].toString());return false;}return true;}
+    catch(_){return await OfflineCourseCache.readCourse(user.id,widget.course['id'].toString())!=null;}
   }
 
   void refreshCourse() => setState(() { enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
 
-  Future<List<Map<String, dynamic>>> loadCurriculum() async {
-    final db = Supabase.instance.client;
-    final modulesRaw = await db.from('modules').select('id,title,description,position,duration_text,stage_number')
-      .eq('course_id', widget.course['id']).order('position');
-    final modules = List<Map<String, dynamic>>.from(modulesRaw);
-    if (modules.isEmpty) return [];
-    final ids = modules.map((m) => m['id']).toList();
-    final user = db.auth.currentUser;
-    final enrolled = user != null && await db.from('enrolments').select('course_id')
-      .eq('user_id', user.id).eq('course_id', widget.course['id']).maybeSingle() != null;
-    if (!enrolled) {
-      for (final module in modules) { module['lessons'] = <Map<String,dynamic>>[]; }
-      return modules;
-    }
-    final lessonsRaw = await db.from('lessons')
-      .select('id,module_id,title,video_url,content,position,estimated_minutes,chapter_number,topic_outline')
-      .inFilter('module_id', ids).order('position');
-    final lessons = List<Map<String, dynamic>>.from(lessonsRaw);
-    if (lessons.isNotEmpty) {
-      final lessonIds = lessons.map((l) => l['id']).toList();
-      final resourcesRaw = await db.from('lesson_resources').select('id,lesson_id,title,url,position')
-        .inFilter('lesson_id', lessonIds).order('position');
-      final resources = List<Map<String,dynamic>>.from(resourcesRaw);
-      final progressRaw = await db.from('lesson_progress').select('lesson_id,completed_at')
-        .eq('user_id', user.id).inFilter('lesson_id', lessonIds);
-      final completed = List<Map<String,dynamic>>.from(progressRaw).map((r)=>r['lesson_id'].toString()).toSet();
-      for (final lesson in lessons) {
-        lesson['resources'] = resources.where((r)=>r['lesson_id']==lesson['id']).toList();
-        lesson['completed'] = completed.contains(lesson['id'].toString());
+  Future<List<Map<String,dynamic>>> loadCurriculum() async {
+    final user=db.auth.currentUser;if(user==null)return [];final courseId=widget.course['id'].toString();
+    try{
+      final modulesRaw=await db.from('modules').select('id,title,description,position,duration_text,stage_number').eq('course_id',courseId).order('position');
+      final modules=List<Map<String,dynamic>>.from(modulesRaw);if(modules.isEmpty)return [];
+      final ids=modules.map((m)=>m['id']).toList();
+      final enrolled=await db.from('enrolments').select('course_id').eq('user_id',user.id).eq('course_id',courseId).maybeSingle()!=null;
+      if(!enrolled){await OfflineCourseCache.clearCourse(user.id,courseId);for(final m in modules){m['lessons']=<Map<String,dynamic>>[];}return modules;}
+      final lessonsRaw=await db.from('lessons').select('id,module_id,title,video_url,content,position,estimated_minutes,chapter_number,topic_outline').inFilter('module_id',ids).order('position');
+      final lessons=List<Map<String,dynamic>>.from(lessonsRaw);
+      if(lessons.isNotEmpty){final lessonIds=lessons.map((l)=>l['id']).toList();
+        final rr=await db.from('lesson_resources').select('id,lesson_id,title,url,position').inFilter('lesson_id',lessonIds).order('position');
+        final resources=List<Map<String,dynamic>>.from(rr);
+        final pr=await db.from('lesson_progress').select('lesson_id,completed_at').eq('user_id',user.id).inFilter('lesson_id',lessonIds);
+        final completed=List<Map<String,dynamic>>.from(pr).map((r)=>r['lesson_id'].toString()).toSet();
+        for(final l in lessons){l['resources']=resources.where((r)=>r['lesson_id']==l['id']).toList();l['completed']=completed.contains(l['id'].toString());}
       }
-    }
-    for (final module in modules) {
-      module['lessons'] = lessons.where((l) => l['module_id'] == module['id']).toList();
-    }
-    return modules;
+      for(final m in modules){m['lessons']=lessons.where((l)=>l['module_id']==m['id']).toList();}
+      await OfflineCourseCache.saveCourse(user.id,courseId,modules);return modules;
+    }catch(_){final cached=await OfflineCourseCache.readCourse(user.id,courseId);if(cached!=null)return cached;rethrow;}
   }
 
   Future<List<Map<String,dynamic>>> loadQuizzes() async {
@@ -3215,10 +3214,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (userId == null) {
       return [];
     }
-    final rows = await db.from('cv_notifications')
-      .select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id')
-      .eq('user_id', userId).order('created_at', ascending: false).limit(60);
-    return List<Map<String, dynamic>>.from(rows);
+    try{await OfflineCourseCache.syncPendingReads(db,userId);final rows=await db.from('cv_notifications').select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id').eq('user_id',userId).order('created_at',ascending:false).limit(60);final result=List<Map<String,dynamic>>.from(rows);await OfflineCourseCache.saveNotifications(userId,result);return result;}catch(_){return await OfflineCourseCache.readNotifications(userId);}
   }
 
   Future<void> refresh() async {
@@ -3231,18 +3227,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (item['read_at'] != null) {
       return;
     }
-    try {
-      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
-        .eq('id', item['id']).eq('user_id', db.auth.currentUser!.id);
-      if (mounted) {
-        await refresh();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update notification: $e')));
-      }
-    }
+    final userId=db.auth.currentUser!.id;
+    try{await db.from('cv_notifications').update({'read_at':DateTime.now().toUtc().toIso8601String()}).eq('id',item['id']).eq('user_id',userId);if(mounted)await refresh();}
+    catch(_){await OfflineCourseCache.queueRead(userId,item['id'].toString());final cached=await OfflineCourseCache.readNotifications(userId);final changed=cached.map((row){if(row['id'].toString()==item['id'].toString())row['read_at']=DateTime.now().toUtc().toIso8601String();return row;}).toList();await OfflineCourseCache.saveNotifications(userId,changed);if(mounted)await refresh();}
   }
 
   Future<void> openNotification(Map<String, dynamic> item) async {
