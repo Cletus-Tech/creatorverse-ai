@@ -449,6 +449,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   void refreshCourse() => setState(() { enrollment = loadEnrollment(); curriculum = loadCurriculum(); quizzes = loadQuizzes(); });
 
+  Future<void> saveCourseOffline() async {
+    final user=db.auth.currentUser;
+    if(user==null){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Sign in to save this course offline.')));return;}
+    try{
+      final enrolled=await db.from('enrolments').select('course_id').eq('user_id',user.id).eq('course_id',widget.course['id']).maybeSingle()!=null;
+      if(!enrolled){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Only courses with confirmed enrolment can be saved offline.')));return;}
+      final modules=await loadCurriculum();
+      await OfflineCourseCache.saveCourse(user.id,widget.course['id'].toString(),modules);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Course lessons saved for offline reading for up to 7 days. Video streaming and external links still require internet.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not save course offline: $e')));}
+  }
+
+
+
   Future<List<Map<String,dynamic>>> loadCurriculum() async {
     final user=db.auth.currentUser;if(user==null)return [];final courseId=widget.course['id'].toString();
     try{
@@ -513,7 +527,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final c = widget.course;
     final price = (c['price_ngn'] as num?)?.toInt() ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('Course overview'), actions: [IconButton(onPressed: refreshCourse, tooltip: 'Refresh enrolment', icon: const Icon(Icons.refresh))]),
+      appBar: AppBar(title: const Text('Course overview'), actions: [
+        IconButton(onPressed: saveCourseOffline, tooltip: 'Save paid lessons offline', icon: const Icon(Icons.download_for_offline_outlined)),
+        IconButton(onPressed: refreshCourse, tooltip: 'Refresh enrolment', icon: const Icon(Icons.refresh))]),
       body: ListView(padding: const EdgeInsets.all(18), children: [
         Text((c['title'] ?? '').toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
@@ -3202,11 +3218,27 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final db = Supabase.instance.client;
   late Future<List<Map<String, dynamic>>> notifications;
+  RealtimeChannel? notificationChannel;
 
   @override
   void initState() {
     super.initState();
     notifications = loadNotifications();
+    final userId=db.auth.currentUser?.id;
+    if(userId!=null){
+      notificationChannel=db.channel('cv-notifications-$userId')
+        .onPostgresChanges(event:PostgresChangeEvent.insert,schema:'public',table:'cv_notifications',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'user_id',value:userId),
+          callback:(payload){if(mounted)refresh();})
+        .subscribe();
+    }
+  }
+
+  @override
+  void dispose() {
+    final channel=notificationChannel;
+    if(channel!=null)db.removeChannel(channel);
+    super.dispose();
   }
 
   Future<List<Map<String, dynamic>>> loadNotifications() async {
