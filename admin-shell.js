@@ -102,11 +102,12 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   var expires=h('input',{type:'datetime-local'});
   var status=h('div',{class:'msg'}),recent=h('div',{class:'panel'}),settings=h('section',{class:'panel'});
   var categoryList=h('textarea',{rows:'3',placeholder:'general, announcement, course, learning, payment, admission, community, security, system'});
-  var toastEnabled=h('input',{type:'checkbox'}),toastDuration=h('input',{type:'number',min:'3',max:'30',value:'7'});
+  var toastEnabled=h('input',{type:'checkbox'}),androidPushEnabled=h('input',{type:'checkbox'}),toastDuration=h('input',{type:'number',min:'3',max:'30',value:'7'});
   var saveSettings=h('button',{class:'btn btn-outline',type:'button',text:'Save notification settings'}),settingsStatus=h('p',{class:'pmeta'});
-  settings.append(h('h3',{text:'Notification system settings'}),h('p',{class:'pmeta',text:'These settings control the categories available to administrators and the live pop-up shown to users while they are browsing the website.'}));
+  settings.append(h('h3',{text:'Notification system settings'}),h('p',{class:'pmeta',text:'These settings control available categories, live website pop-ups and Android push delivery. Android push is enabled by default to preserve the current app behaviour.'}));
   settings.append(h('label',{class:'field'},[h('span',{text:'Available categories (comma separated)'}),categoryList]));
   settings.append(h('label',{class:'field'},[h('span',{text:'Website live pop-up alerts'}),toastEnabled]));
+  settings.append(h('label',{class:'field'},[h('span',{text:'Android phone push notifications'}),androidPushEnabled]));
   settings.append(h('label',{class:'field'},[h('span',{text:'Pop-up display duration (3–30 seconds)'}),toastDuration]),saveSettings,settingsStatus);
   view.appendChild(settings);
   var form=h('form',{class:'panel'},[
@@ -140,7 +141,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
     if(r.error){settingsStatus.textContent='Could not load settings: '+r.error.message;return}
     var x=r.data||{},items=Array.isArray(x.categories)?x.categories:['general'];
     categoryList.value=items.join(', ');setCategories(items);
-    toastEnabled.checked=x.show_website_toasts!==false;
+    toastEnabled.checked=x.show_website_toasts!==false;androidPushEnabled.checked=x.android_push_enabled!==false;
     toastDuration.value=String(x.toast_duration_seconds||7);
     settingsStatus.textContent='Current notification settings loaded.';
    })
@@ -151,7 +152,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    if(!items.length||items.some(function(x){return x.length<2||x.length>32})||items.length>30){settingsStatus.textContent='Enter 1–30 category names, each 2–32 characters.';return}
    if(!Number.isInteger(seconds)||seconds<3||seconds>30){settingsStatus.textContent='Pop-up duration must be between 3 and 30 seconds.';return}
    saveSettings.disabled=true;settingsStatus.textContent='Saving settings…';
-   sb.rpc('admin_update_notification_settings',{p_categories:items,p_show_website_toasts:toastEnabled.checked,p_toast_duration_seconds:seconds}).then(function(r){
+   sb.rpc('admin_update_notification_settings',{p_categories:items,p_show_website_toasts:toastEnabled.checked,p_android_push_enabled:androidPushEnabled.checked,p_toast_duration_seconds:seconds}).then(function(r){
     saveSettings.disabled=false;
     if(r.error){settingsStatus.textContent='Could not save settings: '+r.error.message;return}
     setCategories(items);settingsStatus.textContent='Notification settings saved. New website sessions will use these settings.';
