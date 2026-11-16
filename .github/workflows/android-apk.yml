@@ -86,7 +86,7 @@ jobs:
           import re
           p = Path('android/app/src/main/AndroidManifest.xml')
           source = p.read_text()
-          pattern = r'(<activity\\b[^>]*android:name="[^"]*MainActivity"[^>]*>)(.*?)(</activity>)'
+          pattern = r'(<activity\b[^>]*android:name="[^"]*MainActivity"[^>]*>)(.*?)(</activity>)'
           match = re.search(pattern, source, flags=re.S)
           if not match:
               raise SystemExit('MainActivity was not found; OAuth callback cannot be registered')
@@ -100,7 +100,7 @@ jobs:
                           <data android:scheme="io.supabase.creatorverse" android:host="login-callback" />
                       </intent-filter>
               '''
-              activity = activity.replace('</activity>', callback + '\\n    </activity>')
+              activity = activity.replace('</activity>', callback + '\n    </activity>')
               source = source[:match.start()] + activity + source[match.end():]
               p.write_text(source)
           PY
