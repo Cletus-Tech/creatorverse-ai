@@ -31,15 +31,25 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
-  const expectedSecret = Deno.env.get("PUSH_WEBHOOK_SECRET");
-  const suppliedSecret = req.headers.get("x-push-webhook-secret");
-  if (!expectedSecret || !suppliedSecret || suppliedSecret !== expectedSecret) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Supabase server configuration is missing");
+    }
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // The webhook secret is stored encrypted in Supabase Vault, not in the
+    // database trigger definition or an exposed environment variable.
+    const { data: expectedSecret, error: secretError } = await supabase.rpc("cv_get_push_webhook_secret");
+    if (secretError) throw new Error("Could not validate the push webhook configuration");
+    const suppliedSecret = req.headers.get("x-push-webhook-secret");
+    if (!expectedSecret || !suppliedSecret || suppliedSecret !== expectedSecret) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const payload = await req.json();
     const notification = payload.record ?? payload;
     if (!notification?.user_id || !notification?.title) {
@@ -51,9 +61,6 @@ Deno.serve(async (req: Request) => {
     const serviceAccountRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
     if (!serviceAccountRaw) throw new Error("FIREBASE_SERVICE_ACCOUNT secret is missing");
     const serviceAccount = JSON.parse(serviceAccountRaw);
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: devices, error: deviceError } = await supabase
       .from("cv_device_tokens").select("id, token").eq("user_id", notification.user_id);
