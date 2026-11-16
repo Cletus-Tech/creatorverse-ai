@@ -302,3 +302,19 @@ body[data-page="messages"] .msg-safety-note>span{font-size:8px}
 }
 
 .msg-section-actions{display:flex;align-items:center;gap:9px}.msg-story-viewers-toggle{border:1px solid rgba(155,177,235,.18);border-radius:9px;background:rgba(255,255,255,.05);color:#dce6ff;padding:8px 11px;font:600 10px Inter;cursor:pointer}.msg-story-viewers-list{max-height:170px;overflow:auto;margin-top:8px;padding:8px;border-radius:10px;background:rgba(4,10,23,.5)}.msg-story-viewer-person{display:flex;align-items:center;gap:8px;padding:6px 2px;color:#e6edff;font-size:10px}.msg-story-viewer-person .msg-avatar{width:27px;height:27px}.msg-story-viewer-person time{margin-left:auto;color:#879abd;font-size:9px}.msg-attachment-link video{display:block;max-width:min(320px,65vw);max-height:240px;border-radius:9px}.msg-quiet-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.profile-edit input[type=file]{padding:9px}
+
+
+/* Chat appearance controls and live message status */
+body[data-page="messages"] .msg-bubble-row.mine .msg-bubble{background:var(--cv-chat-mine,#1b6545)!important}
+body[data-page="messages"] .msg-thread{transition:background-color .18s ease}
+body[data-page="messages"] .msg-read-state{display:block;margin-top:5px;text-align:right;font-size:9px;letter-spacing:.2px;color:#b9c7c0}
+body[data-page="messages"] .msg-read-state.is-read{color:#68caff;font-weight:800}
+body[data-page="messages"] .msg-read-state.is-failed{color:#ff8b8b}
+body[data-page="messages"] .msg-theme-panel{position:absolute;z-index:25;right:16px;top:62px;width:min(300px,calc(100% - 28px));padding:16px;border:1px solid rgba(218,190,91,.25);border-radius:16px;background:#10271f;box-shadow:0 18px 45px rgba(0,0,0,.4);display:grid;gap:11px;color:#f3f7f3}
+body[data-page="messages"] .msg-theme-panel small{color:#afc2b5;font-size:10px}
+body[data-page="messages"] .msg-theme-swatches{display:flex;flex-wrap:wrap;gap:10px}
+body[data-page="messages"] .msg-theme-swatch{width:31px;height:31px;border:2px solid rgba(255,255,255,.35);border-radius:50%;cursor:pointer}
+body[data-page="messages"] .msg-theme-swatch:hover{outline:2px solid #e2c96e;outline-offset:2px}
+body[data-page="messages"] .msg-theme-save{border:0;border-radius:10px;padding:10px;background:#d9bd58;color:#092419;font-weight:800;cursor:pointer}
+body[data-page="messages"] .msg-chat-active{position:relative}
+@media(max-width:680px){body[data-page="messages"] .msg-theme-panel{right:8px;top:56px}}
