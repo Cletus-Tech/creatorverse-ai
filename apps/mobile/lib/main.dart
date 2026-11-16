@@ -2019,24 +2019,74 @@ class MessageThreadScreen extends StatefulWidget {
 class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final db = Supabase.instance.client, input = TextEditingController();
   late Future<List<Map<String, dynamic>>> messages;
+  RealtimeChannel? _messageChannel;
   bool sending = false;
   @override
-  void initState() { super.initState(); messages = loadMessages(); }
+  void initState() {
+    super.initState();
+    messages = loadMessages();
+    _messageChannel = db.channel('cv-chat-${widget.conversationId}')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'cv_direct_messages',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'conversation_id',
+          value: widget.conversationId,
+        ),
+        callback: (payload) {
+          if (mounted) setState(() => messages = loadMessages());
+        },
+      ).subscribe();
+  }
   @override
-  void dispose() { input.dispose(); super.dispose(); }
+  void dispose() {
+    input.dispose();
+    final channel = _messageChannel;
+    if (channel != null) unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<List<Map<String, dynamic>>> loadMessages() async {
     final raw = await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at')
       .eq('conversation_id', widget.conversationId).order('created_at');
     return List<Map<String, dynamic>>.from(raw);
   }
   Future<void> send() async {
-    final body = input.text.trim(); if (body.isEmpty || sending) return;
-    setState(() => sending = true);
+    final body = input.text.trim();
+    if (body.isEmpty || sending) return;
+    final senderId = db.auth.currentUser!.id;
+    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final optimistic = <String, dynamic>{
+      'id': localId, 'sender_id': senderId, 'body': body,
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+      'read_at': null, 'pending': true,
+    };
+    input.clear();
+    setState(() {
+      sending = true;
+      messages = messages.then((rows) => [...rows, optimistic]);
+    });
     try {
-      await db.from('cv_direct_messages').insert({'conversation_id': widget.conversationId, 'sender_id': db.auth.currentUser!.id, 'body': body});
-      input.clear(); setState(() => messages = loadMessages());
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message not sent: $e'))); }
-    finally { if (mounted) setState(() => sending = false); }
+      final inserted = await db.from('cv_direct_messages').insert({
+        'conversation_id': widget.conversationId, 'sender_id': senderId, 'body': body,
+      }).select('id,sender_id,body,created_at,read_at').single();
+      if (mounted) {
+        setState(() {
+          messages = messages.then((rows) => [
+            ...rows.where((row) => row['id'] != localId),
+            Map<String, dynamic>.from(inserted),
+          ]..sort((a,b) => DateTime.parse(a['created_at'].toString()).compareTo(DateTime.parse(b['created_at'].toString()))));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => messages = messages.then((rows) => rows.where((row) => row['id'] != localId).toList()));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message not sent: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => sending = false);
+    }
   }
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text((widget.person['full_name'] ?? widget.person['username'] ?? 'Chat').toString())),
@@ -2052,7 +2102,18 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
             decoration: BoxDecoration(color: m['sender_id'] == db.auth.currentUser!.id ? const Color(0xFF155E48) : panel,
               borderRadius: BorderRadius.circular(15)),
-            child: Text(m['body'].toString(), style: const TextStyle(height: 1.35))))]);
+            child: material_widgets_ui.Column(
+              crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                Text(m['body'].toString(), style: const TextStyle(height: 1.35)),
+                if (m['sender_id'] == db.auth.currentUser!.id) ...[
+                  const SizedBox(height: 4),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (m['pending'] == true) const Icon(Icons.schedule, size: 13, color: Colors.white54)
+                    else Icon(m['read_at'] != null ? Icons.done_all : Icons.done,
+                      size: 14, color: m['read_at'] != null ? const Color(0xFF66C8FF) : Colors.white60),
+                  ]),
+                ],
+              ]))))]);
       })),
       SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 10), child: Row(children: [
         Expanded(child: TextField(controller: input, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Message...'))),
