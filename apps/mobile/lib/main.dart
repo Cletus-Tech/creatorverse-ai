@@ -3540,7 +3540,7 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 4), Text(user?.email ?? '', textAlign: TextAlign.center, style: const TextStyle(color: muted)),
           const SizedBox(height: 10),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Chip(label: Text(role.replaceAll('_', ' ').toUpperCase()), backgroundColor: emerald.withValues(alpha: .15), side: BorderSide(color: emerald.withValues(alpha: .35))),
+            if (isAdmin) Chip(label: Text(role.replaceAll('_', ' ').toUpperCase()), backgroundColor: emerald.withValues(alpha: .15), side: BorderSide(color: emerald.withValues(alpha: .35))),
             if ((p['verified_badge'] ?? 'none') != 'none') ...[const SizedBox(width: 6), const Icon(Icons.verified, color: gold, size: 20)],
           ]),
         ])),
@@ -3692,7 +3692,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
   @override
   void dispose() { search.dispose(); super.dispose(); }
   Future<List<Map<String, dynamic>>> loadMembers() async {
-    var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge,role');
+    var query = db.from('public_profiles').select('id,full_name,username,avatar_url,bio,location,verified_badge');
     final term = sanitizeSearchTerm(search.text);
     if (term.length >= 2) query = query.or('full_name.ilike.%$term%,username.ilike.%$term%');
     final rows = await query.neq('id', db.auth.currentUser!.id).limit(40);
@@ -3716,7 +3716,7 @@ class _MemberDirectoryScreenState extends State<MemberDirectoryScreen> {
             child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald)),
             title: Row(children: [Flexible(child: Text((p['full_name'] ?? 'CreatorVerse member').toString(), overflow: TextOverflow.ellipsis)),
               if ((p['verified_badge'] ?? 'none') != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 16))]),
-            subtitle: Text('@${p['username'] ?? 'member'} · ${p['role'] ?? 'student'}', style: const TextStyle(color: muted)),
+            subtitle: Text('@${p['username'] ?? 'member'}', style: const TextStyle(color: muted)),
             onTap: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => PublicMemberProfileScreen(profile: p))));
         });
     })),
