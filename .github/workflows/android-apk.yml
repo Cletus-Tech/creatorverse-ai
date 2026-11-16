@@ -67,6 +67,59 @@ jobs:
               source = source.replace('<application', permission + '\n    <application', 1)
               manifest.write_text(source)
           PY
+      - name: Configure CreatorVerse notification channel with sound
+        working-directory: apps/mobile
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          source = manifest.read_text()
+          metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="creatorverse_alerts" />'
+          if 'com.google.firebase.messaging.default_notification_channel_id' not in source:
+              source = source.replace('<application', '<application\\n        ' + metadata, 1)
+          manifest.write_text(source)
+          package_dir = Path('android/app/src/main/kotlin/com/cletustech/creatorverse_mobile')
+          package_dir.mkdir(parents=True, exist_ok=True)
+          main_activity = package_dir / 'MainActivity.kt'
+          main_activity.write_text("""package com.cletustech.creatorverse_mobile
+
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.media.AudioAttributes
+          import android.media.RingtoneManager
+          import android.os.Build
+          import android.os.Bundle
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity : FlutterActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val channelId = "creatorverse_alerts"
+                      val manager = getSystemService(NotificationManager::class.java)
+                      if (manager.getNotificationChannel(channelId) == null) {
+                          val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                          val audio = AudioAttributes.Builder()
+                              .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                              .build()
+                          val channel = NotificationChannel(
+                              channelId,
+                              "CreatorVerse notifications",
+                              NotificationManager.IMPORTANCE_DEFAULT
+                          ).apply {
+                              description = "Messages, updates and activity from CreatorVerse"
+                              enableVibration(true)
+                              setSound(sound, audio)
+                          }
+                          manager.createNotificationChannel(channel)
+                      }
+                  }
+              }
+          }
+          """)
+          PY
       - name: Work around Android release lint detector crash
         working-directory: apps/mobile
         run: |
