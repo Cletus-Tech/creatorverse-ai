@@ -333,8 +333,8 @@ class _MainShellState extends State<MainShell> {
   @override
   void dispose() {
     final n = _notificationBadgeChannel, m = _messageBadgeChannel;
-    if (n != null) unawaited(db.removeChannel(n));
-    if (m != null) unawaited(db.removeChannel(m));
+    if (n != null) unawaited(n.unsubscribe());
+    if (m != null) unawaited(m.unsubscribe());
     super.dispose();
   }
 
