@@ -441,11 +441,15 @@ class _MainShellState extends State<MainShell> {
         .or('user_a.eq.$userId,user_b.eq.$userId');
       final ids = List<Map<String, dynamic>>.from(conversationsRaw)
         .map((row) => row['id'].toString()).toList();
-      final notificationCount = await db.from('cv_notifications').select('id')
-        .eq('user_id', userId).isFilter('read_at', null).count(CountOption.exact);
-      final academyNotificationCount = await db.from('academy_notifications').select('id')
+      final notificationRows = await db.from('cv_notifications').select('id')
+        .eq('user_id', userId).isFilter('read_at', null);
+      final academyNotificationRows = await db.from('academy_notifications').select('id')
         .eq('user_id', userId).isFilter('read_at', null)
-        .lte('scheduled_for', DateTime.now().toUtc().toIso8601String()).count(CountOption.exact);
+        .lte('scheduled_for', DateTime.now().toUtc().toIso8601String());
+      final unreadNotificationIds = <String>{
+        ...List<Map<String, dynamic>>.from(notificationRows).map((row) => row['id'].toString()),
+        ...List<Map<String, dynamic>>.from(academyNotificationRows).map((row) => row['id'].toString()),
+      };
       var messageCount = 0;
       if (ids.isNotEmpty) {
         final unread = await db.from('cv_direct_messages').select('id')
@@ -457,7 +461,7 @@ class _MainShellState extends State<MainShell> {
       setState(() {
         _conversationIds = ids;
         unreadMessages = messageCount;
-        unreadNotifications = notificationCount.count + academyNotificationCount.count;
+        unreadNotifications = unreadNotificationIds.length;
       });
     } catch (_) {
       // Keep the last known counts visible if the network is temporarily unavailable.
@@ -3933,10 +3937,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           '_source':'academy',
         }),
       ];
-      result.sort((a,b)=>DateTime.parse(b['created_at'].toString()).compareTo(DateTime.parse(a['created_at'].toString())));
-      final limited=result.take(60).toList();
-      await OfflineCourseCache.saveNotifications(userId,limited);
-      return limited;
+      final uniqueRows=<String,Map<String,dynamic>>{};
+      for(final row in result){uniqueRows.putIfAbsent(row['id'].toString(),()=>row);}
+      final limited=uniqueRows.values.toList()
+        ..sort((a,b)=>DateTime.parse(b['created_at'].toString()).compareTo(DateTime.parse(a['created_at'].toString())));
+      final page=limited.take(60).toList();
+      await OfflineCourseCache.saveNotifications(userId,page);
+      return page;
     } catch (_) {
       return await OfflineCourseCache.readNotifications(userId);
     }
