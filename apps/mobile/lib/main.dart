@@ -2183,7 +2183,8 @@ class AuthenticatedAcademyWebScreen extends StatefulWidget {
 }
 class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebScreen>{
   InAppWebViewController? controller;
-  bool injected=false,closing=false;
+  bool injected=false,closing=false,pageReady=false;
+  String? loadError;
   static const sessionKey='sb-xgdngnekihhnkzurhvpe-auth-token';
   static const origin='https://creatorverse-ai.vercel.app';
   String get targetUrl=>'$origin${widget.path}';
@@ -2206,30 +2207,64 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
     try{await controller?.evaluateJavascript(source:"localStorage.removeItem('$sessionKey');");}catch(_){}
     if(mounted)material_widgets_ui.Navigator.of(context).pop();
   }
+  Future<void> retryPageLoad() async {
+    if(!mounted)return;
+    setState((){loadError=null;pageReady=false;injected=false;});
+    try{await controller?.loadUrl(urlRequest:URLRequest(url:WebUri('$origin/certificate.html')));}
+    catch(e){if(mounted)setState(()=>loadError='Could not start the page: $e');}
+  }
   @override Widget build(BuildContext context)=>PopScope(
     canPop:false,
     onPopInvokedWithResult:(didPop,result){if(!didPop)closeRoom();},
-    child:Scaffold(appBar:AppBar(title:Text(pageTitle),leading:IconButton(onPressed:closeRoom,icon:const Icon(Icons.arrow_back))),
-      body:InAppWebView(
-        initialUrlRequest:URLRequest(url:WebUri('$origin/certificate.html')),
-        initialSettings:InAppWebViewSettings(
-          javaScriptEnabled:true,domStorageEnabled:true,mediaPlaybackRequiresUserGesture:false,
-          allowsInlineMediaPlayback:true,supportZoom:false,thirdPartyCookiesEnabled:true,
-        ),
-        onWebViewCreated:(webController)=>controller=webController,
-        onLoadStop:(webController,url) async {
-          if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/certificate.html'){
-            try{await injectSessionAndOpen();}catch(e){if(!context.mounted)return;ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open secure interview room: $e')));}
-          }
-        },
-        onPermissionRequest:(webController,request) async {
-          final allowed=request.resources.where((resource)=>resource==PermissionResourceType.CAMERA||resource==PermissionResourceType.MICROPHONE).toList();
-          if(allowed.length!=request.resources.length){
-            return PermissionResponse(resources:allowed,action:PermissionResponseAction.DENY);
-          }
-          return PermissionResponse(resources:allowed,action:PermissionResponseAction.GRANT);
-        },
-      )),
+    child:Stack(fit:StackFit.expand,children:[
+      Scaffold(appBar:AppBar(title:Text(pageTitle),leading:IconButton(onPressed:closeRoom,icon:const Icon(Icons.arrow_back))),
+        body:InAppWebView(
+          initialUrlRequest:URLRequest(url:WebUri('$origin/certificate.html')),
+          initialSettings:InAppWebViewSettings(
+            javaScriptEnabled:true,domStorageEnabled:true,mediaPlaybackRequiresUserGesture:false,
+            allowsInlineMediaPlayback:true,supportZoom:false,thirdPartyCookiesEnabled:true,
+          ),
+          onWebViewCreated:(webController)=>controller=webController,
+          onLoadStop:(webController,url) async {
+            if(url?.host=='creatorverse-ai.vercel.app'&&url?.path=='/certificate.html'){
+              try{await injectSessionAndOpen();}
+              catch(e){if(mounted)setState(()=>loadError='Could not open the secure page: $e');}
+              return;
+            }
+            if(url?.host=='creatorverse-ai.vercel.app'&&mounted){
+              setState(()=>pageReady=true);
+            }
+          },
+          onReceivedError:(webController,request,error) {
+            if(request.isForMainFrame&&mounted){
+              setState(()=>loadError='The page could not be loaded. Check your connection and try again.');
+            }
+          },
+          onPermissionRequest:(webController,request) async {
+            final allowed=request.resources.where((resource)=>resource==PermissionResourceType.CAMERA||resource==PermissionResourceType.MICROPHONE).toList();
+            if(allowed.length!=request.resources.length){
+              return PermissionResponse(resources:allowed,action:PermissionResponseAction.DENY);
+            }
+            return PermissionResponse(resources:allowed,action:PermissionResponseAction.GRANT);
+          },
+        )),
+      if(!pageReady)
+        Positioned.fill(child:loadError==null
+          ? const _CreatorVerseLoadingGate()
+          : Scaffold(backgroundColor:ink,body:Center(child:Padding(
+              padding:const EdgeInsets.all(28),
+              child:Column(mainAxisSize:MainAxisSize.min,children:[
+                SvgPicture.asset('assets/creatorverse-brand.svg',width:82,height:82),
+                const SizedBox(height:20),
+                const Text('Unable to load this page',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+                const SizedBox(height:10),
+                Text(loadError!,textAlign:TextAlign.center,style:const TextStyle(color:muted,height:1.5)),
+                const SizedBox(height:20),
+                FilledButton.icon(onPressed:retryPageLoad,icon:const Icon(Icons.refresh),label:const Text('Try again'),
+                  style:FilledButton.styleFrom(backgroundColor:emerald)),
+              ]),
+            )))),
+    ]),
   );
 }
 
