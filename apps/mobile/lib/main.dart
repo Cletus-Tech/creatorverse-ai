@@ -2691,8 +2691,7 @@ Future<void> openAcademyWebPage(BuildContext context,String path,{bool requiresM
 
 class AuthenticatedAcademyWebScreen extends StatefulWidget {
   final String path;
-  final bool requiresMedia;
-  const AuthenticatedAcademyWebScreen({super.key,required this.path,this.requiresMedia=true});
+  const AuthenticatedAcademyWebScreen({super.key,required this.path});
   @override State<AuthenticatedAcademyWebScreen> createState()=>_AuthenticatedAcademyWebScreenState();
 }
 class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebScreen>{
@@ -4147,7 +4146,6 @@ void openFeature(BuildContext context, String path) {
       material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => const AuthenticatedAcademyWebScreen(
           path: '/admin.html',
-          requiresMedia: false,
         )));
       return;
     default:
