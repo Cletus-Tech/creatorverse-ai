@@ -9,7 +9,7 @@ const corsHeaders = {
 async function getGoogleAccessToken(serviceAccount: any): Promise<string> {
   const privateKey = await importPKCS8(serviceAccount.private_key, "RS256");
   const now = Math.floor(Date.now() / 1000);
-  const assertion = new SignJWT({ scope: "https://www.googleapis.com/auth/firebase.messaging" })
+  const assertion = await new SignJWT({ scope: "https://www.googleapis.com/auth/firebase.messaging" })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .setIssuer(serviceAccount.client_email)
     .setSubject(serviceAccount.client_email)
