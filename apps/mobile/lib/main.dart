@@ -1589,7 +1589,7 @@ class _CommunityTabState extends State<CommunityTab> {
   Future<List<Map<String,dynamic>>> loadStories() async {
     final now=DateTime.now().toUtc().toIso8601String();
     final raw=await db.from('cv_stories').select('id,user_id,content,media_url,media_type,background,created_at,expires_at')
-      .gt('expires_at',now).order('created_at',ascending:false).limit(30);
+      .gt('expires_at',now).order('created_at',ascending:false);
     final rows=List<Map<String,dynamic>>.from(raw);
     if(rows.isEmpty)return rows;
     final ids=rows.map((r)=>r['user_id'].toString()).toSet().toList();
