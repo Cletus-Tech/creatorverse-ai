@@ -328,6 +328,8 @@ class _MainShellState extends State<MainShell> {
   late final List<Widget?> _pages;
   RealtimeChannel? _notificationBadgeChannel, _academyNotificationBadgeChannel, _messageBadgeChannel;
   StreamSubscription<String>? _pushTokenSubscription;
+  StreamSubscription<dynamic>? _authStateSubscription;
+  bool _pushListenersInitialized = false;
   StreamSubscription<RemoteMessage>? _pushOpenSubscription;
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   final db = Supabase.instance.client;
@@ -359,6 +361,9 @@ class _MainShellState extends State<MainShell> {
     _pages[0] = const HomeTab();
     _refreshBadges();
     _registerPushNotifications();
+    _authStateSubscription = db.auth.onAuthStateChange.listen((state) {
+      if (state.session != null) _registerPushNotifications();
+    });
     final userId = db.auth.currentUser?.id;
     if (userId != null) {
       _notificationBadgeChannel = db.channel('cv-shell-notifications-$userId')
@@ -382,8 +387,7 @@ class _MainShellState extends State<MainShell> {
 
   Future<void> _registerPushNotifications() async {
     if (Firebase.apps.isEmpty) return;
-    final userId = db.auth.currentUser?.id;
-    if (userId == null) return;
+    if (db.auth.currentUser == null) return;
     try {
       final messaging = FirebaseMessaging.instance;
       final permission = await messaging.requestPermission(
@@ -392,8 +396,10 @@ class _MainShellState extends State<MainShell> {
       if (permission.authorizationStatus == AuthorizationStatus.denied) return;
 
       Future<void> saveToken(String token) async {
+        final currentUserId = db.auth.currentUser?.id;
+        if (currentUserId == null) return;
         await db.from('cv_device_tokens').upsert({
-          'user_id': userId,
+          'user_id': currentUserId,
           'token': token,
           'platform': 'android',
           'device_label': 'CreatorVerse Android',
@@ -404,6 +410,12 @@ class _MainShellState extends State<MainShell> {
 
       final token = await messaging.getToken();
       if (token != null && token.isNotEmpty) await saveToken(token);
+      if (_pushListenersInitialized) {
+        final currentToken = await messaging.getToken();
+        if (currentToken != null && currentToken.isNotEmpty) await saveToken(currentToken);
+        return;
+      }
+      _pushListenersInitialized = true;
       _pushTokenSubscription = messaging.onTokenRefresh.listen((token) {
         saveToken(token).catchError((error) {
           debugPrint('Could not refresh CreatorVerse push token: $error');
@@ -499,6 +511,7 @@ class _MainShellState extends State<MainShell> {
     if (n != null) unawaited(n.unsubscribe());
     if (a != null) unawaited(a.unsubscribe());
     if (m != null) unawaited(m.unsubscribe());
+    _authStateSubscription?.cancel();
     _pushTokenSubscription?.cancel();
     _pushOpenSubscription?.cancel();
     _pushForegroundSubscription?.cancel();
