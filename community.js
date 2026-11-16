@@ -1,6 +1,6 @@
 (function(){
 var root=document.getElementById('community-app');if(!root)return;
-var sb=null,user=null='',filter='all',sort='new',term='',posts=[],profiles={},creators=[],saved={},liked={},following=[],followed={},blocked={},commentsOpen={},$=function(id){return document.getElementById(id)};
+var sb=null,user=null,role='',filter='all',sort='new',term='',posts=[],profiles={},creators=[],saved={},liked={},following=[],followed={},blocked={},commentsOpen={},$=function(id){return document.getElementById(id)};
 function el(t,a,children){var n=document.createElement(t);Object.keys(a||{}).forEach(function(k){if(k==='text')n.textContent=a[k];else if(k==='class')n.className=a[k];else if(k==='style')n.setAttribute('style',a[k]);else n.setAttribute(k,a[k])});(children||[]).forEach(function(x){if(x)n.appendChild(x)});return n}
 function hideCommunityLoader(){var l=$('community-loader');if(l)l.classList.add('is-hidden')}
 function msg(t,bad){$('community-msg').textContent=t||'';$('community-msg').className='community-msg'+(bad?' error':'')}
