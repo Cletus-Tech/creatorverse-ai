@@ -2301,11 +2301,20 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   @override void dispose(){input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
     final c=_messageChannel;if(c!=null)unawaited(c.unsubscribe());super.dispose();}
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
+  Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF'+value.replaceFirst('#',''),radix:16));}catch(_){return fallback;}}
+  String _chatColorHex(Color color)=>'#'+color.value.toRadixString(16).padLeft(8,'0').substring(2);
   Future<void> _loadChatTheme() async{
     final p=await SharedPreferences.getInstance();final w=p.getInt('${_themeKey}_wallpaper'),b=p.getInt('${_themeKey}_bubble');
-    if(!mounted)return;setState((){if(w!=null&&w>=0&&w<_wallpapers.length)_wallpaper=_wallpapers[w];if(b!=null&&b>=0&&b<_myBubbles.length)_myBubble=_myBubbles[b];});
+    Color wallpaper=w!=null&&w>=0&&w<_wallpapers.length?_wallpapers[w]:_wallpaper;
+    Color bubble=b!=null&&b>=0&&b<_myBubbles.length?_myBubbles[b]:_myBubble;
+    try{final userId=db.auth.currentUser?.id;if(userId!=null){final row=await db.from('cv_chat_preferences').select('wallpaper_color,outgoing_bubble_color').eq('user_id',userId).eq('conversation_id',widget.conversationId).maybeSingle();
+      if(row!=null){wallpaper=_parseChatColor((row['wallpaper_color']??'').toString(),wallpaper);bubble=_parseChatColor((row['outgoing_bubble_color']??'').toString(),bubble);}}}catch(_){}
+    if(!mounted)return;setState((){_wallpaper=wallpaper;_myBubble=bubble;});
   }
-  Future<void> _saveChatTheme() async{final p=await SharedPreferences.getInstance();await p.setInt('${_themeKey}_wallpaper',_wallpapers.indexOf(_wallpaper));await p.setInt('${_themeKey}_bubble',_myBubbles.indexOf(_myBubble));}
+  Future<void> _saveChatTheme() async{
+    final p=await SharedPreferences.getInstance();await p.setInt('${_themeKey}_wallpaper',_wallpapers.indexOf(_wallpaper));await p.setInt('${_themeKey}_bubble',_myBubbles.indexOf(_myBubble));
+    final userId=db.auth.currentUser?.id;if(userId!=null){await db.from('cv_chat_preferences').upsert({'user_id':userId,'conversation_id':widget.conversationId,'wallpaper_color':_chatColorHex(_wallpaper),'outgoing_bubble_color':_chatColorHex(_myBubble),'updated_at':DateTime.now().toUtc().toIso8601String()},onConflict:'user_id,conversation_id');}
+  }
   void _handleScroll(){if(!_chatScrollController.hasClients)return;final atBottom=_chatScrollController.position.maxScrollExtent-_chatScrollController.position.pixels<100;
     if(mounted&&_showJumpToLatest==atBottom)setState(()=>_showJumpToLatest=!atBottom);}
   void _scrollToLatest({bool force=false}){WidgetsBinding.instance.addPostFrameCallback((_){if(!_chatScrollController.hasClients)return;
