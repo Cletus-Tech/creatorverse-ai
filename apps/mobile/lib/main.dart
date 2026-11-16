@@ -30,7 +30,7 @@ Future<void> main() async {
 
 class OfflineCourseCache {
  static const maxAge=Duration(days:7);
- static String _ck(String u,String c)=>'cv_offline_course_$u_$c';
+ static String _ck(String u,String c)=>'cv_offline_course_' + u + '_' + c;
  static String _nk(String u)=>'cv_notifications_' + u;
  static String _pk(String u)=>'cv_pending_reads_' + u;
  static Future<void> saveCourse(String u,String c,List<Map<String,dynamic>> m) async {final p=await SharedPreferences.getInstance();await p.setString(_ck(u,c),jsonEncode({'saved_at':DateTime.now().toUtc().toIso8601String(),'modules':m}));}
