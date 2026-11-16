@@ -14,7 +14,7 @@ APK: \`build/app/outputs/flutter-apk/app-release.apk\`. GitHub Actions uploads t
 
 The app uses the same Supabase project as the website. Configure \`SUPABASE_URL\` and \`SUPABASE_PUBLISHABLE_KEY\` with Dart compile-time defines. Defaults match the website's public client configuration. Never put a service-role or secret key in a mobile app.
 
-## First build scope
-Native Flutter shell; sign-in and account creation; shared Supabase email/password identity and persisted session; Home, Learn, Campus, Community and Profile tabs. Existing modules, messages and notifications open their current website routes. No production database schema or RLS changes are made.
+## Current mobile scope
+Native Flutter shell; sign-in and account creation; shared Supabase email/password identity and persisted session; Home, Learn, Campus, Community and Profile tabs; shared messages and notifications; native course, community, marketplace and selected admin workflows. The full website Admin Portal is opened inside an authenticated in-app WebView for role-authorized admin/super-admin users so the existing complete control board remains available while native admin parity is built. The WebView receives only the signed-in user's Supabase session; no service-role key is placed in the app.
 
-This is an installable first mobile preview, not a claim of full native feature parity. Native features will be implemented in tested vertical slices.
+The app and website share the same Supabase project and user identity. This does not mean every website feature has a native Flutter implementation yet. Native feature parity will be delivered in tested vertical slices. No production database schema or RLS changes are made by the mobile client.
