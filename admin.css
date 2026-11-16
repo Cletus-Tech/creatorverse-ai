@@ -125,3 +125,56 @@ body[data-page="admin"] .page{max-width:none;padding:0}
 .academy-unlock-request strong{width:100%;color:#edf4ff}.academy-unlock-request span{color:#aebfdb;font-size:.88rem}.academy-unlock-request input{flex:1;min-width:150px}
 @media(max-width:760px){.academy-progress-rules .academy-review-form{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.academy-progress-rules .academy-review-form{grid-template-columns:1fr}}
+
+
+/* Android and narrow-screen admin drawer hardening.
+   Keep the admin workspace independent from the public site's mobile page spacing. */
+body[data-page="admin"] #content.page{
+  width:100%!important;max-width:none!important;margin:0!important;
+  padding:0!important;overflow:visible!important;
+}
+body[data-page="admin"] .adm{
+  position:relative;isolation:isolate;width:100%;min-width:0;
+  min-height:100vh;min-height:100dvh;
+}
+body[data-page="admin"] .adm-side{
+  color:#eef4ff;background:#050d26;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+body[data-page="admin"] .adm-side .adm-link,
+body[data-page="admin"] .adm-side .adm-link span,
+body[data-page="admin"] .adm-side .adm-brand,
+body[data-page="admin"] .adm-side .adm-brand strong,
+body[data-page="admin"] .adm-side .adm-brand small{
+  visibility:visible!important;opacity:1!important;
+}
+body[data-page="admin"] .adm-side .adm-link{color:#c4d2ec!important;}
+body[data-page="admin"] .adm-side .adm-link.on{color:#fff!important;}
+body[data-page="admin"] .adm-back.on{
+  z-index:10001!important;background:rgba(2,6,18,.78)!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+}
+@media(max-width:900px){
+  body[data-page="admin"] .adm-side{
+    position:fixed!important;inset:0 auto 0 0!important;
+    width:min(84vw,320px)!important;height:100vh!important;height:100dvh!important;
+    max-height:100dvh;z-index:10002!important;
+    transform:translate3d(-105%,0,0)!important;
+    visibility:hidden;transition:transform .22s ease,visibility .22s ease;
+    box-shadow:18px 0 48px rgba(0,0,0,.42);
+  }
+  body[data-page="admin"] .adm-side.open{
+    transform:translate3d(0,0,0)!important;visibility:visible!important;
+  }
+  body[data-page="admin"] .adm-back.on{
+    display:block!important;position:fixed!important;inset:0!important;
+    z-index:10001!important;
+  }
+  body[data-page="admin"] .adm-burger{display:flex!important;flex:0 0 42px;}
+  body[data-page="admin"] .adm-top{min-height:58px;padding:8px 10px!important;}
+  body[data-page="admin"] .adm-main{min-width:0;width:100%;}
+  body[data-page="admin"] .adm-view{width:100%;max-width:none;padding:14px 12px!important;}
+}
+@media(prefers-reduced-motion:reduce){
+  body[data-page="admin"] .adm-side{transition:none!important;}
+}
