@@ -2296,7 +2296,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   RealtimeChannel? _messageChannel;
   bool _initialLoading=true,_sendingAttachment=false,_showJumpToLatest=false;
   String? _loadError;
-  Color _wallpaper=const Color(0xFF07151A),_myBubble=const Color(0xFF155E48),_theirBubble=panel;
+  Color _wallpaper=const Color(0xFF07151A),_myBubble=const Color(0xFF155E48); final Color _theirBubble=panel;
   static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_subscribeToMessages();
@@ -2304,8 +2304,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   @override void dispose(){input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
     final c=_messageChannel;if(c!=null)unawaited(c.unsubscribe());super.dispose();}
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
-  Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF'+value.replaceFirst('#',''),radix:16));}catch(_){return fallback;}}
-  String _chatColorHex(Color color)=>'#'+color.value.toRadixString(16).padLeft(8,'0').substring(2);
+  Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF${value.replaceFirst('#','')}',radix:16));}catch(_){return fallback;}}
+  String _chatColorHex(Color color)=>'#${color.value.toRadixString(16).padLeft(8,'0').substring(2)}';
   Future<void> _loadChatTheme() async{
     final p=await SharedPreferences.getInstance();final w=p.getInt('${_themeKey}_wallpaper'),b=p.getInt('${_themeKey}_bubble');
     Color wallpaper=w!=null&&w>=0&&w<_wallpapers.length?_wallpapers[w]:_wallpaper;
@@ -2335,9 +2335,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'cv_direct_messages',
         filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'conversation_id',value:widget.conversationId),
         callback:(payload){
-          final row=payload.newRecord;if(row.isEmpty)return;
+          final row=payload.newRecord;
+          if(row.isEmpty)return;
           final id=(row['id']??'').toString();
-          if(payload.eventType==PostgresChangeEventType.delete){if(mounted)setState(()=>_rows.removeWhere((m)=>m['id']==id));return;}
           final wasIncoming=row['sender_id']!=db.auth.currentUser?.id;
           _upsertMessage(Map<String,dynamic>.from(row));
           if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
