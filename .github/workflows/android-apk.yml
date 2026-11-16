@@ -78,6 +78,32 @@ jobs:
               if permission not in result:
                   raise SystemExit(f'Android permission was not added: {permission}')
           PY
+      - name: Configure OAuth callback deep link
+        working-directory: apps/mobile
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          source = p.read_text()
+          pattern = r'(<activity\\b[^>]*android:name="[^"]*MainActivity"[^>]*>)(.*?)(</activity>)'
+          match = re.search(pattern, source, flags=re.S)
+          if not match:
+              raise SystemExit('MainActivity was not found; OAuth callback cannot be registered')
+          activity = match.group(0)
+          if 'io.supabase.creatorverse' not in activity:
+              callback = '''
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="io.supabase.creatorverse" android:host="login-callback" />
+                      </intent-filter>
+              '''
+              activity = activity.replace('</activity>', callback + '\\n    </activity>')
+              source = source[:match.start()] + activity + source[match.end():]
+              p.write_text(source)
+          PY
       - name: Install packages
         working-directory: apps/mobile
         run: flutter pub get
