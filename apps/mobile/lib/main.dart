@@ -516,7 +516,33 @@ class HomeTab extends StatefulWidget {
 }
 class _HomeTabState extends State<HomeTab>{
   late Future<Map<String,dynamic>> summary;
-  @override void initState(){super.initState();summary=loadSummary();}
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
+  @override void initState(){
+    super.initState();summary=loadSummary();
+    final userId=Supabase.instance.client.auth.currentUser?.id;
+    if(userId!=null){
+      _syncChannel=Supabase.instance.client.channel('cv-home-sync-$userId')
+        .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'profiles',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:userId),
+          callback:(_)=>_scheduleSync())
+        .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'enrolments',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'user_id',value:userId),
+          callback:(_)=>_scheduleSync())
+        .subscribe();
+    }
+  }
+  void _scheduleSync(){
+    _syncTimer?.cancel();
+    _syncTimer=Timer(const Duration(milliseconds:450),(){
+      if(mounted)setState(()=>summary=loadSummary());
+    });
+  }
+  @override void dispose(){
+    _syncTimer?.cancel();
+    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<Map<String,dynamic>> loadSummary() async {
     final db=Supabase.instance.client;final user=db.auth.currentUser;
     if(user==null)return {'name':'','enrolled':0,'unread':0};
@@ -569,15 +595,31 @@ class _LearnTabState extends State<LearnTab> {
   late Future<List<Map<String, dynamic>>> courses;
   final search = TextEditingController();
   String category = '';
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
   @override
-  void initState() { super.initState(); courses = loadCourses(); }
+  void initState() {
+    super.initState(); courses = loadCourses();
+    _syncChannel=Supabase.instance.client.channel('cv-learn-courses-sync')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'courses',
+        callback:(_){
+          _syncTimer?.cancel();
+          _syncTimer=Timer(const Duration(milliseconds:500),(){
+            if(mounted)setState(()=>courses=loadCourses());
+          });
+        }).subscribe();
+  }
   Future<List<Map<String, dynamic>>> loadCourses() async {
     final rows = await Supabase.instance.client.from('courses')
       .select('id,slug,title,description,category_slug,level,duration_text,thumbnail_url,price_ngn,featured')
       .eq('published', true).order('featured', ascending: false).order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(rows);
   }
-  @override void dispose() { search.dispose(); super.dispose(); }
+  @override void dispose() {
+    search.dispose();_syncTimer?.cancel();
+    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<void> reload() async { final next = loadCourses(); setState(() => courses = next); await next; }
   @override
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
@@ -1195,10 +1237,26 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final search = TextEditingController();
   late Future<Map<String, dynamic>> catalogue;
   String categoryId = '';
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
   @override
-  void initState() { super.initState(); catalogue = loadCatalogue(); }
+  void initState() {
+    super.initState(); catalogue = loadCatalogue();
+    _syncChannel=db.channel('cv-marketplace-listings-sync')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'marketplace_listings',
+        callback:(_){
+          _syncTimer?.cancel();
+          _syncTimer=Timer(const Duration(milliseconds:500),(){
+            if(mounted)setState(()=>catalogue=loadCatalogue());
+          });
+        }).subscribe();
+  }
   @override
-  void dispose() { search.dispose(); super.dispose(); }
+  void dispose() {
+    search.dispose();_syncTimer?.cancel();
+    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    super.dispose();
+  }
 
   Future<Map<String, dynamic>> loadCatalogue() async {
     final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
@@ -1809,8 +1867,35 @@ class _CommunityTabState extends State<CommunityTab> {
   late Future<List<Map<String, dynamic>>> feed;
   late Future<List<Map<String, dynamic>>> stories;
   final db = Supabase.instance.client;
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
   @override
-  void initState() { super.initState(); feed = loadFeed(); stories = loadStories(); }
+  void initState() {
+    super.initState(); feed = loadFeed(); stories = loadStories();
+    _syncChannel=db.channel('cv-community-feed-sync')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_posts',
+        callback:(_)=>_scheduleFeedSync())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_comments',
+        callback:(_)=>_scheduleFeedSync())
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_likes',
+        callback:(_)=>_scheduleFeedSync())
+      .subscribe();
+  }
+  void _scheduleFeedSync(){
+    _syncTimer?.cancel();
+    _syncTimer=Timer(const Duration(milliseconds:600),(){
+      if(mounted){
+        final next=loadFeed();
+        setState(()=>feed=next);
+      }
+    });
+  }
+  @override
+  void dispose(){
+    _syncTimer?.cancel();
+    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<List<Map<String, dynamic>>> loadFeed() async {
     final raw = await db.from('community_posts')
       .select('id,user_id,title,description,image_url,media_type,destination_url,category,tags,created_at')
@@ -3970,8 +4055,30 @@ class ProfileTab extends StatefulWidget {
 class _ProfileTabState extends State<ProfileTab> {
   final db = Supabase.instance.client;
   late Future<Map<String, dynamic>> profile;
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
   @override
-  void initState() { super.initState(); profile = loadProfile(); }
+  void initState() {
+    super.initState(); profile = loadProfile();
+    final userId=db.auth.currentUser?.id;
+    if(userId!=null){
+      _syncChannel=db.channel('cv-profile-sync-$userId')
+        .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'profiles',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:userId),
+          callback:(_){
+            _syncTimer?.cancel();
+            _syncTimer=Timer(const Duration(milliseconds:400),(){
+              if(mounted)setState(()=>profile=loadProfile());
+            });
+          }).subscribe();
+    }
+  }
+  @override
+  void dispose(){
+    _syncTimer?.cancel();
+    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<Map<String, dynamic>> loadProfile() async {
     final user = db.auth.currentUser;
     if (user == null) throw Exception('You are signed out.');
