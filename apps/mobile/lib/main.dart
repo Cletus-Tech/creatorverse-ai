@@ -326,9 +326,10 @@ class _MainShellState extends State<MainShell> {
   int unreadMessages = 0, unreadNotifications = 0;
   List<String> _conversationIds = [];
   late final List<Widget?> _pages;
-  RealtimeChannel? _notificationBadgeChannel, _messageBadgeChannel;
+  RealtimeChannel? _notificationBadgeChannel, _academyNotificationBadgeChannel, _messageBadgeChannel;
   StreamSubscription<String>? _pushTokenSubscription;
   StreamSubscription<RemoteMessage>? _pushOpenSubscription;
+  StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   final db = Supabase.instance.client;
   static const labels = ['Home', 'Learn', 'Campus', 'Community', 'Profile'];
 
@@ -362,6 +363,10 @@ class _MainShellState extends State<MainShell> {
     if (userId != null) {
       _notificationBadgeChannel = db.channel('cv-shell-notifications-$userId')
         .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'cv_notifications',
+          filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: userId),
+          callback: (_) { if (mounted) _refreshBadges(); }).subscribe();
+      _academyNotificationBadgeChannel = db.channel('cv-shell-academy-notifications-$userId')
+        .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'academy_notifications',
           filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: userId),
           callback: (_) { if (mounted) _refreshBadges(); }).subscribe();
       _messageBadgeChannel = db.channel('cv-shell-messages-$userId')
@@ -407,6 +412,16 @@ class _MainShellState extends State<MainShell> {
       _pushOpenSubscription = FirebaseMessaging.onMessageOpenedApp.listen((_) {
         if (mounted) _openNotifications();
       });
+      _pushForegroundSubscription = FirebaseMessaging.onMessage.listen((message) {
+        if (!mounted) return;
+        final title = message.notification?.title ?? message.data['title']?.toString() ?? 'CreatorVerse update';
+        final body = message.notification?.body ?? message.data['body']?.toString() ?? 'You have a new notification.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(body.isEmpty ? title : '$title: $body'),
+          action: SnackBarAction(label: 'VIEW', onPressed: _openNotifications),
+          duration: const Duration(seconds: 5),
+        ));
+      });
       final initialMessage = await messaging.getInitialMessage();
       if (initialMessage != null && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -428,6 +443,9 @@ class _MainShellState extends State<MainShell> {
         .map((row) => row['id'].toString()).toList();
       final notificationCount = await db.from('cv_notifications').select('id')
         .eq('user_id', userId).isFilter('read_at', null).count(CountOption.exact);
+      final academyNotificationCount = await db.from('academy_notifications').select('id')
+        .eq('user_id', userId).isFilter('read_at', null)
+        .lte('scheduled_for', DateTime.now().toUtc().toIso8601String()).count(CountOption.exact);
       var messageCount = 0;
       if (ids.isNotEmpty) {
         final unread = await db.from('cv_direct_messages').select('id')
@@ -439,7 +457,7 @@ class _MainShellState extends State<MainShell> {
       setState(() {
         _conversationIds = ids;
         unreadMessages = messageCount;
-        unreadNotifications = notificationCount.count;
+        unreadNotifications = notificationCount.count + academyNotificationCount.count;
       });
     } catch (_) {
       // Keep the last known counts visible if the network is temporarily unavailable.
@@ -473,11 +491,13 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-    final n = _notificationBadgeChannel, m = _messageBadgeChannel;
+    final n = _notificationBadgeChannel, a = _academyNotificationBadgeChannel, m = _messageBadgeChannel;
     if (n != null) unawaited(n.unsubscribe());
+    if (a != null) unawaited(a.unsubscribe());
     if (m != null) unawaited(m.unsubscribe());
     _pushTokenSubscription?.cancel();
     _pushOpenSubscription?.cancel();
+    _pushForegroundSubscription?.cancel();
     super.dispose();
   }
 
@@ -3862,7 +3882,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final db = Supabase.instance.client;
   late Future<List<Map<String, dynamic>>> notifications;
-  RealtimeChannel? notificationChannel;
+  RealtimeChannel? notificationChannel, academyNotificationChannel;
 
   @override
   void initState() {
@@ -3875,13 +3895,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'user_id',value:userId),
           callback:(payload){if(mounted)refresh();})
         .subscribe();
+      academyNotificationChannel=db.channel('cv-notifications-academy-$userId')
+        .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'academy_notifications',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'user_id',value:userId),
+          callback:(payload){if(mounted)refresh();})
+        .subscribe();
     }
   }
 
   @override
   void dispose() {
-    final channel=notificationChannel;
+    final channel=notificationChannel, academyChannel=academyNotificationChannel;
     if(channel!=null)db.removeChannel(channel);
+    if(academyChannel!=null)db.removeChannel(academyChannel);
     super.dispose();
   }
 
@@ -3890,7 +3916,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (userId == null) {
       return [];
     }
-    try{await OfflineCourseCache.syncPendingReads(db,userId);final rows=await db.from('cv_notifications').select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id').eq('user_id',userId).order('created_at',ascending:false).limit(60);final result=List<Map<String,dynamic>>.from(rows);await OfflineCourseCache.saveNotifications(userId,result);return result;}catch(_){return await OfflineCourseCache.readNotifications(userId);}
+    try {
+      await OfflineCourseCache.syncPendingReads(db,userId);
+      final now=DateTime.now().toUtc().toIso8601String();
+      final pair=await Future.wait([
+        db.from('cv_notifications').select('id,type,title,body,href,entity_type,entity_id,created_at,read_at,actor_id')
+          .eq('user_id',userId).order('created_at',ascending:false).limit(60),
+        db.from('academy_notifications').select('id,notification_type,title,body,action_url,created_at,read_at,scheduled_for,related_application_id,related_offer_id,related_interview_id,related_course_id')
+          .eq('user_id',userId).lte('scheduled_for',now).order('created_at',ascending:false).limit(60),
+      ]);
+      final result=<Map<String,dynamic>>[
+        ...List<Map<String,dynamic>>.from(pair[0] as List).map((row)=>{...row,'_source':'cv'}),
+        ...List<Map<String,dynamic>>.from(pair[1] as List).map((row)=>{...row,
+          'type':row['notification_type']??'academy',
+          'href':row['action_url']??'academy-status.html',
+          '_source':'academy',
+        }),
+      ];
+      result.sort((a,b)=>DateTime.parse(b['created_at'].toString()).compareTo(DateTime.parse(a['created_at'].toString())));
+      final limited=result.take(60).toList();
+      await OfflineCourseCache.saveNotifications(userId,limited);
+      return limited;
+    } catch (_) {
+      return await OfflineCourseCache.readNotifications(userId);
+    }
   }
 
   Future<void> refresh() async {
@@ -3904,7 +3953,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     final userId=db.auth.currentUser!.id;
-    try{await db.from('cv_notifications').update({'read_at':DateTime.now().toUtc().toIso8601String()}).eq('id',item['id']).eq('user_id',userId);if(mounted)await refresh();}
+    try {
+      final table=item['_source']=='academy'?'academy_notifications':'cv_notifications';
+      await db.from(table).update({'read_at':DateTime.now().toUtc().toIso8601String()})
+        .eq('id',item['id']).eq('user_id',userId);
+      if(mounted)await refresh();
+    }
     catch(_){await OfflineCourseCache.queueRead(userId,item['id'].toString());final cached=await OfflineCourseCache.readNotifications(userId);final changed=cached.map((row){if(row['id'].toString()==item['id'].toString())row['read_at']=DateTime.now().toUtc().toIso8601String();return row;}).toList();await OfflineCourseCache.saveNotifications(userId,changed);if(mounted)await refresh();}
   }
 
@@ -3987,8 +4041,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     try {
-      await db.from('cv_notifications').update({'read_at': DateTime.now().toIso8601String()})
-        .eq('user_id', db.auth.currentUser!.id).isFilter('read_at', null);
+      final stamp=DateTime.now().toUtc().toIso8601String();
+      final userId=db.auth.currentUser!.id;
+      await Future.wait([
+        db.from('cv_notifications').update({'read_at':stamp}).eq('user_id',userId).isFilter('read_at',null),
+        db.from('academy_notifications').update({'read_at':stamp}).eq('user_id',userId)
+          .isFilter('read_at',null).lte('scheduled_for',stamp),
+      ]);
       if (mounted) await refresh();
     } catch (e) {
       if (mounted) {
