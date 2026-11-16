@@ -35,12 +35,15 @@ jobs:
           from pathlib import Path
           settings = Path('android/settings.gradle.kts')
           source = settings.read_text()
+          kotlin_marker = 'id("org.jetbrains.kotlin.android")'
+          if kotlin_marker not in source:
+              raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
+          if 'id("org.jetbrains.kotlin.android") version' not in source:
+              source = source.replace(kotlin_marker, 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false', 1)
           if 'com.google.gms.google-services' not in source:
-              marker = 'id("org.jetbrains.kotlin.android")'
-              if marker not in source:
-                  raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
-              source = source.replace(marker, marker + '\n    id("com.google.gms.google-services") version "4.4.4" apply false', 1)
-              settings.write_text(source)
+              plugin_line = 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false'
+              source = source.replace(plugin_line, plugin_line + '\\n    id("com.google.gms.google-services") version "4.6.0" apply false', 1)
+          settings.write_text(source)
           app_gradle = Path('android/app/build.gradle.kts')
           source = app_gradle.read_text()
           if 'id("com.google.gms.google-services")' not in source:
