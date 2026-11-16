@@ -26,6 +26,36 @@ jobs:
       - name: Generate Android platform
         working-directory: apps/mobile
         run: flutter create --platforms=android --org com.cletustech --project-name creatorverse_mobile .
+      - name: Install Firebase Android configuration
+        working-directory: apps/mobile
+        run: |
+          mkdir -p android/app
+          cp firebase/google-services.json android/app/google-services.json
+          python3 - <<'PY'
+          from pathlib import Path
+          settings = Path('android/settings.gradle.kts')
+          source = settings.read_text()
+          if 'com.google.gms.google-services' not in source:
+              marker = 'id("org.jetbrains.kotlin.android")'
+              if marker not in source:
+                  raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
+              source = source.replace(marker, marker + '\\n    id("com.google.gms.google-services") version "4.4.4" apply false', 1)
+              settings.write_text(source)
+          app_gradle = Path('android/app/build.gradle.kts')
+          source = app_gradle.read_text()
+          if 'id("com.google.gms.google-services")' not in source:
+              marker = 'id("dev.flutter.flutter-gradle-plugin")'
+              if marker not in source:
+                  raise SystemExit('Could not find Flutter Gradle plugin in app/build.gradle.kts')
+              source = source.replace(marker, marker + '\\n    id("com.google.gms.google-services")', 1)
+              app_gradle.write_text(source)
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          source = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
+          if permission not in source:
+              source = source.replace('<application', permission + '\\n    <application', 1)
+              manifest.write_text(source)
+          PY
       - name: Work around Android release lint detector crash
         working-directory: apps/mobile
         run: |
