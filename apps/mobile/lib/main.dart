@@ -2726,7 +2726,15 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
   String? loadError;
   static const sessionKey='sb-xgdngnekihhnkzurhvpe-auth-token';
   static const origin='https://creatorverse-ai.vercel.app';
-  String get targetUrl=>'$origin${widget.path}';
+  String get targetUrl {
+    final uri = Uri.parse('$origin${widget.path}');
+    // Native WebView pages use the Flutter loading/error surface. Suppress
+    // the website's second full-screen loader to prevent a second flash.
+    return uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      'cv_native': '1',
+    }).toString();
+  }
   String get pageTitle=>widget.path.contains('admin.html')?'CreatorVerse Admin Portal':widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
   Future<void> injectSessionAndOpen() async {
     if(injected||controller==null)return;
