@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
         },
       );
       const result = await response.json();
-      if (!response.ok && result?.error?.status === "UNREGISTERED") {
+      if (!response.ok && result?.error?.details?.some((detail: any) => detail.errorCode === "UNREGISTERED")) {
         await supabase.from("cv_device_tokens").delete().eq("id", device.id);
       }
       return { ok: response.ok, result };
