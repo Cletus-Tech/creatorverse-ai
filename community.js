@@ -42,7 +42,7 @@ function load(){
   ];
   var results=await Promise.all(jobs);
   results.forEach(function(result,index){if(result&&result.error)console.warn('Community optional query '+index+':',result.error.message)});
-  (results[0].data||[]).forEach(function(p){profiles[p.id]=p});
+  (results[0].data||[]).forEach(function(p){profiles[p.id]=p});if(user){var ownProfile=await sb.from('profiles').select('id,full_name,avatar_url,username').eq('id',user.id).maybeSingle();if(ownProfile.data)profiles[user.id]=Object.assign({},profiles[user.id]||{},ownProfile.data)}
   (results[1].data||[]).forEach(function(v){liked[v.post_id]=1});
   (results[2].data||[]).forEach(function(v){saved[v.post_id]=1});
   role=results[3].data&&results[3].data.role||'';
