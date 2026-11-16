@@ -2068,7 +2068,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       messages = messages.then((rows) => [...rows, optimistic]);
     });
     try {
-      final inserted = await db.from('cv_direct_messages').insert({
+      await db.from('cv_direct_messages').insert({
         'conversation_id': widget.conversationId, 'sender_id': senderId, 'body': body,
       }).select('id,sender_id,body,created_at,read_at').single();
       if (mounted) {
@@ -2110,7 +2110,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                       size: 14, color: m['read_at'] != null ? const Color(0xFF66C8FF) : Colors.white60),
                   ]),
                 ],
-              ]))))]);
+              ]))) ]);
       })),
       SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 10), child: Row(children: [
         Expanded(child: TextField(controller: input, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Message...'))),
