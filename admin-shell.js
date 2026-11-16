@@ -78,34 +78,127 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   filter.addEventListener('change',load);load()
  }
  function notifications(){
-  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Platform announcements'}),h('p',{text:'Send updates into the shared CreatorVerse notification centre and to registered Android devices through push notifications.'})])]));
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Notification centre'}),h('p',{text:'Manage announcements, audiences, categories, urgency and the live website alert experience from one place.'})])]));
   var title=h('input',{type:'text',maxlength:'120',placeholder:'Announcement title',required:''});
-  var body=h('textarea',{rows:'5',maxlength:'2000',placeholder:'Write a clear message for students…',required:''});
-  var audience=h('select',{},[h('option',{value:'all_students',text:'All registered students'}),h('option',{value:'all_users',text:'All registered accounts (including admin)'}),h('option',{value:'course_students',text:'Students enrolled in one course'})]);
+  var body=h('textarea',{rows:'4',maxlength:'2000',placeholder:'Write the message your recipients will receive…',required:''});
+  var audience=h('select',{},[
+   h('option',{value:'all_users',text:'Everyone — all registered accounts'}),
+   h('option',{value:'all_students',text:'Students only'}),
+   h('option',{value:'role_creator',text:'Creators'}),
+   h('option',{value:'role_instructor',text:'Instructors / teachers'}),
+   h('option',{value:'role_admin',text:'Administrators (admin + super admin)'}),
+   h('option',{value:'role_moderator',text:'Moderators'}),
+   h('option',{value:'course_students',text:'Students enrolled in a course'})
+  ]);
   var course=h('select',{},[h('option',{value:'',text:'Choose a course…'})]);
-  var href=h('input',{type:'text',value:'notifications.html',placeholder:'Internal page link, e.g. academy-status.html'});
-  var status=h('div',{class:'msg'}),recent=h('div',{class:'panel'});
+  var category=h('select',{},[h('option',{value:'general',text:'General'})]);
+  var priority=h('select',{},[
+   h('option',{value:'low',text:'Low'}),
+   h('option',{value:'normal',text:'Normal'}),
+   h('option',{value:'high',text:'High'}),
+   h('option',{value:'urgent',text:'Urgent'})
+  ]);
+  var href=h('input',{type:'text',value:'notifications.html',placeholder:'Internal page link, e.g. courses.html'});
+  var expires=h('input',{type:'datetime-local'});
+  var status=h('div',{class:'msg'}),recent=h('div',{class:'panel'}),settings=h('section',{class:'panel'});
+  var categoryList=h('textarea',{rows:'3',placeholder:'general, announcement, course, learning, payment, admission, community, security, system'});
+  var toastEnabled=h('input',{type:'checkbox'}),toastDuration=h('input',{type:'number',min:'3',max:'30',value:'7'});
+  var saveSettings=h('button',{class:'btn btn-outline',type:'button',text:'Save notification settings'}),settingsStatus=h('p',{class:'pmeta'});
+  settings.append(h('h3',{text:'Notification system settings'}),h('p',{class:'pmeta',text:'These settings control the categories available to administrators and the live pop-up shown to users while they are browsing the website.'}));
+  settings.append(h('label',{class:'field'},[h('span',{text:'Available categories (comma separated)'}),categoryList]));
+  settings.append(h('label',{class:'field'},[h('span',{text:'Website live pop-up alerts'}),toastEnabled]));
+  settings.append(h('label',{class:'field'},[h('span',{text:'Pop-up display duration (3–30 seconds)'}),toastDuration]),saveSettings,settingsStatus);
+  view.appendChild(settings);
   var form=h('form',{class:'panel'},[
-   h('h3',{text:'Compose announcement'}),
+   h('h3',{text:'Compose notification'}),
    h('label',{class:'field'},[h('span',{text:'Title'}),title]),
    h('label',{class:'field'},[h('span',{text:'Message'}),body]),
-   h('label',{class:'field'},[h('span',{text:'Audience'}),audience]),
-   h('label',{class:'field'},[h('span',{text:'Course (only for course audience)'}),course]),
+   h('div',{class:'two'},[
+    h('label',{class:'field'},[h('span',{text:'Recipient group'}),audience]),
+    h('label',{class:'field'},[h('span',{text:'Category'}),category])
+   ]),
+   h('div',{class:'two'},[
+    h('label',{class:'field'},[h('span',{text:'Priority'}),priority]),
+    h('label',{class:'field'},[h('span',{text:'Course (for course audience)'}),course])
+   ]),
    h('label',{class:'field'},[h('span',{text:'Open this internal page when tapped (optional)'}),href]),
-   h('p',{class:'pmeta',text:'Notifications appear in the website and app. Registered Android devices also receive a push alert. Email and SMS are not sent.'}),
-   h('button',{class:'btn btn-primary',type:'submit',text:'Send announcement'}),
+   h('label',{class:'field'},[h('span',{text:'Expiry date and time (optional)'}),expires]),
+   h('p',{class:'pmeta',text:'Notifications are saved to the shared website and Android notification centre. Website pop-ups appear for users who are actively connected. Android push delivery still depends on a registered device and notification permission.'}),
+   h('button',{class:'btn btn-primary',type:'submit',text:'Send notification'}),
    status
   ]);
   view.appendChild(form);view.appendChild(recent);
-  sb.from('courses').select('id,title').eq('published',true).order('title').then(function(r){(r.data||[]).forEach(function(c){course.appendChild(h('option',{value:c.id,text:c.title}))})});
+  sb.from('courses').select('id,title').order('title').then(function(r){(r.data||[]).forEach(function(x){course.appendChild(h('option',{value:x.id,text:x.title}))})});
   function toggle(){course.disabled=audience.value!=='course_students';}audience.addEventListener('change',toggle);toggle();
-  form.addEventListener('submit',function(e){e.preventDefault();if(title.value.trim().length<3||body.value.trim().length<3){status.textContent='Enter a title and message with at least 3 characters each.';status.className='msg err';return}if(audience.value==='course_students'&&!course.value){status.textContent='Select the course first.';status.className='msg err';return}
-   if(!confirm('Send this announcement to '+(audience.value==='all_students'?'all registered students':audience.value==='all_users'?'all registered accounts, including your admin account':'students enrolled in the selected course')+'?'))return;
-   var submit=form.querySelector('button[type="submit"]');submit.disabled=true;status.textContent='Sending announcement…';status.className='msg';
-   sb.rpc('admin_broadcast_notification',{p_title:title.value.trim(),p_body:body.value.trim(),p_href:href.value.trim()||'notifications.html',p_audience:audience.value,p_course_id:course.value||null}).then(function(r){submit.disabled=false;if(r.error){status.textContent=r.error.message;status.className='msg err';return}var n=(r.data&&r.data.sent)||0;status.textContent='Announcement sent to '+n+' '+(audience.value==='all_students'?'student account'+(n===1?'':'s'):audience.value==='course_students'?'enrolled student account'+(n===1?'':'s'):'registered account'+(n===1?'':'s')+' (including your admin account)')+'.';status.className='msg ok';title.value='';body.value='';loadRecent()})
+  function setCategories(items){
+   category.textContent='';
+   (items||[]).forEach(function(x){category.appendChild(h('option',{value:x,text:x.charAt(0).toUpperCase()+x.slice(1)}))});
+   if(!category.options.length)category.appendChild(h('option',{value:'general',text:'General'}));
+  }
+  function loadSettings(){
+   sb.rpc('cv_get_notification_settings').then(function(r){
+    if(r.error){settingsStatus.textContent='Could not load settings: '+r.error.message;return}
+    var x=r.data||{},items=Array.isArray(x.categories)?x.categories:['general'];
+    categoryList.value=items.join(', ');setCategories(items);
+    toastEnabled.checked=x.show_website_toasts!==false;
+    toastDuration.value=String(x.toast_duration_seconds||7);
+    settingsStatus.textContent='Current notification settings loaded.';
+   })
+  }
+  saveSettings.addEventListener('click',function(){
+   var items=categoryList.value.split(',').map(function(x){return x.trim().toLowerCase()}).filter(Boolean);
+   var seconds=Number(toastDuration.value);
+   if(!items.length||items.some(function(x){return x.length<2||x.length>32})||items.length>30){settingsStatus.textContent='Enter 1–30 category names, each 2–32 characters.';return}
+   if(!Number.isInteger(seconds)||seconds<3||seconds>30){settingsStatus.textContent='Pop-up duration must be between 3 and 30 seconds.';return}
+   saveSettings.disabled=true;settingsStatus.textContent='Saving settings…';
+   sb.rpc('admin_update_notification_settings',{p_categories:items,p_show_website_toasts:toastEnabled.checked,p_toast_duration_seconds:seconds}).then(function(r){
+    saveSettings.disabled=false;
+    if(r.error){settingsStatus.textContent='Could not save settings: '+r.error.message;return}
+    setCategories(items);settingsStatus.textContent='Notification settings saved. New website sessions will use these settings.';
+   })
   });
-  function loadRecent(){recent.textContent='';recent.appendChild(h('h3',{text:'Recently sent announcements'}));sb.rpc('admin_list_recent_announcements').then(function(r){if(r.error){recent.appendChild(h('p',{text:'Could not load announcement history: '+r.error.message}));return}var rows=r.data||[];rows.forEach(function(x){recent.appendChild(h('article',{class:'panel'},[h('strong',{text:x.title}),h('p',{text:x.body}),h('small',{class:'pmeta',text:new Date(x.created_at).toLocaleString()+' · Sent to '+x.recipient_count+' account'+(Number(x.recipient_count)===1?'':'s')+' · '+(x.href||'notifications.html')})]))});if(!rows.length)recent.appendChild(h('p',{text:'No announcements sent from this account yet.'}))})}
-  loadRecent()
+  form.addEventListener('submit',function(e){
+   e.preventDefault();
+   if(title.value.trim().length<3||body.value.trim().length<3){status.textContent='Enter a title and message with at least 3 characters each.';status.className='msg err';return}
+   if(audience.value==='course_students'&&!course.value){status.textContent='Select a course first.';status.className='msg err';return}
+   var expiryValue=expires.value?new Date(expires.value).toISOString():null;
+   if(expiryValue&&new Date(expiryValue)<=new Date()){status.textContent='Expiry must be a future date and time.';status.className='msg err';return}
+   var label=audience.options[audience.selectedIndex].text;
+   if(!confirm('Send this notification to '+label+'?'))return;
+   var submit=form.querySelector('button[type="submit"]');submit.disabled=true;status.textContent='Sending notification…';status.className='msg';
+   sb.rpc('admin_broadcast_notification_v2',{
+    p_title:title.value.trim(),p_body:body.value.trim(),p_href:href.value.trim()||'notifications.html',
+    p_audience:audience.value,p_course_id:course.value||null,p_category:category.value||'general',
+    p_priority:priority.value||'normal',p_expires_at:expiryValue
+   }).then(function(r){
+    submit.disabled=false;
+    if(r.error){status.textContent='Notification was not sent: '+r.error.message;status.className='msg err';return}
+    var n=(r.data&&r.data.sent)||0;
+    status.textContent='Notification sent to '+n+' account'+(n===1?'':'s')+'.';status.className='msg ok';
+    title.value='';body.value='';expires.value='';loadRecent();
+   })
+  });
+  function loadRecent(){
+   recent.textContent='';recent.appendChild(h('h3',{text:'Notification history'}));
+   sb.rpc('admin_list_recent_announcements_v2').then(function(r){
+    if(r.error){recent.appendChild(h('p',{text:'Could not load notification history: '+r.error.message}));return}
+    var rows=r.data||[];
+    if(!rows.length){recent.appendChild(h('p',{text:'No notifications sent from this account yet.'}));return}
+    var table=h('div',{class:'stack'});
+    rows.forEach(function(x){
+     var meta=(x.category||'general')+' · '+(x.priority||'normal')+' priority · '+new Date(x.created_at).toLocaleString()+' · '+x.recipient_count+' recipients';
+     if(x.expires_at)meta+=' · expires '+new Date(x.expires_at).toLocaleString();
+     table.appendChild(h('article',{class:'trow'},[
+      h('strong',{text:x.title}),
+      h('p',{text:x.body}),
+      h('small',{class:'pmeta',text:meta}),
+      h('small',{class:'pmeta',text:x.href||'notifications.html'})
+     ]))
+    });
+    recent.appendChild(table);
+   })
+  }
+  loadSettings();loadRecent();
  }
  function engagement(){
   var hero=h('div',{class:'dash-hero'}),heroInner=h('div',{});heroInner.appendChild(h('h1',{text:'Student engagement monitor'}));heroInner.appendChild(h('p',{text:'Track course learning activity, identify learners who may need support, and set engagement expectations for each course.'}));hero.appendChild(heroInner);view.appendChild(hero);
