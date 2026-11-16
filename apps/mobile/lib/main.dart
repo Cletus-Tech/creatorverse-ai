@@ -2065,8 +2065,25 @@ class MessageInboxScreen extends StatefulWidget {
 class _MessageInboxScreenState extends State<MessageInboxScreen> {
   final db = Supabase.instance.client;
   late Future<List<Map<String, dynamic>>> inbox;
+  RealtimeChannel? _inboxChannel;
   @override
-  void initState() { super.initState(); inbox = loadInbox(); }
+  void initState() {
+    super.initState();
+    inbox = loadInbox();
+    final userId = db.auth.currentUser?.id;
+    if (userId != null) {
+      _inboxChannel = db.channel('cv-inbox-$userId')
+        .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'cv_direct_messages',
+          callback: (_) { if (mounted) setState(() => inbox = loadInbox()); })
+        .subscribe();
+    }
+  }
+  @override
+  void dispose() {
+    final channel = _inboxChannel;
+    if (channel != null) unawaited(channel.unsubscribe());
+    super.dispose();
+  }
   Future<List<Map<String, dynamic>>> loadInbox() async {
     final me = db.auth.currentUser!.id;
     final raw = await db.from('cv_conversations').select('id,user_a,user_b,last_message_at')
