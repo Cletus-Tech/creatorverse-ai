@@ -237,6 +237,8 @@ class _SignInScreenState extends State<SignInScreen> {
   bool create = false, busy = false, obscure = true, error = false;
   String? message;
   @override
+  void initState() { super.initState(); SharedPreferences.getInstance().then((prefs) { final saved=prefs.getString('cv_last_login_email'); if(mounted && email.text.isEmpty && saved!=null) email.text=saved; }); }
+  @override
   void dispose() { email.dispose(); password.dispose(); name.dispose(); super.dispose(); }
 
   Future<void> signInSocial(OAuthProvider provider) async {
@@ -262,6 +264,7 @@ class _SignInScreenState extends State<SignInScreen> {
         setState(() { error = false; message = r.session == null ? 'Account created. Check your email to confirm, then sign in.' : 'Your account is ready.'; });
       } else {
         await auth.signInWithPassword(email: email.text.trim(), password: password.text);
+        final prefs=await SharedPreferences.getInstance(); await prefs.setString('cv_last_login_email',email.text.trim());
       }
     } on AuthException catch (e) {
       if (mounted) setState(() { error = true; message = e.message; });
@@ -318,7 +321,7 @@ class _SignInScreenState extends State<SignInScreen> {
             label:const Text('Instagram sign-in (setup required)')),
         ],
         const SizedBox(height: 18),
-        const Text('Your existing CreatorVerse website account works here too.', textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 12)),
+        const Text('Your existing CreatorVerse website account works here too. Your last email is remembered on this device; passwords are never saved here.', textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 12)),
       ]))))));
 }
 class MainShell extends StatefulWidget {
