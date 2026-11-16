@@ -42,7 +42,7 @@ jobs:
               source = source.replace(kotlin_marker, 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false', 1)
           if 'com.google.gms.google-services' not in source:
               plugin_line = 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false'
-              source = source.replace(plugin_line, plugin_line + '\\n    id("com.google.gms.google-services") version "4.6.0" apply false', 1)
+              source = source.replace(plugin_line, plugin_line + '\n    id("com.google.gms.google-services") version "4.6.0" apply false', 1)
           settings.write_text(source)
           app_gradle = Path('android/app/build.gradle.kts')
           source = app_gradle.read_text()
