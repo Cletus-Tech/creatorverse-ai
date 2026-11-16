@@ -40,18 +40,26 @@ jobs:
               raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
           if 'id("org.jetbrains.kotlin.android") version' not in source:
               source = source.replace(kotlin_marker, 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false', 1)
-          if 'com.google.gms.google-services' not in source:
-              plugin_line = 'id("org.jetbrains.kotlin.android") version "2.2.20" apply false'
-              source = source.replace(plugin_line, plugin_line + '\n    id("com.google.gms.google-services") version "4.6.0" apply false', 1)
+          google_plugin = 'id("com.google.gms.google-services")'
+          google_plugin_versioned = 'id("com.google.gms.google-services") version "4.6.0" apply false'
+          if google_plugin_versioned not in source:
+              if google_plugin in source:
+                  source = source.replace(google_plugin, google_plugin_versioned, 1)
+              else:
+                  plugins_block = source.find('plugins {')
+                  if plugins_block < 0:
+                      raise SystemExit('Could not find plugins block in settings.gradle.kts')
+                  insert_at = plugins_block + len('plugins {')
+                  source = source[:insert_at] + '\n    ' + google_plugin_versioned + source[insert_at:]
           settings.write_text(source)
           app_gradle = Path('android/app/build.gradle.kts')
-          source = app_gradle.read_text()
-          if 'id("com.google.gms.google-services")' not in source:
+          app_source = app_gradle.read_text()
+          if google_plugin not in app_source:
               marker = 'id("dev.flutter.flutter-gradle-plugin")'
-              if marker not in source:
+              if marker not in app_source:
                   raise SystemExit('Could not find Flutter Gradle plugin in app/build.gradle.kts')
-              source = source.replace(marker, marker + '\n    id("com.google.gms.google-services")', 1)
-              app_gradle.write_text(source)
+              app_source = app_source.replace(marker, marker + '\n    ' + google_plugin, 1)
+              app_gradle.write_text(app_source)
           manifest = Path('android/app/src/main/AndroidManifest.xml')
           source = manifest.read_text()
           permission = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
