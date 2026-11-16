@@ -251,7 +251,93 @@ class MainShell extends StatefulWidget {
 }
 class _MainShellState extends State<MainShell> {
   int index = 0;
+  int unreadMessages = 0, unreadNotifications = 0;
+  List<String> _conversationIds = [];
+  RealtimeChannel? _notificationBadgeChannel, _messageBadgeChannel;
+  final db = Supabase.instance.client;
   static const labels = ['Home', 'Learn', 'Campus', 'Community', 'Profile'];
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshBadges();
+    final userId = db.auth.currentUser?.id;
+    if (userId != null) {
+      _notificationBadgeChannel = db.channel('cv-shell-notifications-$userId')
+        .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'cv_notifications',
+          filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: userId),
+          callback: (_) { if (mounted) _refreshBadges(); }).subscribe();
+      _messageBadgeChannel = db.channel('cv-shell-messages-$userId')
+        .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'cv_direct_messages',
+          callback: (payload) {
+            final row = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+            final conversationId = row['conversation_id']?.toString();
+            if (conversationId != null && _conversationIds.contains(conversationId) && mounted) _refreshBadges();
+          }).subscribe();
+    }
+  }
+
+  Future<void> _refreshBadges() async {
+    final userId = db.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final conversationsRaw = await db.from('cv_conversations').select('id')
+        .or('user_a.eq.$userId,user_b.eq.$userId');
+      final ids = List<Map<String, dynamic>>.from(conversationsRaw)
+        .map((row) => row['id'].toString()).toList();
+      final notificationCount = await db.from('cv_notifications').select('id')
+        .eq('user_id', userId).isFilter('read_at', null).count(CountOption.exact);
+      var messageCount = 0;
+      if (ids.isNotEmpty) {
+        final unread = await db.from('cv_direct_messages').select('id')
+          .inFilter('conversation_id', ids).neq('sender_id', userId)
+          .isFilter('read_at', null).count(CountOption.exact);
+        messageCount = unread.count;
+      }
+      if (!mounted) return;
+      setState(() {
+        _conversationIds = ids;
+        unreadMessages = messageCount;
+        unreadNotifications = notificationCount.count;
+      });
+    } catch (_) {
+      // Keep the last known counts visible if the network is temporarily unavailable.
+    }
+  }
+
+  Widget _badgeAction({required IconData icon, required String tooltip, required int count, required VoidCallback onPressed}) {
+    return IconButton(tooltip: tooltip, onPressed: onPressed, icon: Stack(clipBehavior: Clip.none, children: [
+      Icon(icon),
+      if (count > 0) Positioned(right: -9, top: -8, child: Container(
+        constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: ink, width: 1.5)),
+        child: Text(count > 99 ? '99+' : count.toString(), textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 9, height: 1.35, fontWeight: FontWeight.w800, color: Colors.white)),
+      )),
+    ]));
+  }
+
+  Future<void> _openMessages() async {
+    await material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+    if (mounted) _refreshBadges();
+  }
+
+  Future<void> _openNotifications() async {
+    await material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+      appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
+    if (mounted) _refreshBadges();
+  }
+
+  @override
+  void dispose() {
+    final n = _notificationBadgeChannel, m = _messageBadgeChannel;
+    if (n != null) unawaited(db.removeChannel(n));
+    if (m != null) unawaited(db.removeChannel(m));
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     const pages = [HomeTab(), LearnTab(), CampusTab(), CommunityTab(), ProfileTab()];
@@ -263,9 +349,9 @@ class _MainShellState extends State<MainShell> {
           Text(labels[index], style: const TextStyle(fontSize: 10, color: muted, fontWeight: FontWeight.w500)),
         ])]),
         actions: [
-          IconButton(tooltip: 'Messages', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
-          IconButton(tooltip: 'Notifications', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen()))), icon: const Icon(Icons.notifications_none))]),
+          _badgeAction(icon: Icons.chat_bubble_outline, tooltip: 'Messages', count: unreadMessages, onPressed: _openMessages),
+          _badgeAction(icon: Icons.notifications_none, tooltip: 'Notifications', count: unreadNotifications, onPressed: _openNotifications),
+        ]),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
         backgroundColor: panel, indicatorColor: emerald.withValues(alpha: .2),
@@ -1991,13 +2077,18 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
     final otherIds = conversations.map((c) => (c['user_a'] == me ? c['user_b'] : c['user_a']).toString()).toSet().toList();
     final peopleRaw = await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', otherIds);
     final people = {for (final p in List<Map<String, dynamic>>.from(peopleRaw)) p['id'].toString(): p};
-    final msgRaw = await db.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at')
+    final msgRaw = await db.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at,attachment_path,attachment_name,attachment_mime')
       .inFilter('conversation_id', ids).order('created_at', ascending: false);
-    final latest = <String, Map<String, dynamic>>{};
-    for (final m in List<Map<String, dynamic>>.from(msgRaw)) { latest.putIfAbsent(m['conversation_id'].toString(), () => m); }
+    final latest = <String, Map<String, dynamic>>{}, unreadByConversation = <String, int>{};
+    for (final m in List<Map<String, dynamic>>.from(msgRaw)) {
+      final cid = m['conversation_id'].toString();
+      latest.putIfAbsent(cid, () => m);
+      if (m['sender_id'] != me && m['read_at'] == null) unreadByConversation[cid] = (unreadByConversation[cid] ?? 0) + 1;
+    }
     for (final c in conversations) {
       c['person'] = people[(c['user_a'] == me ? c['user_b'] : c['user_a']).toString()] ?? {};
       c['latest'] = latest[c['id'].toString()];
+      c['unread_count'] = unreadByConversation[c['id'].toString()] ?? 0;
     }
     return conversations;
   }
@@ -2061,7 +2152,15 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
           return ListTile(leading: const CircleAvatar(backgroundColor: Color(0x3320B887), child: Icon(Icons.person, color: emerald)),
             title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text((latest?['body'] ?? 'Start a conversation').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
-            trailing: const Icon(Icons.chevron_right, color: muted),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              if ((c['unread_count'] ?? 0) > 0) Container(
+                constraints: const BoxConstraints(minWidth: 19, minHeight: 19),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+                child: Text((c['unread_count'] ?? 0).toString(), textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white))),
+              const SizedBox(width: 7), const Icon(Icons.chevron_right, color: muted),
+            ]),
             onTap: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person))); if (mounted) setState(() => inbox = loadInbox()); });
         });
     }));
@@ -2104,10 +2203,64 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     super.dispose();
   }
   Future<List<Map<String, dynamic>>> loadMessages() async {
-    final raw = await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at')
+    final raw = await db.from('cv_direct_messages')
+      .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
       .eq('conversation_id', widget.conversationId).order('created_at');
-    return List<Map<String, dynamic>>.from(raw);
+    final rows = List<Map<String, dynamic>>.from(raw);
+    final me = db.auth.currentUser?.id;
+    final unreadIds = rows.where((row) => row['sender_id'] != me && row['read_at'] == null)
+      .map((row) => row['id'].toString()).toList();
+    if (unreadIds.isNotEmpty && me != null) {
+      final readAt = DateTime.now().toUtc().toIso8601String();
+      try {
+        await db.from('cv_direct_messages').update({'read_at': readAt})
+          .inFilter('id', unreadIds).eq('conversation_id', widget.conversationId);
+        for (final row in rows) { if (unreadIds.contains(row['id'].toString())) row['read_at'] = readAt; }
+      } catch (_) {}
+    }
+    return rows;
   }
+  Future<void> attachMedia() async {
+    if (sending) return;
+    final choice = await showModalBottomSheet<String>(context: context, backgroundColor: panel,
+      builder: (ctx) => SafeArea(child: Wrap(children: [
+        ListTile(leading: const Icon(Icons.photo_outlined, color: emerald), title: const Text('Send a photo'),
+          onTap: () => material_widgets_ui.Navigator.pop(ctx, 'image')),
+        ListTile(leading: const Icon(Icons.videocam_outlined, color: emerald), title: const Text('Send a video'),
+          onTap: () => material_widgets_ui.Navigator.pop(ctx, 'video')),
+      ])));
+    if (choice == null || !mounted) return;
+    final picker = ImagePicker();
+    final XFile? file = choice == 'video'
+      ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 90))
+      : await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1920);
+    if (file == null) return;
+    setState(() => sending = true);
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.length > 50 * 1024 * 1024) throw Exception('Please choose a file smaller than 50 MB.');
+      final name = file.name;
+      final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+      final isVideo = choice == 'video';
+      final mime = isVideo ? (ext == 'mov' ? 'video/quicktime' : 'video/mp4')
+        : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : 'image/jpeg');
+      final userId = db.auth.currentUser!.id;
+      final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final storagePath = userId + '/' + widget.conversationId + '/' + DateTime.now().microsecondsSinceEpoch.toString() + '_' + safeName;
+      await db.storage.from('cv-chat-files').uploadBinary(storagePath, bytes,
+        fileOptions: FileOptions(contentType: mime, upsert: false));
+      await db.from('cv_direct_messages').insert({
+        'conversation_id': widget.conversationId, 'sender_id': userId,
+        'body': isVideo ? 'Shared a video' : 'Shared a photo',
+        'attachment_path': storagePath, 'attachment_name': name,
+        'attachment_mime': mime, 'attachment_size': bytes.length,
+      });
+      if (mounted) setState(() => messages = loadMessages());
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send attachment: $e')));
+    } finally { if (mounted) setState(() => sending = false); }
+  }
+
   Future<void> send() async {
     final body = input.text.trim();
     if (body.isEmpty || sending) return;
@@ -2157,7 +2310,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               borderRadius: BorderRadius.circular(15)),
             child: material_widgets_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                Text(m['body'].toString(), style: const TextStyle(height: 1.35)),
+                if ((m['body'] ?? '').toString().isNotEmpty) Text(m['body'].toString(), style: const TextStyle(height: 1.35)),
+                if ((m['attachment_path'] ?? '').toString().isNotEmpty)
+                  MessageAttachmentPreview(path: m['attachment_path'].toString(),
+                    mime: (m['attachment_mime'] ?? '').toString(), name: (m['attachment_name'] ?? 'Attachment').toString()),
                 if (m['sender_id'] == db.auth.currentUser!.id) ...[
                   const SizedBox(height: 4),
                   Row(mainAxisSize: MainAxisSize.min, children: [
@@ -2168,13 +2324,46 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 ],
               ]))) ]);
       })),
-      SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 10), child: Row(children: [
+      SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(8, 8, 10, 10), child: Row(children: [
+        IconButton(tooltip: 'Attach photo or video', onPressed: sending ? null : attachMedia,
+          icon: const Icon(Icons.attach_file, color: gold)),
         Expanded(child: TextField(controller: input, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Message...'))),
-        const SizedBox(width: 8), IconButton(onPressed: sending ? null : send,
+        const SizedBox(width: 6), IconButton(onPressed: sending ? null : send,
           icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald)),
       ]))),
     ]));
 }
+class MessageAttachmentPreview extends StatefulWidget {
+  final String path, mime, name;
+  const MessageAttachmentPreview({super.key, required this.path, required this.mime, required this.name});
+  @override
+  State<MessageAttachmentPreview> createState() => _MessageAttachmentPreviewState();
+}
+class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
+  late Future<String> signedUrl;
+  @override
+  void initState() { super.initState(); _load(); }
+  void _load() { signedUrl = Supabase.instance.client.storage.from('cv-chat-files').createSignedUrl(widget.path, 3600); }
+  @override
+  void didUpdateWidget(covariant MessageAttachmentPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.path != widget.path) setState(_load);
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String>(future: signedUrl, builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(10),
+      child: SizedBox(width: 150, height: 70, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald))));
+    if (snapshot.hasError || !snapshot.hasData) return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
+    final url = snapshot.data!;
+    if (widget.mime.startsWith('video/')) return SizedBox(width: 245, child: InlineVideoPlayer(url: url));
+    if (widget.mime.startsWith('image/')) return ClipRRect(borderRadius: BorderRadius.circular(9),
+      child: Image.network(url, width: 245, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Text('Image unavailable', style: TextStyle(color: muted))));
+    return TextButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      icon: const Icon(Icons.download_outlined), label: Text(widget.name, overflow: TextOverflow.ellipsis));
+  });
+}
+
 class AdminWorkspaceScreen extends StatefulWidget {
   const AdminWorkspaceScreen({super.key});
   @override
