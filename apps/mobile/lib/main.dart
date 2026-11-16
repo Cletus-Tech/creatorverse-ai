@@ -1614,31 +1614,35 @@ class _CommunityTabState extends State<CommunityTab> {
     await Future.wait([nextFeed,nextStories]);
   }
   Future<void> createStory() async {
-    final input=TextEditingController();XFile? photo;
+    final input=TextEditingController();XFile? media;bool video=false;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Share a 24-hour story'),
       content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:input,minLines:3,maxLines:5,maxLength:500,decoration:const InputDecoration(hintText:'Add a message (optional with a photo)')),
-        const SizedBox(height:8),TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog(()=>photo=picked);},
-          icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(photo==null?'Add a photo':'Photo: ${photo!.name}')),
+        const SizedBox(height:8),Wrap(spacing:8,children:[
+          TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog((){media=picked;video=false;});},
+            icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(media==null?'Add photo':(!video?'Photo selected':'Change photo'))),
+          TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickVideo(source:ImageSource.gallery,maxDuration:const Duration(seconds:60));if(picked!=null)setDialog((){media=picked;video=true;});},
+            icon:const Icon(Icons.video_library_outlined),label:Text(video?'Video selected':'Add video')),
+        ]),
       ]),
       actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Share story'))])));
     if(!mounted){input.dispose();return;}
     final content=input.text.trim();input.dispose();
     if(ok!=true)return;
-    if(content.isEmpty&&photo==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Add a message or photo to your story.')));return;}
+    if(content.isEmpty&&media==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Add a message or photo to your story.')));return;}
     try{
       final userId=db.auth.currentUser!.id;String? mediaUrl;
-      if(photo!=null){
-        final ext=photo!.name.split('.').last.toLowerCase();
-        final safeExt=['png','webp','gif'].contains(ext)?ext:'jpg';
-        final mime=safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':safeExt=='gif'?'image/gif':'image/jpeg';
+      if(media!=null){
+        final ext=media!.name.split('.').last.toLowerCase();
+        final safeExt=video?(<String>['mp4','mov','webm'].contains(ext)?ext:'mp4'):(<String>['png','webp','gif'].contains(ext)?ext:'jpg');
+        final mime=video?(safeExt=='mov'?'video/quicktime':safeExt=='webm'?'video/webm':'video/mp4'):(safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':safeExt=='gif'?'image/gif':'image/jpeg');
         final path='$userId/stories/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
-        await db.storage.from('community-media').uploadBinary(path,await photo!.readAsBytes(),fileOptions:FileOptions(contentType:mime));
+        await db.storage.from('community-media').uploadBinary(path,await media!.readAsBytes(),fileOptions:FileOptions(contentType:mime));
         mediaUrl=db.storage.from('community-media').getPublicUrl(path);
       }
       final now=DateTime.now().toUtc();
       await db.from('cv_stories').insert({'user_id':userId,'content':content,'media_url':mediaUrl,
-        'media_type':mediaUrl==null?'text':'image','background':'#123D35','expires_at':now.add(const Duration(hours:24)).toIso8601String()});
+        'media_type':mediaUrl==null?'text':(video?'video':'image'),'background':'#123D35','expires_at':now.add(const Duration(hours:24)).toIso8601String()});
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not publish story: $e')));}
   }
@@ -1690,37 +1694,41 @@ class _CommunityTabState extends State<CommunityTab> {
       }));
   }
   Future<void> createPost() async {
-    final title = TextEditingController(), body = TextEditingController();XFile? photo;
+    final title = TextEditingController(), body = TextEditingController();XFile? media;bool video=false;
     final ok = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
       backgroundColor: panel, title: const Text('Share with the community'),
       content: SizedBox(width: 420, child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: title, maxLength: 120, decoration: const InputDecoration(labelText: 'Post title')),
         const SizedBox(height: 10), TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
           decoration: const InputDecoration(labelText: 'What would you like to share?')),
-        const SizedBox(height:8),TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog(()=>photo=picked);},
-          icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(photo==null?'Add a photo':'Photo: ${photo!.name}')),
+        const SizedBox(height:8),Wrap(spacing:8,children:[
+          TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog((){media=picked;video=false;});},
+            icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(media==null?'Add photo':(!video?'Photo selected':'Change photo'))),
+          TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickVideo(source:ImageSource.gallery,maxDuration:const Duration(seconds:60));if(picked!=null)setDialog((){media=picked;video=true;});},
+            icon:const Icon(Icons.video_library_outlined),label:Text(video?'Video selected':'Add video')),
+        ]),
       ])),
       actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, true), child: const Text('Publish'))])));
     if (!mounted) { title.dispose(); body.dispose(); return; }
     if (ok != true) { title.dispose(); body.dispose(); return; }
     final titleText=title.text.trim(),bodyText=body.text.trim();title.dispose();body.dispose();
-    if (titleText.length < 3 || (bodyText.isEmpty&&photo==null)) {
+    if (titleText.length < 3 || (bodyText.isEmpty&&media==null)) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a title and some post content or a photo.')));
       return;
     }
     try {
       final userId=db.auth.currentUser!.id;String? imageUrl;
-      if(photo!=null){
-        final ext=photo!.name.split('.').last.toLowerCase();
-        final safeExt=['png','webp','gif'].contains(ext)?ext:'jpg';
-        final mime=safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':safeExt=='gif'?'image/gif':'image/jpeg';
+      if(media!=null){
+        final ext=media!.name.split('.').last.toLowerCase();
+        final safeExt=video?(<String>['mp4','mov','webm'].contains(ext)?ext:'mp4'):(<String>['png','webp','gif'].contains(ext)?ext:'jpg');
+        final mime=video?(safeExt=='mov'?'video/quicktime':safeExt=='webm'?'video/webm':'video/mp4'):(safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':safeExt=='gif'?'image/gif':'image/jpeg');
         final path='$userId/posts/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
-        await db.storage.from('community-media').uploadBinary(path,await photo!.readAsBytes(),fileOptions:FileOptions(contentType:mime));
+        await db.storage.from('community-media').uploadBinary(path,await media!.readAsBytes(),fileOptions:FileOptions(contentType:mime));
         imageUrl=db.storage.from('community-media').getPublicUrl(path);
       }
       await db.from('community_posts').insert({'user_id':userId,'title':titleText,'description':bodyText,
-        'image_url':imageUrl,'category':'General','tags':<String>[],'status':'published'});
+        'image_url':imageUrl,'media_type':imageUrl==null?'none':(video?'video':'image'),'category':'General','tags':<String>[],'status':'published'});
       await refresh();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not publish: $e')));
