@@ -116,3 +116,5 @@ body[data-page="community"] .pin-action{flex:1;padding:9px 5px;font-size:10px;bo
  body[data-page="community"] .pin-footer{padding:12px}
  body[data-page="community"] .pin-action{font-size:9px}
 }
+
+.pin-video{display:block;width:100%;max-height:560px;object-fit:contain;background:#050914;border-radius:14px}.upload-preview video{display:block;max-width:100%;max-height:240px;border-radius:12px}
