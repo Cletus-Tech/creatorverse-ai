@@ -325,15 +325,37 @@ class _MainShellState extends State<MainShell> {
   int index = 0;
   int unreadMessages = 0, unreadNotifications = 0;
   List<String> _conversationIds = [];
+  late final List<Widget?> _pages;
   RealtimeChannel? _notificationBadgeChannel, _messageBadgeChannel;
   StreamSubscription<String>? _pushTokenSubscription;
   StreamSubscription<RemoteMessage>? _pushOpenSubscription;
   final db = Supabase.instance.client;
   static const labels = ['Home', 'Learn', 'Campus', 'Community', 'Profile'];
 
+  Widget _pageFor(int tab) => switch (tab) {
+    0 => const HomeTab(),
+    1 => const LearnTab(),
+    2 => const CampusTab(),
+    3 => const CommunityTab(),
+    4 => const ProfileTab(),
+    _ => const HomeTab(),
+  };
+
+  void _selectTab(int tab) {
+    if (tab < 0 || tab >= labels.length) return;
+    setState(() {
+      index = tab;
+      // Build each tab only when first visited. Keep it in the IndexedStack
+      // afterward so its scroll position and loaded state remain stable.
+      _pages[tab] ??= _pageFor(tab);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _pages = List<Widget?>.filled(labels.length, null);
+    _pages[0] = const HomeTab();
     _refreshBadges();
     _registerPushNotifications();
     final userId = db.auth.currentUser?.id;
@@ -461,7 +483,11 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    const pages = [HomeTab(), LearnTab(), CampusTab(), CommunityTab(), ProfileTab()];
+    final pages = List<Widget>.generate(
+      _pages.length,
+      (tab) => _pages[tab] ?? const SizedBox.shrink(),
+      growable: false,
+    );
     return Scaffold(
       appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-brand.svg', width: 30, height: 30),
         const SizedBox(width: 9),
@@ -474,7 +500,7 @@ class _MainShellState extends State<MainShell> {
           _badgeAction(icon: Icons.notifications_none, tooltip: 'Notifications', count: unreadNotifications, onPressed: _openNotifications),
         ]),
       body: IndexedStack(index: index, children: pages),
-      bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v),
+      bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: _selectTab,
         backgroundColor: panel, indicatorColor: emerald.withValues(alpha: .2),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
