@@ -10,6 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://xgdngnekihhnkzurhvpe.supabase.co');
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
@@ -1668,7 +1669,7 @@ class _CommunityTabState extends State<CommunityTab> {
             if(media.startsWith('https://')&&story['media_type']=='image')
               ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(media,fit:BoxFit.contain)),
             if(media.startsWith('https://')&&story['media_type']=='video')
-              OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(media),mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open story video')),
+              InlineVideoPlayer(url:media),
             if((story['content']??'').toString().isNotEmpty)
               Padding(padding:const EdgeInsets.only(top:12),child:Text(story['content'].toString(),style:const TextStyle(fontSize:20,height:1.5))),
             const SizedBox(height:18),
@@ -1810,6 +1811,41 @@ class _CommunityTabState extends State<CommunityTab> {
       ]));
     });
 }
+class InlineVideoPlayer extends StatefulWidget {
+  final String url;
+  const InlineVideoPlayer({super.key, required this.url});
+  @override
+  State<InlineVideoPlayer> createState() => _InlineVideoPlayerState();
+}
+class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
+  late final VideoPlayerController controller;
+  late final Future<void> ready;
+  @override
+  void initState() {
+    super.initState();
+    controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    ready = controller.initialize().then((_) { if (mounted) setState(() {}); });
+  }
+  @override
+  void dispose() { controller.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<void>(
+    future: ready,
+    builder: (context, snapshot) {
+      if (snapshot.hasError) return const Padding(padding: EdgeInsets.all(16), child: Text('This video could not be played.', style: TextStyle(color: muted)));
+      if (snapshot.connectionState != ConnectionState.done) return const SizedBox(height: 190, child: Center(child: CircularProgressIndicator(color: emerald)));
+      final size = controller.value.size;
+      return ClipRRect(borderRadius: BorderRadius.circular(10), child: AspectRatio(
+        aspectRatio: size.width > 0 && size.height > 0 ? size.width / size.height : 16 / 9,
+        child: Stack(alignment: Alignment.center, children: [
+          VideoPlayer(controller),
+          IconButton.filled(onPressed: () { setState(() { controller.value.isPlaying ? controller.pause() : controller.play(); }); },
+            iconSize: 34, icon: Icon(controller.value.isPlaying ? Icons.pause : Icons.play_arrow)),
+        ]),
+      ));
+    },
+  );
+}
 class CommunityPostCard extends StatelessWidget {
   final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport;
   const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport});
@@ -1836,7 +1872,8 @@ class CommunityPostCard extends StatelessWidget {
         ])),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         Padding(padding: const EdgeInsets.fromLTRB(14, 7, 14, 12), child: Text((post['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.45))),
-        if (image.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(image, width: double.infinity, fit: BoxFit.cover,
+        if (image.startsWith('https://') && post['media_type']=='video') InlineVideoPlayer(url:image)
+        else if (image.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(image, width: double.infinity, fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => const SizedBox.shrink())),
         Padding(padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), child: Row(children: [
           Text('${post['like_count'] ?? 0} likes', style: const TextStyle(color: muted, fontSize: 11)),
