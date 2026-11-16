@@ -2242,8 +2242,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final name = file.name;
       final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
       final isVideo = choice == 'video';
-      final mime = isVideo ? (ext == 'mov' ? 'video/quicktime' : 'video/mp4')
-        : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : 'image/jpeg');
+      final mime = isVideo
+        ? (ext == 'mov' ? 'video/quicktime' : ext == 'webm' ? 'video/webm' : 'video/mp4')
+        : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : ext == 'gif' ? 'image/gif' : 'image/jpeg');
       final userId = db.auth.currentUser!.id;
       final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
       final storagePath = widget.conversationId + '/' + userId + '/' + DateTime.now().microsecondsSinceEpoch.toString() + '_' + safeName;
