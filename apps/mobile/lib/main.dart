@@ -1559,7 +1559,7 @@ class _CommunityTabState extends State<CommunityTab> {
   void initState() { super.initState(); feed = loadFeed(); stories = loadStories(); }
   Future<List<Map<String, dynamic>>> loadFeed() async {
     final raw = await db.from('community_posts')
-      .select('id,user_id,title,description,image_url,destination_url,category,tags,created_at')
+      .select('id,user_id,title,description,image_url,media_type,destination_url,category,tags,created_at')
       .eq('status', 'published').order('created_at', ascending: false).limit(40);
     final posts = List<Map<String, dynamic>>.from(raw);
     if (posts.isEmpty) return posts;
