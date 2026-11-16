@@ -1,0 +1,28 @@
+{
+  "project_info": {
+    "project_number": "575044922849",
+    "project_id": "creatorverse-60a9f",
+    "storage_bucket": "creatorverse-60a9f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:575044922849:android:80e1b18f00ce3affd4f6a0",
+        "android_client_info": {
+          "package_name": "com.cletustech.creatorverse_mobile"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTuCAPdLFZ4xYbNmj2jWRQagm78-twxBo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
