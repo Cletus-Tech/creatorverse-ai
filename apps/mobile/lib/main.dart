@@ -2246,7 +2246,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : 'image/jpeg');
       final userId = db.auth.currentUser!.id;
       final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-      final storagePath = userId + '/' + widget.conversationId + '/' + DateTime.now().microsecondsSinceEpoch.toString() + '_' + safeName;
+      final storagePath = widget.conversationId + '/' + userId + '/' + DateTime.now().microsecondsSinceEpoch.toString() + '_' + safeName;
       await db.storage.from('cv-chat-files').uploadBinary(storagePath, bytes,
         fileOptions: FileOptions(contentType: mime, upsert: false));
       await db.from('cv_direct_messages').insert({
