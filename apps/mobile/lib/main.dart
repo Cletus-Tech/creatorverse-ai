@@ -2072,12 +2072,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         'conversation_id': widget.conversationId, 'sender_id': senderId, 'body': body,
       }).select('id,sender_id,body,created_at,read_at').single();
       if (mounted) {
-        setState(() {
-          messages = messages.then((rows) => [
-            ...rows.where((row) => row['id'] != localId),
-            Map<String, dynamic>.from(inserted),
-          ]..sort((a,b) => DateTime.parse(a['created_at'].toString()).compareTo(DateTime.parse(b['created_at'].toString()))));
-        });
+        // Reload the server's canonical row so a fast Realtime event cannot
+        // cause the optimistic message and inserted message to appear twice.
+        setState(() => messages = loadMessages());
       }
     } catch (e) {
       if (mounted) {
