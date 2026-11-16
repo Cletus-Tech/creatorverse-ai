@@ -2192,6 +2192,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final db = Supabase.instance.client, input = TextEditingController();
   late Future<List<Map<String, dynamic>>> messages;
   RealtimeChannel? _messageChannel;
+  final ScrollController _chatScrollController = ScrollController();
   bool sending = false;
   @override
   void initState() {
@@ -2215,10 +2216,22 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   @override
   void dispose() {
     input.dispose();
+    _chatScrollController.dispose();
     final channel = _messageChannel;
     if (channel != null) unawaited(channel.unsubscribe());
     super.dispose();
   }
+  void _scrollChatToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_chatScrollController.hasClients) return;
+      final target = _chatScrollController.position.maxScrollExtent;
+      if ((_chatScrollController.position.pixels - target).abs() > 24) {
+        _chatScrollController.animateTo(target,
+          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      }
+    });
+  }
+
   Future<List<Map<String, dynamic>>> loadMessages() async {
     final raw = await db.from('cv_direct_messages')
       .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
@@ -2319,8 +2332,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
         if (snap.hasError) return const Center(child: Text('Could not load this conversation.', style: TextStyle(color: muted)));
         final rows = snap.data ?? [];
+        _scrollChatToLatest();
         if (rows.isEmpty) return const Center(child: Text('Say hello to start the conversation.', style: TextStyle(color: muted)));
-        return ListView(padding: const EdgeInsets.all(14), children: [for (final m in rows) Align(
+        return ListView(controller: _chatScrollController, padding: const EdgeInsets.all(14), children: [for (final m in rows) Align(
           alignment: m['sender_id'] == db.auth.currentUser!.id ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(constraints: const BoxConstraints(maxWidth: 300), margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
