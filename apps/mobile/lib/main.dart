@@ -2290,7 +2290,6 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final db=Supabase.instance.client, input=TextEditingController();
   final ScrollController _chatScrollController=ScrollController();
   final List<Map<String,dynamic>> _rows=[];
-  final Set<String> _pendingIds={};
   RealtimeChannel? _messageChannel;
   bool _initialLoading=true,_sendingAttachment=false,_showJumpToLatest=false;
   String? _loadError;
@@ -2350,7 +2349,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         try{await db.from('cv_direct_messages').update({'read_at':now}).inFilter('id',unread).eq('conversation_id',widget.conversationId);
           for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}}catch(_){}
       }
-      if(!mounted)return;setState((){_rows..clear()..addAll(loaded);_initialLoading=false;});
+      if(!mounted)return;final live={for(final row in _rows)row['id'].toString():row};for(final row in loaded){live[row['id'].toString()]=row;}final merged=live.values.toList()..sort((a,b)=>(a['created_at']??'').toString().compareTo((b['created_at']??'').toString()));setState((){_rows..clear()..addAll(merged);_initialLoading=false;});
       _scrollToLatest(force:true);
     }catch(e){if(!mounted)return;setState(()=>_loadError=e.toString());setState(()=>_initialLoading=false);}
   }
