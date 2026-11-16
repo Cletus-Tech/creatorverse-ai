@@ -256,7 +256,11 @@ class _MainShellState extends State<MainShell> {
     const pages = [HomeTab(), LearnTab(), CampusTab(), CommunityTab(), ProfileTab()];
     return Scaffold(
       appBar: AppBar(title: Row(children: [SvgPicture.asset('assets/creatorverse-brand.svg', width: 30, height: 30),
-        const SizedBox(width: 10), Text(labels[index], style: const TextStyle(fontWeight: FontWeight.w700))]),
+        const SizedBox(width: 9),
+        material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('CreatorVerse', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: .25)),
+          Text(labels[index], style: const TextStyle(fontSize: 10, color: muted, fontWeight: FontWeight.w500)),
+        ])]),
         actions: [
           IconButton(tooltip: 'Messages', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessageInboxScreen())), icon: const Icon(Icons.chat_bubble_outline)),
           IconButton(tooltip: 'Notifications', onPressed: () => material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
