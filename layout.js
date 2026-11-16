@@ -34,6 +34,7 @@ if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.se
 
 // Shared CreatorVerse logo loader.
 // It appears only when a page takes longer than a brief handoff window.
+if(new URLSearchParams(location.search).get('cv_native')!=='1'){
 (function(){
  var started=Date.now(),pending=0,lastActivity=Date.now(),done=false,timer=null,shown=false;
  var gate=document.getElementById('cv-page-loader');
@@ -78,7 +79,8 @@ if(b)b.addEventListener('click',function(){var o=m.classList.toggle('open');b.se
  window.addEventListener('load',function(){touch();schedule()},{once:true});
  window.addEventListener('pageshow',function(e){if(e.persisted)finish()});
  schedule();
-})();
+})()
+}
 var socialLinksScript=document.createElement('script');socialLinksScript.src='social-links.js?v=20261107-1';socialLinksScript.defer=true;document.body.appendChild(socialLinksScript);var helper=document.createElement('script');helper.src='assistant-widget.js?v=20261115-forest-champagne-widget-2';helper.defer=true;document.body.appendChild(helper);var notifications=document.createElement('script');notifications.src='notifications.js?v=20261108-2';notifications.defer=true;document.body.appendChild(notifications);var globalSearch=document.createElement('script');globalSearch.src='unified-search.js?v=20261113-1';globalSearch.defer=true;document.body.appendChild(globalSearch);
 /* Global appearance: the preference follows the user across every CreatorVerse page. */
 var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThemeCss.href='global-theme.css?v=20261115-evergreen-gold-1';document.head.appendChild(cvThemeCss);
