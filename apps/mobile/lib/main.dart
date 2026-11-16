@@ -1617,7 +1617,7 @@ class _CommunityTabState extends State<CommunityTab> {
     final input=TextEditingController();XFile? media;bool video=false;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:panel,title:const Text('Share a 24-hour story'),
       content:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,children:[
-        TextField(controller:input,minLines:3,maxLines:5,maxLength:500,decoration:const InputDecoration(hintText:'Add a message (optional with a photo)')),
+        TextField(controller:input,minLines:3,maxLines:5,maxLength:500,decoration:const InputDecoration(hintText:'Add a message or choose a photo/video')),
         const SizedBox(height:8),Wrap(spacing:8,children:[
           TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog((){media=picked;video=false;});},
             icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(media==null?'Add photo':(!video?'Photo selected':'Change photo'))),
@@ -1629,7 +1629,7 @@ class _CommunityTabState extends State<CommunityTab> {
     if(!mounted){input.dispose();return;}
     final content=input.text.trim();input.dispose();
     if(ok!=true)return;
-    if(content.isEmpty&&media==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Add a message or photo to your story.')));return;}
+    if(content.isEmpty&&media==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Add a message, photo or video to your story.')));return;}
     try{
       final userId=db.auth.currentUser!.id;String? mediaUrl;
       if(media!=null){
@@ -1826,16 +1826,27 @@ class InlineVideoPlayer extends StatefulWidget {
   State<InlineVideoPlayer> createState() => _InlineVideoPlayerState();
 }
 class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
-  late final VideoPlayerController controller;
-  late final Future<void> ready;
+  late VideoPlayerController controller;
+  late Future<void> ready;
   @override
-  void initState() {
-    super.initState();
+  void initState() { super.initState(); _initialize(); }
+  void _initialize() {
     controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    controller.addListener(_refreshControls);
     ready = controller.initialize().then((_) { if (mounted) setState(() {}); });
   }
+  void _refreshControls() { if (mounted) setState(() {}); }
   @override
-  void dispose() { controller.dispose(); super.dispose(); }
+  void didUpdateWidget(covariant InlineVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      controller.removeListener(_refreshControls);
+      controller.dispose();
+      _initialize();
+    }
+  }
+  @override
+  void dispose() { controller.removeListener(_refreshControls); controller.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => FutureBuilder<void>(
     future: ready,
@@ -1847,7 +1858,7 @@ class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
         aspectRatio: size.width > 0 && size.height > 0 ? size.width / size.height : 16 / 9,
         child: Stack(alignment: Alignment.center, children: [
           VideoPlayer(controller),
-          IconButton.filled(onPressed: () { setState(() { controller.value.isPlaying ? controller.pause() : controller.play(); }); },
+          IconButton.filled(onPressed: () { controller.value.isPlaying ? controller.pause() : controller.play(); },
             iconSize: 34, icon: Icon(controller.value.isPlaying ? Icons.pause : Icons.play_arrow)),
         ]),
       ));
