@@ -1595,8 +1595,17 @@ class _CommunityTabState extends State<CommunityTab> {
     final ids=rows.map((r)=>r['user_id'].toString()).toSet().toList();
     final profiles=await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
     final byId={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
-    for(final row in rows){row['author']=byId[row['user_id'].toString()]??{};}
-    return rows;
+    final grouped=<String,List<Map<String,dynamic>>>{};
+    for(final row in rows){
+      row['author']=byId[row['user_id'].toString()]??{};
+      grouped.putIfAbsent(row['user_id'].toString(),()=>[]).add(row);
+    }
+    final creators=grouped.entries.map((entry){
+      final chronological=entry.value.reversed.toList();
+      return <String,dynamic>{'user_id':entry.key,'author':chronological.last['author'],'stories':chronological,'latest_at':chronological.last['created_at']};
+    }).toList();
+    creators.sort((a,b)=>DateTime.parse(b['latest_at'].toString()).compareTo(DateTime.parse(a['latest_at'].toString())));
+    return creators;
   }
   Future<void> refresh() async {
     final nextFeed=loadFeed(),nextStories=loadStories();
@@ -1632,24 +1641,52 @@ class _CommunityTabState extends State<CommunityTab> {
       await refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not publish story: $e')));}
   }
-  Future<void> viewStory(Map<String,dynamic> story) async {
+  Future<void> viewStoryGroup(Map<String,dynamic> creator) async {
+    final entries=List<Map<String,dynamic>>.from(creator['stories'] as List? ?? const []);
+    if(entries.isEmpty)return;
     final me=db.auth.currentUser?.id;
-    if(me!=null&&story['user_id']!=me){
-      try{await db.from('cv_story_views').insert({'story_id':story['id'],'viewer_id':me});}catch(_){}
+    Future<void> recordView(Map<String,dynamic> story) async {
+      if(me!=null&&story['user_id']!=me){
+        try{await db.from('cv_story_views').insert({'story_id':story['id'],'viewer_id':me});}catch(_){}
+      }
     }
+    var index=0;
+    await recordView(entries[index]);
     if(!mounted)return;
-    final author=Map<String,dynamic>.from(story['author'] as Map? ?? {});
     await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,
-      builder:(_)=>SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:material_widgets_ui.Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
-        const SizedBox(height:8),
-        if((story['media_url']??'').toString().startsWith('https://') && story['media_type']=='image')
-          ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(story['media_url'].toString(),fit:BoxFit.cover)),
-        if((story['media_url']??'').toString().startsWith('https://') && story['media_type']=='video')
-          OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(story['media_url'].toString()),mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open story video')),
-        if((story['content']??'').toString().isNotEmpty)Text((story['content']??'').toString(),style:const TextStyle(fontSize:20,height:1.5)),
-        const SizedBox(height:18),Align(alignment:Alignment.centerRight,child:Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:muted,fontSize:11))),
-      ]))));
+      builder:(sheetContext)=>StatefulBuilder(builder:(sheetContext,setSheetState){
+        final story=entries[index];
+        final author=Map<String,dynamic>.from(story['author'] as Map? ?? creator['author'] as Map? ?? {});
+        final media=(story['media_url']??'').toString();
+        return SafeArea(child:Padding(padding:const EdgeInsets.all(20),child:material_widgets_ui.Column(
+          mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Row(children:[
+              Expanded(child:Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800))),
+              Text('${index+1}/${entries.length}',style:const TextStyle(color:muted,fontSize:12)),
+            ]),
+            const SizedBox(height:12),
+            if(media.startsWith('https://')&&story['media_type']=='image')
+              ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(media,fit:BoxFit.contain)),
+            if(media.startsWith('https://')&&story['media_type']=='video')
+              OutlinedButton.icon(onPressed:()=>launchUrl(Uri.parse(media),mode:LaunchMode.externalApplication),icon:const Icon(Icons.play_circle_outline),label:const Text('Open story video')),
+            if((story['content']??'').toString().isNotEmpty)
+              Padding(padding:const EdgeInsets.only(top:12),child:Text(story['content'].toString(),style:const TextStyle(fontSize:20,height:1.5))),
+            const SizedBox(height:18),
+            Row(children:[
+              Expanded(child:OutlinedButton(onPressed:index==0?null:()=>setSheetState(()=>index--),child:const Text('Previous'))),
+              const SizedBox(width:10),
+              Expanded(child:FilledButton(onPressed:()async{
+                if(index<entries.length-1){
+                  final next=index+1;
+                  await recordView(entries[next]);
+                  if(sheetContext.mounted)setSheetState(()=>index=next);
+                }else if(sheetContext.mounted){material_widgets_ui.Navigator.pop(sheetContext);}
+              },child:Text(index==entries.length-1?'Done':'Next'))),
+            ]),
+            const SizedBox(height:8),
+            Align(alignment:Alignment.centerRight,child:Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:muted,fontSize:11))),
+          ])));
+      }));
   }
   Future<void> createPost() async {
     final title = TextEditingController(), body = TextEditingController();XFile? photo;
@@ -1757,7 +1794,7 @@ class _CommunityTabState extends State<CommunityTab> {
               Container(width:62,height:62,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:gold,width:2),color:panel),child:const Icon(Icons.add,color:gold,size:28)),
               const SizedBox(height:6),const Text('Your story',style:TextStyle(fontSize:10,color:muted)),
             ]))),
-            for(final story in items)InkWell(onTap:()=>viewStory(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:material_widgets_ui.Column(children:[
+            for(final story in items)InkWell(onTap:()=>viewStoryGroup(story),child:Container(width:78,margin:const EdgeInsets.only(right:10),child:material_widgets_ui.Column(children:[
               Container(width:62,height:62,padding:const EdgeInsets.all(3),decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:emerald,width:2)),
                 child:CircleAvatar(backgroundColor:const Color(0xFF174B3B),child:Text((((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString().isEmpty?'C':((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'C').toString()[0].toUpperCase()),style:const TextStyle(color:gold,fontWeight:FontWeight.w800)))),
               const SizedBox(height:6),Text(((story['author'] as Map?)?['full_name']??(story['author'] as Map?)?['username']??'Member').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:10,color:muted)),
