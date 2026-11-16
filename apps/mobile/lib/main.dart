@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -11,6 +12,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://xgdngnekihhnkzurhvpe.supabase.co');
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
@@ -22,6 +26,53 @@ List<String> parseSkillsInput(String input) => input.split(',')
 String sanitizeSearchTerm(String input) => input
   .replaceAll(RegExp(r'[^A-Za-z0-9À-ÿ _-]'), ' ')
   .replaceAll(RegExp(r'\s+'), ' ').trim();
+
+Future<Uint8List> buildPaymentReceiptPdf(Map<String,dynamic> order) async {
+  final doc=pw.Document();
+  final amount=(order['amount_ngn'] as num?)?.toInt() ?? 0;
+  final issued=DateTime.tryParse((order['receipt_issued_at'] ?? order['confirmed_at'] ?? '').toString());
+  doc.addPage(pw.Page(pageFormat:PdfPageFormat.a4,margin:const pw.EdgeInsets.all(42),build:(ctx)=>pw.Column(
+    crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
+      pw.Text('CREATORVERSE',style:pw.TextStyle(fontSize:24,fontWeight:pw.FontWeight.bold)),
+      pw.SizedBox(height:4),pw.Text('OFFICIAL PAYMENT RECEIPT',style:const pw.TextStyle(fontSize:11)),
+      pw.Divider(height:28),pw.Text('RECEIPT NUMBER',style:pw.TextStyle(fontSize:9,color:PdfColors.grey700)),
+      pw.Text((order['receipt_number'] ?? '').toString(),style:pw.TextStyle(fontSize:18,fontWeight:pw.FontWeight.bold)),
+      pw.SizedBox(height:20),pw.Container(width:double.infinity,padding:const pw.EdgeInsets.all(16),
+        decoration:pw.BoxDecoration(color:PdfColors.grey100,borderRadius:pw.BorderRadius.circular(8)),
+        child:pw.Column(crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
+          pw.Text('AMOUNT RECEIVED',style:pw.TextStyle(fontSize:9,color:PdfColors.grey700)),
+          pw.Text('NGN $amount',style:pw.TextStyle(fontSize:26,fontWeight:pw.FontWeight.bold)),
+          pw.Text('STATUS: CONFIRMED',style:pw.TextStyle(fontSize:10,color:PdfColors.green800)),
+        ])),
+      pw.SizedBox(height:22),pw.Text('PAYMENT DETAILS',style:pw.TextStyle(fontWeight:pw.FontWeight.bold)),
+      pw.Divider(),
+      _receiptPdfRow('Payer',(order['receipt_payer_name'] ?? order['payer_name'] ?? 'CreatorVerse learner').toString()),
+      _receiptPdfRow('Course',(order['receipt_course_title'] ?? (order['courses'] is Map ? order['courses']['title'] : null) ?? 'CreatorVerse course').toString()),
+      _receiptPdfRow('Method',(order['method'] ?? '').toString().replaceAll('_',' ').toUpperCase()),
+      _receiptPdfRow('CreatorVerse reference',(order['reference'] ?? '').toString()),
+      _receiptPdfRow('Bank / USSD reference',(order['transfer_reference'] ?? '').toString()),
+      _receiptPdfRow('Confirmed',(issued?.toLocal().toString() ?? 'Not available')),
+      _receiptPdfRow('Currency',(order['currency'] ?? 'NGN').toString()),
+      pw.SizedBox(height:24),pw.Divider(),
+      pw.Text('This receipt confirms that CreatorVerse recorded this payment as received after administrator verification.',
+        style:const pw.TextStyle(fontSize:9,color:PdfColors.grey700)),
+      pw.Spacer(),pw.Center(child:pw.Text('CreatorVerse · Payment record',style:const pw.TextStyle(fontSize:8,color:PdfColors.grey600))),
+    ])));
+  return doc.save();
+}
+pw.Widget _receiptPdfRow(String label,String value)=>pw.Padding(
+  padding:const pw.EdgeInsets.symmetric(vertical:7),
+  child:pw.Row(children:[
+    pw.SizedBox(width:145,child:pw.Text(label,style:const pw.TextStyle(fontSize:10,color:PdfColors.grey700))),
+    pw.Expanded(child:pw.Text(value.isEmpty?'Not recorded':value,style:pw.TextStyle(fontSize:10,fontWeight:pw.FontWeight.bold))),
+  ]));
+Future<void> printPaymentReceipt(BuildContext context,Map<String,dynamic> order) async {
+  if(order['status']!='confirmed'||(order['receipt_number']??'').toString().isEmpty){
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('A receipt is available only after payment confirmation.')));return;
+  }
+  try { await Printing.layoutPdf(onLayout:(_)=>buildPaymentReceiptPdf(order),name:'CreatorVerse-${order['receipt_number']}.pdf'); }
+  catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open receipt for printing: $e')));}
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -784,6 +835,7 @@ class CourseCheckoutScreen extends StatefulWidget {
 class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
   final db = Supabase.instance.client;
   final transferReference = TextEditingController();
+  XFile? proofImage;
   late Future<Map<String, dynamic>> checkout;
   bool creating = false;
   bool submitting = false;
@@ -809,7 +861,7 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
       'currency,payment_window_minutes,bank_transfer_enabled,ussd_enabled,bank_name,account_name,account_number,ussd_instructions'
     ).eq('id', true).maybeSingle();
     final rows = await db.from('payment_orders')
-      .select('id,method,status,reference,expires_at,transfer_reference,admin_note,created_at')
+      .select('id,method,status,reference,expires_at,transfer_reference,admin_note,created_at,amount_ngn,currency,confirmed_at,receipt_number,receipt_issued_at,receipt_course_title,receipt_payer_name')
       .eq('user_id', user.id).eq('course_id', widget.course['id'])
       .inFilter('status', ['pending','proof_submitted','confirmed'])
       .order('created_at', ascending: false).limit(1);
@@ -855,6 +907,11 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
     }
   }
 
+  Future<void> choosePaymentProof() async {
+    final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82);
+    if(picked!=null&&mounted)setState(()=>proofImage=picked);
+  }
+
   Future<void> submitReference(Map<String, dynamic> order) async {
     final reference = transferReference.text.trim();
     if (reference.length < 4) {
@@ -864,12 +921,23 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
     }
     setState(() => submitting = true);
     try {
+      final userId=db.auth.currentUser!.id;
+      String? proofPath;
+      final image=proofImage;
+      if(image!=null){
+        final mime=image.mimeType??'image/jpeg';
+        final ext=mime=='image/png'?'png':mime=='image/webp'?'webp':'jpg';
+        proofPath='$userId/${order['id']}/${DateTime.now().microsecondsSinceEpoch}.$ext';
+        await db.storage.from('payment-proofs').uploadBinary(proofPath,await image.readAsBytes(),
+          fileOptions:FileOptions(contentType:mime,upsert:false));
+      }
       await db.from('payment_orders').update({
         'transfer_reference': reference,
+        'proof_url': proofPath,
         'status': 'proof_submitted',
-      }).eq('id', order['id']).eq('user_id', db.auth.currentUser!.id);
+      }).eq('id', order['id']).eq('user_id', userId);
       if (!mounted) return;
-      setState(() => checkout = loadCheckout());
+      setState(() { proofImage=null; checkout=loadCheckout(); });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Transfer reference submitted for administrator verification.')));
     } catch (e) {
@@ -913,10 +981,11 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
           const SizedBox(height: 8),
           Text('Amount due: ₦${price.toString()}', style: const TextStyle(color: gold, fontSize: 19, fontWeight: FontWeight.w800)),
           const SizedBox(height: 18),
-          if (orderStatus == 'confirmed') const Card(color: panel, child: ListTile(
-            leading: Icon(Icons.check_circle, color: emerald),
-            title: Text('Payment confirmed'),
-            subtitle: Text('Your course enrolment has been activated.', style: TextStyle(color: muted)))),
+          if (orderStatus == 'confirmed') ...[
+            const Card(color: panel, child: ListTile(leading:Icon(Icons.check_circle,color:emerald),title:Text('Payment confirmed'),subtitle:Text('Your course enrolment has been activated.',style:TextStyle(color:muted)))),
+            if(order!=null&&(order['receipt_number']??'').toString().isNotEmpty)
+              FilledButton.icon(onPressed:()=>printPaymentReceipt(context,order),icon:const Icon(Icons.receipt_long_outlined),label:const Text('View / print official receipt'),style:FilledButton.styleFrom(backgroundColor:emerald)),
+          ],
           if (order != null && orderStatus != 'confirmed') ...[
             Card(color: panel, child: Padding(padding: const EdgeInsets.all(16), child: material_widgets_ui.Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -928,7 +997,10 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
                 if (!expired && orderStatus == 'pending') ...[
                   const SizedBox(height: 12),
                   TextField(controller: transferReference, decoration: const InputDecoration(labelText: 'Bank / USSD transaction reference')),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
+                  TextButton.icon(onPressed: submitting ? null : choosePaymentProof,icon:const Icon(Icons.attach_file),
+                    label:Text(proofImage==null?'Attach payment proof screenshot (optional)':proofImage!.name)),
+                  const SizedBox(height: 8),
                   FilledButton(onPressed: submitting ? null : () => submitReference(order),
                     style: FilledButton.styleFrom(backgroundColor: emerald),
                     child: Text(submitting ? 'Submitting…' : 'Submit transfer reference')),
@@ -3380,160 +3452,136 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen>{
     }));
 }
 
+
 class AdminPaymentReviewScreen extends StatefulWidget {
   const AdminPaymentReviewScreen({super.key});
-  @override
-  State<AdminPaymentReviewScreen> createState() => _AdminPaymentReviewScreenState();
+  @override State<AdminPaymentReviewScreen> createState()=>_AdminPaymentReviewScreenState();
 }
-
-class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen> {
-  final db = Supabase.instance.client;
-  final Map<String, String> notes = {};
-  late Future<List<Map<String, dynamic>>> orders;
-  String filter = 'pending';
-  bool busy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    orders = loadOrders();
+class _AdminPaymentReviewScreenState extends State<AdminPaymentReviewScreen>{
+  final db=Supabase.instance.client;
+  final notes=<String,String>{};
+  final searchController=TextEditingController();
+  late Future<List<Map<String,dynamic>>> orders;
+  String filter='proof_submitted',searchTerm='';
+  bool busy=false;
+  @override void initState(){super.initState();orders=loadOrders();}
+  @override void dispose(){searchController.dispose();super.dispose();}
+  Future<List<Map<String,dynamic>>> loadOrders() async{
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to continue.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains((p['role']??'').toString()))throw StateError('Administrator access is required.');
+    final rows=await db.from('payment_orders').select('id,user_id,course_id,amount_ngn,currency,method,status,reference,created_at,updated_at,expires_at,confirmed_at,transfer_reference,proof_url,admin_note,receipt_number,receipt_issued_at,receipt_course_title,receipt_payer_name,courses(title)').order('created_at',ascending:false).limit(500);
+    final ids=rows.map((r)=>r['user_id'].toString()).toSet().toList();
+    final profiles=ids.isEmpty?<dynamic>[]:await db.from('profiles').select('id,full_name,username').inFilter('id',ids);
+    final names=<String,String>{for(final x in profiles)x['id'].toString():(x['full_name']??x['username']??'CreatorVerse member').toString()};
+    return List<Map<String,dynamic>>.from(rows.map((r)=>{...Map<String,dynamic>.from(r),'payer_name':names[r['user_id'].toString()]??'CreatorVerse member'}));
   }
-
-  Future<List<Map<String, dynamic>>> loadOrders() async {
-    final user = db.auth.currentUser;
-    if (user == null) {
-      throw StateError('Sign in to continue.');
-    }
-    final profile = await db.from('profiles').select('role').eq('id', user.id).single();
-    final role = (profile['role'] ?? '').toString();
-    if (role != 'admin' && role != 'super_admin') {
-      throw StateError('Administrator access is required.');
-    }
-    final rows = await db.from('payment_orders')
-      .select('id,user_id,amount_ngn,status,reference,created_at,expires_at,transfer_reference,proof_url,admin_note,courses(title)')
-      .order('created_at', ascending: false).limit(100);
-    return List<Map<String, dynamic>>.from(rows);
+  Future<void> refresh() async{final next=loadOrders();setState(()=>orders=next);await next;}
+  Future<void> openProof(Map<String,dynamic> order) async{
+    final path=(order['proof_url']??'').toString();if(path.isEmpty)return;
+    try{final url=path.startsWith('https://')?path:await db.storage.from('payment-proofs').createSignedUrl(path,60);await launchUrl(Uri.parse(url),mode:LaunchMode.externalApplication);}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open payment evidence: $e')));}
   }
-
-  Future<void> refresh() async {
-    final next = loadOrders();
-    setState(() => orders = next);
-    await next;
+  Future<void> showHistory(Map<String,dynamic> order) async{
+    try{
+      final events=await db.from('payment_order_events').select('event_type,from_status,to_status,note,created_at,actor_id').eq('payment_order_id',order['id']).order('created_at');
+      if(!mounted)return;
+      await showDialog<void>(context:context,builder:(d)=>AlertDialog(backgroundColor:panel,title:const Text('Payment activity history'),
+        content:SizedBox(width:420,child:events.isEmpty?const Text('No activity history is available.'):ListView(shrinkWrap:true,children:[
+          for(final e in events)ListTile(dense:true,leading:const Icon(Icons.history,color:emerald),
+            title:Text((e['event_type']??'').toString().replaceAll('_',' ').toUpperCase(),style:const TextStyle(fontSize:12,fontWeight:FontWeight.w700)),
+            subtitle:Text('${e['from_status']??'created'} → ${e['to_status']??''}\n${e['created_at']??''}\n${e['note']??''}',style:const TextStyle(color:muted,fontSize:11)))
+        ])),actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(d),child:const Text('Close'))]));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not load history: $e')));}
   }
-
-  Future<void> updateOrder(Map<String, dynamic> order, String status) async {
-    final id = order['id'].toString();
-    final message = notes[id]?.trim() ?? (order['admin_note'] ?? '').toString().trim();
-    if (status == 'confirmed') {
-      final verified = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-        backgroundColor: panel,
-        title: const Text('Confirm payment received?'),
-        content: const Text('Only confirm after you have checked the actual bank or USSD transaction and verified that the full amount arrived. This will activate the course enrolment.'),
-        actions: [
-          TextButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, false), child: const Text('Not yet')),
-          FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('I verified the payment')),
-        ],
-      ));
-      if (verified != true) return;
+  Future<void> review(Map<String,dynamic> order,String status) async{
+    if(order['status']!='proof_submitted'){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Only submitted proofs can be reviewed.')));return;}
+    final id=order['id'].toString(),note=(notes[order['id'].toString()]??order['admin_note']??'').trim();
+    if(status=='rejected'&&note.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Add a rejection reason first.')));return;}
+    if(status=='confirmed'){
+      final yes=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(backgroundColor:panel,title:const Text('Confirm money received?'),
+        content:const Text('Check your actual bank or USSD transaction history. Verify the exact amount and transfer reference. Do not approve based on a screenshot alone. Confirmation issues the official receipt and activates course access.'),
+        actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(d,false),child:const Text('Go back')),
+          FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(d,true),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('I verified funds received'))]));
+      if(yes!=true)return;
     }
-    setState(() => busy = true);
-    try {
-      await db.from('payment_orders').update({
-        'status': status,
-        'admin_note': message.isEmpty ? null : message,
-      }).eq('id', id);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        status == 'confirmed' ? 'Payment confirmed. Course enrolment is activated by the database workflow.' : 'Payment request rejected.')));
+    setState(()=>busy=true);
+    try{
+      final changed=await db.from('payment_orders').update({'status':status,'admin_note':note.isEmpty?null:note}).eq('id',id).eq('status','proof_submitted').select('id').maybeSingle();
+      if(changed==null)throw StateError('This payment was already reviewed or changed. Refresh and check its latest status.');
+      if(!mounted)return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(status=='confirmed'?'Payment confirmed. Receipt issued and course enrolment activated.':'Payment rejected. Reason recorded.')));
       await refresh();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update payment request: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => busy = false);
-      }
-    }
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update payment: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
   }
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
-    future: orders,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator(color: emerald));
-      }
-      if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(
-          'Payment review is unavailable: ${snapshot.error}',
-          textAlign: TextAlign.center, style: const TextStyle(color: muted))));
-      }
-      final all = snapshot.data ?? [];
-      final visible = filter == 'all' ? all : all.where((o) => o['status'] == filter).toList();
-      return material_widgets_ui.Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [
-          Expanded(child: DropdownButtonFormField<String>(
-            value: filter,
-            decoration: const InputDecoration(labelText: 'Payment status'),
-            items: const [
-              DropdownMenuItem(value: 'pending', child: Text('Pending')),
-              DropdownMenuItem(value: 'proof_submitted', child: Text('Proof submitted')),
-              DropdownMenuItem(value: 'confirmed', child: Text('Confirmed')),
-              DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-              DropdownMenuItem(value: 'expired', child: Text('Expired')),
-              DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
-              DropdownMenuItem(value: 'all', child: Text('All statuses')),
-            ],
-            onChanged: busy ? null : (value) => setState(() => filter = value ?? 'pending'),
-          )),
-          const SizedBox(width: 8),
-          IconButton(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh)),
-        ])),
-        Expanded(child: visible.isEmpty
-          ? const Center(child: Text('No payment requests in this status.', style: TextStyle(color: muted)))
-          : ListView.builder(padding: const EdgeInsets.all(14), itemCount: visible.length, itemBuilder: (context, index) {
-              final order = visible[index];
-              final id = order['id'].toString();
-              final course = order['courses'] is Map ? order['courses']['title'] : 'Course payment';
-              final active = order['status'] == 'pending' || order['status'] == 'proof_submitted';
-              final expiry = DateTime.tryParse((order['expires_at'] ?? '').toString());
-              return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: Padding(
-                padding: const EdgeInsets.all(14), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text((course ?? 'Course payment').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 5),
-                  Text('₦${order['amount_ngn']} · ${order['status']}', style: const TextStyle(color: gold, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 5),
-                  Text('Reference: ${order['reference']}', style: const TextStyle(color: muted, fontSize: 12)),
-                  if ((order['transfer_reference'] ?? '').toString().isNotEmpty)
-                    Text('Transfer reference: ${order['transfer_reference']}', style: const TextStyle(color: muted, fontSize: 12)),
-                  if (expiry != null) Text('Expires: ${expiry.toLocal()}', style: const TextStyle(color: muted, fontSize: 12)),
-                  if ((order['proof_url'] ?? '').toString().startsWith('https://'))
-                    TextButton.icon(onPressed: () => launchUrl(Uri.parse(order['proof_url'].toString()), mode: LaunchMode.externalApplication),
-                      icon: const Icon(Icons.receipt_long_outlined), label: const Text('View payment proof')),
-                  if (active) ...[
-                    const SizedBox(height: 8),
-                    TextFormField(initialValue: (order['admin_note'] ?? '').toString(),
-                      decoration: const InputDecoration(labelText: 'Optional note to student'),
-                      onChanged: (value) => notes[id] = value),
-                    const SizedBox(height: 10),
-                    Row(children: [
-                      Expanded(child: FilledButton(onPressed: busy ? null : () => updateOrder(order, 'confirmed'),
-                        style: FilledButton.styleFrom(backgroundColor: emerald), child: const Text('Confirm received'))),
-                      const SizedBox(width: 8),
-                      Expanded(child: OutlinedButton(onPressed: busy ? null : () => updateOrder(order, 'rejected'),
-                        child: const Text('Reject'))),
-                    ]),
-                  ],
-                ]),
-              ));
-            })),
-      ]);
-    });
+  Widget metric(String label,String value,IconData icon)=>SizedBox(width:(MediaQuery.of(context).size.width-52)/2,
+    child:Card(color:panel,child:Padding(padding:const EdgeInsets.all(13),child:Row(children:[
+      Icon(icon,color:emerald,size:22),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text(value,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w800)),Text(label,style:const TextStyle(color:muted,fontSize:11))
+      ]))
+    ]))));
+  @override Widget build(BuildContext context)=>FutureBuilder<List<Map<String,dynamic>>>(future:orders,builder:(context,snap){
+    if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+    if(snap.hasError)return Center(child:Padding(padding:const EdgeInsets.all(24),child:Text('Payment management is unavailable: ${snap.error}',textAlign:TextAlign.center,style:const TextStyle(color:muted))));
+    final all=snap.data??[];
+    final pending=all.where((o)=>o['status']=='pending').length,submitted=all.where((o)=>o['status']=='proof_submitted').length;
+    final confirmed=all.where((o)=>o['status']=='confirmed').toList();
+    final total=confirmed.fold<int>(0,(sum,o)=>sum+((o['amount_ngn'] as num?)?.toInt()??0));
+    final term=searchTerm.toLowerCase();
+    final visible=all.where((o){
+      final course=(o['courses'] is Map?o['courses']['title']:'').toString();
+      final hay='${o['reference']} ${o['transfer_reference']} ${o['payer_name']} $course'.toLowerCase();
+      return (filter=='all'||o['status']==filter)&&(term.isEmpty||hay.contains(term));
+    }).toList();
+    return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.fromLTRB(14,14,14,24),children:[
+      Row(children:[const Expanded(child:Text('Payment Management',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800))),IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
+      const Text('Review transfers, keep a traceable financial record and issue official receipts.',style:TextStyle(color:muted,height:1.45,fontSize:12)),
+      const SizedBox(height:12),
+      Wrap(spacing:8,runSpacing:8,children:[
+        metric('Awaiting transfer','$pending',Icons.hourglass_empty),metric('Ready for review','$submitted',Icons.fact_check_outlined),
+        metric('Confirmed payments','${confirmed.length}',Icons.verified_outlined),metric('Confirmed total','NGN $total',Icons.account_balance_wallet_outlined)
+      ]),
+      const SizedBox(height:14),
+      TextField(controller:searchController,onChanged:(v)=>setState(()=>searchTerm=v.trim()),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search payer, course or reference')),
+      const SizedBox(height:10),
+      DropdownButtonFormField<String>(value:filter,decoration:const InputDecoration(labelText:'Show payment status'),items:const[
+        DropdownMenuItem(value:'proof_submitted',child:Text('Ready for review')),DropdownMenuItem(value:'pending',child:Text('Awaiting transfer')),
+        DropdownMenuItem(value:'confirmed',child:Text('Confirmed')),DropdownMenuItem(value:'rejected',child:Text('Rejected')),
+        DropdownMenuItem(value:'expired',child:Text('Expired')),DropdownMenuItem(value:'cancelled',child:Text('Cancelled')),DropdownMenuItem(value:'all',child:Text('All records'))
+      ],onChanged:busy?null:(v)=>setState(()=>filter=v??'proof_submitted')),
+      const SizedBox(height:12),Text('Payment records · showing ${visible.length} of ${all.length} loaded',style:const TextStyle(fontSize:14,fontWeight:FontWeight.w700)),
+      if(visible.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('No payment records match this view.',style:TextStyle(color:muted)))),
+      for(final o in visible)...[
+        const SizedBox(height:8),Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Row(children:[Expanded(child:Text((o['courses'] is Map?o['courses']['title']:null)??'Course payment',style:const TextStyle(fontSize:15,fontWeight:FontWeight.w800))),
+            Text('NGN ${o['amount_ngn']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800))]),
+          const SizedBox(height:5),Text((o['payer_name']??'CreatorVerse member').toString(),style:const TextStyle(fontWeight:FontWeight.w600)),
+          Text('Status: ${o['status']} · ${(o['method']??'').toString().replaceAll('_',' ')}',style:const TextStyle(color:muted,fontSize:12)),
+          Text('CreatorVerse ref: ${o['reference']}',style:const TextStyle(color:muted,fontSize:11)),
+          if((o['transfer_reference']??'').toString().isNotEmpty)Text('Bank / USSD ref: ${o['transfer_reference']}',style:const TextStyle(color:muted,fontSize:11)),
+          Text('Created: ${o['created_at']??''}',style:const TextStyle(color:muted,fontSize:11)),
+          if((o['receipt_number']??'').toString().isNotEmpty)Text('Receipt: ${o['receipt_number']}',style:const TextStyle(color:emerald,fontSize:11,fontWeight:FontWeight.w700)),
+          Wrap(spacing:4,children:[
+            TextButton.icon(onPressed:()=>showHistory(o),icon:const Icon(Icons.history,size:17),label:const Text('Activity log')),
+            if((o['proof_url']??'').toString().isNotEmpty)TextButton.icon(onPressed:()=>openProof(o),icon:const Icon(Icons.image_outlined,size:17),label:const Text('View proof')),
+            if(o['status']=='confirmed')TextButton.icon(onPressed:()=>printPaymentReceipt(context,o),icon:const Icon(Icons.print_outlined,size:17),label:const Text('Print receipt'))
+          ]),
+          if(o['status']=='pending')const Text('Waiting for the learner to submit a transfer reference.',style:TextStyle(color:muted,fontSize:11)),
+          if(o['status']=='proof_submitted')...[
+            const Divider(color:Colors.white12),
+            TextFormField(initialValue:(o['admin_note']??'').toString(),decoration:const InputDecoration(labelText:'Reviewer note / rejection reason'),onChanged:(v)=>notes[o['id'].toString()]=v),
+            const SizedBox(height:8),Row(children:[
+              Expanded(child:FilledButton.icon(onPressed:busy?null:()=>review(o,'confirmed'),icon:const Icon(Icons.check_circle_outline,size:18),label:const Text('Approve'),style:FilledButton.styleFrom(backgroundColor:emerald))),
+              const SizedBox(width:8),Expanded(child:OutlinedButton.icon(onPressed:busy?null:()=>review(o,'rejected'),icon:const Icon(Icons.cancel_outlined,size:18),label:const Text('Reject')))
+            ])
+          ]
+        ])))
+      ],
+      if(all.length>=500)const Text('Showing the latest 500 records. Older records remain stored in the database.',style:TextStyle(color:muted,fontSize:11))
+    ]));
+  });
 }
-
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
   @override
