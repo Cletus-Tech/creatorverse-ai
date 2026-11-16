@@ -78,10 +78,10 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   filter.addEventListener('change',load);load()
  }
  function notifications(){
-  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student announcements'}),h('p',{text:'Send important updates directly to the CreatorVerse notification centre. Messages appear in each recipient’s Notifications page and unread badge.'})])]));
+  view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Platform announcements'}),h('p',{text:'Send updates into the shared CreatorVerse notification centre and to registered Android devices through push notifications.'})])]));
   var title=h('input',{type:'text',maxlength:'120',placeholder:'Announcement title',required:''});
   var body=h('textarea',{rows:'5',maxlength:'2000',placeholder:'Write a clear message for students…',required:''});
-  var audience=h('select',{},[h('option',{value:'all_students',text:'All registered students'}),h('option',{value:'course_students',text:'Students enrolled in one course'})]);
+  var audience=h('select',{},[h('option',{value:'all_students',text:'All registered students'}),h('option',{value:'all_users',text:'All registered accounts (except you)'}),h('option',{value:'course_students',text:'Students enrolled in one course'})]);
   var course=h('select',{},[h('option',{value:'',text:'Choose a course…'})]);
   var href=h('input',{type:'text',value:'notifications.html',placeholder:'Internal page link, e.g. academy-status.html'});
   var status=h('div',{class:'msg'}),recent=h('div',{class:'panel'});
@@ -92,7 +92,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
    h('label',{class:'field'},[h('span',{text:'Audience'}),audience]),
    h('label',{class:'field'},[h('span',{text:'Course (only for course audience)'}),course]),
    h('label',{class:'field'},[h('span',{text:'Open this internal page when tapped (optional)'}),href]),
-   h('p',{class:'pmeta',text:'This sends an in-app notification. It does not send email or SMS.'}),
+   h('p',{class:'pmeta',text:'Notifications appear in the website and app. Registered Android devices also receive a push alert. Email and SMS are not sent.'}),
    h('button',{class:'btn btn-primary',type:'submit',text:'Send announcement'}),
    status
   ]);
@@ -100,7 +100,7 @@ window.CV_SHELL={mount:function(sb,user,role,P){
   sb.from('courses').select('id,title').eq('published',true).order('title').then(function(r){(r.data||[]).forEach(function(c){course.appendChild(h('option',{value:c.id,text:c.title}))})});
   function toggle(){course.disabled=audience.value!=='course_students';}audience.addEventListener('change',toggle);toggle();
   form.addEventListener('submit',function(e){e.preventDefault();if(audience.value==='course_students'&&!course.value){status.textContent='Select the course first.';status.className='msg err';return}
-   if(!confirm('Send this announcement to '+(audience.value==='all_students'?'all registered students':'students enrolled in the selected course')+'?'))return;
+   if(!confirm('Send this announcement to '+(audience.value==='all_students'?'all registered students':audience.value==='all_users'?'all other registered accounts':'students enrolled in the selected course')+'?'))return;
    var submit=form.querySelector('button[type="submit"]');submit.disabled=true;status.textContent='Sending announcement…';status.className='msg';
    sb.rpc('admin_broadcast_notification',{p_title:title.value.trim(),p_body:body.value.trim(),p_href:href.value.trim()||'notifications.html',p_audience:audience.value,p_course_id:course.value||null}).then(function(r){submit.disabled=false;if(r.error){status.textContent=r.error.message;status.className='msg err';return}var n=(r.data&&r.data.sent)||0;status.textContent='Announcement sent to '+n+' student account'+(n===1?'':'s')+'.';status.className='msg ok';title.value='';body.value='';loadRecent()})
   });
