@@ -238,6 +238,19 @@ class _SignInScreenState extends State<SignInScreen> {
   String? message;
   @override
   void dispose() { email.dispose(); password.dispose(); name.dispose(); super.dispose(); }
+
+  Future<void> signInSocial(OAuthProvider provider) async {
+    setState(() { busy = true; message = null; });
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(provider,
+        redirectTo: 'io.supabase.creatorverse://login-callback/',
+        authScreenLaunchMode: LaunchMode.externalApplication);
+    } on AuthException catch (e) {
+      if (mounted) setState(() { error = true; message = e.message; });
+    } catch (_) {
+      if (mounted) setState(() { error = true; message = 'Social sign-in could not start. Check your connection and provider setup.'; });
+    } finally { if (mounted) setState(() => busy = false); }
+  }
   Future<void> submit() async {
     if (!form.currentState!.validate()) return;
     setState(() { busy = true; message = null; });
@@ -291,6 +304,19 @@ class _SignInScreenState extends State<SignInScreen> {
           child: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Text(create ? 'Create account' : 'Sign in')),
         TextButton(onPressed: busy ? null : () => setState(() { create = !create; message = null; }),
           child: Text(create ? 'Already registered? Sign in' : 'New to CreatorVerse? Create an account')),
+        if (!create) ...[
+          const SizedBox(height: 10),
+          const Row(children:[Expanded(child:Divider(color:Colors.white12)),Padding(padding:EdgeInsets.symmetric(horizontal:10),child:Text('OR CONTINUE WITH',style:TextStyle(color:muted,fontSize:10))),Expanded(child:Divider(color:Colors.white12))]),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed:busy?null:()=>signInSocial(OAuthProvider.google),
+            icon:const Icon(Icons.g_mobiledata,size:24),label:const Text('Continue with Google')),
+          const SizedBox(height:8),
+          OutlinedButton.icon(onPressed:busy?null:()=>signInSocial(OAuthProvider.facebook),
+            icon:const Icon(Icons.facebook,size:20),label:const Text('Continue with Facebook')),
+          const SizedBox(height:8),
+          OutlinedButton.icon(onPressed:null,icon:const Icon(Icons.camera_alt_outlined,size:19),
+            label:const Text('Instagram sign-in (setup required)')),
+        ],
         const SizedBox(height: 18),
         const Text('Your existing CreatorVerse website account works here too.', textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 12)),
       ]))))));
@@ -2254,187 +2280,170 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
         });
     }));
 }
+
 class MessageThreadScreen extends StatefulWidget {
   final String conversationId; final Map<String, dynamic> person;
   const MessageThreadScreen({super.key, required this.conversationId, required this.person});
-  @override
-  State<MessageThreadScreen> createState() => _MessageThreadScreenState();
+  @override State<MessageThreadScreen> createState()=>_MessageThreadScreenState();
 }
 class _MessageThreadScreenState extends State<MessageThreadScreen> {
-  final db = Supabase.instance.client, input = TextEditingController();
-  late Future<List<Map<String, dynamic>>> messages;
+  final db=Supabase.instance.client, input=TextEditingController();
+  final ScrollController _chatScrollController=ScrollController();
+  final List<Map<String,dynamic>> _rows=[];
+  final Set<String> _pendingIds={};
   RealtimeChannel? _messageChannel;
-  final ScrollController _chatScrollController = ScrollController();
-  bool sending = false;
-  @override
-  void initState() {
-    super.initState();
-    messages = loadMessages();
-    _messageChannel = db.channel('cv-chat-${widget.conversationId}')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'cv_direct_messages',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'conversation_id',
-          value: widget.conversationId,
-        ),
-        callback: (payload) {
-          if (mounted) setState(() => messages = loadMessages());
-        },
-      ).subscribe();
+  bool _initialLoading=true,_sendingAttachment=false,_showJumpToLatest=false;
+  String? _loadError;
+  Color _wallpaper=const Color(0xFF07151A),_myBubble=const Color(0xFF155E48),_theirBubble=panel;
+  static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
+  static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
+  @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_subscribeToMessages();
+    _chatScrollController.addListener(_handleScroll);}
+  @override void dispose(){input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
+    final c=_messageChannel;if(c!=null)unawaited(c.unsubscribe());super.dispose();}
+  String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
+  Future<void> _loadChatTheme() async{
+    final p=await SharedPreferences.getInstance();final w=p.getInt('${_themeKey}_wallpaper'),b=p.getInt('${_themeKey}_bubble');
+    if(!mounted)return;setState((){if(w!=null&&w>=0&&w<_wallpapers.length)_wallpaper=_wallpapers[w];if(b!=null&&b>=0&&b<_myBubbles.length)_myBubble=_myBubbles[b];});
   }
-  @override
-  void dispose() {
-    input.dispose();
-    _chatScrollController.dispose();
-    final channel = _messageChannel;
-    if (channel != null) unawaited(channel.unsubscribe());
-    super.dispose();
+  Future<void> _saveChatTheme() async{final p=await SharedPreferences.getInstance();await p.setInt('${_themeKey}_wallpaper',_wallpapers.indexOf(_wallpaper));await p.setInt('${_themeKey}_bubble',_myBubbles.indexOf(_myBubble));}
+  void _handleScroll(){if(!_chatScrollController.hasClients)return;final atBottom=_chatScrollController.position.maxScrollExtent-_chatScrollController.position.pixels<100;
+    if(mounted&&_showJumpToLatest==atBottom)setState(()=>_showJumpToLatest=!atBottom);}
+  void _scrollToLatest({bool force=false}){WidgetsBinding.instance.addPostFrameCallback((_){if(!_chatScrollController.hasClients)return;
+    final p=_chatScrollController.position;if(force||p.maxScrollExtent-p.pixels<180)_chatScrollController.animateTo(p.maxScrollExtent,duration:const Duration(milliseconds:180),curve:Curves.easeOut);});}
+  void _upsertMessage(Map<String,dynamic> row,{String? replaceLocalId}){
+    final id=(row['id']??'').toString();if(id.isEmpty)return;
+    if(replaceLocalId!=null)_rows.removeWhere((m)=>m['id']==replaceLocalId);
+    final i=_rows.indexWhere((m)=>m['id']==id);
+    if(i>=0){_rows[i]={..._rows[i],...row};}else{_rows.add(Map<String,dynamic>.from(row));}
+    _rows.sort((a,b)=>(a['created_at']??'').toString().compareTo((b['created_at']??'').toString()));
+    if(mounted)setState((){});_scrollToLatest();
   }
-  void _scrollChatToLatest() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_chatScrollController.hasClients) return;
-      final target = _chatScrollController.position.maxScrollExtent;
-      if ((_chatScrollController.position.pixels - target).abs() > 24) {
-        _chatScrollController.animateTo(target,
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+  void _subscribeToMessages(){
+    _messageChannel=db.channel('cv-chat-live-${widget.conversationId}')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'cv_direct_messages',
+        filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'conversation_id',value:widget.conversationId),
+        callback:(payload){
+          final row=payload.newRecord;if(row.isEmpty)return;
+          final id=(row['id']??'').toString();
+          if(payload.eventType==PostgresChangeEventType.delete){if(mounted)setState(()=>_rows.removeWhere((m)=>m['id']==id));return;}
+          final wasIncoming=row['sender_id']!=db.auth.currentUser?.id;
+          _upsertMessage(Map<String,dynamic>.from(row));
+          if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
+        }).subscribe();
+  }
+  Future<void> _markMessageRead(String id) async{
+    final now=DateTime.now().toUtc().toIso8601String();
+    try{await db.from('cv_direct_messages').update({'read_at':now}).eq('id',id).eq('conversation_id',widget.conversationId)
+      .neq('sender_id',db.auth.currentUser!.id);
+      final i=_rows.indexWhere((m)=>m['id'].toString()==id);if(i>=0){_rows[i]['read_at']=now;if(mounted)setState((){});}
+    }catch(_){}
+  }
+  Future<void> _loadInitialMessages() async{
+    try{
+      final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
+        .eq('conversation_id',widget.conversationId).order('created_at',ascending:true);
+      final loaded=List<Map<String,dynamic>>.from(raw);
+      final me=db.auth.currentUser?.id;
+      final unread=loaded.where((m)=>m['sender_id']!=me&&m['read_at']==null).map((m)=>m['id'].toString()).toList();
+      if(unread.isNotEmpty&&me!=null){final now=DateTime.now().toUtc().toIso8601String();
+        try{await db.from('cv_direct_messages').update({'read_at':now}).inFilter('id',unread).eq('conversation_id',widget.conversationId);
+          for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}}catch(_){}
       }
-    });
+      if(!mounted)return;setState((){_rows..clear()..addAll(loaded);_initialLoading=false;});
+      _scrollToLatest(force:true);
+    }catch(e){if(!mounted)return;setState(()=>_loadError=e.toString());setState(()=>_initialLoading=false);}
   }
-
-  Future<List<Map<String, dynamic>>> loadMessages() async {
-    final raw = await db.from('cv_direct_messages')
-      .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
-      .eq('conversation_id', widget.conversationId).order('created_at');
-    final rows = List<Map<String, dynamic>>.from(raw);
-    final me = db.auth.currentUser?.id;
-    final unreadIds = rows.where((row) => row['sender_id'] != me && row['read_at'] == null)
-      .map((row) => row['id'].toString()).toList();
-    if (unreadIds.isNotEmpty && me != null) {
-      final readAt = DateTime.now().toUtc().toIso8601String();
-      try {
-        await db.from('cv_direct_messages').update({'read_at': readAt})
-          .inFilter('id', unreadIds).eq('conversation_id', widget.conversationId);
-        for (final row in rows) { if (unreadIds.contains(row['id'].toString())) row['read_at'] = readAt; }
-      } catch (_) {}
+  Future<void> _openChatAppearance() async{
+    await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,builder:(ctx)=>StatefulBuilder(builder:(ctx,update)=>SafeArea(child:Padding(
+      padding:const EdgeInsets.fromLTRB(18,18,18,26),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('Chat appearance',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),const SizedBox(height:16),
+        const Text('Chat wallpaper',style:TextStyle(color:muted,fontWeight:FontWeight.w700)),const SizedBox(height:9),
+        Wrap(spacing:12,runSpacing:12,children:[for(var i=0;i<_wallpapers.length;i++)GestureDetector(onTap:(){update(()=>_wallpaper=_wallpapers[i]);},
+          child:Container(width:48,height:48,decoration:BoxDecoration(color:_wallpapers[i],shape:BoxShape.circle,border:Border.all(color:_wallpaper==_wallpapers[i]?gold:Colors.white24,width:_wallpaper==_wallpapers[i]?3:1)),
+            child:_wallpaper==_wallpapers[i]?const Icon(Icons.check,color:Colors.white):null))]),
+        const SizedBox(height:18),const Text('Your message bubble',style:TextStyle(color:muted,fontWeight:FontWeight.w700)),const SizedBox(height:9),
+        Wrap(spacing:12,children:[for(var i=0;i<_myBubbles.length;i++)GestureDetector(onTap:(){update(()=>_myBubble=_myBubbles[i]);},
+          child:Container(width:48,height:36,decoration:BoxDecoration(color:_myBubbles[i],borderRadius:BorderRadius.circular(12),border:Border.all(color:_myBubble==_myBubbles[i]?gold:Colors.white24,width:_myBubble==_myBubbles[i]?3:1)),
+            child:_myBubble==_myBubbles[i]?const Icon(Icons.check,color:Colors.white,size:17):null))]),
+        const SizedBox(height:20),FilledButton(onPressed:()async{await _saveChatTheme();if(ctx.mounted)material_widgets_ui.Navigator.pop(ctx);if(mounted)setState((){});},
+          style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(46)),child:const Text('Apply chat theme')),
+      ])))));
+  }
+  Future<void> attachMedia() async{
+    if(_sendingAttachment)return;
+    final choice=await showModalBottomSheet<String>(context:context,backgroundColor:panel,builder:(ctx)=>SafeArea(child:Wrap(children:[
+      ListTile(leading:const Icon(Icons.photo_outlined,color:emerald),title:const Text('Send a photo'),onTap:()=>material_widgets_ui.Navigator.pop(ctx,'image')),
+      ListTile(leading:const Icon(Icons.videocam_outlined,color:emerald),title:const Text('Send a video'),onTap:()=>material_widgets_ui.Navigator.pop(ctx,'video'))])));
+    if(choice==null||!mounted)return;
+    final picker=ImagePicker();final XFile? file=choice=='video'?await picker.pickVideo(source:ImageSource.gallery,maxDuration:const Duration(seconds:90)):
+      await picker.pickImage(source:ImageSource.gallery,imageQuality:85,maxWidth:1920);
+    if(file==null)return;setState(()=>_sendingAttachment=true);
+    final localId='local-${DateTime.now().microsecondsSinceEpoch}';final me=db.auth.currentUser!.id;
+    try{
+      final bytes=await file.readAsBytes();if(bytes.length>50*1024*1024)throw Exception('Please choose a file smaller than 50 MB.');
+      final name=file.name,ext=name.contains('.')?name.split('.').last.toLowerCase():'',isVideo=choice=='video';
+      final mime=isVideo?(ext=='mov'?'video/quicktime':ext=='webm'?'video/webm':'video/mp4'):(ext=='png'?'image/png':ext=='webp'?'image/webp':ext=='gif'?'image/gif':'image/jpeg');
+      final path='${widget.conversationId}/$me/${DateTime.now().microsecondsSinceEpoch}_${name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'),'_')}';
+      final optimistic={'id':localId,'sender_id':me,'body':isVideo?'Shared a video':'Shared a photo','created_at':DateTime.now().toUtc().toIso8601String(),'pending':true};
+      _upsertMessage(optimistic);
+      await db.storage.from('cv-chat-files').uploadBinary(path,bytes,fileOptions:FileOptions(contentType:mime,upsert:false));
+      final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':me,
+        'body':optimistic['body'],'attachment_path':path,'attachment_name':name,'attachment_mime':mime,'attachment_size':bytes.length})
+        .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();
+      _upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:localId);
+    }catch(e){if(mounted){setState(()=>_rows.removeWhere((m)=>m['id']==localId));ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not send attachment: $e')));}}
+    finally{if(mounted)setState(()=>_sendingAttachment=false);}
+  }
+  Future<void> send() async{
+    final body=input.text.trim();if(body.isEmpty)return;
+    final me=db.auth.currentUser!.id,localId='local-${DateTime.now().microsecondsSinceEpoch}';
+    final optimistic=<String,dynamic>{'id':localId,'sender_id':me,'body':body,'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,'pending':true};
+    input.clear();_upsertMessage(optimistic);
+    try{
+      final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':me,'body':body})
+        .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();
+      _upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:localId);
+    }catch(e){
+      if(!mounted)return;setState(()=>_rows.removeWhere((m)=>m['id']==localId));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message not sent: $e')));
     }
-    return rows;
   }
-  Future<void> attachMedia() async {
-    if (sending) return;
-    final choice = await showModalBottomSheet<String>(context: context, backgroundColor: panel,
-      builder: (ctx) => SafeArea(child: Wrap(children: [
-        ListTile(leading: const Icon(Icons.photo_outlined, color: emerald), title: const Text('Send a photo'),
-          onTap: () => material_widgets_ui.Navigator.pop(ctx, 'image')),
-        ListTile(leading: const Icon(Icons.videocam_outlined, color: emerald), title: const Text('Send a video'),
-          onTap: () => material_widgets_ui.Navigator.pop(ctx, 'video')),
+  Widget _messageBubble(Map<String,dynamic> m){
+    final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true,read=m['read_at']!=null;
+    final time=DateTime.tryParse((m['created_at']??'').toString());
+    return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,child:Container(
+      constraints:const BoxConstraints(maxWidth:310),margin:const EdgeInsets.symmetric(vertical:4),
+      padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
+      decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
+        if((m['body']??'').toString().isNotEmpty)Align(alignment:Alignment.centerLeft,child:Text(m['body'].toString(),style:const TextStyle(height:1.35))),
+        if((m['attachment_path']??'').toString().isNotEmpty)MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
+        const SizedBox(height:4),Row(mainAxisSize:MainAxisSize.min,children:[
+          Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),style:const TextStyle(fontSize:9,color:Colors.white60)),
+          if(mine)...[const SizedBox(width:5),Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)]
+        ])
       ])));
-    if (choice == null || !mounted) return;
-    final picker = ImagePicker();
-    final XFile? file = choice == 'video'
-      ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 90))
-      : await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1920);
-    if (file == null) return;
-    setState(() => sending = true);
-    try {
-      final bytes = await file.readAsBytes();
-      if (bytes.length > 50 * 1024 * 1024) throw Exception('Please choose a file smaller than 50 MB.');
-      final name = file.name;
-      final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
-      final isVideo = choice == 'video';
-      final mime = isVideo
-        ? (ext == 'mov' ? 'video/quicktime' : ext == 'webm' ? 'video/webm' : 'video/mp4')
-        : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : ext == 'gif' ? 'image/gif' : 'image/jpeg');
-      final userId = db.auth.currentUser!.id;
-      final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-      final storagePath = '${widget.conversationId}/$userId/${DateTime.now().microsecondsSinceEpoch}_$safeName';
-      await db.storage.from('cv-chat-files').uploadBinary(storagePath, bytes,
-        fileOptions: FileOptions(contentType: mime, upsert: false));
-      await db.from('cv_direct_messages').insert({
-        'conversation_id': widget.conversationId, 'sender_id': userId,
-        'body': isVideo ? 'Shared a video' : 'Shared a photo',
-        'attachment_path': storagePath, 'attachment_name': name,
-        'attachment_mime': mime, 'attachment_size': bytes.length,
-      });
-      if (mounted) setState(() => messages = loadMessages());
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send attachment: $e')));
-    } finally { if (mounted) setState(() => sending = false); }
   }
-
-  Future<void> send() async {
-    final body = input.text.trim();
-    if (body.isEmpty || sending) return;
-    final senderId = db.auth.currentUser!.id;
-    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
-    final optimistic = <String, dynamic>{
-      'id': localId, 'sender_id': senderId, 'body': body,
-      'created_at': DateTime.now().toUtc().toIso8601String(),
-      'read_at': null, 'pending': true,
-    };
-    input.clear();
-    setState(() {
-      sending = true;
-      messages = messages.then((rows) => [...rows, optimistic]);
-    });
-    try {
-      await db.from('cv_direct_messages').insert({
-        'conversation_id': widget.conversationId, 'sender_id': senderId, 'body': body,
-      }).select('id,sender_id,body,created_at,read_at').single();
-      if (mounted) {
-        // Reload the server's canonical row so a fast Realtime event cannot
-        // cause the optimistic message and inserted message to appear twice.
-        setState(() => messages = loadMessages());
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => messages = messages.then((rows) => rows.where((row) => row['id'] != localId).toList()));
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message not sent: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => sending = false);
-    }
-  }
-  @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text((widget.person['full_name'] ?? widget.person['username'] ?? 'Chat').toString())),
-    body: material_widgets_ui.Column(children: [
-      Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: messages, builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-        if (snap.hasError) return const Center(child: Text('Could not load this conversation.', style: TextStyle(color: muted)));
-        final rows = snap.data ?? [];
-        _scrollChatToLatest();
-        if (rows.isEmpty) return const Center(child: Text('Say hello to start the conversation.', style: TextStyle(color: muted)));
-        return ListView(controller: _chatScrollController, padding: const EdgeInsets.all(14), children: [for (final m in rows) Align(
-          alignment: m['sender_id'] == db.auth.currentUser!.id ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(constraints: const BoxConstraints(maxWidth: 300), margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-            decoration: BoxDecoration(color: m['sender_id'] == db.auth.currentUser!.id ? const Color(0xFF155E48) : panel,
-              borderRadius: BorderRadius.circular(15)),
-            child: material_widgets_ui.Column(
-              crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                if ((m['body'] ?? '').toString().isNotEmpty) Text(m['body'].toString(), style: const TextStyle(height: 1.35)),
-                if ((m['attachment_path'] ?? '').toString().isNotEmpty)
-                  MessageAttachmentPreview(path: m['attachment_path'].toString(),
-                    mime: (m['attachment_mime'] ?? '').toString(), name: (m['attachment_name'] ?? 'Attachment').toString()),
-                if (m['sender_id'] == db.auth.currentUser!.id) ...[
-                  const SizedBox(height: 4),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (m['pending'] == true) const Icon(Icons.schedule, size: 13, color: Colors.white54)
-                    else Icon(m['read_at'] != null ? Icons.done_all : Icons.done,
-                      size: 14, color: m['read_at'] != null ? const Color(0xFF66C8FF) : Colors.white60),
-                  ]),
-                ],
-              ]))) ]);
-      })),
-      SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(8, 8, 10, 10), child: Row(children: [
-        IconButton(tooltip: 'Attach photo or video', onPressed: sending ? null : attachMedia,
-          icon: const Icon(Icons.attach_file, color: gold)),
-        Expanded(child: TextField(controller: input, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Message...'))),
-        const SizedBox(width: 6), IconButton(onPressed: sending ? null : send,
-          icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald)),
-      ]))),
+  @override Widget build(BuildContext context)=>Scaffold(
+    backgroundColor:_wallpaper,
+    appBar:AppBar(title:Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
+      actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
+    body:Stack(children:[
+      Column(children:[
+        Expanded(child:_initialLoading?const Center(child:CircularProgressIndicator(color:emerald)):
+          _loadError!=null?Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Text('Could not load this conversation.',style:TextStyle(color:muted)),TextButton(onPressed:(){setState((){_initialLoading=true;_loadError=null;});_loadInitialMessages();},child:const Text('Try again'))])):
+          _rows.isEmpty?const Center(child:Text('Say hello to start the conversation.',style:TextStyle(color:muted))):
+          ListView.builder(controller:_chatScrollController,padding:const EdgeInsets.all(14),itemCount:_rows.length,
+            itemBuilder:(ctx,i)=>_messageBubble(_rows[i]))),
+        SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(8,8,10,10),child:Row(children:[
+          IconButton(tooltip:'Attach photo or video',onPressed:_sendingAttachment?null:attachMedia,icon:_sendingAttachment?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.attach_file,color:gold)),
+          Expanded(child:TextField(controller:input,minLines:1,maxLines:4,textInputAction:TextInputAction.newline,
+            onSubmitted:(_)=>send(),decoration:const InputDecoration(hintText:'Message...'))),
+          const SizedBox(width:6),IconButton(tooltip:'Send message',onPressed:send,icon:const Icon(Icons.send,color:emerald)),
+        ])))
+      ]),
+      if(_showJumpToLatest)Positioned(right:16,bottom:82,child:FloatingActionButton.small(heroTag:'chat-latest',backgroundColor:panel,onPressed:()=>_scrollToLatest(force:true),child:const Icon(Icons.keyboard_arrow_down,color:gold)))
     ]));
 }
 class MessageAttachmentPreview extends StatefulWidget {
