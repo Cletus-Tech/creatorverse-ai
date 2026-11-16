@@ -30,9 +30,9 @@ Future<void> main() async {
 
 class OfflineCourseCache {
  static const maxAge=Duration(days:7);
- static String _ck(String u,String c)=>'cv_offline_course_${u}_${c}';
- static String _nk(String u)=>'cv_notifications_${u}';
- static String _pk(String u)=>'cv_pending_reads_${u}';
+ static String _ck(String u,String c)=>'cv_offline_course_$u_$c';
+ static String _nk(String u)=>'cv_notifications_$u';
+ static String _pk(String u)=>'cv_pending_reads_$u';
  static Future<void> saveCourse(String u,String c,List<Map<String,dynamic>> m) async {final p=await SharedPreferences.getInstance();await p.setString(_ck(u,c),jsonEncode({'saved_at':DateTime.now().toUtc().toIso8601String(),'modules':m}));}
  static Future<List<Map<String,dynamic>>?> readCourse(String u,String c) async {final p=await SharedPreferences.getInstance();final raw=p.getString(_ck(u,c));if(raw==null)return null;try{final d=jsonDecode(raw) as Map<String,dynamic>;final at=DateTime.tryParse((d['saved_at']??'').toString());if(at==null||DateTime.now().toUtc().difference(at)>maxAge){await p.remove(_ck(u,c));return null;}return (d['modules'] as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();}catch(_){await p.remove(_ck(u,c));return null;}}
  static Future<void> clearCourse(String u,String c) async {final p=await SharedPreferences.getInstance();await p.remove(_ck(u,c));}
@@ -2236,7 +2236,7 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
             }
           },
           onReceivedError:(webController,request,error) {
-            if(request.isForMainFrame&&mounted){
+            if(request.isForMainFrame==true&&mounted){
               setState(()=>loadError='The page could not be loaded. Check your connection and try again.');
             }
           },
