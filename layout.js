@@ -1,5 +1,5 @@
 (function(){
-var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261113-brand-refresh';document.head.appendChild(brand);var shell=document.createElement('link');shell.rel='stylesheet';shell.href='unified-shell.css?v=20261113-1';document.head.appendChild(shell);
+var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261113-brand-refresh';document.head.appendChild(brand);var shell=document.createElement('link');shell.rel='stylesheet';shell.href='unified-shell.css?v=20261116-android-header-fit-1';document.head.appendChild(shell);
 var productPolish=document.createElement('link');productPolish.rel='stylesheet';productPolish.href='creatorverse-product-polish.css?v=20261113-2';document.head.appendChild(productPolish);
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
 var ux=document.createElement('link');ux.rel='stylesheet';ux.href='ux-refinement.css?v=20261109-ui-refresh1';document.head.appendChild(ux);
