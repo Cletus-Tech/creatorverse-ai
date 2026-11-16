@@ -77,7 +77,7 @@ jobs:
           source = manifest.read_text()
           metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="creatorverse_alerts" />'
           if 'com.google.firebase.messaging.default_notification_channel_id' not in source:
-              source = source.replace('<application', '<application\\n        ' + metadata, 1)
+              source = source.replace('<application', '<application\n        ' + metadata, 1)
           manifest.write_text(source)
           package_dir = Path('android/app/src/main/kotlin/com/cletustech/creatorverse_mobile')
           package_dir.mkdir(parents=True, exist_ok=True)
