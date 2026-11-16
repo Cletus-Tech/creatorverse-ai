@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -74,8 +76,20 @@ Future<void> printPaymentReceipt(BuildContext context,Map<String,dynamic> order)
   catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not open receipt for printing: $e')));}
 }
 
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (error) {
+    // Firebase push is optional in local/dev builds without the Android config.
+    debugPrint('CreatorVerse Firebase initialization skipped: $error');
+  }
   await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
   runApp(const CreatorVerseApp());
 }
@@ -334,6 +348,8 @@ class _MainShellState extends State<MainShell> {
   int unreadMessages = 0, unreadNotifications = 0;
   List<String> _conversationIds = [];
   RealtimeChannel? _notificationBadgeChannel, _messageBadgeChannel;
+  StreamSubscription<String>? _pushTokenSubscription;
+  StreamSubscription<RemoteMessage>? _pushOpenSubscription;
   final db = Supabase.instance.client;
   static const labels = ['Home', 'Learn', 'Campus', 'Community', 'Profile'];
 
@@ -341,6 +357,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _refreshBadges();
+    _registerPushNotifications();
     final userId = db.auth.currentUser?.id;
     if (userId != null) {
       _notificationBadgeChannel = db.channel('cv-shell-notifications-$userId')
@@ -354,6 +371,50 @@ class _MainShellState extends State<MainShell> {
             final conversationId = row['conversation_id']?.toString();
             if (conversationId != null && _conversationIds.contains(conversationId) && mounted) _refreshBadges();
           }).subscribe();
+    }
+  }
+
+
+  Future<void> _registerPushNotifications() async {
+    if (Firebase.apps.isEmpty) return;
+    final userId = db.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final permission = await messaging.requestPermission(
+        alert: true, badge: true, sound: true,
+      );
+      if (permission.authorizationStatus == AuthorizationStatus.denied) return;
+
+      Future<void> saveToken(String token) async {
+        await db.from('cv_device_tokens').upsert({
+          'user_id': userId,
+          'token': token,
+          'platform': 'android',
+          'device_label': 'CreatorVerse Android',
+          'last_seen_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }, onConflict: 'token');
+      }
+
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) await saveToken(token);
+      _pushTokenSubscription = messaging.onTokenRefresh.listen((token) {
+        saveToken(token).catchError((error) {
+          debugPrint('Could not refresh CreatorVerse push token: $error');
+        });
+      });
+      _pushOpenSubscription = FirebaseMessaging.onMessageOpenedApp.listen((_) {
+        if (mounted) _openNotifications();
+      });
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _openNotifications();
+        });
+      }
+    } catch (error) {
+      debugPrint('CreatorVerse push registration failed: $error');
     }
   }
 
@@ -415,6 +476,8 @@ class _MainShellState extends State<MainShell> {
     final n = _notificationBadgeChannel, m = _messageBadgeChannel;
     if (n != null) unawaited(n.unsubscribe());
     if (m != null) unawaited(m.unsubscribe());
+    _pushTokenSubscription?.cancel();
+    _pushOpenSubscription?.cancel();
     super.dispose();
   }
 
