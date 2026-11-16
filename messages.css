@@ -300,3 +300,5 @@ body[data-page="messages"] .msg-safety-note>span{font-size:8px}
  body[data-page="messages"] .cv-messages-page.is-chat-open .msg-back-inbox{display:grid;place-items:center}
  body[data-page="messages"] .cv-messages-page.is-chat-open .msg-thread{min-height:0}
 }
+
+.msg-section-actions{display:flex;align-items:center;gap:9px}.msg-story-viewers-toggle{border:1px solid rgba(155,177,235,.18);border-radius:9px;background:rgba(255,255,255,.05);color:#dce6ff;padding:8px 11px;font:600 10px Inter;cursor:pointer}.msg-story-viewers-list{max-height:170px;overflow:auto;margin-top:8px;padding:8px;border-radius:10px;background:rgba(4,10,23,.5)}.msg-story-viewer-person{display:flex;align-items:center;gap:8px;padding:6px 2px;color:#e6edff;font-size:10px}.msg-story-viewer-person .msg-avatar{width:27px;height:27px}.msg-story-viewer-person time{margin-left:auto;color:#879abd;font-size:9px}.msg-attachment-link video{display:block;max-width:min(320px,65vw);max-height:240px;border-radius:9px}.msg-quiet-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.profile-edit input[type=file]{padding:9px}
