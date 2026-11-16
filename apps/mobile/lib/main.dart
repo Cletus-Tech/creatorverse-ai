@@ -2264,7 +2264,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         : (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : ext == 'gif' ? 'image/gif' : 'image/jpeg');
       final userId = db.auth.currentUser!.id;
       final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-      final storagePath = widget.conversationId + '/' + userId + '/' + DateTime.now().microsecondsSinceEpoch.toString() + '_' + safeName;
+      final storagePath = '${widget.conversationId}/$userId/${DateTime.now().microsecondsSinceEpoch}_$safeName';
       await db.storage.from('cv-chat-files').uploadBinary(storagePath, bytes,
         fileOptions: FileOptions(contentType: mime, upsert: false));
       await db.from('cv_direct_messages').insert({
@@ -2365,7 +2365,7 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
   @override
   void didUpdateWidget(covariant MessageAttachmentPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.path != widget.path) setState(_load);
+    if (oldWidget.path != widget.path) { setState(_load); }
   }
   @override
   Widget build(BuildContext context) => FutureBuilder<String>(future: signedUrl, builder: (context, snapshot) {
@@ -2373,10 +2373,10 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
       child: SizedBox(width: 150, height: 70, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald))));
     if (snapshot.hasError || !snapshot.hasData) return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
     final url = snapshot.data!;
-    if (widget.mime.startsWith('video/')) return SizedBox(width: 245, child: InlineVideoPlayer(url: url));
-    if (widget.mime.startsWith('image/')) return ClipRRect(borderRadius: BorderRadius.circular(9),
+    if (widget.mime.startsWith('video/')) { return SizedBox(width: 245, child: InlineVideoPlayer(url: url)); }
+    if (widget.mime.startsWith('image/')) { return ClipRRect(borderRadius: BorderRadius.circular(9),
       child: Image.network(url, width: 245, fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Text('Image unavailable', style: TextStyle(color: muted))));
+        errorBuilder: (_, __, ___) => const Text('Image unavailable', style: TextStyle(color: muted)))); }
     return TextButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.download_outlined), label: Text(widget.name, overflow: TextOverflow.ellipsis));
   });
