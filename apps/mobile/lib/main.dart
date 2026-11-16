@@ -122,36 +122,14 @@ class CreatorVerseApp extends StatelessWidget {
     home: const CreatorVerseLaunchGate());
 }
 
-class CreatorVerseLaunchGate extends StatefulWidget {
+class CreatorVerseLaunchGate extends StatelessWidget {
   const CreatorVerseLaunchGate({super.key});
+
+  // Supabase.initialize completes before runApp, so AuthGate can restore the
+  // saved session on the first frame. Avoid a second timed overlay that hides
+  // an already-ready screen and creates an unnecessary loading flash.
   @override
-  State<CreatorVerseLaunchGate> createState() => _CreatorVerseLaunchGateState();
-}
-class _CreatorVerseLaunchGateState extends State<CreatorVerseLaunchGate> {
-  Timer? _dismissTimer;
-  bool _showGate = true;
-  @override
-  void initState() {
-    super.initState();
-    // Mirrors the website's short branded loading handoff.
-    _dismissTimer = Timer(const Duration(milliseconds: 1250), () {
-      if (mounted) setState(() => _showGate = false);
-    });
-  }
-  @override
-  void dispose() { _dismissTimer?.cancel(); super.dispose(); }
-  @override
-  Widget build(BuildContext context) => Stack(fit: StackFit.expand, children: [
-    const AuthGate(),
-    IgnorePointer(
-      ignoring: !_showGate,
-      child: AnimatedOpacity(
-        opacity: _showGate ? 1 : 0,
-        duration: const Duration(milliseconds: 340),
-        child: _showGate ? const _CreatorVerseLoadingGate() : const SizedBox.shrink(),
-      ),
-    ),
-  ]);
+  Widget build(BuildContext context) => const AuthGate();
 }
 class _CreatorVerseLoadingGate extends StatefulWidget {
   const _CreatorVerseLoadingGate();
@@ -2713,7 +2691,8 @@ Future<void> openAcademyWebPage(BuildContext context,String path,{bool requiresM
 
 class AuthenticatedAcademyWebScreen extends StatefulWidget {
   final String path;
-  const AuthenticatedAcademyWebScreen({super.key,required this.path});
+  final bool requiresMedia;
+  const AuthenticatedAcademyWebScreen({super.key,required this.path,this.requiresMedia=true});
   @override State<AuthenticatedAcademyWebScreen> createState()=>_AuthenticatedAcademyWebScreenState();
 }
 class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebScreen>{
@@ -2723,7 +2702,7 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
   static const sessionKey='sb-xgdngnekihhnkzurhvpe-auth-token';
   static const origin='https://creatorverse-ai.vercel.app';
   String get targetUrl=>'$origin${widget.path}';
-  String get pageTitle=>widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
+  String get pageTitle=>widget.path.contains('admin.html')?'CreatorVerse Admin Portal':widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
   Future<void> injectSessionAndOpen() async {
     if(injected||controller==null)return;
     final session=Supabase.instance.client.auth.currentSession;
@@ -4163,7 +4142,14 @@ void openFeature(BuildContext context, String path) {
     case '/settings':
       destination = const AccountSettingsScreen(); title = 'Account settings'; break;
     case '/admin.html':
-      destination = const AdminWorkspaceScreen(); title = 'Admin workspace'; break;
+      // Reuse the complete, role-protected website admin portal in an
+      // authenticated WebView until every admin feature has a native screen.
+      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => const AuthenticatedAcademyWebScreen(
+          path: '/admin.html',
+          requiresMedia: false,
+        )));
+      return;
     default:
       destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
         description: 'This section is part of CreatorVerse. Its native app experience is being built next; your website account and data remain shared.',
