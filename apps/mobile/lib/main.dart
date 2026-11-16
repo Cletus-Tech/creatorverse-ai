@@ -2369,9 +2369,13 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
   }
   @override
   Widget build(BuildContext context) => FutureBuilder<String>(future: signedUrl, builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(10),
-      child: SizedBox(width: 150, height: 70, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald))));
-    if (snapshot.hasError || !snapshot.hasData) return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Padding(padding: EdgeInsets.all(10),
+        child: SizedBox(width: 150, height: 70, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald))));
+    }
+    if (snapshot.hasError || !snapshot.hasData) {
+      return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
+    }
     final url = snapshot.data!;
     if (widget.mime.startsWith('video/')) { return SizedBox(width: 245, child: InlineVideoPlayer(url: url)); }
     if (widget.mime.startsWith('image/')) { return ClipRRect(borderRadius: BorderRadius.circular(9),
