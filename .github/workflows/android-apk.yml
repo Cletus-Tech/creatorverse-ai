@@ -95,17 +95,48 @@ jobs:
           import android.media.AudioManager
           import android.media.MediaPlayer
           import android.media.RingtoneManager
+          import android.media.ToneGenerator
           import android.os.Build
           import android.os.Bundle
+          import android.os.Handler
+          import android.os.Looper
           import io.flutter.embedding.android.FlutterActivity
           import io.flutter.embedding.engine.FlutterEngine
           import io.flutter.plugin.common.MethodChannel
           
           class MainActivity : FlutterActivity() {
               private var incomingCallPlayer: MediaPlayer? = null
+              private var outgoingCallTone: ToneGenerator? = null
+              private val outgoingToneHandler = Handler(Looper.getMainLooper())
+              private val outgoingToneRunnable = object : Runnable {
+                  override fun run() {
+                      val tone = outgoingCallTone ?: return
+                      tone.startTone(ToneGenerator.TONE_SUP_RINGTONE, 4000)
+                      outgoingToneHandler.postDelayed(this, 6000)
+                  }
+              }
               private var callAudioFocusRequest: android.media.AudioFocusRequest? = null
               private val callAudioFocusListener = AudioManager.OnAudioFocusChangeListener { }
           
+              private fun startOutgoingCallTone() {
+                  if (outgoingCallTone != null) return
+                  outgoingCallTone = ToneGenerator(AudioManager.STREAM_VOICE_CALL, 75)
+                  outgoingToneHandler.post(outgoingToneRunnable)
+              }
+
+              private fun stopOutgoingCallTone() {
+                  outgoingToneHandler.removeCallbacks(outgoingToneRunnable)
+                  outgoingCallTone?.stopTone()
+                  outgoingCallTone?.release()
+                  outgoingCallTone = null
+              }
+
+              override fun onDestroy() {
+                  stopOutgoingCallTone()
+                  stopIncomingCallRingtone()
+                  super.onDestroy()
+              }
+
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -157,6 +188,19 @@ jobs:
                       "creatorverse/call_ringtone"
                   ).setMethodCallHandler { call, result ->
                       when (call.method) {
+                          "start_outgoing" -> {
+                              try {
+                                  startOutgoingCallTone()
+                                  result.success(null)
+                              } catch (error: Exception) {
+                                  stopOutgoingCallTone()
+                                  result.error("OUTGOING_TONE_FAILED", error.message, null)
+                              }
+                          }
+                          "stop_outgoing" -> {
+                              stopOutgoingCallTone()
+                              result.success(null)
+                          }
                           "start" -> {
                               try {
                                   if (incomingCallPlayer?.isPlaying != true) {
@@ -369,15 +413,26 @@ jobs:
           if not match:
               raise SystemExit('MainActivity was not found; OAuth callback cannot be registered')
           activity = match.group(0)
-          if 'io.supabase.creatorverse' not in activity:
-              callback = '''
+          if 'android:host="login-callback"' not in activity or 'android:host="reset-callback"' not in activity:
+              callback = ''
+              if 'android:host="login-callback"' not in activity:
+                  callback += '''
                       <intent-filter>
                           <action android:name="android.intent.action.VIEW" />
                           <category android:name="android.intent.category.DEFAULT" />
                           <category android:name="android.intent.category.BROWSABLE" />
                           <data android:scheme="io.supabase.creatorverse" android:host="login-callback" />
                       </intent-filter>
-              '''
+                  '''
+              if 'android:host="reset-callback"' not in activity:
+                  callback += '''
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="io.supabase.creatorverse" android:host="reset-callback" />
+                      </intent-filter>
+                  '''
               activity = activity.replace('</activity>', callback + '\n    </activity>')
               source = source[:match.start()] + activity + source[match.end():]
               p.write_text(source)
