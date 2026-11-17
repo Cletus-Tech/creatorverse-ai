@@ -2588,36 +2588,26 @@ class CommunityPostCard extends StatelessWidget {
         ])),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         Padding(padding: const EdgeInsets.fromLTRB(14, 7, 14, 12), child: Text((post['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.45))),
-        if(image.startsWith('https://'))Padding(padding:const EdgeInsets.symmetric(horizontal:8),child:Stack(
-          alignment:Alignment.topRight,children:[
-            GestureDetector(onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CommunityMediaViewer(
-              post:post,onComments:onComments))),
-              child: post['media_type'] == 'video'
-              ? InlineVideoPlayer(url: image)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: image,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 1000,
-                    placeholder: (_, __) => const SizedBox(
-                      height: 210,
-                      child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald)),
-                    ),
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+        if(image.startsWith('https://'))
+          GestureDetector(
+            onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(
+              builder:(_)=>CommunityMediaViewer(post:post,onComments:onComments))),
+            child: post['media_type']=='video'
+              ? InlineVideoPlayer(url:image)
+              : SizedBox(
+                  width:double.infinity,
+                  child:CachedNetworkImage(
+                    imageUrl:image,
+                    width:double.infinity,
+                    fit:BoxFit.cover,
+                    memCacheWidth:1000,
+                    placeholder:(_,__)=>const SizedBox(
+                      height:210,
+                      child:Center(child:CircularProgressIndicator(strokeWidth:2,color:emerald))),
+                    errorWidget:(_,__,___)=>const SizedBox.shrink(),
                   ),
                 ),
           ),
-            IconButton.filled(onPressed:()=>_saveRemoteMedia(context,image,
-              _mediaMimeFromUrl(image,video:post['media_type']=='video'),
-              'creatorverse-${post['id']??'community-media'}'),
-              icon:const Icon(Icons.download_rounded),tooltip:'Save media',
-              style:IconButton.styleFrom(backgroundColor:Colors.black87)),
-            Positioned(right:8,bottom:8,child:Container(padding:const EdgeInsets.all(7),
-              decoration:BoxDecoration(color:Colors.black54,borderRadius:BorderRadius.circular(20)),
-              child:const Icon(Icons.open_in_full,color:Colors.white,size:16))),
-          ])),
         Padding(padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), child: Row(children: [
           Text('${post['like_count'] ?? 0} likes', style: const TextStyle(color: muted, fontSize: 11)),
           const Spacer(), Text('${post['comment_count'] ?? 0} comments', style: const TextStyle(color: muted, fontSize: 11))])),
@@ -3838,23 +3828,65 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
       return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
     }
     final url = snapshot.data!;
-    if (widget.mime.startsWith('video/')) {
-      return SizedBox(width:245,child:Stack(alignment:Alignment.topRight,children:[
-        InlineVideoPlayer(url:url),
-        IconButton.filled(onPressed:()=>_saveRemoteMedia(context,url,widget.mime,widget.name),
-          icon:const Icon(Icons.download_rounded),tooltip:'Save video',style:IconButton.styleFrom(backgroundColor:Colors.black87)),
-      ]));
-    }
-    if (widget.mime.startsWith('image/')) {
-      return SizedBox(width:245,child:Stack(alignment:Alignment.topRight,children:[
-        GestureDetector(onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(
-          backgroundColor:Colors.black,appBar:AppBar(backgroundColor:Colors.black),body:Center(child:InteractiveViewer(
-            minScale:.7,maxScale:4,child:Image.network(url,fit:BoxFit.contain)))))),
-          child:ClipRRect(borderRadius:BorderRadius.circular(9),child:Image.network(url,width:245,fit:BoxFit.cover,
-            errorBuilder:(_,__,___)=>const Text('Image unavailable',style:TextStyle(color:muted))))),
-        IconButton.filled(onPressed:()=>_saveRemoteMedia(context,url,widget.mime,widget.name),
-          icon:const Icon(Icons.download_rounded),tooltip:'Save image',style:IconButton.styleFrom(backgroundColor:Colors.black87)),
-      ]));
+    if (widget.mime.startsWith('video/') || widget.mime.startsWith('image/')) {
+      final isVideo=widget.mime.startsWith('video/');
+      return SizedBox(
+        width:245,
+        child:Column(
+          mainAxisSize:MainAxisSize.min,
+          crossAxisAlignment:CrossAxisAlignment.stretch,
+          children:[
+            ClipRRect(
+              borderRadius:BorderRadius.circular(8),
+              child:isVideo
+                ? InlineVideoPlayer(url:url)
+                : GestureDetector(
+                    onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(
+                      builder:(_)=>Scaffold(
+                        backgroundColor:Colors.black,
+                        appBar:AppBar(backgroundColor:Colors.black,title:Text(widget.name)),
+                        body:Center(child:InteractiveViewer(
+                          minScale:.7,maxScale:4,
+                          child:CachedNetworkImage(imageUrl:url,fit:BoxFit.contain))),
+                      ))),
+                    child:CachedNetworkImage(
+                      imageUrl:url,width:245,height:190,fit:BoxFit.cover,
+                      memCacheWidth:900,
+                      placeholder:(_,__)=>const SizedBox(
+                        height:160,child:Center(child:CircularProgressIndicator(strokeWidth:2,color:emerald))),
+                      errorWidget:(_,__,___)=>const SizedBox(
+                        height:100,child:Center(child:Text('Media unavailable',style:TextStyle(color:muted)))),
+                    ),
+                  ),
+            ),
+            Row(
+              mainAxisAlignment:MainAxisAlignment.end,
+              children:[
+                IconButton(
+                  visualDensity:VisualDensity.compact,
+                  tooltip:'Preview media',
+                  onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(
+                    builder:(_)=>Scaffold(
+                      backgroundColor:Colors.black,
+                      appBar:AppBar(backgroundColor:Colors.black,title:Text(widget.name)),
+                      body:Center(child:isVideo
+                        ? InlineVideoPlayer(url:url)
+                        : InteractiveViewer(minScale:.7,maxScale:4,
+                            child:CachedNetworkImage(imageUrl:url,fit:BoxFit.contain))),
+                    ))),
+                  icon:const Icon(Icons.open_in_full,color:muted,size:19),
+                ),
+                IconButton(
+                  visualDensity:VisualDensity.compact,
+                  tooltip:'Save media',
+                  onPressed:()=>_saveRemoteMedia(context,url,widget.mime,widget.name),
+                  icon:const Icon(Icons.download_outlined,color:muted,size:20),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
     }
     return TextButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.download_outlined), label: Text(widget.name, overflow: TextOverflow.ellipsis));
