@@ -3047,6 +3047,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         .eq('conversation_id',widget.conversationId).order('joined_at');
       final rows=List<Map<String,dynamic>>.from(members);
       final ids=rows.map((m)=>m['user_id'].toString()).toList();
+      _groupMemberIds..clear()..addAll(ids);
+      _syncPeerPresence();
       final profiles=ids.isEmpty?[]:await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
       final people={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
       final me=db.auth.currentUser?.id??'';
