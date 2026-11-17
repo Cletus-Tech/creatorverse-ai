@@ -2323,6 +2323,20 @@ class _CommunityTabState extends State<CommunityTab> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not publish: $e')));
     }
   }
+  Future<void> editPost(Map<String,dynamic> post) async {
+    final controller=TextEditingController(text:(post['description']??'').toString());
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit your post'),content:SizedBox(width:420,child:TextField(controller:controller,minLines:3,maxLines:7,maxLength:3000,decoration:const InputDecoration(hintText:"What's on your mind?"))),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save changes'))]));
+    if(!mounted){controller.dispose();return;}final body=controller.text.trim();controller.dispose();if(ok!=true)return;
+    if(body.isEmpty&&(post['image_url']??'').toString().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('A post needs text or media.')));return;}
+    try{final title=body.isEmpty?(post['media_type']=='video'?'Shared a video':'Shared a photo'):(body.length>80?body.substring(0,77)+'...':body);
+      await db.from('community_posts').update({'title':title,'description':body,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',post['id']).eq('user_id',db.auth.currentUser!.id);await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not edit post: '+e.toString())));}
+  }
+  Future<void> deletePost(Map<String,dynamic> post) async {
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Delete this post?'),content:const Text('This will remove your post and its comments from the community. This cannot be undone.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));
+    if(ok!=true)return;try{await db.from('community_posts').delete().eq('id',post['id']).eq('user_id',db.auth.currentUser!.id);await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete post: '+e.toString())));}
+  }
   Future<void> toggleLike(Map<String, dynamic> post) async {
     final me = db.auth.currentUser!.id, id = post['id'].toString();
     final liked = post['liked'] == true;
@@ -2461,7 +2475,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ? 'Follow members to see their updates here, or share your own post.'
             : 'Be the first to share an update.',
             textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onReport: () => reportPost(post)),
+        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post)),
       ]));
     });
 }
@@ -2563,8 +2577,8 @@ class CommunityMediaViewer extends StatelessWidget {
 }
 
 class CommunityPostCard extends StatelessWidget {
-  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport;
-  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport});
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport, onEdit, onDelete; final bool isMine;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport, required this.onEdit, required this.onDelete, required this.isMine});
   @override
   Widget build(BuildContext context) {
     final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
@@ -2582,8 +2596,10 @@ class CommunityPostCard extends StatelessWidget {
               if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
             Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
           Text(_timeAgo(post['created_at']?.toString()), style: const TextStyle(color: muted, fontSize: 10)),
-          PopupMenuButton<String>(onSelected:(value){if(value=='report')onReport();},itemBuilder:(_)=>const [
-            PopupMenuItem(value:'report',child:Row(children:[Icon(Icons.flag_outlined,size:18),SizedBox(width:8),Text('Report post')]))]),
+          PopupMenuButton<String>(onSelected:(value){if(value=='report')onReport();else if(value=='edit')onEdit();else if(value=='delete')onDelete();},itemBuilder:(_)=>[
+            if(isMine)const PopupMenuItem(value:'edit',child:Row(children:[Icon(Icons.edit_outlined,size:18),SizedBox(width:8),Text('Edit post')])),
+            if(isMine)const PopupMenuItem(value:'delete',child:Row(children:[Icon(Icons.delete_outline,size:18,color:Colors.redAccent),SizedBox(width:8),Text('Delete post')])),
+            if(!isMine)const PopupMenuItem(value:'report',child:Row(children:[Icon(Icons.flag_outlined,size:18),SizedBox(width:8),Text('Report post')]))]),
 
         ])),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
@@ -2642,12 +2658,13 @@ class _CommentsSheetState extends State<CommentsSheet> {
   final db = Supabase.instance.client; final input = TextEditingController();
   late Future<List<Map<String, dynamic>>> comments;
   bool sending = false;
+  String? replyingTo, replyingToName;
   @override
   void initState() { super.initState(); comments = load(); }
   @override
   void dispose() { input.dispose(); super.dispose(); }
   Future<List<Map<String, dynamic>>> load() async {
-    final raw = await db.from('community_comments').select('id,user_id,body,created_at')
+    final raw = await db.from('community_comments').select('id,user_id,body,created_at,parent_id')
       .eq('post_id', widget.post['id']).order('created_at');
     final rows = List<Map<String, dynamic>>.from(raw);
     if (rows.isEmpty) return rows;
@@ -2661,8 +2678,8 @@ class _CommentsSheetState extends State<CommentsSheet> {
     if (input.text.trim().isEmpty || sending) return;
     setState(() => sending = true);
     try {
-      await db.from('community_comments').insert({'post_id': widget.post['id'], 'user_id': db.auth.currentUser!.id, 'body': input.text.trim()});
-      input.clear(); setState(() => comments = load());
+      await db.from('community_comments').insert({'post_id': widget.post['id'], 'user_id': db.auth.currentUser!.id, 'body': input.text.trim(), 'parent_id': replyingTo});
+      input.clear(); setState(() { comments = load(); replyingTo = null; replyingToName = null; });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Comment failed: $e'))); }
     finally { if (mounted) setState(() => sending = false); }
   }
@@ -2675,12 +2692,15 @@ class _CommentsSheetState extends State<CommentsSheet> {
         if (snap.hasError) return const Center(child: Text('Could not load comments.', style: TextStyle(color: muted)));
         final rows = snap.data ?? [];
         if (rows.isEmpty) return const Center(child: Text('No comments yet. Start the conversation.', style: TextStyle(color: muted)));
-        return ListView(children: [for (final row in rows) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const CircleAvatar(radius: 15, backgroundColor: Color(0x3320B887), child: Icon(Icons.person, size: 16, color: emerald)),
-          const SizedBox(width: 9), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(((row['author'] as Map?)?['full_name'] ?? (row['author'] as Map?)?['username'] ?? 'Member').toString(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-            const SizedBox(height: 3), Text(row['body'].toString(), style: const TextStyle(color: Colors.white70, height: 1.4))]))]))]);
+        return ListView(children: [for (final row in rows) Padding(padding: EdgeInsets.only(left:row['parent_id']==null?0:26,top:7,bottom:7), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          CircleAvatar(radius:row['parent_id']==null?15:12,backgroundColor:const Color(0x3320B887),child:Icon(row['parent_id']==null?Icons.person:Icons.subdirectory_arrow_right,size:row['parent_id']==null?16:14,color:emerald)),
+          const SizedBox(width:9),Expanded(child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(((row['author'] as Map?)?['full_name']??(row['author'] as Map?)?['username']??'Member').toString(),style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12)),
+            const SizedBox(height:3),Text(row['body'].toString(),style:const TextStyle(color:Colors.white70,height:1.4)),
+            Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>setState((){replyingTo=(row['parent_id']??row['id']).toString();replyingToName=((row['author'] as Map?)?['full_name']??(row['author'] as Map?)?['username']??'member').toString();}),style:TextButton.styleFrom(padding:const EdgeInsets.symmetric(horizontal:4),minimumSize:const Size(0,28)),child:const Text('Reply',style:TextStyle(fontSize:11,color:emerald))))
+          ]))]))]);
       })),
+      if(replyingTo!=null)Padding(padding:const EdgeInsets.only(bottom:8),child:Row(children:[Expanded(child:Text('Replying to '+(replyingToName??'member'),style:const TextStyle(color:emerald,fontSize:12))),IconButton(onPressed:()=>setState((){replyingTo=null;replyingToName=null;}),icon:const Icon(Icons.close,size:18))])),
       const SizedBox(height: 10), Row(children: [Expanded(child: TextField(controller: input, minLines: 1, maxLines: 3, decoration: const InputDecoration(hintText: 'Write a comment...'))),
         const SizedBox(width: 8), IconButton(onPressed: sending ? null : send, icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald))]),
     ]))));
