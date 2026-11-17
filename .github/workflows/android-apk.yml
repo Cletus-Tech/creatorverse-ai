@@ -96,7 +96,7 @@ jobs:
           source = manifest.read_text()
           permission = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
           if permission not in source:
-              source = source.replace('<application', permission + '\\n    <application', 1)
+              source = source.replace('<application', permission + '\n    <application', 1)
               manifest.write_text(source)
           PY
       - name: Configure CreatorVerse notification channel with sound
@@ -161,12 +161,6 @@ jobs:
                   outgoingCallTone?.stopTone()
                   outgoingCallTone?.release()
                   outgoingCallTone = null
-              }
-
-              override fun onDestroy() {
-                  stopOutgoingCallTone()
-                  stopIncomingCallRingtone()
-                  super.onDestroy()
               }
 
               override fun onCreate(savedInstanceState: Bundle?) {
@@ -367,6 +361,7 @@ jobs:
               }
 
               override fun onDestroy() {
+                  stopOutgoingCallTone()
                   stopIncomingCallRingtone()
                   super.onDestroy()
               }
