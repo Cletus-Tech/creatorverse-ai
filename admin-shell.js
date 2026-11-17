@@ -406,7 +406,7 @@ function analytics(){
   if(role!=='super_admin')view.insertBefore(h('div',{class:'note',text:'Only a super admin can change roles and assign or remove the blue verification tick.'}),q)
  }
    function security(){
-   view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student password reset'}),h('p',{text:'Generate a unique temporary password for an individual student. Their existing sessions are revoked and they must choose a private password at their next sign-in.'})])]));
+   view.appendChild(h('div',{class:'dash-hero'},[h('div',{},[h('h1',{text:'Student password reset'}),h('p',{text:'Generate a unique temporary password for an individual student. Ask them to sign out, sign back in with the temporary password, and choose a private password.'})])]));
    if(role!=='admin'&&role!=='super_admin'){view.appendChild(h('div',{class:'note',text:'This control is restricted to administrators.'}));return;}
    view.appendChild(h('div',{class:'note',text:'Temporary passwords are generated uniquely for each student and shown only once. Share the password privately. Never post it in the community or a public message.'}));
    var search=h('input',{type:'search',placeholder:'Search students by name or email…'}),pick=h('select',{}),reset=h('button',{type:'button',class:'btn btn-primary',text:'Generate temporary password'}),status=h('p',{class:'pmeta',text:'Loading student accounts…'}),panel=h('div',{class:'panel'}),rows=[];
