@@ -11,6 +11,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart' as material_widgets_ui;
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -2055,14 +2056,39 @@ class _CommunityTabState extends State<CommunityTab> {
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
   @override
+  String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode';
+
+  Future<List<Map<String,dynamic>>> _initialFeed() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_feedCacheKey());
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final cached = decoded.whereType<Map>().map((row) => Map<String,dynamic>.from(row)).toList();
+          if (cached.isNotEmpty) {
+            unawaited(_refreshFeedInBackground());
+            return cached;
+          }
+        }
+      }
+    } catch (_) {}
+    return loadFeed();
+  }
+
+  Future<void> _refreshFeedInBackground() async {
+    try {
+      final fresh = await loadFeed();
+      if (mounted) setState(() => feed = Future.value(fresh));
+    } catch (_) {
+      // Keep the last cached feed visible while offline or on a slow connection.
+    }
+  }
+
   void initState() {
-    super.initState(); feed = loadFeed(); stories = loadStories();
+    super.initState(); feed = _initialFeed(); stories = loadStories();
     _syncChannel=db.channel('cv-community-feed-sync')
       .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_posts',
-        callback:(_)=>_scheduleFeedSync())
-      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_comments',
-        callback:(_)=>_scheduleFeedSync())
-      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'community_likes',
         callback:(_)=>_scheduleFeedSync())
       .subscribe();
   }
@@ -2106,16 +2132,21 @@ class _CommunityTabState extends State<CommunityTab> {
     if (posts.isEmpty) return posts;
     final ids = posts.map((p) => p['id'].toString()).toList();
     final users = posts.map((p) => p['user_id'].toString()).toSet().toList();
-    final profilesRaw = await db.from('public_profiles')
-      .select('id,full_name,username,avatar_url,verified_badge').inFilter('id', users);
-    final profiles = {for (final p in List<Map<String, dynamic>>.from(profilesRaw)) p['id'].toString(): p};
-    final likesRaw = await db.from('community_likes').select('post_id,user_id').inFilter('post_id', ids);
-    final likes = List<Map<String, dynamic>>.from(likesRaw);
-    final commentsRaw = await db.from('community_comments').select('post_id').inFilter('post_id', ids);
-    final comments = List<Map<String, dynamic>>.from(commentsRaw);
     final me = db.auth.currentUser?.id;
-    final savesRaw = me == null ? <Map<String,dynamic>>[] : List<Map<String,dynamic>>.from(
-      await db.from('community_saves').select('post_id').eq('user_id',me).inFilter('post_id',ids));
+    // Fetch post metadata concurrently. Serial network round-trips made the feed
+    // feel as if it was loading each part one after another.
+    final results = await Future.wait<dynamic>([
+      db.from('public_profiles').select('id,full_name,username,avatar_url,verified_badge').inFilter('id', users),
+      db.from('community_likes').select('post_id,user_id').inFilter('post_id', ids).limit(2500),
+      db.from('community_comments').select('post_id').inFilter('post_id', ids).limit(2500),
+      me == null
+        ? Future.value(<Map<String,dynamic>>[])
+        : db.from('community_saves').select('post_id').eq('user_id',me).inFilter('post_id',ids),
+    ]);
+    final profiles = {for (final p in List<Map<String, dynamic>>.from(results[0])) p['id'].toString(): p};
+    final likes = List<Map<String, dynamic>>.from(results[1]);
+    final comments = List<Map<String, dynamic>>.from(results[2]);
+    final savesRaw = List<Map<String,dynamic>>.from(results[3]);
     final savedIds=savesRaw.map((r)=>r['post_id'].toString()).toSet();
     for (final post in posts) {
       final id = post['id'].toString();
@@ -2126,12 +2157,16 @@ class _CommunityTabState extends State<CommunityTab> {
       post['comment_count'] = comments.where((c) => c['post_id'].toString() == id).length;
       post['saved'] = savedIds.contains(id);
     }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_feedCacheKey(), jsonEncode(posts));
+    } catch (_) {}
     return posts;
   }
   Future<List<Map<String,dynamic>>> loadStories() async {
     final now=DateTime.now().toUtc().toIso8601String();
     final raw=await db.from('cv_stories').select('id,user_id,content,media_url,media_type,background,created_at,expires_at')
-      .gt('expires_at',now).order('created_at',ascending:false);
+      .gt('expires_at',now).order('created_at',ascending:false).limit(30);
     final rows=List<Map<String,dynamic>>.from(raw);
     if(rows.isEmpty)return rows;
     final ids=rows.map((r)=>r['user_id'].toString()).toSet().toList();
@@ -2157,7 +2192,7 @@ class _CommunityTabState extends State<CommunityTab> {
   Future<void> selectFeedMode(String mode) async {
     if (_feedMode == mode || !mounted) return;
     setState(() => _feedMode = mode);
-    final next = loadFeed();
+    final next = _initialFeed();
     setState(() => feed = next);
     await next;
   }
@@ -2488,8 +2523,9 @@ class CommunityMediaViewer extends StatelessWidget {
       body:Column(children:[
         Expanded(child:Center(child:video
           ?ConstrainedBox(constraints:const BoxConstraints(maxHeight:520),child:InlineVideoPlayer(url:url))
-          :InteractiveViewer(minScale:.6,maxScale:5,child:Image.network(url,fit:BoxFit.contain,
-            errorBuilder:(_,__,___)=>const Text('Media could not be loaded',style:TextStyle(color:Colors.white70)))))),
+          :InteractiveViewer(minScale:.6,maxScale:5,child:CachedNetworkImage(imageUrl:url,fit:BoxFit.contain,
+            memCacheWidth:1600,placeholder:(_,__)=>const Center(child:CircularProgressIndicator(color:emerald)),
+            errorWidget:(_,__,___)=>const Text('Media could not be loaded',style:TextStyle(color:Colors.white70))))),
         Container(width:double.infinity,color:const Color(0xFF101719),padding:const EdgeInsets.fromLTRB(16,12,16,18),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text((post['title']??'').toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:17)),
@@ -2539,8 +2575,9 @@ class CommunityPostCard extends StatelessWidget {
               post:post,onComments:onComments))),
               child:post['media_type']=='video'
                 ?InlineVideoPlayer(url:image)
-                :ClipRRect(borderRadius:BorderRadius.circular(8),child:Image.network(image,width:double.infinity,
-                  fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()))),
+                :ClipRRect(borderRadius:BorderRadius.circular(8),child:CachedNetworkImage(imageUrl:image,width:double.infinity,
+                  fit:BoxFit.cover,memCacheWidth:1000,placeholder:(_,__)=>const SizedBox(height:210,child:Center(child:CircularProgressIndicator(strokeWidth:2,color:emerald))),
+                  errorWidget:(_,__,___)=>const SizedBox.shrink())),
             IconButton.filled(onPressed:()=>_saveRemoteMedia(context,image,
               _mediaMimeFromUrl(image,video:post['media_type']=='video'),
               'creatorverse-${post['id']??'community-media'}'),
