@@ -3543,7 +3543,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}}catch(_){}
         }
       }
-      if(!mounted)return;final live={for(final row in _rows)row['id'].toString():row};for(final row in loaded){live[row['id'].toString()]=row;}final merged=live.values.toList()..sort((a,b)=>(a['created_at']??'').toString().compareTo((b['created_at']??'').toString()));setState((){_rows..clear()..addAll(merged);_initialLoading=false;});
+      if(!mounted)return;final live={for(final row in _rows)row['id'].toString():row};
+      if(me!=null){try{final hidden=await db.from('cv_message_hidden_for').select('message_id').eq('user_id',me);final hiddenIds=List<Map<String,dynamic>>.from(hidden).map((r)=>r['message_id'].toString()).toSet();live.removeWhere((id,_)=>hiddenIds.contains(id));}catch(_){}}
+      for(final row in loaded){live[row['id'].toString()]=row;}
+      final merged=live.values.toList()..sort((a,b)=>(a['created_at']??'').toString().compareTo((b['created_at']??'').toString()));setState((){_rows..clear()..addAll(merged);_initialLoading=false;});
       _scrollToLatest(force:true);
     }catch(e){if(!mounted)return;setState(()=>_loadError=e.toString());setState(()=>_initialLoading=false);}
   }
@@ -3721,7 +3724,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: $e')));}
     }else if(action=='resend'){
       setState((){message['pending']=true;message['failed']=false;});
-      try{final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':db.auth.currentUser!.id,'body':message['body']}).select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();_upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:id);}
+      try{final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':db.auth.currentUser!.id,'body':message['body']}).select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();_upsertMessage({...Map<String,dynamic>.from(result),'pending':false,'failed':false},replaceLocalId:id);}
       catch(e){if(mounted)setState((){message['pending']=false;message['failed']=true;});if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: $e')));}
     }
   }
