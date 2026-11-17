@@ -330,7 +330,7 @@ class _MainShellState extends State<MainShell> {
   int unreadMessages = 0, unreadNotifications = 0;
   List<String> _conversationIds = [];
   late final List<Widget?> _pages;
-  RealtimeChannel? _notificationBadgeChannel, _academyNotificationBadgeChannel, _messageBadgeChannel, _incomingCallChannel;
+  RealtimeChannel? _notificationBadgeChannel, _academyNotificationBadgeChannel, _messageBadgeChannel, _callInviteChannel;
   bool _incomingCallDialogOpen=false;
   StreamSubscription<String>? _pushTokenSubscription;
   StreamSubscription<dynamic>? _authStateSubscription;
@@ -372,8 +372,10 @@ class _MainShellState extends State<MainShell> {
     });
     final userId = db.auth.currentUser?.id;
     if (userId != null) {
-      _incomingCallChannel=db.channel('cv-user-calls-$userId')
-        .onBroadcast(event:'incoming_call',callback:(payload)=>_handleIncomingCall(Map<String,dynamic>.from(payload)))
+      _callInviteChannel=db.channel('cv-call-invites-$userId')
+        .onPostgresChanges(event:PostgresChangeEvent.insert,schema:'public',table:'cv_call_invites',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'callee_id',value:userId),
+          callback:(payload)=>unawaited(_handleIncomingCall(Map<String,dynamic>.from(payload.newRecord))))
         .subscribe();
       _notificationBadgeChannel = db.channel('cv-shell-notifications-$userId')
         .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'cv_notifications',
@@ -394,35 +396,49 @@ class _MainShellState extends State<MainShell> {
   }
 
 
-  void _handleIncomingCall(Map<String,dynamic> payload){
-    if(_incomingCallDialogOpen)return;
+  Future<void> _handleIncomingCall(Map<String,dynamic> payload) async{
+    if(_incomingCallDialogOpen||(payload['status']??'')!='ringing')return;
     final callerId=(payload['caller_id']??'').toString();
-    final callId=(payload['call_id']??'').toString();
+    final callId=(payload['id']??'').toString();
     final conversationId=(payload['conversation_id']??'').toString();
     final mode=(payload['mode']??'audio').toString();
+    final expiry=DateTime.tryParse((payload['expires_at']??'').toString());
     if(callerId.isEmpty||callerId==db.auth.currentUser?.id||callId.isEmpty||
-       conversationId.isEmpty||!['audio','video'].contains(mode))return;
+       conversationId.isEmpty||!['audio','video'].contains(mode)||
+       (expiry!=null&&expiry.isBefore(DateTime.now())))return;
+    String callerName='CreatorVerse member';
+    try{
+      final profile=await db.from('public_profiles').select('full_name,username')
+        .eq('id',callerId).maybeSingle();
+      callerName=(profile?['full_name']??profile?['username']??callerName).toString();
+    }catch(_){}
+    if(!mounted||_incomingCallDialogOpen)return;
     _incomingCallDialogOpen=true;
-    WidgetsBinding.instance.addPostFrameCallback((_)async{
-      if(!mounted){_incomingCallDialogOpen=false;return;}
-      final callerName=(payload['caller_name']??'CreatorVerse member').toString();
-      final accept=await showDialog<bool>(context:context,barrierDismissible:false,
-        builder:(ctx)=>AlertDialog(backgroundColor:panel,
-          title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
-          content:Text('$callerName is calling you.'),
-          actions:[
-            TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
-              child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
-            FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
-              icon:const Icon(Icons.call),label:const Text('Accept'),
-              style:FilledButton.styleFrom(backgroundColor:emerald))
-          ]));
-      _incomingCallDialogOpen=false;
+    final accept=await showDialog<bool>(context:context,barrierDismissible:false,
+      builder:(ctx)=>AlertDialog(backgroundColor:panel,
+        title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
+        content:Text('$callerName is calling you.'),
+        actions:[
+          TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
+            child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
+          FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
+            icon:const Icon(Icons.call),label:const Text('Accept'),
+            style:FilledButton.styleFrom(backgroundColor:emerald))
+        ]));
+    _incomingCallDialogOpen=false;
+    if(!mounted)return;
+    try{
+      await db.rpc('cv_set_call_invite_status',params:{
+        'p_call_id':callId,'p_status':accept==true?'accepted':'declined'
+      });
       if(accept==true&&mounted){
         await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
-          conversationId:conversationId,callId:callId,peerName:callerName,mode:mode)));
+          conversationId:conversationId,callId:callId,peerName:callerName,mode:mode,isCaller:false)));
       }
-    });
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not answer the call: $e')));
+    }
   }
 
   Future<void> _registerPushNotifications() async {
@@ -551,7 +567,7 @@ class _MainShellState extends State<MainShell> {
     if (n != null) unawaited(n.unsubscribe());
     if (a != null) unawaited(a.unsubscribe());
     if (m != null) unawaited(m.unsubscribe());
-    final incoming=_incomingCallChannel;if(incoming!=null)unawaited(incoming.unsubscribe());
+    final incoming=_callInviteChannel;if(incoming!=null)unawaited(incoming.unsubscribe());
     _authStateSubscription?.cancel();
     _pushTokenSubscription?.cancel();
     _pushOpenSubscription?.cancel();
@@ -2940,34 +2956,21 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         content:Text('This conversation does not have a valid call recipient.')));
       return;
     }
-    final callId=DateTime.now().microsecondsSinceEpoch.toString();
     final mode=video?'video':'audio';
-    final inviteChannel=db.channel('cv-user-calls-$peerId');
-    final ready=Completer<void>();
-    inviteChannel.onBroadcast(event:'incoming_call',callback:(_){});
-    inviteChannel.subscribe((status,[error]){
-      if(status==RealtimeSubscribeStatus.subscribed&&!ready.isCompleted)ready.complete();
-      if((status==RealtimeSubscribeStatus.channelError||status==RealtimeSubscribeStatus.closed)&&!ready.isCompleted){
-        ready.completeError(error??StateError('Could not connect to the call notification channel.'));
-      }
-    });
     try{
-      await ready.future.timeout(const Duration(seconds:8));
-      await inviteChannel.sendBroadcastMessage(event:'incoming_call',payload:{
-        'call_id':callId,'conversation_id':widget.conversationId,
-        'caller_id':db.auth.currentUser!.id,
-        'caller_name':(db.auth.currentUser!.userMetadata?['full_name']??'CreatorVerse member').toString(),
-        'mode':mode
+      final created=await db.rpc('cv_create_call_invite',params:{
+        'p_conversation_id':widget.conversationId,'p_callee_id':peerId,'p_mode':mode
       });
+      final callId=created.toString();
       if(!mounted)return;
       await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
         conversationId:widget.conversationId,callId:callId,
         peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString(),
-        mode:mode)));
+        mode:mode,isCaller:true)));
     }catch(e){
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:Text('Could not start the call: $e')));
-    }finally{await inviteChannel.unsubscribe();}
+    }
   }
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
   Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF${value.replaceFirst('#','')}',radix:16));}catch(_){return fallback;}}
@@ -3671,18 +3674,27 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
 
 class CreatorVerseCallScreen extends StatefulWidget{
   final String conversationId,callId,peerName,mode;
-  const CreatorVerseCallScreen({super.key,required this.conversationId,required this.callId,required this.peerName,required this.mode});
+  final bool isCaller;
+  const CreatorVerseCallScreen({super.key,required this.conversationId,required this.callId,required this.peerName,required this.mode,required this.isCaller});
   @override State<CreatorVerseCallScreen> createState()=>_CreatorVerseCallScreenState();
 }
 class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
   final db=Supabase.instance.client;
   late final Room _room;
   bool _connecting=true,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
-  String? _error;
+  String? _error,_callStatus;
+  RealtimeChannel? _callStatusChannel;
   @override void initState(){
     super.initState();
     _room=Room(roomOptions:const RoomOptions(adaptiveStream:true,dynacast:true));
     _room.addListener(_onRoomChanged);
+    _callStatusChannel=db.channel('cv-call-status-${widget.callId}')
+      .onPostgresChanges(event:PostgresChangeEvent.update,schema:'public',table:'cv_call_invites',
+        filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:widget.callId),
+        callback:(payload){
+          final status=(payload.newRecord['status']??'').toString();
+          if(mounted&&['declined','cancelled','ended','missed'].contains(status))setState(()=>_callStatus=status);
+        }).subscribe();
     _connect();
   }
   void _onRoomChanged(){if(mounted)setState((){});}
@@ -3747,11 +3759,20 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
   Future<void> _endCall() async{
     if(_ending)return;
     _ending=true;
+    try{
+      if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
+        final status=isCaller&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
+        await db.rpc('cv_set_call_invite_status',params:{
+          'p_call_id':widget.callId,'p_status':status
+        });
+      }
+    }catch(_){}
     try{await _room.disconnect();}catch(_){}
     if(mounted)material_widgets_ui.Navigator.pop(context);
   }
   @override void dispose(){
     _room.removeListener(_onRoomChanged);
+    final statusChannel=_callStatusChannel;if(statusChannel!=null)unawaited(statusChannel.unsubscribe());
     unawaited(_room.dispose());
     super.dispose();
   }
@@ -3773,7 +3794,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
               const SizedBox(height:18),
               Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
-              Text(_error??(_connecting?'Connecting securely…':participantCount==0?'Calling… waiting for answer':'Connected'),
+              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'Missed call':_connecting?'Connecting securely…':participantCount==0?'Calling… waiting for answer':'Connected'),
                 style:const TextStyle(color:muted)),
               if(_error!=null)Padding(padding:const EdgeInsets.all(20),child:Text(
                 'Check that LiveKit is configured for CreatorVerse and try again.',
