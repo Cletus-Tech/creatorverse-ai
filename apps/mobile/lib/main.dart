@@ -257,7 +257,7 @@ class _AuthGateState extends State<AuthGate>{
   void _finishRecovery(){if(mounted)setState(()=>_recovering=false);}
   @override Widget build(BuildContext context){
     final auth=Supabase.instance.client.auth;
-    if(_recovering)return PasswordRecoveryScreen(onComplete:_finishRecovery);
+    if(_recovering)return PasswordRecoveryScreen(onComplete:_finishRecovery);\n    if(auth.currentUser?.appMetadata['force_password_change']==true)return PasswordRecoveryScreen(onComplete:(){},isForced:true);
     return StreamBuilder<AuthState>(stream:auth.onAuthStateChange,
       initialData:AuthState(AuthChangeEvent.initialSession,auth.currentSession),
       builder:(context,s)=>s.data?.session==null?const SignInScreen():const MainShell());
@@ -289,8 +289,8 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen>{
   }
   @override Widget build(BuildContext context)=>Scaffold(body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
     const Icon(Icons.lock_reset,color:gold,size:56),const SizedBox(height:20),
-    const Text('Choose a new password',textAlign:TextAlign.center,style:TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
-    const SizedBox(height:12),const Text('Your reset link is verified. Enter a new password below.',textAlign:TextAlign.center,style:TextStyle(color:muted)),
+    const Text(widget.isForced?'Create your private password':'Choose a new password',textAlign:TextAlign.center,style:const TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
+    const SizedBox(height:12),Text(widget.isForced?'Your administrator issued a temporary password. Choose a private password to continue.':'Your reset link is verified. Enter a new password below.',textAlign:TextAlign.center,style:const TextStyle(color:muted)),
     const SizedBox(height:24),
     TextField(controller:_password,obscureText:_obscure,decoration:InputDecoration(labelText:'New password',prefixIcon:const Icon(Icons.lock_outline),suffixIcon:IconButton(onPressed:()=>setState(()=>_obscure=!_obscure),icon:Icon(_obscure?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
     const SizedBox(height:14),TextField(controller:_confirm,obscureText:_obscure,decoration:const InputDecoration(labelText:'Confirm new password',prefixIcon:Icon(Icons.verified_user_outlined))),
