@@ -2164,13 +2164,10 @@ class _CommunityTabState extends State<CommunityTab> {
       }
       final posts = snapshot.data ?? [];
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
-        Row(children: [const Expanded(child: Text('Community', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
-          TextButton.icon(onPressed:createStory,icon:const Icon(Icons.add_circle_outline,color:gold,size:18),label:const Text('Story')),
-          const SizedBox(width:4),
-          FilledButton.icon(onPressed: createPost, icon: const Icon(Icons.add, size: 18), label: const Text('Post'),
-            style: FilledButton.styleFrom(backgroundColor: emerald))]),
-        const SizedBox(height: 6), const Text('Ideas, updates and conversations from CreatorVerse members.', style: TextStyle(color: muted)),
-        const SizedBox(height: 12),
+        const Text('Community', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: -.4)),
+        const SizedBox(height: 3),
+        const Text('Connect, share and learn together.', style: TextStyle(color: muted, fontSize: 12)),
+        const SizedBox(height: 14),
         FutureBuilder<List<Map<String,dynamic>>>(future:stories,builder:(context,storySnap){
           final items=storySnap.data??[];
           return SizedBox(height:104,child:ListView(scrollDirection:Axis.horizontal,children:[
@@ -2185,6 +2182,53 @@ class _CommunityTabState extends State<CommunityTab> {
             ]))),
           ]));
         }),
+        const SizedBox(height: 10),
+        InkWell(
+          onTap: createPost,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            decoration: BoxDecoration(
+              color: panel,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: .07)),
+            ),
+            child: material_widgets_ui.Column(
+              children: [
+                Row(children: [
+                  CircleAvatar(
+                    radius: 19,
+                    backgroundColor: emerald.withValues(alpha: .2),
+                    child: const Icon(Icons.person_outline, color: emerald, size: 21),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .055),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Text("What's on your mind?", style: TextStyle(color: muted, fontSize: 13)),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: Colors.white.withValues(alpha: .08)),
+                const SizedBox(height: 10),
+                Row(children: [
+                  const Icon(Icons.photo_library_outlined, color: emerald, size: 18),
+                  const SizedBox(width: 7),
+                  const Text('Photo / video', style: TextStyle(color: muted, fontSize: 11)),
+                  const Spacer(),
+                  const Icon(Icons.edit_note_outlined, color: gold, size: 19),
+                  const SizedBox(width: 6),
+                  const Text('Create a post', style: TextStyle(color: muted, fontSize: 11)),
+                ]),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 14),
         if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
           Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
