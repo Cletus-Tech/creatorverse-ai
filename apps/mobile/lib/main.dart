@@ -2566,6 +2566,18 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
     final selected=<String,Map<String,dynamic>>{};
     List<Map<String,dynamic>> results=[];
     bool searching=false,creating=false;
+    Future<void> performSearch(StateSetter update) async {
+      final q=sanitizeSearchTerm(searchController.text);
+      if(q.length<2)return;
+      update(()=>searching=true);
+      try{
+        final found=await db.from('public_profiles').select('id,full_name,username,avatar_url')
+          .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id',db.auth.currentUser!.id).limit(20);
+        update(()=>results=List<Map<String,dynamic>>.from(found));
+      }catch(e){
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Member search failed: $e')));
+      }finally{update(()=>searching=false);}
+    }
     await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(ctx,update)=>AlertDialog(
       backgroundColor:panel,
       title:const Text('Create a group'),
@@ -2574,9 +2586,9 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
         const SizedBox(height:12),
         Row(children:[
           Expanded(child:TextField(controller:searchController,decoration:const InputDecoration(labelText:'Find members',hintText:'Name or username'),
-            onSubmitted:(_)=>searchMembers())),
+            onSubmitted:(_)=>performSearch(update))),
           const SizedBox(width:8),
-          IconButton(onPressed:searching?null:searchMembers,icon:const Icon(Icons.search,color:emerald)),
+          IconButton(onPressed:searching?null:()=>performSearch(update),icon:const Icon(Icons.search,color:emerald)),
         ]),
         if(selected.isNotEmpty)...[
           const SizedBox(height:8),
@@ -2618,18 +2630,6 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       ],
     )));
     nameController.dispose();searchController.dispose();
-    Future<void> searchMembers() async {
-      final q=sanitizeSearchTerm(searchController.text);
-      if(q.length<2)return;
-      update(()=>searching=true);
-      try{
-        final found=await db.from('public_profiles').select('id,full_name,username,avatar_url')
-          .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id',db.auth.currentUser!.id).limit(20);
-        update(()=>results=List<Map<String,dynamic>>.from(found));
-      }catch(e){
-        if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Member search failed: $e')));
-      }finally{update(()=>searching=false);}
-    }
   }
   @override
   Widget build(BuildContext context) => Scaffold(
