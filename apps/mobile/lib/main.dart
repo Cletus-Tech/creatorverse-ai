@@ -446,7 +446,11 @@ class _MainShellState extends State<MainShell> {
        (expiry!=null&&expiry.isBefore(DateTime.now()))||
        !_handledIncomingCallIds.add(callId)) { return; }
     _incomingCallDialogOpen=true;
-    try{await _callRingtoneChannel.invokeMethod('start');}catch(_){}
+    try {
+      await _callRingtoneChannel.invokeMethod('start');
+    } catch (error) {
+      debugPrint('CreatorVerse incoming ringtone failed to start: $error');
+    }
     String callerName='CreatorVerse member';
     try{
       final profile=await db.from('public_profiles').select('full_name,username').eq('id',callerId).maybeSingle();
@@ -3726,9 +3730,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             if(body.trim().isNotEmpty)Container(
               constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:2),
-              padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
-              decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
-              child:Text(body,style:const TextStyle(height:1.35))),
+              padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),
+              decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(12)),
+              child:Text(body,style:const TextStyle(height:1.25))),
             Container(constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:3),
               child:MessageAttachmentPreview(path:path,mime:mime,
@@ -3738,15 +3742,15 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }
     return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,
       child:Container(constraints:const BoxConstraints(maxWidth:310),
-        margin:const EdgeInsets.symmetric(vertical:4),
-        padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
-        decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
+        margin:const EdgeInsets.symmetric(vertical:3),
+        padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),
+        decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(12)),
         child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
           if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,
             child:Padding(padding:const EdgeInsets.only(bottom:4),
               child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
           if(body.isNotEmpty&&!isAudio)Align(alignment:Alignment.centerLeft,
-            child:Text(body,style:const TextStyle(height:1.35))),
+            child:Text(body,style:const TextStyle(height:1.25))),
           if(hasAttachment&&isAudio)VoiceMessagePlayer(key:ValueKey(m['id']),path:path),
           const SizedBox(height:4),
           metadata,
