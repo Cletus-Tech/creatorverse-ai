@@ -2782,7 +2782,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
         }
       }catch(_){}
     }
-    final msgRaw = await db.from('cv_direct_messages').select('id,conversation_id,body,sender_id,created_at,read_at,attachment_path,attachment_name,attachment_mime')
+    final msgRaw = await db.from('cv_direct_messages').select('id,conversation_id,body,sender_id,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime')
       .inFilter('conversation_id', ids).order('created_at', ascending: false);
     final groupConversationIds=groupRows.map((g)=>g['id'].toString()).toSet();
     final groupIncomingIds=List<Map<String,dynamic>>.from(msgRaw)
@@ -3508,7 +3508,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Future<void> _loadInitialMessages() async{
     try{
-      final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
+      final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size')
         .eq('conversation_id',widget.conversationId).order('created_at',ascending:true);
       final loaded=List<Map<String,dynamic>>.from(raw);
       unawaited(_loadSenderNames(loaded.map((m)=>m['sender_id'])));
@@ -3706,6 +3706,33 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message not sent: $e')));
     }
   }
+  bool _messageWithinEditWindow(Map<String,dynamic> message){final created=DateTime.tryParse((message['created_at']??'').toString());if(created==null)return false;final age=DateTime.now().toUtc().difference(created.toUtc());return age>=Duration.zero&&age<=const Duration(minutes:5);}
+  Future<void> _handleMessageAction(Map<String,dynamic> message,String action) async{
+    final id=(message['id']??'').toString();
+    if(action=='edit'){
+      final controller=TextEditingController(text:(message['body']??'').toString());
+      final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit message'),content:TextField(controller:controller,minLines:1,maxLines:5,maxLength:4000),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save'))]));
+      if(!mounted){controller.dispose();return;}final body=controller.text.trim();controller.dispose();if(ok!=true||body.isEmpty)return;
+      try{await db.rpc('cv_edit_direct_message',params:{'p_message_id':id,'p_body':body});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be edited: '+e.toString())));}
+    }else if(action=='delete_everyone'){
+      final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Delete for everyone?'),content:const Text('This message will be removed for everyone in this conversation.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete for everyone'))]));if(ok!=true)return;
+      try{await db.rpc('cv_delete_direct_message_everyone',params:{'p_message_id':id});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete for everyone: '+e.toString())));}
+    }else if(action=='delete_me'){
+      try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: '+e.toString())));}
+    }else if(action=='resend'){
+      setState(()=>message['pending']=true);
+      try{final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':db.auth.currentUser!.id,'body':message['body']}).select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();_upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:id);}
+      catch(e){if(mounted)setState(()=>message['pending']=false);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: '+e.toString())));}
+    }
+  }
+  Widget _messageActions(Map<String,dynamic> message){
+    final mine=message['sender_id']==db.auth.currentUser?.id,within=_messageWithinEditWindow(message),deleted=message['deleted_at']!=null;
+    return PopupMenuButton<String>(tooltip:'Message options',onSelected:(action)=>_handleMessageAction(message,action),itemBuilder:(_)=>[
+      if(message['failed']==true)const PopupMenuItem(value:'resend',child:Row(children:[Icon(Icons.refresh,size:18),SizedBox(width:8),Text('Resend message')])),
+      if(mine&&!deleted&&within)const PopupMenuItem(value:'edit',child:Row(children:[Icon(Icons.edit_outlined,size:18),SizedBox(width:8),Text('Edit message')])),
+      if(mine&&!deleted&&within)const PopupMenuItem(value:'delete_everyone',child:Row(children:[Icon(Icons.delete_sweep_outlined,size:18,color:Colors.redAccent),SizedBox(width:8),Text('Delete for everyone')])),
+      const PopupMenuItem(value:'delete_me',child:Row(children:[Icon(Icons.delete_outline,size:18),SizedBox(width:8),Text('Delete for me')]))],child:const Padding(padding:EdgeInsets.only(left:5),child:Icon(Icons.more_horiz,size:16,color:Colors.white60)));
+  }
   Widget _messageBubble(Map<String,dynamic> m){
     final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true;
     final groupReadCount=widget.person['is_group']==true?(_groupReadCounts[m['id'].toString()]??0):0;
@@ -3721,13 +3748,14 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final metadata=Row(mainAxisSize:MainAxisSize.min,children:[
       Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),
         style:const TextStyle(fontSize:9,color:Colors.white60)),
+      if(m['edited_at']!=null)const Padding(padding:EdgeInsets.only(left:4),child:Text('edited',style:TextStyle(fontSize:8,color:Colors.white60))),
       if(mine)...[
         if(widget.person['is_group']==true&&groupReadCount>0)Padding(
           padding:const EdgeInsets.only(right:4),
           child:Text('Seen by $groupReadCount',style:const TextStyle(fontSize:8,color:Colors.white70))),
         const SizedBox(width:5),
-        Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,
-          color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)
+        Icon(m['failed']==true?Icons.error_outline:pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,
+          color:m['failed']==true?Colors.redAccent:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)
       ]
     ]);
     if(standaloneMedia){
@@ -3742,12 +3770,12 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               margin:const EdgeInsets.symmetric(vertical:2),
               padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),
               decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(12)),
-              child:Text(body,style:const TextStyle(height:1.25))),
+              child:Text(m['deleted_at']!=null?'This message was deleted':body,style:TextStyle(height:1.25,fontStyle:m['deleted_at']!=null?FontStyle.italic:FontStyle.normal,color:m['deleted_at']!=null?Colors.white60:null))),
             Container(constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:3),
               child:MessageAttachmentPreview(path:path,mime:mime,
                 name:(m['attachment_name']??'Attachment').toString())),
-            Padding(padding:const EdgeInsets.symmetric(horizontal:4,vertical:2),child:metadata),
+            Padding(padding:const EdgeInsets.symmetric(horizontal:4,vertical:2),child:Row(mainAxisSize:MainAxisSize.min,children:[metadata,_messageActions(m)])),
           ]));
     }
     return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,
@@ -3763,7 +3791,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             child:Text(body,style:const TextStyle(height:1.25))),
           if(hasAttachment&&isAudio)VoiceMessagePlayer(key:ValueKey(m['id']),path:path),
           const SizedBox(height:4),
-          metadata,
+          Row(mainAxisSize:MainAxisSize.min,children:[metadata,_messageActions(m)]),
         ])));
   }
   @override Widget build(BuildContext context)=>Scaffold(
