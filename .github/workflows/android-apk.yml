@@ -493,7 +493,7 @@ jobs:
           gradle = Path('android/app/build.gradle.kts')
           source = gradle.read_text()
           if 'import java.util.Properties' not in source:
-              source = 'import java.util.Properties\\n\\n' + source
+              source = 'import java.util.Properties\n\n' + source
           if 'val keystoreProperties = Properties()' not in source:
               marker = 'android {'
               if marker not in source:
@@ -576,12 +576,12 @@ jobs:
           import re
           from pathlib import Path
           source = Path('pubspec.yaml').read_text()
-          match = re.search(r"^version:\\s*['\\"]?([^'\\"]+)", source, re.MULTILINE)
-          if not match:
+          version_line = next((line for line in source.splitlines() if line.startswith('version:')), None)
+          if version_line is None:
               raise SystemExit('Could not read version from pubspec.yaml')
-          version = match.group(1).strip()
+          version = version_line.split(':', 1)[1].strip().strip("'\\\"")
           with open(__import__('os').environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'version={version}\\n')
+              output.write('version=' + version + '\\n')
           print(f'CreatorVerse release version: {version}')
           PY
       - name: Publish Shorebird OTA patch
