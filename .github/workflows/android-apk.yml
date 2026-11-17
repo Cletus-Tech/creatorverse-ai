@@ -95,6 +95,7 @@ jobs:
           import android.media.Ringtone
           import android.media.RingtoneManager
           import android.os.Build
+          import android.os.Bundle
           import io.flutter.embedding.android.FlutterActivity
           import io.flutter.embedding.engine.FlutterEngine
           import io.flutter.plugin.common.MethodChannel
@@ -384,10 +385,10 @@ jobs:
         run: flutter test
       - name: Build release APK
         working-directory: apps/mobile
-        run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h
+        run: flutter build apk --release --dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h
       - uses: actions/upload-artifact@v4
         with:
           name: creatorverse-android-release
-          path: apps/mobile/build/app/outputs/flutter-apk/app-*-release.apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
