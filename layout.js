@@ -1,10 +1,16 @@
 (function(){
-var brand=document.createElement('link');brand.rel='stylesheet';brand.href='brand-system.css?v=20261113-brand-refresh';document.head.appendChild(brand);var shell=document.createElement('link');shell.rel='stylesheet';shell.href='unified-shell.css?v=20261116-android-header-fit-1';document.head.appendChild(shell);
-var productPolish=document.createElement('link');productPolish.rel='stylesheet';productPolish.href='creatorverse-product-polish.css?v=20261113-2';document.head.appendChild(productPolish);
+function cvEnsureStyle(href){
+ var file=href.split('?')[0].split('/').pop(),links=document.querySelectorAll('link[rel="stylesheet"]');
+ for(var i=0;i<links.length;i++){var current=(links[i].getAttribute('href')||'').split('?')[0].split('/').pop();if(current===file)return;}
+ var link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.appendChild(link);
+}
 var f=location.pathname.split('/').pop()||'index.html',q=location.search;
-var ux=document.createElement('link');ux.rel='stylesheet';ux.href='ux-refinement.css?v=20261109-ui-refresh1';document.head.appendChild(ux);
-var pagePolish=document.createElement('link');pagePolish.rel='stylesheet';pagePolish.href='ux-page-polish.css?v=20261109-page-polish1';document.head.appendChild(pagePolish);var referenceSkin=document.createElement('link');referenceSkin.rel='stylesheet';referenceSkin.href='creatorverse-reference-system.css?v=20261115-compact-glass-panels';document.head.appendChild(referenceSkin);
 if(f==='category.html')f='learn.html';
+cvEnsureStyle('site-shell-base.css?v=20261117-stable-shell-1');
+if(f==='dashboard.html')cvEnsureStyle('dashboard-brand.css?v=20261115-forest-champagne-1');
+if(f==='learn.html')cvEnsureStyle('explore-brand.css?v=20261115-explore-full-1');
+if(f==='divisions.html')cvEnsureStyle('divisions-brand.css?v=20261115-all-spaces-1');
+cvEnsureStyle('site-shell-finish.css?v=20261117-stable-shell-1');
 var fav=document.querySelector('link[rel~="icon"]');if(!fav){fav=document.createElement('link');fav.rel='icon';document.head.appendChild(fav);}fav.type='image/svg+xml';fav.href='assets/creatorverse-brand.svg?v=20261115-connected-world-3d';
 var L=[['Home','index.html'],['Divisions','divisions.html'],['Courses','courses.html'],['Learning Paths','learn.html'],['About','about.html'],['Community','community.html'],['Campus Life','campus.html'],['AI Assistant','ai.html']];
 function active(file){return file===f?' is-active':''}
@@ -79,13 +85,7 @@ if(new URLSearchParams(location.search).get('cv_native')!=='1'){
 }
 var socialLinksScript=document.createElement('script');socialLinksScript.src='social-links.js?v=20261107-1';socialLinksScript.defer=true;document.body.appendChild(socialLinksScript);var helper=document.createElement('script');helper.src='assistant-widget.js?v=20261115-forest-champagne-widget-2';helper.defer=true;document.body.appendChild(helper);var notifications=document.createElement('script');notifications.src='notifications.js?v=20261116-instant-toast-v2';notifications.defer=true;document.body.appendChild(notifications);var globalSearch=document.createElement('script');globalSearch.src='unified-search.js?v=20261113-1';globalSearch.defer=true;document.body.appendChild(globalSearch);
 /* Global appearance: the preference follows the user across every CreatorVerse page. */
-var cvThemeCss=document.createElement('link');cvThemeCss.rel='stylesheet';cvThemeCss.href='global-theme.css?v=20261115-evergreen-gold-1';document.head.appendChild(cvThemeCss);
-if(f==='dashboard.html'){var dashboardBrandCss=document.createElement('link');dashboardBrandCss.rel='stylesheet';dashboardBrandCss.href='dashboard-brand.css?v=20261115-forest-champagne-1';document.head.appendChild(dashboardBrandCss);}
-if(f==='learn.html'||f==='category.html'){var exploreBrandCss=document.createElement('link');exploreBrandCss.rel='stylesheet';exploreBrandCss.href='explore-brand.css?v=20261115-explore-full-1';document.head.appendChild(exploreBrandCss);}
-if(f==='divisions.html'){var divisionsBrandCss=document.createElement('link');divisionsBrandCss.rel='stylesheet';divisionsBrandCss.href='divisions-brand.css?v=20261115-all-spaces-1';document.head.appendChild(divisionsBrandCss);}
- /* One authoritative palette layer, last in the cascade on every route. */
- var cvGlobalBrandCss=document.createElement('link');cvGlobalBrandCss.rel='stylesheet';cvGlobalBrandCss.href='global-brand.css?v=20261115-forest-champagne-global-1';document.head.appendChild(cvGlobalBrandCss);
- var cvTextContrastCss=document.createElement('link');cvTextContrastCss.rel='stylesheet';cvTextContrastCss.href='text-contrast.css?v=20261115-text-contrast-1';document.head.appendChild(cvTextContrastCss);
+/* Shared shell and final brand/contrast styles are loaded from the head when present. */
 (function(){
  var key='cv-home-theme',html=document.documentElement,body=document.body;
  function apply(theme,save){
