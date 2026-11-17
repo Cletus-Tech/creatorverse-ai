@@ -2787,6 +2787,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final ScrollController _chatScrollController=ScrollController();
   final List<Map<String,dynamic>> _rows=[];
   final Map<String,String> _senderNames={};
+  final Map<String,int> _groupReadCounts=<String,int>{};
   RealtimeChannel? _messageChannel;
   bool _initialLoading=true,_sendingAttachment=false,_showJumpToLatest=false;
   String? _loadError;
@@ -2865,6 +2866,13 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           if(wasIncoming)unawaited(_loadSenderNames([row['sender_id']]));
           if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
         })
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'cv_message_receipts',callback:(payload){
+        final row=payload.newRecord;
+        final id=(row['message_id']??'').toString();
+        if(id.isNotEmpty&&_rows.any((m)=>m['id'].toString()==id&&m['sender_id']==db.auth.currentUser?.id)){
+          unawaited(_refreshGroupReadCounts([id]));
+        }
+      })
       .onBroadcast(event:'typing',callback:(payload)=>_receiveTyping(Map<String,dynamic>.from(payload)))
       .onPresenceSync((_)=>_syncPeerPresence())
       .subscribe((status,[error])async{
@@ -2904,6 +2912,24 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       }
     }catch(_){}
     if(mounted&&online!=_otherOnline)setState(()=>_otherOnline=online);
+  }
+  Future<void> _refreshGroupReadCounts(Iterable<String> messageIds) async{
+    if(widget.person['is_group']!=true)return;
+    final ids=messageIds.where((id)=>id.isNotEmpty).toSet().toList();
+    if(ids.isEmpty)return;
+    try{
+      final raw=await db.from('cv_message_receipts').select('message_id,user_id')
+        .inFilter('message_id',ids).not('read_at','is',null);
+      final counts=<String,int>{};
+      for(final receipt in List<Map<String,dynamic>>.from(raw)){
+        final id=receipt['message_id'].toString();
+        counts[id]=(counts[id]??0)+1;
+      }
+      if(!mounted)return;
+      setState((){
+        for(final id in ids){_groupReadCounts[id]=counts[id]??0;}
+      });
+    }catch(_){}
   }
   Future<void> _loadGroupMemberIds() async{
     if(widget.person['is_group']!=true)return;
@@ -3120,6 +3146,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final loaded=List<Map<String,dynamic>>.from(raw);
       unawaited(_loadSenderNames(loaded.map((m)=>m['sender_id'])));
       final me=db.auth.currentUser?.id;
+      if(widget.person['is_group']==true&&me!=null){
+        await _refreshGroupReadCounts(loaded.where((m)=>m['sender_id']==me).map((m)=>m['id'].toString()));
+      }
       if(me!=null&&widget.person['is_group']==true){
         final incomingIds=loaded.where((m)=>m['sender_id']!=me).map((m)=>m['id'].toString()).toList();
         final readIds=<String>{};
@@ -3208,7 +3237,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }
   }
   Widget _messageBubble(Map<String,dynamic> m){
-    final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true,read=m['read_at']!=null;
+    final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true;
+    final groupReadCount=widget.person['is_group']==true?(_groupReadCounts[m['id'].toString()]??0):0;
+    final read=widget.person['is_group']==true?groupReadCount>0:m['read_at']!=null;
     final time=DateTime.tryParse((m['created_at']??'').toString());
     return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,child:Container(
       constraints:const BoxConstraints(maxWidth:310),margin:const EdgeInsets.symmetric(vertical:4),
@@ -3222,7 +3253,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if((m['attachment_path']??'').toString().isNotEmpty)MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
         const SizedBox(height:4),Row(mainAxisSize:MainAxisSize.min,children:[
           Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),style:const TextStyle(fontSize:9,color:Colors.white60)),
-          if(mine)...[const SizedBox(width:5),Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)]
+          if(mine)...[if(widget.person['is_group']==true&&groupReadCount>0)Padding(padding:const EdgeInsets.only(right:4),child:Text('Seen by $groupReadCount',style:const TextStyle(fontSize:8,color:Colors.white70))),const SizedBox(width:5),Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)]
         ])
       ])));
   }
