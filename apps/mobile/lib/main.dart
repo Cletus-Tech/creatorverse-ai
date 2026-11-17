@@ -2902,6 +2902,109 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       });
     }catch(_){}
   }
+  Future<void> _addGroupMembers(Set<String> existingIds) async{
+    final search=TextEditingController();
+    final selected=<String>{};
+    var found=<Map<String,dynamic>>[];
+    var searching=false;
+    var saving=false;
+    var added=0;
+    await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(dialogContext,update)=>AlertDialog(
+      backgroundColor:panel,
+      title:const Text('Add people to group'),
+      content:SizedBox(width:420,height:420,child:Column(children:[
+        Row(children:[
+          Expanded(child:TextField(controller:search,decoration:const InputDecoration(hintText:'Search name or username',prefixIcon:Icon(Icons.search)))),
+          const SizedBox(width:8),
+          IconButton(onPressed:searching?null:()async{
+            final term=sanitizeSearchTerm(search.text);
+            if(term.length<2)return;
+            update(()=>searching=true);
+            try{
+              final raw=await db.from('public_profiles').select('id,full_name,username,avatar_url')
+                .or('full_name.ilike.%$term%,username.ilike.%$term%')
+                .neq('id',db.auth.currentUser!.id).limit(30);
+              update(()=>found=List<Map<String,dynamic>>.from(raw)
+                .where((p)=>!existingIds.contains(p['id'].toString())).toList());
+            }catch(e){
+              if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Member search failed: $e')));
+            }finally{update(()=>searching=false);}
+          },icon:const Icon(Icons.search,color:emerald))
+        ]),
+        const SizedBox(height:10),
+        Expanded(child:searching?const Center(child:CircularProgressIndicator(color:emerald))
+          :found.isEmpty?const Center(child:Text('Search for people to add.',style:TextStyle(color:muted)))
+          :ListView(children:[for(final person in found)
+            CheckboxListTile(
+              value:selected.contains(person['id'].toString()),
+              onChanged:saving?null:(value)=>update((){
+                if(value==true){if(selected.length<50)selected.add(person['id'].toString());}
+                else selected.remove(person['id'].toString());
+              }),
+              title:Text((person['full_name']??person['username']??'CreatorVerse member').toString()),
+              subtitle:Text('@${person['username']??''}'),
+              activeColor:emerald,
+              secondary:CircleAvatar(child:const Icon(Icons.person_outline))
+            )])),
+        Align(alignment:Alignment.centerLeft,child:Text('${selected.length} selected',style:const TextStyle(color:muted,fontSize:12)))
+      ])),
+      actions:[
+        TextButton(onPressed:saving?null:()=>Navigator.pop(dialogContext),child:const Text('Cancel')),
+        FilledButton(onPressed:saving||selected.isEmpty?null:()async{
+          update(()=>saving=true);
+          try{
+            final result=await db.rpc('cv_add_group_members',params:{
+              'p_conversation_id':widget.conversationId,'p_member_ids':selected.toList()
+            });
+            added=(result as num?)?.toInt()??0;
+            if(dialogContext.mounted)Navigator.pop(dialogContext);
+          }catch(e){
+            update(()=>saving=false);
+            if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not add members: $e')));
+          }
+        },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Add selected'))
+      ]
+    )));
+    search.dispose();
+    if(added>0&&mounted){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$added member${added==1?'':'s'} added to the group.')));
+      Navigator.of(context).pop();
+      await _showGroupInfo();
+    }
+  }
+  Future<void> _changeGroupMember(String memberId,String action) async{
+    try{
+      if(action=='remove'){
+        final confirmed=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+          backgroundColor:panel,title:const Text('Remove member?'),
+          content:const Text('This person will no longer be able to read or send messages in this group.'),
+          actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),
+            FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Remove'))]));
+        if(confirmed!=true)return;
+        await db.rpc('cv_remove_group_member',params:{'p_conversation_id':widget.conversationId,'p_member_id':memberId});
+      }else{
+        await db.rpc('cv_update_group_member_role',params:{
+          'p_conversation_id':widget.conversationId,'p_member_id':memberId,'p_new_role':action
+        });
+      }
+      if(!mounted)return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(action=='remove'?'Member removed.':action=='admin'?'Group admin updated.':'Admin role removed.')));
+      Navigator.of(context).pop();
+      await _showGroupInfo();
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Group update failed: $e')));
+    }
+  }
+  Future<void> _leaveGroupAndClose() async{
+    try{
+      await db.rpc('cv_leave_group',params:{'p_conversation_id':widget.conversationId});
+      if(!mounted)return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('You left the group.')));
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not leave group: $e')));
+    }
+  }
   Future<void> _showGroupInfo() async{
     if(widget.person['is_group']!=true)return;
     try{
@@ -2911,22 +3014,46 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final ids=rows.map((m)=>m['user_id'].toString()).toList();
       final profiles=ids.isEmpty?[]:await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
       final people={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
+      final me=db.auth.currentUser?.id??'';
+      final myRole=rows.where((m)=>m['user_id'].toString()==me).map((m)=>(m['member_role']??'member').toString()).firstOrNull??'member';
+      final isAdmin=myRole=='admin';
       if(!mounted)return;
       await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(
         padding:const EdgeInsets.fromLTRB(18,18,18,28),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text((widget.person['full_name']??'Group').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
-          const SizedBox(height:4),Text('${rows.length} members',style:const TextStyle(color:muted)),
+          Row(children:[
+            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text((widget.person['full_name']??'Group').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
+              const SizedBox(height:4),Text('${rows.length} members · ${isAdmin?'Admin':'Member'}',style:const TextStyle(color:muted))
+            ])),
+            if(isAdmin)IconButton(tooltip:'Add members',onPressed:()=>_addGroupMembers(ids.toSet()),icon:const Icon(Icons.person_add_alt_1,color:emerald))
+          ]),
           const Divider(height:24),
           Flexible(child:ListView(shrinkWrap:true,children:[for(final member in rows)
             Builder(builder:(_){
-              final p=people[member['user_id'].toString()]??{};
+              final memberId=member['user_id'].toString();
+              final p=people[memberId]??{};
               final name=(p['full_name']??p['username']??'CreatorVerse member').toString();
               final avatar=(p['avatar_url']??'').toString();
+              final role=(member['member_role']??'member').toString();
               return ListTile(dense:true,leading:CircleAvatar(backgroundImage:avatar.startsWith('https://')?NetworkImage(avatar):null,
                 child:avatar.startsWith('https://')?null:const Icon(Icons.person,color:emerald)),
                 title:Text(name),subtitle:Text('@${p['username']??''}'),
-                trailing:Text((member['member_role']??'member').toString().toUpperCase(),style:const TextStyle(color:gold,fontSize:10,fontWeight:FontWeight.w800)));
+                trailing:memberId==me||!isAdmin?Text(role.toUpperCase(),style:const TextStyle(color:gold,fontSize:10,fontWeight:FontWeight.w800))
+                  :PopupMenuButton<String>(tooltip:'Manage member',onSelected:(value)=>_changeGroupMember(memberId,value),itemBuilder:(_)=>[
+                    if(role!='admin')const PopupMenuItem(value:'admin',child:Text('Make group admin')),
+                    if(role=='admin')const PopupMenuItem(value:'member',child:Text('Remove admin role')),
+                    const PopupMenuItem(value:'remove',child:Text('Remove from group')),
+                  ],child:Row(mainAxisSize:MainAxisSize.min,children:[
+                    Text(role.toUpperCase(),style:const TextStyle(color:gold,fontSize:10,fontWeight:FontWeight.w800)),
+                    const Icon(Icons.more_vert,size:18)
+                  ])));
             })])),
+          const SizedBox(height:12),
+          SizedBox(width:double.infinity,child:OutlinedButton.icon(
+            onPressed:()=>_leaveGroupAndClose(),
+            icon:const Icon(Icons.exit_to_app),label:const Text('Leave group'),
+            style:OutlinedButton.styleFrom(foregroundColor:Colors.redAccent)
+          ))
         ]))));
     }catch(e){
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Group details are unavailable: $e')));
