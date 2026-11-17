@@ -2772,6 +2772,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final db=Supabase.instance.client, input=TextEditingController();
   final ScrollController _chatScrollController=ScrollController();
   final List<Map<String,dynamic>> _rows=[];
+  final Map<String,String> _senderNames={};
   RealtimeChannel? _messageChannel;
   bool _initialLoading=true,_sendingAttachment=false,_showJumpToLatest=false;
   String? _loadError;
@@ -2845,6 +2846,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           final id=(row['id']??'').toString();
           final wasIncoming=row['sender_id']!=db.auth.currentUser?.id;
           _upsertMessage(Map<String,dynamic>.from(row));
+          if(wasIncoming)unawaited(_loadSenderNames([row['sender_id']]));
           if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
         })
       .onBroadcast(event:'typing',callback:(payload)=>_receiveTyping(Map<String,dynamic>.from(payload)))
@@ -2871,6 +2873,51 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }catch(_){}
     if(mounted&&online!=_otherOnline)setState(()=>_otherOnline=online);
   }
+  Future<void> _loadSenderNames(Iterable<dynamic> senderIds) async{
+    if(widget.person['is_group']!=true)return;
+    final ids=senderIds.map((id)=>id.toString()).where((id)=>id.isNotEmpty&&id!=db.auth.currentUser?.id).toSet()
+      .where((id)=>!_senderNames.containsKey(id)).toList();
+    if(ids.isEmpty)return;
+    try{
+      final raw=await db.from('public_profiles').select('id,full_name,username').inFilter('id',ids);
+      if(!mounted)return;
+      setState((){
+        for(final p in List<Map<String,dynamic>>.from(raw)){
+          _senderNames[p['id'].toString()]=(p['full_name']??p['username']??'Member').toString();
+        }
+      });
+    }catch(_){}
+  }
+  Future<void> _showGroupInfo() async{
+    if(widget.person['is_group']!=true)return;
+    try{
+      final members=await db.from('cv_conversation_members').select('user_id,member_role,joined_at')
+        .eq('conversation_id',widget.conversationId).order('joined_at');
+      final rows=List<Map<String,dynamic>>.from(members);
+      final ids=rows.map((m)=>m['user_id'].toString()).toList();
+      final profiles=ids.isEmpty?[]:await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
+      final people={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
+      if(!mounted)return;
+      await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(
+        padding:const EdgeInsets.fromLTRB(18,18,18,28),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((widget.person['full_name']??'Group').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
+          const SizedBox(height:4),Text('${rows.length} members',style:const TextStyle(color:muted)),
+          const Divider(height:24),
+          Flexible(child:ListView(shrinkWrap:true,children:[for(final member in rows)
+            Builder(builder:(_){
+              final p=people[member['user_id'].toString()]??{};
+              final name=(p['full_name']??p['username']??'CreatorVerse member').toString();
+              final avatar=(p['avatar_url']??'').toString();
+              return ListTile(dense:true,leading:CircleAvatar(backgroundImage:avatar.startsWith('https://')?NetworkImage(avatar):null,
+                child:avatar.startsWith('https://')?null:const Icon(Icons.person,color:emerald)),
+                title:Text(name),subtitle:Text('@${p['username']??''}'),
+                trailing:Text((member['member_role']??'member').toString().toUpperCase(),style:const TextStyle(color:gold,fontSize:10,fontWeight:FontWeight.w800)));
+            })])),
+        ]))));
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Group details are unavailable: $e')));
+    }
+  }
   Future<void> _markMessageRead(String id) async{
     final now=DateTime.now().toUtc().toIso8601String();
     try{await db.from('cv_direct_messages').update({'read_at':now}).eq('id',id).eq('conversation_id',widget.conversationId)
@@ -2883,6 +2930,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size')
         .eq('conversation_id',widget.conversationId).order('created_at',ascending:true);
       final loaded=List<Map<String,dynamic>>.from(raw);
+      unawaited(_loadSenderNames(loaded.map((m)=>m['sender_id'])));
       final me=db.auth.currentUser?.id;
       final unread=loaded.where((m)=>m['sender_id']!=me&&m['read_at']==null).map((m)=>m['id'].toString()).toList();
       if(unread.isNotEmpty&&me!=null){final now=DateTime.now().toUtc().toIso8601String();
@@ -2957,6 +3005,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
       decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
       child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
+        if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,child:Padding(
+          padding:const EdgeInsets.only(bottom:4),child:Text(_senderNames[(m['sender_id']??'').toString()]??'Group member',
+            style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
         if((m['body']??'').toString().isNotEmpty)Align(alignment:Alignment.centerLeft,child:Text(m['body'].toString(),style:const TextStyle(height:1.35))),
         if((m['attachment_path']??'').toString().isNotEmpty)MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
         const SizedBox(height:4),Row(mainAxisSize:MainAxisSize.min,children:[
@@ -2973,7 +3024,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       else if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
       else Text(_otherOnline?'online':'offline',style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
     ]),
-      actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
+      actions:[
+        if(widget.person['is_group']==true)IconButton(tooltip:'Group information',onPressed:_showGroupInfo,icon:const Icon(Icons.group_outlined,color:emerald)),
+        IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))
+      ]),
     body:Stack(children:[
       Column(children:[
         Container(
