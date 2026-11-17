@@ -2812,6 +2812,29 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
     body:Stack(children:[
       Column(children:[
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0x1AFFC857),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0x55FFC857)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock_outline, color: gold, size: 17),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'End-to-end encryption is not active yet. Avoid sending passwords or highly sensitive information in this chat.',
+                  style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.35),
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(child:_initialLoading?const Center(child:CircularProgressIndicator(color:emerald)):
           _loadError!=null?Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Text('Could not load this conversation.',style:TextStyle(color:muted)),TextButton(onPressed:(){setState((){_initialLoading=true;_loadError=null;});_loadInitialMessages();},child:const Text('Try again'))])):
           _rows.isEmpty?const Center(child:Text('Say hello to start the conversation.',style:TextStyle(color:muted))):
