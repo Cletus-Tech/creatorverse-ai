@@ -2996,9 +2996,16 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }
   }
   Future<void> _leaveGroupAndClose() async{
+    final confirmed=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      backgroundColor:panel,title:const Text('Leave this group?'),
+      content:const Text('You will stop receiving messages from this group. An admin must add you again if you want to rejoin.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Stay')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Leave group'))]));
+    if(confirmed!=true)return;
     try{
       await db.rpc('cv_leave_group',params:{'p_conversation_id':widget.conversationId});
       if(!mounted)return;
+      Navigator.of(context).pop();
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('You left the group.')));
     }catch(e){
@@ -3015,7 +3022,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final profiles=ids.isEmpty?[]:await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id',ids);
       final people={for(final p in List<Map<String,dynamic>>.from(profiles))p['id'].toString():p};
       final me=db.auth.currentUser?.id??'';
-      final myRole=rows.where((m)=>m['user_id'].toString()==me).map((m)=>(m['member_role']??'member').toString()).firstOrNull??'member';
+      final mine=rows.where((m)=>m['user_id'].toString()==me).toList();
+      final myRole=mine.isEmpty?'member':(mine.first['member_role']??'member').toString();
       final isAdmin=myRole=='admin';
       if(!mounted)return;
       await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(
