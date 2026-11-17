@@ -2254,7 +2254,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ]),
             const SizedBox(height:12),
             if(media.startsWith('https://')&&story['media_type']=='image')
-              ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(media,fit:BoxFit.contain)),
+              ClipRRect(borderRadius:BorderRadius.circular(14),child:CachedNetworkImage(imageUrl:media,fit:BoxFit.contain,memCacheWidth:1200,placeholder:(_,__)=>const SizedBox(height:220,child:Center(child:CircularProgressIndicator(color:emerald))),errorWidget:(_,__,___)=>const Text('Story media could not be loaded'))),
             if(media.startsWith('https://')&&story['media_type']=='video')
               InlineVideoPlayer(url:media),
             if((story['content']??'').toString().isNotEmpty)
