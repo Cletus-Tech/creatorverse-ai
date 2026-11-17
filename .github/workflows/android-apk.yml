@@ -104,7 +104,7 @@ jobs:
           class MainActivity : FlutterActivity() {
               private var incomingCallPlayer: MediaPlayer? = null
               private var callAudioFocusRequest: android.media.AudioFocusRequest? = null
-              private val callAudioFocusListener = AudioManager.OnAudioFocusChangeListener { } = null
+              private val callAudioFocusListener = AudioManager.OnAudioFocusChangeListener { }
           
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
