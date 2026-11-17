@@ -2,7 +2,7 @@
 var C=window.CV_CONFIG||{},pg=document.body.dataset.page,sb=null,
 CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
 PUBLIC_SB=['marketplace','marketplace-item','marketplace-seller'],
-AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin','marketplace-enquiries','academy-apply','academy-status','academy-interview','academy-interviewer','academy-live-room'],
+AUTH=['register','login','forgot','reset','dashboard','courses','course','lesson','admin','quiz','assignment','community','profile','ai','messages','notifications','connect-admin','marketplace-enquiries','academy-apply','academy-status','academy-interview','academy-interviewer','academy-live-room','force-password'],
 base=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''),
 $=function(i){return document.getElementById(i)};
 function msg(t,k){var m=$('msg');if(m){m.className='msg '+(k||'');m.textContent=t}}
@@ -33,11 +33,17 @@ function run(){
    if(oops(r.error))return;if(r.data.user&&r.data.user.identities&&!r.data.user.identities.length){msg('This email is already registered. Try logging in.','err');return}
    msg('Account created. Check your email and click the verification link, then log in.','ok');$('f').reset()})});
  if(pg==='login'){
-  function loginDestination(){var next=new URLSearchParams(location.search).get('next')||'dashboard.html',target,root;try{target=new URL(next,base);root=new URL(base);if(target.origin!==location.origin||target.pathname.indexOf(root.pathname)!==0||!(/\.html$/i).test(target.pathname))throw new Error('Invalid redirect destination')}catch(ignore){target=new URL('dashboard.html',base)}return target.pathname+target.search+target.hash}
+  function loginDestination(session){if(session&&session.user&&session.user.app_metadata&&session.user.app_metadata.force_password_change===true)return 'force-password.html';var next=new URLSearchParams(location.search).get('next')||'dashboard.html',target,root;try{target=new URL(next,base);root=new URL(base);if(target.origin!==location.origin||target.pathname.indexOf(root.pathname)!==0||!(/\.html$/i).test(target.pathname))throw new Error('Invalid redirect destination')}catch(ignore){target=new URL('dashboard.html',base)}return target.pathname+target.search+target.hash}
   var rememberedEmail=localStorage.getItem('cv_last_login_email');if(rememberedEmail&&$('email')&&!$('email').value)$('email').value=rememberedEmail;
-  sb.auth.getSession().then(function(r){if(r.data&&r.data.session)location.replace(loginDestination())});
-  form('f',function(d){return sb.auth.signInWithPassword({email:d.get('email'),password:d.get('password')}).then(function(r){if(!oops(r.error)){localStorage.setItem('cv_last_login_email',String(d.get('email')||''));location.href=loginDestination()}})});
+  sb.auth.getSession().then(function(r){if(r.data&&r.data.session)location.replace(loginDestination(r.data.session))});
+  form('f',function(d){return sb.auth.signInWithPassword({email:d.get('email'),password:d.get('password')}).then(function(r){if(!oops(r.error)){localStorage.setItem('cv_last_login_email',String(d.get('email')||''));location.href=loginDestination(r.data.session)}})});
   document.querySelectorAll('[data-oauth-provider]').forEach(function(button){button.addEventListener('click',function(){var provider=button.getAttribute('data-oauth-provider');button.disabled=true;sb.auth.signInWithOAuth({provider:provider,options:{redirectTo:base+'login.html'}}).then(function(r){if(r.error){oops(r.error);button.disabled=false}}).catch(function(e){oops(e);button.disabled=false})})})
+ }
+ if(pg==='force-password'){
+  var sessionCheck=sb.auth.getSession().then(function(r){if(!r.data.session){location.replace('login.html');return false;}if(!r.data.session.user.app_metadata||r.data.session.user.app_metadata.force_password_change!==true){location.replace('dashboard.html');return false;}return true;});
+  form('f',function(d){var password=String(d.get('password')||''),confirmPassword=String(d.get('confirm_password')||'');if(password.length<8){msg('Use at least 8 characters.','err');return;}if(password!==confirmPassword){msg('The passwords do not match.','err');return;}
+   return sessionCheck.then(function(ok){if(!ok)return;return sb.auth.updateUser({password:password}).then(function(r){if(oops(r.error))return;return sb.functions.invoke('admin-password-resets',{body:{action:'complete'}}).then(function(done){if(done.error)throw done.error;msg('Your new password is saved. Please sign in again.','ok');return sb.auth.signOut().then(function(){setTimeout(function(){location.href='login.html'},900)});});});});
+  });
  }
  if(pg==='forgot')form('f',function(d){return sb.auth.resetPasswordForEmail(d.get('email'),{redirectTo:base+'reset.html'}).then(function(r){if(!oops(r.error))msg('If that email has an account, a reset link is on its way.','ok')})});
  if(pg==='reset'){sb.auth.onAuthStateChange(function(ev){if(ev==='PASSWORD_RECOVERY'){$('f').style.display='block';msg('Enter your new password.','')}});
