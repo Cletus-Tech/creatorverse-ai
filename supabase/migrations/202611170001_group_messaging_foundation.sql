@@ -36,13 +36,13 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-as $
+as $cv$
   select exists (
     select 1 from public.cv_conversation_members m
     where m.conversation_id = p_conversation_id
       and m.user_id = (select auth.uid())
   );
-$;
+$cv$;
 revoke all on function private.cv_is_conversation_member(uuid) from public, anon;
 grant usage on schema private to authenticated;
 grant execute on function private.cv_is_conversation_member(uuid) to authenticated;
@@ -216,7 +216,7 @@ returns uuid
 language plpgsql
 security definer
 set search_path = public, pg_temp
-as $$
+as $cv$
 declare
   v_user uuid := auth.uid();
   v_conversation_id uuid;
@@ -274,7 +274,7 @@ begin
 
   return v_conversation_id;
 end;
-$$;
+$cv$;
 
 revoke all on function public.cv_create_group_conversation(text, uuid[]) from public, anon;
 grant execute on function public.cv_create_group_conversation(text, uuid[]) to authenticated;
