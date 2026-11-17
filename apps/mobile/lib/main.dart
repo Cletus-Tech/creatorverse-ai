@@ -41,14 +41,20 @@ String _mediaMimeFromUrl(String url,{required bool video}) {
 Future<void> _saveRemoteMedia(BuildContext context,String url,String mime,String name) async {
   try {
     await _mediaSaverChannel.invokeMethod<String>('save',{'url':url,'mime':mime,'name':name});
-    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content:Text('Media saved to your device.')));
+    if(context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('Media saved to your device.')));
+    }
   } on PlatformException catch(error) {
-    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content:Text(error.message??'Could not save this media.')));
+    if(context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(error.message??'Could not save this media.')));
+    }
   } catch(error) {
-    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content:Text('Could not save this media: $error')));
+    if(context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not save this media: $error')));
+    }
   }
 }
 
