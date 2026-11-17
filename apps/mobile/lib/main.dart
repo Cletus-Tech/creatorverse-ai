@@ -2468,8 +2468,15 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
   }
   Future<List<Map<String, dynamic>>> loadInbox() async {
     final me = db.auth.currentUser!.id;
-    final directRaw = await db.from('cv_conversations').select('id,user_a,user_b,last_message_at,is_group,group_name,group_avatar_path')
-      .eq('is_group',false).or('user_a.eq.$me,user_b.eq.$me').order('last_message_at', ascending: false);
+    dynamic directRaw;
+    try{
+      directRaw=await db.from('cv_conversations').select('id,user_a,user_b,last_message_at,is_group,group_name,group_avatar_path')
+        .eq('is_group',false).or('user_a.eq.$me,user_b.eq.$me').order('last_message_at',ascending:false);
+    }catch(_){
+      // Backward-compatible fallback while the group migration is not yet applied.
+      directRaw=await db.from('cv_conversations').select('id,user_a,user_b,last_message_at')
+        .or('user_a.eq.$me,user_b.eq.$me').order('last_message_at',ascending:false);
+    }
     final conversations = List<Map<String, dynamic>>.from(directRaw);
     // Group conversations are visible only through the caller's membership rows.
     try {
@@ -2962,7 +2969,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     backgroundColor:_wallpaper,
     appBar:AppBar(title:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
       Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
-      if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
+      if(widget.person['is_group']==true)Text('Group · ${widget.person['member_count']??0} members',style:const TextStyle(fontSize:11,color:muted))
+      else if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
       else Text(_otherOnline?'online':'offline',style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
     ]),
       actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
