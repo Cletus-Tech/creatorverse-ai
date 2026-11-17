@@ -579,9 +579,9 @@ jobs:
           version_line = next((line for line in source.splitlines() if line.startswith('version:')), None)
           if version_line is None:
               raise SystemExit('Could not read version from pubspec.yaml')
-          version = version_line.split(':', 1)[1].strip().strip("'\\\"")
+          version = version_line.split(':', 1)[1].strip().strip("'").strip('"')
           with open(__import__('os').environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('version=' + version + '\\n')
+              output.write('version=' + version + chr(10))
           print(f'CreatorVerse release version: {version}')
           PY
       - name: Publish Shorebird OTA patch
