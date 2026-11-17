@@ -2670,7 +2670,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   Timer? _typingHeartbeatTimer,_typingStopTimer;
-  bool _otherTyping=false;
+  bool _otherTyping=false,_otherOnline=false;
   @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_subscribeToMessages();
     input.addListener(_handleTypingInput);
     _chatScrollController.addListener(_handleScroll);}
@@ -2739,7 +2739,28 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
         })
       .onBroadcast(event:'typing',callback:(payload)=>_receiveTyping(Map<String,dynamic>.from(payload)))
-      .subscribe();
+      .onPresenceSync((_)=>_syncPeerPresence())
+      .subscribe((status,[error])async{
+        if(status==RealtimeSubscribeStatus.subscribed){
+          final userId=db.auth.currentUser?.id;
+          if(userId!=null){try{await _messageChannel?.track({'user_id':userId,'online_at':DateTime.now().toUtc().toIso8601String()});}catch(_){}}
+          _syncPeerPresence();
+        }
+      });
+  }
+  void _syncPeerPresence(){
+    final channel=_messageChannel,peerId=(widget.person['id']??'').toString();
+    if(channel==null||peerId.isEmpty)return;
+    var online=false;
+    try{
+      for(final state in channel.presenceState()){
+        for(final presence in state.presences){
+          if(presence.payload['user_id']?.toString()==peerId){online=true;break;}
+        }
+        if(online)break;
+      }
+    }catch(_){}
+    if(mounted&&online!=_otherOnline)setState(()=>_otherOnline=online);
   }
   Future<void> _markMessageRead(String id) async{
     final now=DateTime.now().toUtc().toIso8601String();
@@ -2840,6 +2861,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     appBar:AppBar(title:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
       Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
       if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
+      else Text(_otherOnline?'online':'offline',style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
     ]),
       actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
     body:Stack(children:[
