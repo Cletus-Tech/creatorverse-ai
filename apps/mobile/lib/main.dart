@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,11 +30,11 @@ const MethodChannel _mediaSaverChannel = MethodChannel('creatorverse/media_saver
 
 String _mediaMimeFromUrl(String url,{required bool video}) {
   final path=(Uri.tryParse(url)?.path??'').toLowerCase();
-  if(path.endsWith('.png'))return 'image/png';
-  if(path.endsWith('.webp'))return 'image/webp';
-  if(path.endsWith('.gif'))return 'image/gif';
-  if(path.endsWith('.webm'))return 'video/webm';
-  if(path.endsWith('.mov'))return 'video/quicktime';
+  if(path.endsWith('.png')) { return 'image/png'; }
+  if(path.endsWith('.webp')) { return 'image/webp'; }
+  if(path.endsWith('.gif')) { return 'image/gif'; }
+  if(path.endsWith('.webm')) { return 'video/webm'; }
+  if(path.endsWith('.mov')) { return 'video/quicktime'; }
   return video?'video/mp4':'image/jpeg';
 }
 
@@ -438,7 +437,7 @@ class _MainShellState extends State<MainShell> {
     if(callerId.isEmpty||callerId==db.auth.currentUser?.id||callId.isEmpty||
        conversationId.isEmpty||!['audio','video'].contains(mode)||
        (expiry!=null&&expiry.isBefore(DateTime.now()))||
-       !_handledIncomingCallIds.add(callId))return;
+       !_handledIncomingCallIds.add(callId)) { return; }
     _incomingCallDialogOpen=true;
     try{await _callRingtoneChannel.invokeMethod('start');}catch(_){}
     String callerName='CreatorVerse member';
@@ -3877,7 +3876,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
               return ListTile(
                 leading:CircleAvatar(backgroundColor:(missed?Colors.redAccent:emerald).withValues(alpha:.14),
                   child:Icon(missed?Icons.call_missed:incoming?Icons.call_received:Icons.call_made,color:missed?Colors.redAccent:emerald)),
-                title:Text(widget.conversationId==null?' ${_label(row,me)} · $peer':_label(row,me),
+                title:Text(widget.conversationId==null?'${_label(row,me)} · $peer':_label(row,me),
                   style:TextStyle(fontWeight:FontWeight.w700,color:missed?Colors.redAccent:null)),
                 subtitle:Text('${row['mode']=='video'?'Video':'Audio'} call · ${incoming?'Incoming':'Outgoing'} · $when',
                   style:const TextStyle(color:muted,fontSize:11)),
