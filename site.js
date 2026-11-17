@@ -25,7 +25,7 @@ var brand={};try{brand=sc.creatorverse_brand?JSON.parse(sc.creatorverse_brand):{
 })();
 if(sc.founder_photo)cfg.founderPhoto=sc.founder_photo;if(sc.intro_video)cfg.introVideo=sc.intro_video;
 if(sc.founder){try{var founderSettings=JSON.parse(sc.founder),founderSocials=founderSettings.socials||{};Object.keys(founderSocials).forEach(function(k){if(typeof founderSocials[k]==='string'&&founderSocials[k].trim())soc[k]=founderSocials[k].trim()})}catch(e){}}
-var hl=document.querySelector('.headline'),hs=document.querySelector('.sub');
+var hl=document.querySelector('.cv-home-copy h1,.headline'),hs=document.querySelector('.cv-home-copy > p,.sub');
 if(hl&&sc.hero_title){var ls=sc.hero_title.split(/\n/).filter(Boolean);hl.textContent='';ls.forEach(function(t,i){if(i===ls.length-1&&ls.length>1){var sp=document.createElement('span');sp.className='accent';sp.textContent=t;hl.appendChild(sp)}else{hl.appendChild(document.createTextNode(t));if(i<ls.length-1)hl.appendChild(document.createElement('br'))}})}
 if(hs&&sc.hero_text)hs.textContent=sc.hero_text;
 if(sc.banner_text){var bn=document.createElement(sc.banner_link&&/^https?:\/\//.test(sc.banner_link)?'a':'div');bn.className='announce';bn.textContent=sc.banner_text;if(bn.tagName==='A'){bn.href=sc.banner_link;bn.target='_blank';bn.rel='noopener'}
