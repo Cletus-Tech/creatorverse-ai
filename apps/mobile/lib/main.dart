@@ -405,7 +405,7 @@ class _MainShellState extends State<MainShell> {
     final expiry=DateTime.tryParse((payload['expires_at']??'').toString());
     if(callerId.isEmpty||callerId==db.auth.currentUser?.id||callId.isEmpty||
        conversationId.isEmpty||!['audio','video'].contains(mode)||
-       (expiry!=null&&expiry.isBefore(DateTime.now())))return;
+       (expiry!=null&&expiry.isBefore(DateTime.now()))){return;}
     _incomingCallDialogOpen=true;
     String callerName='CreatorVerse member';
     try{
