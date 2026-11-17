@@ -17,6 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:livekit_client/livekit_client.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -2857,7 +2858,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   Timer? _typingHeartbeatTimer,_typingStopTimer;
-  bool _otherTyping=false,_otherOnline=false;
+  bool _otherTyping=false,_otherOnline=false,_incomingCallDialogOpen=false;
   final Set<String> _groupMemberIds=<String>{};
   int _onlineGroupCount=0;
   final AudioRecorder _voiceRecorder=AudioRecorder();
@@ -2894,6 +2895,59 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     if(!typing){if(mounted)setState(()=>_otherTyping=false);return;}
     if(mounted)setState(()=>_otherTyping=true);
     _typingStopTimer=Timer(const Duration(milliseconds:2400),(){if(mounted)setState(()=>_otherTyping=false);});
+  }
+  void _receiveCallInvite(Map<String,dynamic> payload){
+    if(widget.person['is_group']==true||_incomingCallDialogOpen)return;
+    final callerId=(payload['caller_id']??'').toString();
+    final me=db.auth.currentUser?.id;
+    final callId=(payload['call_id']??'').toString();
+    final mode=(payload['mode']??'audio').toString();
+    if(callerId.isEmpty||callerId==me||callId.isEmpty||!['audio','video'].contains(mode))return;
+    _incomingCallDialogOpen=true;
+    WidgetsBinding.instance.addPostFrameCallback((_)async{
+      if(!mounted){_incomingCallDialogOpen=false;return;}
+      final accept=await showDialog<bool>(context:context,barrierDismissible:false,
+        builder:(ctx)=>AlertDialog(backgroundColor:panel,
+          title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
+          content:Text('${(payload['caller_name']??'A CreatorVerse member').toString()} is calling you.'),
+          actions:[
+            TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
+              child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
+            FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
+              icon:const Icon(Icons.call),label:const Text('Accept'),
+              style:FilledButton.styleFrom(backgroundColor:emerald))
+          ]));
+      _incomingCallDialogOpen=false;
+      if(accept==true&&mounted){
+        await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+          conversationId:widget.conversationId,callId:callId,peerName:
+            (widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString(),
+          mode:mode)));
+      }else if(mounted){
+        try{await _messageChannel?.sendBroadcastMessage(event:'call_declined',
+          payload:{'call_id':callId,'user_id':me});}catch(_){}
+      }
+    });
+  }
+  Future<void> _startCall({required bool video}) async{
+    if(widget.person['is_group']==true)return;
+    final callId=DateTime.now().microsecondsSinceEpoch.toString();
+    final mode=video?'video':'audio';
+    try{
+      await _messageChannel?.sendBroadcastMessage(event:'call_invite',payload:{
+        'call_id':callId,'caller_id':db.auth.currentUser!.id,
+        'caller_name':(db.auth.currentUser!.userMetadata?['full_name']??'CreatorVerse member').toString(),
+        'mode':mode
+      });
+      if(!mounted)return;
+      await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+        conversationId:widget.conversationId,callId:callId,
+        peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString(),
+        mode:mode)));
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not start the call: $e')));
+    }
   }
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
   Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF${value.replaceFirst('#','')}',radix:16));}catch(_){return fallback;}}
@@ -2943,6 +2997,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         }
       })
       .onBroadcast(event:'typing',callback:(payload)=>_receiveTyping(Map<String,dynamic>.from(payload)))
+      .onBroadcast(event:'call_invite',callback:(payload)=>_receiveCallInvite(Map<String,dynamic>.from(payload)))
       .onPresenceSync((_)=>_syncPeerPresence())
       .subscribe((status,[error])async{
         if(status==RealtimeSubscribeStatus.subscribed){
@@ -3446,6 +3501,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     ]),
       actions:[
         if(widget.person['is_group']==true)IconButton(tooltip:'Group information',onPressed:_showGroupInfo,icon:const Icon(Icons.group_outlined,color:emerald)),
+        if(widget.person['is_group']!=true)IconButton(tooltip:'Audio call',onPressed:()=>_startCall(video:false),icon:const Icon(Icons.call_outlined,color:emerald)),
+        if(widget.person['is_group']!=true)IconButton(tooltip:'Video call',onPressed:()=>_startCall(video:true),icon:const Icon(Icons.videocam_outlined,color:gold)),
         IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))
       ]),
     body:Stack(children:[
@@ -3591,6 +3648,143 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
       })
     ]))
   ]));
+}
+
+class CreatorVerseCallScreen extends StatefulWidget{
+  final String conversationId,callId,peerName,mode;
+  const CreatorVerseCallScreen({super.key,required this.conversationId,required this.callId,required this.peerName,required this.mode});
+  @override State<CreatorVerseCallScreen> createState()=>_CreatorVerseCallScreenState();
+}
+class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
+  final db=Supabase.instance.client;
+  late final Room _room;
+  bool _connecting=true,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
+  String? _error;
+  @override void initState(){
+    super.initState();
+    _room=Room(roomOptions:const RoomOptions(adaptiveStream:true,dynacast:true));
+    _room.addListener(_onRoomChanged);
+    _connect();
+  }
+  void _onRoomChanged(){if(mounted)setState((){});}
+  Future<void> _connect() async{
+    try{
+      final mic=await Permission.microphone.request();
+      if(!mic.isGranted)throw Exception('Microphone permission is required for calls.');
+      if(widget.mode=='video'){
+        final camera=await Permission.camera.request();
+        if(!camera.isGranted)throw Exception('Camera permission is required for video calls.');
+      }
+      final response=await db.functions.invoke('livekit-token',body:{
+        'conversation_id':widget.conversationId,'call_id':widget.callId,'mode':widget.mode
+      });
+      if(response.status<200||response.status>=300)throw Exception('Call server returned status ${response.status}.');
+      final data=Map<String,dynamic>.from(response.data as Map);
+      final url=(data['url']??'').toString(),token=(data['token']??'').toString();
+      if(url.isEmpty||token.isEmpty)throw Exception('Call server did not return connection credentials.');
+      await _room.connect(url,token);
+      await _room.localParticipant?.setMicrophoneEnabled(true);
+      if(widget.mode=='video'){
+        await _room.localParticipant?.setCameraEnabled(true);
+        _cameraEnabled=true;
+      }
+      await AudioManager.instance.setSpeakerOutputPreferred(true);
+      if(mounted)setState(()=>_connecting=false);
+    }catch(e){
+      if(mounted)setState(()=>_error=e.toString());
+    }
+  }
+  Future<void> _toggleMicrophone() async{
+    final next=!_muted;
+    try{await _room.localParticipant?.setMicrophoneEnabled(!next);if(mounted)setState(()=>_muted=next);}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Microphone control failed: $e')));}
+  }
+  Future<void> _toggleCamera() async{
+    final next=!_cameraEnabled;
+    try{await _room.localParticipant?.setCameraEnabled(next);if(mounted)setState(()=>_cameraEnabled=next);}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Camera control failed: $e')));}
+  }
+  Future<void> _toggleSpeaker() async{
+    final next=!_speakerEnabled;
+    try{await AudioManager.instance.setSpeakerOutputPreferred(next);if(mounted)setState(()=>_speakerEnabled=next);}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Audio output could not be changed: $e')));}
+  }
+  VideoTrack? _remoteVideoTrack(){
+    for(final participant in _room.remoteParticipants.values){
+      for(final publication in participant.videoTrackPublications){
+        final track=publication.track;
+        if(publication.subscribed&&!publication.muted&&track is VideoTrack)return track;
+      }
+    }
+    return null;
+  }
+  VideoTrack? _localVideoTrack(){
+    for(final publication in _room.localParticipant?.videoTrackPublications??[]){
+      final track=publication.track;
+      if(!publication.muted&&track is VideoTrack)return track;
+    }
+    return null;
+  }
+  Future<void> _endCall() async{
+    if(_ending)return;
+    _ending=true;
+    try{await _room.disconnect();}catch(_){}
+    if(mounted)material_widgets_ui.Navigator.pop(context);
+  }
+  @override void dispose(){
+    _room.removeListener(_onRoomChanged);
+    unawaited(_room.dispose());
+    super.dispose();
+  }
+  @override Widget build(BuildContext context){
+    final remote=_remoteVideoTrack();
+    final local=_localVideoTrack();
+    final connected=!_connecting&&_error==null;
+    final participantCount=_room.remoteParticipants.length;
+    return Scaffold(
+      backgroundColor:const Color(0xFF06130C),
+      appBar:AppBar(title:Text(widget.mode=='video'?'Video call':'Audio call')),
+      body:SafeArea(child:Stack(children:[
+        Positioned.fill(child:widget.mode=='video'&&remote!=null
+          ?VideoTrackRenderer(remote,fit:VideoViewFit.cover)
+          :Container(color:const Color(0xFF102329),child:Center(child:Column(
+            mainAxisSize:MainAxisSize.min,children:[
+              CircleAvatar(radius:54,backgroundColor:emerald.withValues(alpha:.18),
+                child:const Icon(Icons.person,color:emerald,size:56)),
+              const SizedBox(height:18),
+              Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
+              const SizedBox(height:8),
+              Text(_error??(_connecting?'Connecting securely…':participantCount==0?'Calling… waiting for answer':'Connected'),
+                style:const TextStyle(color:muted)),
+              if(_error!=null)Padding(padding:const EdgeInsets.all(20),child:Text(
+                'Check that LiveKit is configured for CreatorVerse and try again.',
+                textAlign:TextAlign.center,style:const TextStyle(color:muted,fontSize:12))),
+            ])))),
+        if(widget.mode=='video'&&local!=null)Positioned(right:16,top:16,width:112,height:160,
+          child:ClipRRect(borderRadius:BorderRadius.circular(16),
+            child:VideoTrackRenderer(local,fit:VideoViewFit.cover))),
+        if(_connecting)const Positioned(top:18,left:0,right:0,
+          child:Center(child:CircularProgressIndicator(color:emerald))),
+        Positioned(left:0,right:0,bottom:28,child:Row(
+          mainAxisAlignment:MainAxisAlignment.center,children:[
+            _callControl(_muted?Icons.mic_off:Icons.mic,_muted?'Unmute':'Mute',_toggleMicrophone),
+            const SizedBox(width:18),
+            _callControl(_speakerEnabled?Icons.volume_up:Icons.hearing,_speakerEnabled?'Speaker':'Earpiece',_toggleSpeaker),
+            if(widget.mode=='video')...[
+              const SizedBox(width:18),
+              _callControl(_cameraEnabled?Icons.videocam:Icons.videocam_off,'Camera',_toggleCamera),
+            ],
+            const SizedBox(width:18),
+            _callControl(Icons.call_end,'End call',_endCall,color:Colors.redAccent),
+          ])),
+      ])));
+  }
+  Widget _callControl(IconData icon,String label,VoidCallback action,{Color color=panel})=>
+    Column(mainAxisSize:MainAxisSize.min,children:[
+      Material(color:color,shape:const CircleBorder(),child:IconButton(
+        onPressed:action,color:Colors.white,icon:Icon(icon))),
+      const SizedBox(height:5),Text(label,style:const TextStyle(color:Colors.white70,fontSize:10))
+    ]);
 }
 
 class AdminWorkspaceScreen extends StatefulWidget {
