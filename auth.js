@@ -24,7 +24,7 @@ function navState(s){
 }
 function form(id,fn){var f=$(id);if(!f)return;f.addEventListener('submit',function(e){e.preventDefault();var b=f.querySelector('button');b.disabled=true;
  Promise.resolve(fn(new FormData(f))).catch(function(x){msg(x.message||'Something went wrong.','err')}).then(function(){b.disabled=false})})}
-function oops(e,t){if(e){msg(/not confirmed/i.test(e.message)?'Please verify your email first. Check your inbox.':/invalid login/i.test(e.message)?'Wrong email or password.':e.message,'err');return true}}
+function oops(e,t){if(e){msg(/not confirmed/i.test(e.message)?'Please verify your email first. Check your inbox.':/invalid login/i.test(e.message)?'Wrong email or password. If you have forgotten it, use the Forgot password link below.':e.message,'err');return true}}
 function run(){
  sb=window.supabase.createClient(C.supabaseUrl,C.supabaseAnonKey);window.CV_SB=sb;document.dispatchEvent(new Event('cv-ready'));
  sb.auth.getSession().then(function(r){if(r.data.session)navState(r.data.session)});
