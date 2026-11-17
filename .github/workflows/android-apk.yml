@@ -1,9 +1,23 @@
-name: Build CreatorVerse Android APK
+name: CreatorVerse Android — Shorebird OTA and Releases
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: "Choose an OTA patch or a new full Android release"
+        required: true
+        type: choice
+        options:
+          - patch
+          - release
+        default: patch
+      release_version:
+        description: "Optional exact Shorebird release version for a patch (normally leave blank)"
+        required: false
+        type: string
   push:
     branches: [main]
-    paths: ['apps/mobile/**', '.github/workflows/android-apk.yml']
+    paths:
+      - 'apps/mobile/lib/**/*.dart'
 permissions:
   contents: read
 concurrency:
@@ -11,17 +25,35 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-android:
+    if: github.event_name == 'workflow_dispatch' || vars.SHOREBIRD_ENABLED == 'true'
     runs-on: ubuntu-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Shorebird setup
+        working-directory: apps/mobile
+        run: |
+          if [ -z "$SHOREBIRD_TOKEN" ]; then
+            echo "::error::Add the SHOREBIRD_TOKEN repository secret before running Shorebird."
+            exit 1
+          fi
+          if [ ! -f shorebird.yaml ]; then
+            echo "::error::Run 'shorebird init' in apps/mobile and commit shorebird.yaml first."
+            exit 1
+          fi
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.47.9'
           cache: true
       - name: Generate Android platform
         working-directory: apps/mobile
@@ -437,6 +469,64 @@ jobs:
               source = source[:match.start()] + activity + source[match.end():]
               p.write_text(source)
           PY
+      - name: Configure persistent Android release signing
+        working-directory: apps/mobile
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "::error::Set ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD in GitHub Actions secrets before creating the first Shorebird release."
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/creatorverse-upload.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=creatorverse-upload.jks
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle = Path('android/app/build.gradle.kts')
+          source = gradle.read_text()
+          if 'import java.util.Properties' not in source:
+              source = 'import java.util.Properties\\n\\n' + source
+          if 'val keystoreProperties = Properties()' not in source:
+              marker = 'android {'
+              if marker not in source:
+                  raise SystemExit('Could not find android block in app/build.gradle.kts')
+              setup = '''val keystoreProperties = Properties()
+          val keystorePropertiesFile = rootProject.file("key.properties")
+          keystoreProperties.load(keystorePropertiesFile.inputStream())
+
+          '''
+              source = source.replace(marker, setup + marker, 1)
+          if 'create("release")' not in source:
+              marker = '    buildTypes {'
+              if marker not in source:
+                  raise SystemExit('Could not find buildTypes block in app/build.gradle.kts')
+              signing = '''    signingConfigs {
+                  create("release") {
+                      keyAlias = keystoreProperties["keyAlias"] as String
+                      keyPassword = keystoreProperties["keyPassword"] as String
+                      storeFile = file(keystoreProperties["storeFile"] as String)
+                      storePassword = keystoreProperties["storePassword"] as String
+                  }
+              }
+
+          '''
+              source = source.replace(marker, signing + marker, 1)
+          source = source.replace(
+              'signingConfig = signingConfigs.getByName("debug")',
+              'signingConfig = signingConfigs.getByName("release")'
+          )
+          if 'signingConfig = signingConfigs.getByName("release")' not in source:
+              raise SystemExit('Release signing configuration was not applied')
+          gradle.write_text(source)
+          PY
       - name: Install packages
         working-directory: apps/mobile
         run: flutter pub get
@@ -478,12 +568,44 @@ jobs:
       - name: Test
         working-directory: apps/mobile
         run: flutter test
-      - name: Build release APK
+      - name: Read app release version
+        id: app_version
         working-directory: apps/mobile
-        run: flutter build apk --release --dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h
-      - uses: actions/upload-artifact@v4
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          source = Path('pubspec.yaml').read_text()
+          match = re.search(r"^version:\\s*['\\"]?([^'\\"]+)", source, re.MULTILINE)
+          if not match:
+              raise SystemExit('Could not read version from pubspec.yaml')
+          version = match.group(1).strip()
+          with open(__import__('os').environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\\n')
+          print(f'CreatorVerse release version: {version}')
+          PY
+      - name: Publish Shorebird OTA patch
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'patch')
+        uses: shorebirdtech/shorebird-patch@v1
         with:
-          name: creatorverse-android-release
+          platform: android
+          release-version: ${{ inputs.release_version || steps.app_version.outputs.version }}
+          track: stable
+          working-directory: apps/mobile
+          args: '--dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h'
+      - name: Create Shorebird Android release
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release'
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: '3.47.9'
+          platform: android
+          working-directory: apps/mobile
+          args: '--artifact=apk --dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h'
+      - name: Upload Shorebird-enabled APK (first install or native release)
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorverse-android-shorebird-release
           path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
