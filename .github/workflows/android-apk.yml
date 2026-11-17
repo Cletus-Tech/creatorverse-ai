@@ -92,7 +92,8 @@ jobs:
           import android.provider.MediaStore
           import java.net.URL
           import android.media.AudioAttributes
-          import android.media.Ringtone
+          import android.media.AudioManager
+          import android.media.MediaPlayer
           import android.media.RingtoneManager
           import android.os.Build
           import android.os.Bundle
@@ -101,7 +102,9 @@ jobs:
           import io.flutter.plugin.common.MethodChannel
           
           class MainActivity : FlutterActivity() {
-              private var incomingCallRingtone: Ringtone? = null
+              private var incomingCallPlayer: MediaPlayer? = null
+              private var callAudioFocusRequest: android.media.AudioFocusRequest? = null
+              private val callAudioFocusListener = AudioManager.OnAudioFocusChangeListener { } = null
           
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
@@ -126,14 +129,14 @@ jobs:
                           manager.createNotificationChannel(alerts)
                       }
           
-                      if (manager.getNotificationChannel("creatorverse_calls") == null) {
+                      if (manager.getNotificationChannel("creatorverse_calls_v2") == null) {
                           val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
                           val ringtoneAudio = AudioAttributes.Builder()
                               .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                               .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                               .build()
                           val calls = NotificationChannel(
-                              "creatorverse_calls",
+                              "creatorverse_calls_v2",
                               "Incoming calls",
                               NotificationManager.IMPORTANCE_HIGH
                           ).apply {
@@ -156,22 +159,46 @@ jobs:
                       when (call.method) {
                           "start" -> {
                               try {
-                                  if (incomingCallRingtone?.isPlaying != true) {
-                                      val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-                                      incomingCallRingtone = RingtoneManager.getRingtone(applicationContext, uri)
-                                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                          incomingCallRingtone?.isLooping = true
+                                  if (incomingCallPlayer?.isPlaying != true) {
+                                      stopIncomingCallRingtone()
+                                      val uri = RingtoneManager.getActualDefaultRingtoneUri(
+                                          applicationContext, RingtoneManager.TYPE_RINGTONE
+                                      ) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                                        ?: throw IllegalStateException("This phone has no configured ringtone.")
+                                      val audioAttributes = android.media.AudioAttributes.Builder()
+                                          .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                                          .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                          .build()
+                                      val audioManager = getSystemService(AudioManager::class.java)
+                                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                          val focusRequest = android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                                              .setAudioAttributes(audioAttributes)
+                                              .setOnAudioFocusChangeListener(callAudioFocusListener)
+                                              .build()
+                                          callAudioFocusRequest = focusRequest
+                                          audioManager.requestAudioFocus(focusRequest)
+                                      } else {
+                                          @Suppress("DEPRECATION")
+                                          audioManager.requestAudioFocus(callAudioFocusListener, AudioManager.STREAM_RING, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                                       }
-                                      incomingCallRingtone?.play()
+                                      incomingCallPlayer = MediaPlayer().apply {
+                                          setAudioAttributes(audioAttributes)
+                                          setDataSource(applicationContext, uri)
+                                          isLooping = true
+                                          setVolume(1.0f, 1.0f)
+                                          prepare()
+                                          start()
+                                      }
                                   }
                                   result.success(null)
                               } catch (error: Exception) {
+                                  stopIncomingCallRingtone()
                                   result.error("RINGTONE_START_FAILED", error.message, null)
                               }
                           }
                           "stop" -> {
-                              incomingCallRingtone?.stop()
-                              incomingCallRingtone = null
+                              stopIncomingCallRingtone()
                               result.success(null)
                           }
                           else -> result.notImplemented()
@@ -249,9 +276,22 @@ jobs:
                   }
               }
           
+              private fun stopIncomingCallRingtone() {
+                  try { incomingCallPlayer?.stop() } catch (_: Exception) { }
+                  try { incomingCallPlayer?.release() } catch (_: Exception) { }
+                  incomingCallPlayer = null
+                  val audioManager = getSystemService(AudioManager::class.java)
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      callAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                      callAudioFocusRequest = null
+                  } else {
+                      @Suppress("DEPRECATION")
+                      audioManager.abandonAudioFocus(callAudioFocusListener)
+                  }
+              }
+
               override fun onDestroy() {
-                  incomingCallRingtone?.stop()
-                  incomingCallRingtone = null
+                  stopIncomingCallRingtone()
                   super.onDestroy()
               }
           }
