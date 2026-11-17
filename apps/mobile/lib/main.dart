@@ -3317,11 +3317,13 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final seen=DateTime.tryParse((raw??'').toString());
       if(!mounted||_otherOnline)return;
       String label='offline';
-      if(seen!=null){final age=DateTime.now().toUtc().difference(seen.toUtc());
-        if(age.inMinutes<1)label='last seen just now';
-        else if(age.inMinutes<60)label='last seen ${age.inMinutes}m ago';
-        else if(age.inHours<24)label='last seen ${age.inHours}h ago';
-        else label='last seen ${age.inDays}d ago';}
+      if(seen!=null){
+        final age=DateTime.now().toUtc().difference(seen.toUtc());
+        if(age.inMinutes<1){label='last seen just now';}
+        else if(age.inMinutes<60){label='last seen ${age.inMinutes}m ago';}
+        else if(age.inHours<24){label='last seen ${age.inHours}h ago';}
+        else{label='last seen ${age.inDays}d ago';}
+      }
       setState(()=>_otherLastSeen=label);
     }catch(_){}
   }
@@ -3353,7 +3355,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(online)break;
       }
     }catch(_){}
-    if(mounted&&online!=_otherOnline){setState(()=>_otherOnline=online);if(!online)unawaited(_refreshOtherLastSeen());else setState(()=>_otherLastSeen='online');}else if(!online)unawaited(_refreshOtherLastSeen());
+    if(mounted&&online!=_otherOnline){
+      setState(()=>_otherOnline=online);
+      if(!online){unawaited(_refreshOtherLastSeen());}else{setState(()=>_otherLastSeen='online');}
+    }else if(!online){unawaited(_refreshOtherLastSeen());}
   }
   Future<void> _refreshGroupReadCounts(Iterable<String> messageIds) async{
     if(widget.person['is_group']!=true)return;
