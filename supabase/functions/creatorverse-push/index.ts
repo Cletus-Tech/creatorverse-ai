@@ -86,8 +86,11 @@ Deno.serve(async (req: Request) => {
         android: {
           priority: "high",
           notification: {
-            channel_id: notification.type === "incoming_call" ? "creatorverse_calls" : "creatorverse_alerts",
+            channel_id: notification.type === "incoming_call" ? "creatorverse_calls_v2" : "creatorverse_alerts",
             sound: "default",
+            ...(notification.type === "incoming_call"
+              ? { category: "call", visibility: "PUBLIC", default_vibrate_timings: true }
+              : {}),
             ...(notification.type === "incoming_call" && notification.entity_id
               ? { tag: `creatorverse-call-${notification.entity_id}` }
               : {}),
