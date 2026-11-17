@@ -333,15 +333,15 @@ class _MainShellState extends State<MainShell> {
   StreamSubscription<RemoteMessage>? _pushOpenSubscription;
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   final db = Supabase.instance.client;
-  static const labels = ['Home', 'Learn', 'Campus', 'Community', 'Profile'];
+  // The social feed is the signed-in app's primary landing screen.
+  static const labels = ['Community', 'Learn', 'Campus', 'Profile'];
 
   Widget _pageFor(int tab) => switch (tab) {
-    0 => const HomeTab(),
+    0 => const CommunityTab(),
     1 => const LearnTab(),
     2 => const CampusTab(),
-    3 => const CommunityTab(),
-    4 => const ProfileTab(),
-    _ => const HomeTab(),
+    3 => const ProfileTab(),
+    _ => const CommunityTab(),
   };
 
   void _selectTab(int tab) {
@@ -358,7 +358,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _pages = List<Widget?>.filled(labels.length, null);
-    _pages[0] = const HomeTab();
+    _pages[0] = const CommunityTab();
     _refreshBadges();
     _registerPushNotifications();
     _authStateSubscription = db.auth.onAuthStateChange.listen((state) {
@@ -540,10 +540,9 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: _selectTab,
         backgroundColor: panel, indicatorColor: emerald.withValues(alpha: .2),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Community'),
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Learn'),
           NavigationDestination(icon: Icon(Icons.location_city_outlined), selectedIcon: Icon(Icons.location_city), label: 'Campus'),
-          NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Community'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
 }
