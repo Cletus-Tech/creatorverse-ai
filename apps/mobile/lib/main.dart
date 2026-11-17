@@ -447,25 +447,49 @@ class _MainShellState extends State<MainShell> {
     }catch(_){}
     if(!mounted){_incomingCallDialogOpen=false;await _stopIncomingCallRingtone();return;}
     bool? accept;
+    bool callClosedRemotely=false;
+    BuildContext? incomingDialogContext;
+    RealtimeChannel? incomingStatusChannel;
     try{
+      incomingStatusChannel=db.channel('cv-incoming-status-$callId')
+        .onPostgresChanges(event:PostgresChangeEvent.update,schema:'public',table:'cv_call_invites',
+          filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:callId),
+          callback:(change){
+            final status=(change.newRecord['status']??'').toString();
+            if(status!='ringing'&&_incomingCallDialogOpen){
+              callClosedRemotely=true;
+              final dialogContext=incomingDialogContext;
+              if(dialogContext!=null){
+                final navigator=material_widgets_ui.Navigator.of(dialogContext);
+                if(navigator.canPop())navigator.pop(false);
+              }
+            }
+          }).subscribe();
       accept=await showDialog<bool>(context:context,barrierDismissible:false,
-        builder:(ctx)=>AlertDialog(backgroundColor:panel,
-          title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
-          content:Text('$callerName is calling you.'),
-          actions:[
-            TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
-              child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
-            FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
-              icon:const Icon(Icons.call),label:const Text('Accept'),
-              style:FilledButton.styleFrom(backgroundColor:emerald))
-          ]));
+        builder:(ctx){
+          incomingDialogContext=ctx;
+          return AlertDialog(backgroundColor:panel,
+            title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
+            content:Text('$callerName is calling you.'),
+            actions:[
+              TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
+                child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
+              FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
+                icon:const Icon(Icons.call),label:const Text('Accept'),
+                style:FilledButton.styleFrom(backgroundColor:emerald))
+            ]);
+        });
     }finally{
       _incomingCallDialogOpen=false;
       await _stopIncomingCallRingtone();
+      final statusChannel=incomingStatusChannel;
+      if(statusChannel!=null)unawaited(statusChannel.unsubscribe());
     }
-    if(!mounted)return;
+    if(!mounted||callClosedRemotely)return;
     try{
-      await db.rpc('cv_set_call_invite_status',params:{'p_call_id':callId,'p_status':accept==true?'accepted':'declined'});
+      await db.rpc('cv_set_call_invite_status',params:{
+        'p_call_id':callId,'p_status':accept==true?'accepted':'declined'
+      });
       final latest=await db.from('cv_call_invites').select('status').eq('id',callId).single();
       if(accept==true&&latest['status']=='accepted'&&mounted){
         await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
@@ -473,7 +497,8 @@ class _MainShellState extends State<MainShell> {
       }
     }catch(e){
       _handledIncomingCallIds.remove(callId);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not answer the call: $e')));
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not answer the call: $e')));
     }
   }
 
