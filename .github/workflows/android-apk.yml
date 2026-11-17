@@ -84,41 +84,103 @@ jobs:
           main_activity = package_dir / 'MainActivity.kt'
           main_activity.write_text("""package com.cletustech.creatorverse_mobile
 
-          import android.app.NotificationChannel
-          import android.app.NotificationManager
-          import android.media.AudioAttributes
-          import android.media.RingtoneManager
-          import android.os.Build
-          import android.os.Bundle
-          import io.flutter.embedding.android.FlutterActivity
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.media.AudioAttributes
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.os.Build
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
-          class MainActivity : FlutterActivity() {
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      val channelId = "creatorverse_alerts"
-                      val manager = getSystemService(NotificationManager::class.java)
-                      if (manager.getNotificationChannel(channelId) == null) {
-                          val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                          val audio = AudioAttributes.Builder()
-                              .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                              .build()
-                          val channel = NotificationChannel(
-                              channelId,
-                              "CreatorVerse notifications",
-                              NotificationManager.IMPORTANCE_DEFAULT
-                          ).apply {
-                              description = "Messages, updates and activity from CreatorVerse"
-                              enableVibration(true)
-                              setSound(sound, audio)
-                          }
-                          manager.createNotificationChannel(channel)
-                      }
-                  }
-              }
-          }
-          """)
+class MainActivity : FlutterActivity() {
+    private var incomingCallRingtone: Ringtone? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(NotificationManager::class.java)
+
+            if (manager.getNotificationChannel("creatorverse_alerts") == null) {
+                val alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val alertAudio = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                val alerts = NotificationChannel(
+                    "creatorverse_alerts",
+                    "CreatorVerse notifications",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "Messages, updates and activity from CreatorVerse"
+                    enableVibration(true)
+                    setSound(alertSound, alertAudio)
+                }
+                manager.createNotificationChannel(alerts)
+            }
+
+            if (manager.getNotificationChannel("creatorverse_calls") == null) {
+                val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                val ringtoneAudio = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                val calls = NotificationChannel(
+                    "creatorverse_calls",
+                    "Incoming calls",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Incoming CreatorVerse audio and video calls"
+                    enableVibration(true)
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    setSound(ringtoneUri, ringtoneAudio)
+                }
+                manager.createNotificationChannel(calls)
+            }
+        }
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "creatorverse/call_ringtone"
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    try {
+                        if (incomingCallRingtone?.isPlaying != true) {
+                            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                            incomingCallRingtone = RingtoneManager.getRingtone(applicationContext, uri)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                incomingCallRingtone?.isLooping = true
+                            }
+                            incomingCallRingtone?.play()
+                        }
+                        result.success(null)
+                    } catch (error: Exception) {
+                        result.error("RINGTONE_START_FAILED", error.message, null)
+                    }
+                }
+                "stop" -> {
+                    incomingCallRingtone?.stop()
+                    incomingCallRingtone = null
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        incomingCallRingtone?.stop()
+        incomingCallRingtone = null
+        super.onDestroy()
+    }
+}
+""")
           PY
       - name: Work around Android release lint detector crash
         working-directory: apps/mobile
