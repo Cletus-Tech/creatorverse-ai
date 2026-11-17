@@ -73,13 +73,10 @@ Deno.serve(async (request: Request) => {
     });
     if (updateError) return json({ error: updateError.message || "Could not reset the student's password." }, 400);
 
-    const { error: revokeError } = await admin.auth.admin.signOut(userId, "global");
-    if (revokeError) console.error("Could not revoke existing student sessions:", revokeError);
-
     return json({
       ok: true,
       temporary_password: temporaryPassword,
-      message: "A unique temporary password was generated. Share it privately with the student; they must change it at their next sign-in.",
+      message: "A unique temporary password was generated. Share it privately with the student; ask them to sign out, sign back in with it, and choose a new password.",
       force_password_change: true,
     });
   } catch (error) {
