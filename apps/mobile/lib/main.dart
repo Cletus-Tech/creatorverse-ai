@@ -2795,7 +2795,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   Timer? _typingHeartbeatTimer,_typingStopTimer;
   bool _otherTyping=false,_otherOnline=false;
-  @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_subscribeToMessages();
+  final Set<String> _groupMemberIds=<String>{};
+  int _onlineGroupCount=0;
+  @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_loadGroupMemberIds();_subscribeToMessages();
     input.addListener(_handleTypingInput);
     _chatScrollController.addListener(_handleScroll);}
   @override void dispose(){input.removeListener(_handleTypingInput);_typingHeartbeatTimer?.cancel();_typingStopTimer?.cancel();
@@ -2874,8 +2876,24 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       });
   }
   void _syncPeerPresence(){
-    final channel=_messageChannel,peerId=(widget.person['id']??'').toString();
-    if(channel==null||peerId.isEmpty)return;
+    final channel=_messageChannel;
+    if(channel==null)return;
+    if(widget.person['is_group']==true){
+      final online=<String>{};
+      final me=db.auth.currentUser?.id;
+      try{
+        for(final state in channel.presenceState()){
+          for(final presence in state.presences){
+            final id=presence.payload['user_id']?.toString()??'';
+            if(id.isNotEmpty&&id!=me&&_groupMemberIds.contains(id))online.add(id);
+          }
+        }
+      }catch(_){}
+      if(mounted&&online.length!=_onlineGroupCount)setState(()=>_onlineGroupCount=online.length);
+      return;
+    }
+    final peerId=(widget.person['id']??'').toString();
+    if(peerId.isEmpty)return;
     var online=false;
     try{
       for(final state in channel.presenceState()){
@@ -2886,6 +2904,16 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       }
     }catch(_){}
     if(mounted&&online!=_otherOnline)setState(()=>_otherOnline=online);
+  }
+  Future<void> _loadGroupMemberIds() async{
+    if(widget.person['is_group']!=true)return;
+    try{
+      final raw=await db.from('cv_conversation_members').select('user_id').eq('conversation_id',widget.conversationId);
+      _groupMemberIds
+        ..clear()
+        ..addAll(List<Map<String,dynamic>>.from(raw).map((m)=>m['user_id'].toString()));
+      _syncPeerPresence();
+    }catch(_){}
   }
   Future<void> _loadSenderNames(Iterable<dynamic> senderIds) async{
     if(widget.person['is_group']!=true)return;
@@ -3200,7 +3228,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     backgroundColor:_wallpaper,
     appBar:AppBar(title:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
       Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
-      if(widget.person['is_group']==true)Text('Group · ${widget.person['member_count']??0} members',style:const TextStyle(fontSize:11,color:muted))
+      if(widget.person['is_group']==true)Text(_otherTyping?'Someone is typing…':'Group · ${widget.person['member_count']??0} members · $_onlineGroupCount online',style:TextStyle(fontSize:11,color:_otherTyping?emerald:muted,fontWeight:_otherTyping?FontWeight.w600:FontWeight.normal))
       else if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
       else Text(_otherOnline?'online':'offline',style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
     ]),
