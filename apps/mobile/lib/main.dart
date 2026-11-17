@@ -2877,6 +2877,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Messages'), actions: [
+      IconButton(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>const CallHistoryScreen())),tooltip:'Call history',icon:const Icon(Icons.history,color:muted)),
       IconButton(onPressed: startGroupChat, tooltip: 'Create group', icon: const Icon(Icons.group_add_outlined, color: emerald)),
       IconButton(onPressed: startChat, tooltip: 'New message', icon: const Icon(Icons.edit_square, color: gold)),
     ]),
@@ -3635,7 +3636,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(widget.person['is_group']==true)IconButton(tooltip:'Group information',onPressed:_showGroupInfo,icon:const Icon(Icons.group_outlined,color:emerald)),
         if(widget.person['is_group']!=true)IconButton(tooltip:'Audio call',onPressed:()=>_startCall(video:false),icon:const Icon(Icons.call_outlined,color:emerald)),
         if(widget.person['is_group']!=true)IconButton(tooltip:'Video call',onPressed:()=>_startCall(video:true),icon:const Icon(Icons.videocam_outlined,color:gold)),
-        if(widget.person['is_group']!=true)IconButton(tooltip:'Call history',onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CallHistoryScreen(conversationId:widget.conversationId,peerId:(widget.person['id']??'').toString(),peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString()))),icon:const Icon(Icons.history,color:muted)),
+        if(widget.person['is_group']!=true)IconButton(tooltip:'Call history',onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CallHistoryScreen(conversationId:widget.conversationId,peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString()))),icon:const Icon(Icons.history,color:muted)),
         IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))
       ]),
     body:Stack(children:[
@@ -3798,8 +3799,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
 }
 
 class CallHistoryScreen extends StatefulWidget {
-  final String conversationId,peerId,peerName;
-  const CallHistoryScreen({super.key,required this.conversationId,required this.peerId,required this.peerName});
+  final String? conversationId,peerName;
+  const CallHistoryScreen({super.key,this.conversationId,this.peerName});
   @override State<CallHistoryScreen> createState()=>_CallHistoryScreenState();
 }
 class _CallHistoryScreenState extends State<CallHistoryScreen> {
@@ -3807,10 +3808,25 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   late Future<List<Map<String,dynamic>>> calls;
   @override void initState(){super.initState();calls=_load();}
   Future<List<Map<String,dynamic>>> _load() async {
-    final rows=await db.from('cv_call_invites')
-      .select('id,caller_id,callee_id,mode,status,created_at,answered_at,ended_at')
-      .eq('conversation_id',widget.conversationId).order('created_at',ascending:false).limit(100);
-    return List<Map<String,dynamic>>.from(rows);
+    final me=db.auth.currentUser?.id;
+    if(me==null)return [];
+    final raw=widget.conversationId!=null
+      ?await db.from('cv_call_invites').select('id,conversation_id,caller_id,callee_id,mode,status,created_at,answered_at,ended_at')
+        .eq('conversation_id',widget.conversationId!).order('created_at',ascending:false).limit(100)
+      :await db.from('cv_call_invites').select('id,conversation_id,caller_id,callee_id,mode,status,created_at,answered_at,ended_at')
+        .or('caller_id.eq.$me,callee_id.eq.$me').order('created_at',ascending:false).limit(200);
+    final rows=List<Map<String,dynamic>>.from(raw);
+    if(widget.conversationId==null&&rows.isNotEmpty){
+      final others=rows.map((r)=>r['caller_id']==me?r['callee_id'].toString():r['caller_id'].toString()).toSet().toList();
+      final profiles=await db.from('public_profiles').select('id,full_name,username').inFilter('id',others);
+      final names={for(final p in List<Map<String,dynamic>>.from(profiles))
+        p['id'].toString():(p['full_name']??p['username']??'CreatorVerse member').toString()};
+      for(final row in rows){
+        final other=row['caller_id']==me?row['callee_id'].toString():row['caller_id'].toString();
+        row['peer_name']=names[other]??'CreatorVerse member';
+      }
+    }
+    return rows;
   }
   String _label(Map<String,dynamic> row,String me) {
     final status=(row['status']??'').toString(),incoming=row['callee_id']==me;
@@ -3824,14 +3840,17 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   Future<void> _callBack(Map<String,dynamic> row) async {
     final me=db.auth.currentUser?.id;if(me==null)return;
     final recipient=row['caller_id']==me?row['callee_id'].toString():row['caller_id'].toString();
+    final conversationId=(widget.conversationId??row['conversation_id']??'').toString();
+    if(conversationId.isEmpty)return;
+    final peerName=(widget.peerName??row['peer_name']??'CreatorVerse member').toString();
     try{
       final created=await db.rpc('cv_create_call_invite',params:{
-        'p_conversation_id':widget.conversationId,'p_callee_id':recipient,
+        'p_conversation_id':conversationId,'p_callee_id':recipient,
         'p_mode':row['mode']=='video'?'video':'audio'
       });
       if(!mounted)return;
       await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
-        conversationId:widget.conversationId,callId:created.toString(),peerName:widget.peerName,
+        conversationId:conversationId,callId:created.toString(),peerName:peerName,
         mode:row['mode']=='video'?'video':'audio',isCaller:true)));
       if(mounted)setState(()=>calls=_load());
     }catch(e){
@@ -3840,12 +3859,12 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   }
   @override Widget build(BuildContext context) {
     final me=db.auth.currentUser?.id??'';
-    return Scaffold(appBar:AppBar(title:const Text('Call history')),
+    return Scaffold(appBar:AppBar(title:Text(widget.conversationId==null?'Calls':'Call history')),
       body:FutureBuilder<List<Map<String,dynamic>>>(future:calls,builder:(context,snapshot){
         if(snapshot.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
         if(snapshot.hasError)return Center(child:Text('Could not load call history: ${snapshot.error}'));
         final rows=snapshot.data??[];
-        if(rows.isEmpty)return const Center(child:Text('No calls in this conversation yet.',style:TextStyle(color:muted)));
+        if(rows.isEmpty)return const Center(child:Text('No calls yet.',style:TextStyle(color:muted)));
         return RefreshIndicator(onRefresh:()async{setState(()=>calls=_load());await calls;},
           child:ListView.separated(itemCount:rows.length,padding:const EdgeInsets.all(12),
             separatorBuilder:(_,__)=>const Divider(color:Colors.white10),
@@ -3854,11 +3873,14 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
               final incoming=row['callee_id']==me,missed=status=='missed';
               final date=DateTime.tryParse((row['created_at']??'').toString())?.toLocal();
               final when=date==null?'':'${date.day}/${date.month}/${date.year} · ${TimeOfDay.fromDateTime(date).format(context)}';
+              final peer=(row['peer_name']??widget.peerName??'').toString();
               return ListTile(
                 leading:CircleAvatar(backgroundColor:(missed?Colors.redAccent:emerald).withValues(alpha:.14),
                   child:Icon(missed?Icons.call_missed:incoming?Icons.call_received:Icons.call_made,color:missed?Colors.redAccent:emerald)),
-                title:Text(_label(row,me),style:TextStyle(fontWeight:FontWeight.w700,color:missed?Colors.redAccent:null)),
-                subtitle:Text('${row['mode']=='video'?'Video':'Audio'} call · ${incoming?'Incoming':'Outgoing'} · $when',style:const TextStyle(color:muted,fontSize:11)),
+                title:Text(widget.conversationId==null?' ${_label(row,me)} · $peer':_label(row,me),
+                  style:TextStyle(fontWeight:FontWeight.w700,color:missed?Colors.redAccent:null)),
+                subtitle:Text('${row['mode']=='video'?'Video':'Audio'} call · ${incoming?'Incoming':'Outgoing'} · $when',
+                  style:const TextStyle(color:muted,fontSize:11)),
                 trailing:IconButton(tooltip:'Call back',onPressed:()=>_callBack(row),icon:const Icon(Icons.call,color:emerald)),
               );
             }));
