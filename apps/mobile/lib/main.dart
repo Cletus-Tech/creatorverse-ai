@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,6 +15,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:record/record.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -2603,12 +2606,13 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
           .toLowerCase().compareTo((b['full_name']??b['username']??'').toString().toLowerCase()));
       }
     }catch(e){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not load your followed people: $e')));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not load your followed people: $e')));}
     }
+    if(!mounted){nameController.dispose();searchController.dispose();return;}
     Future<void> performSearch(StateSetter update) async {
       final q=sanitizeSearchTerm(searchController.text);
-      if(q.length<2)return;
+      if(q.length<2){return;}
       update(()=>searching=true);
       try{
         final found=await db.from('public_profiles').select('id,full_name,username,avatar_url')
@@ -2701,8 +2705,8 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
             if(mounted)await refreshInbox();
           }catch(e){
             update(()=>creating=false);
-            if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content:Text('Group creation unavailable: $e')));
+            if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content:Text('Group creation unavailable: $e')));}
           }
         },child:creating?const SizedBox(width:18,height:18,
           child:CircularProgressIndicator(strokeWidth:2)):const Text('Create group')),
@@ -2791,7 +2795,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                       final body = (latest?['body'] ?? '').toString();
                       final hasAttachment = (latest?['attachment_path'] ?? '').toString().isNotEmpty;
                       final preview = hasAttachment
-                        ? ((latest?['attachment_mime'] ?? '').toString().startsWith('video/') ? 'Video' : 'Photo')
+                        ? ((latest?['attachment_mime'] ?? '').toString().startsWith('audio/') ? 'Voice message' : ((latest?['attachment_mime'] ?? '').toString().startsWith('video/') ? 'Video' : 'Photo'))
                         : (body.isEmpty ? 'Start a conversation' : body);
                       final prefix = latest != null && latest['sender_id'] == me ? 'You: ' : '';
                       return ListTile(
@@ -2856,11 +2860,18 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   bool _otherTyping=false,_otherOnline=false;
   final Set<String> _groupMemberIds=<String>{};
   int _onlineGroupCount=0;
+  final AudioRecorder _voiceRecorder=AudioRecorder();
+  Timer? _voiceClockTimer;
+  bool _recordingVoice=false,_uploadingVoiceNote=false;
+  String? _activeRecordingPath,_voicePreviewPath;
+  DateTime? _voiceRecordingStartedAt;
+  Duration _voiceRecordingDuration=Duration.zero;
   @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_loadGroupMemberIds();_subscribeToMessages();
     input.addListener(_handleTypingInput);
     _chatScrollController.addListener(_handleScroll);}
   @override void dispose(){input.removeListener(_handleTypingInput);_typingHeartbeatTimer?.cancel();_typingStopTimer?.cancel();
     input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
+    _voiceClockTimer?.cancel();unawaited(_voiceRecorder.dispose());
     final c=_messageChannel;if(c!=null)unawaited(c.unsubscribe());super.dispose();}
   void _handleTypingInput(){
     if(input.text.trim().isEmpty){_typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);return;}
@@ -3282,6 +3293,109 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }catch(e){if(mounted){setState(()=>_rows.removeWhere((m)=>m['id']==localId));ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not send attachment: $e')));}}
     finally{if(mounted)setState(()=>_sendingAttachment=false);}
   }
+  Future<void> _startVoiceRecording() async{
+    if(_recordingVoice||_uploadingVoiceNote||_sendingAttachment)return;
+    try{
+      final allowed=await _voiceRecorder.hasPermission();
+      if(!allowed){
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('Allow microphone access to record a voice note.')));
+        return;
+      }
+      final path='${Directory.systemTemp.path}/creatorverse_voice_${DateTime.now().microsecondsSinceEpoch}.m4a';
+      await _voiceRecorder.start(const RecordConfig(
+        encoder:AudioEncoder.aacLc,bitRate:64000,sampleRate:44100,numChannels:1),path:path);
+      if(!mounted){await _voiceRecorder.cancel();return;}
+      setState((){
+        _recordingVoice=true;_activeRecordingPath=path;
+        _voiceRecordingStartedAt=DateTime.now();_voiceRecordingDuration=Duration.zero;
+        _voicePreviewPath=null;
+      });
+      _voiceClockTimer?.cancel();
+      _voiceClockTimer=Timer.periodic(const Duration(seconds:1),(_){
+        final started=_voiceRecordingStartedAt;
+        if(mounted&&started!=null)setState(()=>_voiceRecordingDuration=DateTime.now().difference(started));
+      });
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not start voice recording: $e')));
+    }
+  }
+  Future<void> _finishVoiceRecording() async{
+    if(!_recordingVoice)return;
+    _voiceClockTimer?.cancel();_voiceClockTimer=null;
+    final started=_voiceRecordingStartedAt;
+    try{
+      final path=await _voiceRecorder.stop();
+      final duration=started==null?Duration.zero:DateTime.now().difference(started);
+      if(!mounted)return;
+      setState((){
+        _recordingVoice=false;_activeRecordingPath=null;
+        _voiceRecordingStartedAt=null;_voiceRecordingDuration=duration;
+        _voicePreviewPath=path;
+      });
+      if(path==null||duration<const Duration(milliseconds:600)){
+        if(path!=null){try{await File(path).delete();}catch(_){}}
+        if(mounted)setState(()=>_voicePreviewPath=null);
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('Record a little longer before sending your voice note.')));
+      }
+    }catch(e){
+      if(mounted)setState(()=>_recordingVoice=false);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not finish voice recording: $e')));
+    }
+  }
+  Future<void> _cancelVoiceRecording() async{
+    _voiceClockTimer?.cancel();_voiceClockTimer=null;
+    final path=_activeRecordingPath;
+    try{await _voiceRecorder.cancel();}catch(_){}
+    if(path!=null){try{await File(path).delete();}catch(_){}}
+    if(mounted)setState((){
+      _recordingVoice=false;_activeRecordingPath=null;
+      _voiceRecordingStartedAt=null;_voiceRecordingDuration=Duration.zero;
+    });
+  }
+  Future<void> _discardVoiceNote() async{
+    final path=_voicePreviewPath;
+    if(path!=null){try{await File(path).delete();}catch(_){}}
+    if(mounted)setState(()=>_voicePreviewPath=null);
+  }
+  Future<void> _sendVoiceNote() async{
+    final localPath=_voicePreviewPath;
+    if(localPath==null||_uploadingVoiceNote||_recordingVoice)return;
+    final localId='local-${DateTime.now().microsecondsSinceEpoch}';
+    final me=db.auth.currentUser!.id;
+    final timestamp=DateTime.now().microsecondsSinceEpoch;
+    final storagePath='${widget.conversationId}/$me/voice_$timestamp.m4a';
+    setState(()=>_uploadingVoiceNote=true);
+    try{
+      final bytes=await File(localPath).readAsBytes();
+      if(bytes.length>20*1024*1024)throw Exception('Voice note is larger than 20 MB.');
+      _upsertMessage({
+        'id':localId,'sender_id':me,'body':'Voice message',
+        'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,
+        'attachment_mime':'audio/mp4','attachment_name':'Voice message.m4a',
+        'attachment_size':bytes.length,'pending':true
+      });
+      await db.storage.from('cv-chat-files').uploadBinary(storagePath,bytes,
+        fileOptions:const FileOptions(contentType:'audio/mp4',upsert:false));
+      final result=await db.from('cv_direct_messages').insert({
+        'conversation_id':widget.conversationId,'sender_id':me,'body':'Voice message',
+        'attachment_path':storagePath,'attachment_name':'Voice message.m4a',
+        'attachment_mime':'audio/mp4','attachment_size':bytes.length
+      }).select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();
+      _upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:localId);
+      try{await File(localPath).delete();}catch(_){}
+      if(mounted)setState(()=>_voicePreviewPath=null);
+    }catch(e){
+      if(mounted){
+        setState(()=>_rows.removeWhere((m)=>m['id']==localId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content:Text('Voice note was not sent: $e')));
+      }
+    }finally{if(mounted)setState(()=>_uploadingVoiceNote=false);}
+  }
   Future<void> send() async{
     final body=input.text.trim();if(body.isEmpty)return;
     _typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);
@@ -3310,8 +3424,12 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,child:Padding(
           padding:const EdgeInsets.only(bottom:4),child:Text(_senderNames[(m['sender_id']??'').toString()]??'Group member',
             style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
-        if((m['body']??'').toString().isNotEmpty)Align(alignment:Alignment.centerLeft,child:Text(m['body'].toString(),style:const TextStyle(height:1.35))),
-        if((m['attachment_path']??'').toString().isNotEmpty)MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
+        if((m['body']??'').toString().isNotEmpty&&!(m['attachment_mime']??'').toString().startsWith('audio/'))Align(alignment:Alignment.centerLeft,child:Text(m['body'].toString(),style:const TextStyle(height:1.35))),
+        if((m['attachment_path']??'').toString().isNotEmpty)
+          if((m['attachment_mime']??'').toString().startsWith('audio/'))
+            VoiceMessagePlayer(key:ValueKey(m['id']),path:m['attachment_path'].toString())
+          else
+            MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
         const SizedBox(height:4),Row(mainAxisSize:MainAxisSize.min,children:[
           Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),style:const TextStyle(fontSize:9,color:Colors.white60)),
           if(mine)...[if(widget.person['is_group']==true&&groupReadCount>0)Padding(padding:const EdgeInsets.only(right:4),child:Text('Seen by $groupReadCount',style:const TextStyle(fontSize:8,color:Colors.white70))),const SizedBox(width:5),Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)]
@@ -3337,12 +3455,36 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           _rows.isEmpty?const Center(child:Text('Say hello to start the conversation.',style:TextStyle(color:muted))):
           ListView.builder(controller:_chatScrollController,padding:const EdgeInsets.all(14),itemCount:_rows.length,
             itemBuilder:(ctx,i)=>_messageBubble(_rows[i]))),
-        SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(8,8,10,10),child:Row(children:[
-          IconButton(tooltip:'Attach photo or video',onPressed:_sendingAttachment?null:attachMedia,icon:_sendingAttachment?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.attach_file,color:gold)),
-          Expanded(child:TextField(controller:input,minLines:1,maxLines:4,textInputAction:TextInputAction.newline,
-            onSubmitted:(_)=>send(),decoration:const InputDecoration(hintText:'Message...'))),
-          const SizedBox(width:6),IconButton(tooltip:'Send message',onPressed:send,icon:const Icon(Icons.send,color:emerald)),
-        ])))
+        SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(8,8,10,10),child:
+          _recordingVoice
+            ?Row(children:[
+              const Icon(Icons.fiber_manual_record,color:Colors.redAccent,size:14),
+              const SizedBox(width:8),
+              Expanded(child:Text('Recording voice note · ${_voiceRecordingDuration.inMinutes.toString().padLeft(2,'0')}:${(_voiceRecordingDuration.inSeconds%60).toString().padLeft(2,'0')}',
+                style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w600))),
+              IconButton(tooltip:'Cancel recording',onPressed:_cancelVoiceRecording,
+                icon:const Icon(Icons.delete_outline,color:Colors.redAccent)),
+              IconButton(tooltip:'Stop and preview',onPressed:_finishVoiceRecording,
+                icon:const Icon(Icons.stop_circle,color:emerald,size:30)),
+            ])
+            :_voicePreviewPath!=null
+              ?Row(children:[
+                Expanded(child:VoiceMessagePlayer(path:_voicePreviewPath!,local:true)),
+                IconButton(tooltip:'Discard voice note',onPressed:_uploadingVoiceNote?null:_discardVoiceNote,
+                  icon:const Icon(Icons.delete_outline,color:Colors.redAccent)),
+                IconButton(tooltip:'Send voice note',onPressed:_uploadingVoiceNote?null:_sendVoiceNote,
+                  icon:_uploadingVoiceNote?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.send,color:emerald)),
+              ])
+              :Row(children:[
+                IconButton(tooltip:'Attach photo or video',onPressed:_sendingAttachment?null:attachMedia,
+                  icon:_sendingAttachment?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.attach_file,color:gold)),
+                Expanded(child:TextField(controller:input,minLines:1,maxLines:4,textInputAction:TextInputAction.newline,
+                  onSubmitted:(_)=>send(),decoration:const InputDecoration(hintText:'Message...'))),
+                const SizedBox(width:2),
+                IconButton(tooltip:'Record voice note',onPressed:_startVoiceRecording,
+                  icon:const Icon(Icons.mic_none,color:gold)),
+                IconButton(tooltip:'Send message',onPressed:send,icon:const Icon(Icons.send,color:emerald)),
+              ])))
       ]),
       if(_showJumpToLatest)Positioned(right:16,bottom:82,child:FloatingActionButton.small(heroTag:'chat-latest',backgroundColor:panel,onPressed:()=>_scrollToLatest(force:true),child:const Icon(Icons.keyboard_arrow_down,color:gold)))
     ]));
@@ -3380,6 +3522,75 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
     return TextButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.download_outlined), label: Text(widget.name, overflow: TextOverflow.ellipsis));
   });
+}
+
+class VoiceMessagePlayer extends StatefulWidget {
+  final String path;
+  final bool local;
+  const VoiceMessagePlayer({super.key,required this.path,this.local=false});
+  @override State<VoiceMessagePlayer> createState()=>_VoiceMessagePlayerState();
+}
+class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
+  late final AudioPlayer _player;
+  bool _ready=false,_failed=false;
+  @override void initState(){super.initState();_player=AudioPlayer();_load();}
+  Future<void> _load() async{
+    try{
+      if(widget.local){
+        await _player.setFilePath(widget.path);
+      }else{
+        final url=await Supabase.instance.client.storage.from('cv-chat-files')
+          .createSignedUrl(widget.path,3600);
+        await _player.setUrl(url);
+      }
+      if(mounted)setState(()=>_ready=true);
+    }catch(_){if(mounted)setState(()=>_failed=true);}
+  }
+  @override void didUpdateWidget(covariant VoiceMessagePlayer oldWidget){
+    super.didUpdateWidget(oldWidget);
+    if(oldWidget.path!=widget.path||oldWidget.local!=widget.local){
+      _ready=false;_failed=false;_player.stop();_load();
+    }
+  }
+  String _clock(Duration value)=>'${value.inMinutes.toString().padLeft(2,'0')}:${(value.inSeconds%60).toString().padLeft(2,'0')}';
+  @override void dispose(){unawaited(_player.dispose());super.dispose();}
+  @override Widget build(BuildContext context)=>SizedBox(width:250,child:Row(children:[
+    if(!_ready)
+      SizedBox(width:38,height:38,child:Center(child:_failed
+        ?const Icon(Icons.error_outline,color:Colors.redAccent,size:20)
+        :const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2,color:emerald))))
+    else
+      StreamBuilder<PlayerState>(stream:_player.playerStateStream,builder:(context,snapshot){
+        final playing=snapshot.data?.playing??false;
+        final completed=snapshot.data?.processingState==ProcessingState.completed;
+        return IconButton(padding:EdgeInsets.zero,constraints:const BoxConstraints.tightFor(width:38,height:38),
+          onPressed:()async{
+            if(completed){await _player.seek(Duration.zero);await _player.play();}
+            else if(playing){await _player.pause();}
+            else{await _player.play();}
+          },icon:Icon(playing?Icons.pause_circle_filled:Icons.play_circle_fill,
+            color:Colors.white,size:31));
+      }),
+    const SizedBox(width:6),
+    Expanded(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      StreamBuilder<Duration?>(stream:_player.durationStream,builder:(context,durationSnap){
+        final duration=durationSnap.data??Duration.zero;
+        return StreamBuilder<Duration>(stream:_player.positionStream,builder:(context,positionSnap){
+          final position=positionSnap.data??Duration.zero;
+          final maxMs=duration.inMilliseconds.clamp(1,1<<30).toDouble();
+          final current=position.inMilliseconds.clamp(0,duration.inMilliseconds>0?duration.inMilliseconds:0).toDouble();
+          return Column(children:[
+            Slider(value:current,min:0,max:maxMs,onChanged:!_ready?null:(value)=>_player.seek(Duration(milliseconds:value.round())),
+              activeColor:gold,inactiveColor:Colors.white24),
+            Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
+              Text(_clock(position),style:const TextStyle(fontSize:9,color:Colors.white70)),
+              Text(_clock(duration),style:const TextStyle(fontSize:9,color:Colors.white70)),
+            ])
+          ]);
+        });
+      })
+    ]))
+  ]));
 }
 
 class AdminWorkspaceScreen extends StatefulWidget {
