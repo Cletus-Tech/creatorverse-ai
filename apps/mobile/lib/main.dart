@@ -27,6 +27,21 @@ const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https:
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
 const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18A878), gold = Color(0xFFE6BC55), muted = Color(0xFF9BAEAA);
 const MethodChannel _callRingtoneChannel = MethodChannel('creatorverse/call_ringtone');
+const MethodChannel _mediaSaverChannel = MethodChannel('creatorverse/media_saver');
+
+Future<void> _saveRemoteMedia(BuildContext context,String url,String mime,String name) async {
+  try {
+    await _mediaSaverChannel.invokeMethod<String>('save',{'url':url,'mime':mime,'name':name});
+    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content:Text('Media saved to your device.')));
+  } on PlatformException catch(error) {
+    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content:Text(error.message??'Could not save this media.')));
+  } catch(error) {
+    if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content:Text('Could not save this media: $error')));
+  }
+}
 
 List<String> parseSkillsInput(String input) => input.split(',')
   .map((value) => value.trim()).where((value) => value.isNotEmpty).toList();
@@ -2415,6 +2430,41 @@ class _InlineVideoPlayerState extends State<InlineVideoPlayer> {
     },
   );
 }
+class CommunityMediaViewer extends StatelessWidget {
+  final Map<String,dynamic> post;
+  final VoidCallback onComments;
+  const CommunityMediaViewer({super.key,required this.post,required this.onComments});
+  @override Widget build(BuildContext context){
+    final url=(post['image_url']??'').toString();
+    final video=post['media_type']=='video';
+    return Scaffold(backgroundColor:Colors.black,
+      appBar:AppBar(backgroundColor:Colors.black,title:Text((post['title']??'Post media').toString(),
+        maxLines:1,overflow:TextOverflow.ellipsis),
+        actions:[IconButton(tooltip:'Save media',onPressed:()=>_saveRemoteMedia(context,url,
+          video?'video/mp4':'image/jpeg','creatorverse-${post['id']??'community-media'}'),
+          icon:const Icon(Icons.download_rounded))]),
+      body:Column(children:[
+        Expanded(child:Center(child:video
+          ?ConstrainedBox(constraints:const BoxConstraints(maxHeight:520),child:InlineVideoPlayer(url:url))
+          :InteractiveViewer(minScale:.6,maxScale:5,child:Image.network(url,fit:BoxFit.contain,
+            errorBuilder:(_,__,___)=>const Text('Media could not be loaded',style:TextStyle(color:Colors.white70)))))),
+        Container(width:double.infinity,color:const Color(0xFF101719),padding:const EdgeInsets.fromLTRB(16,12,16,18),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text((post['title']??'').toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:17)),
+            if((post['description']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:6),
+              child:Text((post['description']??'').toString(),style:const TextStyle(color:Colors.white70,height:1.4))),
+            const SizedBox(height:10),
+            Row(children:[
+              Text('${post['like_count']??0} likes',style:const TextStyle(color:muted)),
+              const Spacer(),
+              TextButton.icon(onPressed:onComments,icon:const Icon(Icons.mode_comment_outlined),
+                label:Text('${post['comment_count']??0} comments')),
+            ])
+          ]))
+      ]));
+  }
+}
+
 class CommunityPostCard extends StatelessWidget {
   final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport;
   const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport});
@@ -2441,9 +2491,23 @@ class CommunityPostCard extends StatelessWidget {
         ])),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text((post['title'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         Padding(padding: const EdgeInsets.fromLTRB(14, 7, 14, 12), child: Text((post['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.45))),
-        if (image.startsWith('https://') && post['media_type']=='video') InlineVideoPlayer(url:image)
-        else if (image.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(image, width: double.infinity, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+        if(image.startsWith('https://'))Padding(padding:const EdgeInsets.symmetric(horizontal:8),child:Stack(
+          alignment:Alignment.topRight,children:[
+            GestureDetector(onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CommunityMediaViewer(
+              post:post,onComments:onComments))),
+              child:post['media_type']=='video'
+                ?InlineVideoPlayer(url:image)
+                :ClipRRect(borderRadius:BorderRadius.circular(8),child:Image.network(image,width:double.infinity,
+                  fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()))),
+            IconButton.filled(onPressed:()=>_saveRemoteMedia(context,image,
+              post['media_type']=='video'?'video/mp4':'image/jpeg',
+              'creatorverse-${post['id']??'community-media'}'),
+              icon:const Icon(Icons.download_rounded),tooltip:'Save media',
+              style:IconButton.styleFrom(backgroundColor:Colors.black87)),
+            Positioned(right:8,bottom:8,child:Container(padding:const EdgeInsets.all(7),
+              decoration:BoxDecoration(color:Colors.black54,borderRadius:BorderRadius.circular(20)),
+              child:const Icon(Icons.open_in_full,color:Colors.white,size:16))),
+          ])),
         Padding(padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), child: Row(children: [
           Text('${post['like_count'] ?? 0} likes', style: const TextStyle(color: muted, fontSize: 11)),
           const Spacer(), Text('${post['comment_count'] ?? 0} comments', style: const TextStyle(color: muted, fontSize: 11))])),
@@ -3631,10 +3695,24 @@ class _MessageAttachmentPreviewState extends State<MessageAttachmentPreview> {
       return const Text('Attachment unavailable', style: TextStyle(color: muted, fontSize: 11));
     }
     final url = snapshot.data!;
-    if (widget.mime.startsWith('video/')) { return SizedBox(width: 245, child: InlineVideoPlayer(url: url)); }
-    if (widget.mime.startsWith('image/')) { return ClipRRect(borderRadius: BorderRadius.circular(9),
-      child: Image.network(url, width: 245, fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Text('Image unavailable', style: TextStyle(color: muted)))); }
+    if (widget.mime.startsWith('video/')) {
+      return SizedBox(width:245,child:Stack(alignment:Alignment.topRight,children:[
+        InlineVideoPlayer(url:url),
+        IconButton.filled(onPressed:()=>_saveRemoteMedia(context,url,widget.mime,widget.name),
+          icon:const Icon(Icons.download_rounded),tooltip:'Save video',style:IconButton.styleFrom(backgroundColor:Colors.black87)),
+      ]));
+    }
+    if (widget.mime.startsWith('image/')) {
+      return SizedBox(width:245,child:Stack(alignment:Alignment.topRight,children:[
+        GestureDetector(onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>Scaffold(
+          backgroundColor:Colors.black,appBar:AppBar(backgroundColor:Colors.black),body:Center(child:InteractiveViewer(
+            minScale:.7,maxScale:4,child:Image.network(url,fit:BoxFit.contain)))))),
+          child:ClipRRect(borderRadius:BorderRadius.circular(9),child:Image.network(url,width:245,fit:BoxFit.cover,
+            errorBuilder:(_,__,___)=>const Text('Image unavailable',style:TextStyle(color:muted))))),
+        IconButton.filled(onPressed:()=>_saveRemoteMedia(context,url,widget.mime,widget.name),
+          icon:const Icon(Icons.download_rounded),tooltip:'Save image',style:IconButton.styleFrom(backgroundColor:Colors.black87)),
+      ]));
+    }
     return TextButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.download_outlined), label: Text(widget.name, overflow: TextOverflow.ellipsis));
   });
