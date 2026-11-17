@@ -2328,14 +2328,14 @@ class _CommunityTabState extends State<CommunityTab> {
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit your post'),content:SizedBox(width:420,child:TextField(controller:controller,minLines:3,maxLines:7,maxLength:3000,decoration:const InputDecoration(hintText:"What's on your mind?"))),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save changes'))]));
     if(!mounted){controller.dispose();return;}final body=controller.text.trim();controller.dispose();if(ok!=true)return;
     if(body.isEmpty&&(post['image_url']??'').toString().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('A post needs text or media.')));return;}
-    try{final title=body.isEmpty?(post['media_type']=='video'?'Shared a video':'Shared a photo'):(body.length>80?body.substring(0,77)+'...':body);
+    try{final title=body.isEmpty?(post['media_type']=='video'?'Shared a video':'Shared a photo'):(body.length>80?'${body.substring(0,77)}...':body);
       await db.from('community_posts').update({'title':title,'description':body,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',post['id']).eq('user_id',db.auth.currentUser!.id);await refresh();
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not edit post: '+e.toString())));}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not edit post: $e')));}
   }
   Future<void> deletePost(Map<String,dynamic> post) async {
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Delete this post?'),content:const Text('This will remove your post and its comments from the community. This cannot be undone.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));
     if(ok!=true)return;try{await db.from('community_posts').delete().eq('id',post['id']).eq('user_id',db.auth.currentUser!.id);await refresh();}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete post: '+e.toString())));}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete post: $e')));}
   }
   Future<void> toggleLike(Map<String, dynamic> post) async {
     final me = db.auth.currentUser!.id, id = post['id'].toString();
@@ -2596,7 +2596,7 @@ class CommunityPostCard extends StatelessWidget {
               if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
             Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
           Text(_timeAgo(post['created_at']?.toString()), style: const TextStyle(color: muted, fontSize: 10)),
-          PopupMenuButton<String>(onSelected:(value){if(value=='report')onReport();else if(value=='edit')onEdit();else if(value=='delete')onDelete();},itemBuilder:(_)=>[
+          PopupMenuButton<String>(onSelected:(value){if(value=='report'){onReport();}else if(value=='edit'){onEdit();}else if(value=='delete'){onDelete();}},itemBuilder:(_)=>[
             if(isMine)const PopupMenuItem(value:'edit',child:Row(children:[Icon(Icons.edit_outlined,size:18),SizedBox(width:8),Text('Edit post')])),
             if(isMine)const PopupMenuItem(value:'delete',child:Row(children:[Icon(Icons.delete_outline,size:18,color:Colors.redAccent),SizedBox(width:8),Text('Delete post')])),
             if(!isMine)const PopupMenuItem(value:'report',child:Row(children:[Icon(Icons.flag_outlined,size:18),SizedBox(width:8),Text('Report post')]))]),
@@ -3713,16 +3713,16 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final controller=TextEditingController(text:(message['body']??'').toString());
       final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Edit message'),content:TextField(controller:controller,minLines:1,maxLines:5,maxLength:4000),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Save'))]));
       if(!mounted){controller.dispose();return;}final body=controller.text.trim();controller.dispose();if(ok!=true||body.isEmpty)return;
-      try{await db.rpc('cv_edit_direct_message',params:{'p_message_id':id,'p_body':body});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be edited: '+e.toString())));}
+      try{await db.rpc('cv_edit_direct_message',params:{'p_message_id':id,'p_body':body});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be edited: $e')));}
     }else if(action=='delete_everyone'){
       final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Delete for everyone?'),content:const Text('This message will be removed for everyone in this conversation.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete for everyone'))]));if(ok!=true)return;
-      try{await db.rpc('cv_delete_direct_message_everyone',params:{'p_message_id':id});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete for everyone: '+e.toString())));}
+      try{await db.rpc('cv_delete_direct_message_everyone',params:{'p_message_id':id});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete for everyone: $e')));}
     }else if(action=='delete_me'){
-      try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: '+e.toString())));}
+      try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: $e')));}
     }else if(action=='resend'){
       setState((){message['pending']=true;message['failed']=false;});
       try{final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':db.auth.currentUser!.id,'body':message['body']}).select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();_upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:id);}
-      catch(e){if(mounted)setState((){message['pending']=false;message['failed']=true;});if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: '+e.toString())));}
+      catch(e){if(mounted)setState((){message['pending']=false;message['failed']=true;});if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: $e')));}
     }
   }
   Widget _messageActions(Map<String,dynamic> message){
