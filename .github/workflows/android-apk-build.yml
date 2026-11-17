@@ -89,6 +89,117 @@ jobs:
         working-directory: apps/mobile
         run: flutter pub get
 
+      - name: Restore CreatorVerse launcher icon and native call tones
+        working-directory: apps/mobile
+        run: |
+          python3 -m pip install --quiet --break-system-packages cairosvg
+          python3 - <<'PY'
+          import cairosvg
+          cairosvg.svg2png(
+              url='assets/creatorverse-brand.svg',
+              write_to='assets/creatorverse-icon.png',
+              output_width=1024,
+              output_height=1024,
+          )
+          PY
+          dart run flutter_launcher_icons
+
+          mkdir -p android/app/src/main/kotlin/com/cletustech/creatorverse_mobile
+          cat > android/app/src/main/kotlin/com/cletustech/creatorverse_mobile/MainActivity.kt <<'KOTLIN'
+          package com.cletustech.creatorverse_mobile
+
+          import android.media.AudioManager
+          import android.media.Ringtone
+          import android.media.RingtoneManager
+          import android.media.ToneGenerator
+          import android.os.Build
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+
+          class MainActivity : FlutterActivity() {
+              private val channelName = "creatorverse/call_ringtone"
+              private var incomingRingtone: Ringtone? = null
+              private var fallbackTone: ToneGenerator? = null
+              private var outgoingRingback: ToneGenerator? = null
+
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+                      .setMethodCallHandler { call, result ->
+                          when (call.method) {
+                              "start" -> {
+                                  stopOutgoingRingback()
+                                  startIncomingRingtone()
+                                  result.success(null)
+                              }
+                              "stop" -> {
+                                  stopIncomingRingtone()
+                                  result.success(null)
+                              }
+                              "start_outgoing" -> {
+                                  stopIncomingRingtone()
+                                  startOutgoingRingback()
+                                  result.success(null)
+                              }
+                              "stop_outgoing" -> {
+                                  stopOutgoingRingback()
+                                  result.success(null)
+                              }
+                              else -> result.notImplemented()
+                          }
+                      }
+              }
+
+              private fun startIncomingRingtone() {
+                  if (incomingRingtone?.isPlaying == true) return
+                  try {
+                      val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                      val ringtone = RingtoneManager.getRingtone(applicationContext, uri)
+                      if (ringtone != null) {
+                          ringtone.streamType = AudioManager.STREAM_RING
+                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) ringtone.isLooping = true
+                          incomingRingtone = ringtone
+                          ringtone.play()
+                      } else {
+                          fallbackTone = ToneGenerator(AudioManager.STREAM_RING, 85).also {
+                              it.startTone(ToneGenerator.TONE_SUP_RINGTONE, 60000)
+                          }
+                      }
+                  } catch (_: Exception) {
+                      fallbackTone = ToneGenerator(AudioManager.STREAM_RING, 85).also {
+                          it.startTone(ToneGenerator.TONE_SUP_RINGTONE, 60000)
+                      }
+                  }
+              }
+
+              private fun stopIncomingRingtone() {
+                  try { incomingRingtone?.stop() } catch (_: Exception) {}
+                  incomingRingtone = null
+                  try { fallbackTone?.stopTone(); fallbackTone?.release() } catch (_: Exception) {}
+                  fallbackTone = null
+              }
+
+              private fun startOutgoingRingback() {
+                  if (outgoingRingback != null) return
+                  outgoingRingback = ToneGenerator(AudioManager.STREAM_MUSIC, 78).also {
+                      it.startTone(ToneGenerator.TONE_SUP_RINGTONE, 60000)
+                  }
+              }
+
+              private fun stopOutgoingRingback() {
+                  try { outgoingRingback?.stopTone(); outgoingRingback?.release() } catch (_: Exception) {}
+                  outgoingRingback = null
+              }
+
+              override fun onDestroy() {
+                  stopIncomingRingtone()
+                  stopOutgoingRingback()
+                  super.onDestroy()
+              }
+          }
+          KOTLIN
+
       - name: Patch Android WebView ProGuard compatibility
         working-directory: apps/mobile
         run: |
