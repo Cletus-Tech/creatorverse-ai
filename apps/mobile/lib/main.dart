@@ -3554,7 +3554,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
   }
   String _clock(Duration value)=>'${value.inMinutes.toString().padLeft(2,'0')}:${(value.inSeconds%60).toString().padLeft(2,'0')}';
   @override void dispose(){unawaited(_player.dispose());super.dispose();}
-  @override Widget build(BuildContext context)=>SizedBox(width:250,child:Row(children:[
+  @override Widget build(BuildContext context)=>SizedBox(width:widget.local?double.infinity:250,child:Row(children:[
     if(!_ready)
       SizedBox(width:38,height:38,child:Center(child:_failed
         ?const Icon(Icons.error_outline,color:Colors.redAccent,size:20)
