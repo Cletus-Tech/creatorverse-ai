@@ -2992,8 +2992,11 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             CheckboxListTile(
               value:selected.contains(person['id'].toString()),
               onChanged:saving?null:(value)=>update((){
-                if(value==true){if(selected.length<50)selected.add(person['id'].toString());}
-                else selected.remove(person['id'].toString());
+                if(value==true){
+                  if(selected.length<50){selected.add(person['id'].toString());}
+                }else{
+                  selected.remove(person['id'].toString());
+                }
               }),
               title:Text((person['full_name']??person['username']??'CreatorVerse member').toString()),
               subtitle:Text('@${person['username']??''}'),
