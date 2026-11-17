@@ -17,7 +17,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/mobile/lib/**/*.dart'
+      - 'apps/mobile/lib/**'
 permissions:
   contents: read
 concurrency:
