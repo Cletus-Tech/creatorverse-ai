@@ -3702,8 +3702,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();
       _upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:localId);
     }catch(e){
-      if(!mounted)return;setState(()=>_rows.removeWhere((m)=>m['id']==localId));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message not sent: $e')));
+      if(!mounted)return;setState(()=>{final index=_rows.indexWhere((m)=>m['id']==localId);if(index>=0){_rows[index]['pending']=false;_rows[index]['failed']=true;}});
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message not sent. Open its options to retry: $e')));
     }
   }
   bool _messageWithinEditWindow(Map<String,dynamic> message){final created=DateTime.tryParse((message['created_at']??'').toString());if(created==null)return false;final age=DateTime.now().toUtc().difference(created.toUtc());return age>=Duration.zero&&age<=const Duration(minutes:5);}
@@ -3720,9 +3720,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }else if(action=='delete_me'){
       try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: '+e.toString())));}
     }else if(action=='resend'){
-      setState(()=>message['pending']=true);
+      setState(()=>{message['pending']=true;message['failed']=false;});
       try{final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':db.auth.currentUser!.id,'body':message['body']}).select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();_upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:id);}
-      catch(e){if(mounted)setState(()=>message['pending']=false);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: '+e.toString())));}
+      catch(e){if(mounted)setState(()=>{message['pending']=false;message['failed']=true;});if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message could not be resent: '+e.toString())));}
     }
   }
   Widget _messageActions(Map<String,dynamic> message){
