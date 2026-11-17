@@ -28,6 +28,8 @@ create index if not exists cv_conversations_group_activity_idx
   where is_group = true;
 
 alter table public.cv_conversation_members enable row level security;
+revoke all on table public.cv_conversation_members from anon;
+grant select on table public.cv_conversation_members to authenticated;
 
 -- Private SECURITY DEFINER helper prevents recursive membership RLS checks.
 create or replace function private.cv_is_conversation_member(p_conversation_id uuid)
