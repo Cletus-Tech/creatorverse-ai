@@ -318,3 +318,11 @@ body[data-page="messages"] .msg-theme-swatch:hover{outline:2px solid #e2c96e;out
 body[data-page="messages"] .msg-theme-save{border:0;border-radius:10px;padding:10px;background:#d9bd58;color:#092419;font-weight:800;cursor:pointer}
 body[data-page="messages"] .msg-chat-active{position:relative}
 @media(max-width:680px){body[data-page="messages"] .msg-theme-panel{right:8px;top:56px}}
+
+/* Reply and missed-call message treatments */
+.msg-reply-preview{margin:0 14px 8px;padding:9px 12px;border-left:3px solid #e6bc55;border-radius:8px;background:rgba(230,188,85,.09);color:#f3dfaa;font-size:12px}
+.msg-reply-quote{display:flex;flex-direction:column;gap:3px;margin-bottom:7px;padding:7px 9px;border-left:3px solid #e6bc55;border-radius:7px;background:rgba(0,0,0,.18);font-size:11px;color:#d6e0dd}
+.msg-reply-quote strong{color:#e6bc55;font-size:10px}
+.msg-reply-quote span{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.msg-missed-call{display:flex;align-items:center;gap:7px;color:#ff7d7d;font-weight:700;font-size:12px}
+.msg-bubble-reply{border:0;background:transparent;color:#d9c58b;font:inherit;font-size:10px;cursor:pointer;padding:3px 7px}
