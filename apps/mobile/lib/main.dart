@@ -29,6 +29,16 @@ const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18
 const MethodChannel _callRingtoneChannel = MethodChannel('creatorverse/call_ringtone');
 const MethodChannel _mediaSaverChannel = MethodChannel('creatorverse/media_saver');
 
+String _mediaMimeFromUrl(String url,{required bool video}) {
+  final path=(Uri.tryParse(url)?.path??'').toLowerCase();
+  if(path.endsWith('.png'))return 'image/png';
+  if(path.endsWith('.webp'))return 'image/webp';
+  if(path.endsWith('.gif'))return 'image/gif';
+  if(path.endsWith('.webm'))return 'video/webm';
+  if(path.endsWith('.mov'))return 'video/quicktime';
+  return video?'video/mp4':'image/jpeg';
+}
+
 Future<void> _saveRemoteMedia(BuildContext context,String url,String mime,String name) async {
   try {
     await _mediaSaverChannel.invokeMethod<String>('save',{'url':url,'mime':mime,'name':name});
@@ -2441,7 +2451,7 @@ class CommunityMediaViewer extends StatelessWidget {
       appBar:AppBar(backgroundColor:Colors.black,title:Text((post['title']??'Post media').toString(),
         maxLines:1,overflow:TextOverflow.ellipsis),
         actions:[IconButton(tooltip:'Save media',onPressed:()=>_saveRemoteMedia(context,url,
-          video?'video/mp4':'image/jpeg','creatorverse-${post['id']??'community-media'}'),
+          _mediaMimeFromUrl(url,video:video),'creatorverse-${post['id']??'community-media'}'),
           icon:const Icon(Icons.download_rounded))]),
       body:Column(children:[
         Expanded(child:Center(child:video
@@ -2500,7 +2510,7 @@ class CommunityPostCard extends StatelessWidget {
                 :ClipRRect(borderRadius:BorderRadius.circular(8),child:Image.network(image,width:double.infinity,
                   fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()))),
             IconButton.filled(onPressed:()=>_saveRemoteMedia(context,image,
-              post['media_type']=='video'?'video/mp4':'image/jpeg',
+              _mediaMimeFromUrl(image,video:post['media_type']=='video'),
               'creatorverse-${post['id']??'community-media'}'),
               icon:const Icon(Icons.download_rounded),tooltip:'Save media',
               style:IconButton.styleFrom(backgroundColor:Colors.black87)),
@@ -3987,8 +3997,8 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
                   final phase=_ringController.value;
                   return Stack(alignment:Alignment.center,children:[
                     for(var ring=0;ring<2;ring++)
-                      Opacity(opacity:(1-((phase+ring*.5)%1)).clamp(0.0,1.0),
-                        child:Transform.scale(scale:1+(((phase+ring*.5)%1)*.48),
+                      Opacity(opacity:(1-((phase+ring*.5)%1)).clamp(0.0,1.0).toDouble(),
+                        child:Transform.scale(scale:(1+(((phase+ring*.5)%1)*.48)).toDouble(),
                           child:Container(width:112,height:112,decoration:BoxDecoration(
                             shape:BoxShape.circle,border:Border.all(
                               color:emerald.withValues(alpha:.45),width:1.5))))),
