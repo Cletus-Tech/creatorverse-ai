@@ -2669,10 +2669,33 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   Color _wallpaper=const Color(0xFF07151A),_myBubble=const Color(0xFF155E48); final Color _theirBubble=panel;
   static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
+  Timer? _typingHeartbeatTimer,_typingStopTimer;
+  bool _otherTyping=false;
   @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_subscribeToMessages();
+    input.addListener(_handleTypingInput);
     _chatScrollController.addListener(_handleScroll);}
-  @override void dispose(){input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
+  @override void dispose(){input.removeListener(_handleTypingInput);_typingHeartbeatTimer?.cancel();_typingStopTimer?.cancel();
+    input.dispose();_chatScrollController.removeListener(_handleScroll);_chatScrollController.dispose();
     final c=_messageChannel;if(c!=null)unawaited(c.unsubscribe());super.dispose();}
+  void _handleTypingInput(){
+    if(input.text.trim().isEmpty){_typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);return;}
+    if(_typingHeartbeatTimer!=null)return;
+    _broadcastTyping(true);
+    _typingHeartbeatTimer=Timer.periodic(const Duration(milliseconds:1200),(_){if(input.text.trim().isEmpty){_typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);}else{_broadcastTyping(true);}});
+  }
+  void _broadcastTyping(bool typing){
+    final channel=_messageChannel,userId=db.auth.currentUser?.id;
+    if(channel==null||userId==null)return;
+    unawaited(channel.sendBroadcastMessage(event:'typing',payload:{'user_id':userId,'typing':typing}).catchError((_){ }));
+  }
+  void _receiveTyping(Map<String,dynamic> payload){
+    if(payload['user_id']==db.auth.currentUser?.id)return;
+    final typing=payload['typing']==true;
+    _typingStopTimer?.cancel();
+    if(!typing){if(mounted)setState(()=>_otherTyping=false);return;}
+    if(mounted)setState(()=>_otherTyping=true);
+    _typingStopTimer=Timer(const Duration(milliseconds:2400),(){if(mounted)setState(()=>_otherTyping=false);});
+  }
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
   Color _parseChatColor(String value,Color fallback){try{return Color(int.parse('FF${value.replaceFirst('#','')}',radix:16));}catch(_){return fallback;}}
   String _chatColorHex(Color color)=>'#${color.value.toRadixString(16).padLeft(8,'0').substring(2)}';
@@ -2711,7 +2734,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           final wasIncoming=row['sender_id']!=db.auth.currentUser?.id;
           _upsertMessage(Map<String,dynamic>.from(row));
           if(wasIncoming&&row['read_at']==null)unawaited(_markMessageRead(id));
-        }).subscribe();
+        })
+      .onBroadcast(event:'typing',callback:(payload)=>_receiveTyping(Map<String,dynamic>.from(payload)))
+      .subscribe();
   }
   Future<void> _markMessageRead(String id) async{
     final now=DateTime.now().toUtc().toIso8601String();
@@ -2778,6 +2803,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Future<void> send() async{
     final body=input.text.trim();if(body.isEmpty)return;
+    _typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);
     final me=db.auth.currentUser!.id,localId='local-${DateTime.now().microsecondsSinceEpoch}';
     final optimistic=<String,dynamic>{'id':localId,'sender_id':me,'body':body,'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,'pending':true};
     input.clear();_upsertMessage(optimistic);
@@ -2808,7 +2834,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:_wallpaper,
-    appBar:AppBar(title:Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
+    appBar:AppBar(title:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+      Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
+      if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
+    ]),
       actions:[IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))]),
     body:Stack(children:[
       Column(children:[
