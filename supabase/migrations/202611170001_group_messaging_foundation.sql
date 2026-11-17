@@ -29,13 +29,31 @@ create index if not exists cv_conversations_group_activity_idx
 
 alter table public.cv_conversation_members enable row level security;
 
+-- Private SECURITY DEFINER helper prevents recursive membership RLS checks.
+create or replace function private.cv_is_conversation_member(p_conversation_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $
+  select exists (
+    select 1 from public.cv_conversation_members m
+    where m.conversation_id = p_conversation_id
+      and m.user_id = (select auth.uid())
+  );
+$;
+revoke all on function private.cv_is_conversation_member(uuid) from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.cv_is_conversation_member(uuid) to authenticated;
+
 drop policy if exists "CV conversation participants read" on public.cv_conversations;
 create policy "CV conversation participants read"
 on public.cv_conversations for select to authenticated
 using (
   (not is_group and (auth.uid() = user_a or auth.uid() = user_b))
   or
-  (is_group and public.cv_is_conversation_member(id))
+  (is_group and private.cv_is_conversation_member(id))
 );
 
 drop policy if exists "CV users start direct conversations" on public.cv_conversations;
@@ -60,26 +78,8 @@ drop policy if exists "CV conversation members read own groups" on public.cv_con
 create policy "CV conversation members read own groups"
 on public.cv_conversation_members for select to authenticated
 using (
-  public.cv_is_conversation_member(cv_conversation_members.conversation_id)
+  private.cv_is_conversation_member(cv_conversation_members.conversation_id)
 );
-
-create or replace function public.cv_is_conversation_member(p_conversation_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $
-  select exists (
-    select 1
-    from public.cv_conversation_members m
-    where m.conversation_id = p_conversation_id
-      and m.user_id = auth.uid()
-  );
-$;
-
-revoke all on function public.cv_is_conversation_member(uuid) from public, anon;
-grant execute on function public.cv_is_conversation_member(uuid) to authenticated;
 
 -- Membership writes are intentionally performed through the security-definer RPC below.
 revoke insert, update, delete on public.cv_conversation_members from anon, authenticated;
@@ -94,7 +94,7 @@ using (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and public.cv_is_conversation_member(c.id))
+        (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -119,7 +119,7 @@ with check (
                 case when c.user_a = auth.uid() then c.user_b else c.user_a end)
           ))
         or
-        (c.is_group and public.cv_is_conversation_member(c.id))
+        (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -135,7 +135,7 @@ using (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and public.cv_is_conversation_member(c.id))
+        (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 )
@@ -147,7 +147,7 @@ with check (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and public.cv_is_conversation_member(c.id))
+        (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -162,7 +162,7 @@ using (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and public.cv_is_conversation_member(c.id))
+        or (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -177,7 +177,7 @@ with check (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and public.cv_is_conversation_member(c.id))
+        or (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -192,7 +192,7 @@ using (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and public.cv_is_conversation_member(c.id))
+        or (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 )
@@ -203,7 +203,7 @@ with check (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and public.cv_is_conversation_member(c.id))
+        or (c.is_group and private.cv_is_conversation_member(c.id))
       )
   )
 );
