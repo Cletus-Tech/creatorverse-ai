@@ -14,10 +14,6 @@ on:
         description: "Optional exact Shorebird release version for a patch (normally leave blank)"
         required: false
         type: string
-  push:
-    branches: [main]
-    paths:
-      - 'apps/mobile/lib/**'
 permissions:
   contents: read
 concurrency:
