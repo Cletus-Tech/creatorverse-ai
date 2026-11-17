@@ -257,7 +257,8 @@ class _AuthGateState extends State<AuthGate>{
   void _finishRecovery(){if(mounted)setState(()=>_recovering=false);}
   @override Widget build(BuildContext context){
     final auth=Supabase.instance.client.auth;
-    if(_recovering)return PasswordRecoveryScreen(onComplete:_finishRecovery);\n    if(auth.currentUser?.appMetadata['force_password_change']==true)return PasswordRecoveryScreen(onComplete:(){},isForced:true);
+    if(_recovering)return PasswordRecoveryScreen(onComplete:_finishRecovery);
+    if(auth.currentUser?.appMetadata['force_password_change']==true)return PasswordRecoveryScreen(onComplete:(){},isForced:true);
     return StreamBuilder<AuthState>(stream:auth.onAuthStateChange,
       initialData:AuthState(AuthChangeEvent.initialSession,auth.currentSession),
       builder:(context,s)=>s.data?.session==null?const SignInScreen():const MainShell());
@@ -265,7 +266,8 @@ class _AuthGateState extends State<AuthGate>{
 }
 class PasswordRecoveryScreen extends StatefulWidget{
   final VoidCallback onComplete;
-  const PasswordRecoveryScreen({super.key,required this.onComplete});
+  final bool isForced;
+  const PasswordRecoveryScreen({super.key,required this.onComplete,this.isForced=false});
   @override State<PasswordRecoveryScreen> createState()=>_PasswordRecoveryScreenState();
 }
 class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen>{
@@ -289,7 +291,7 @@ class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen>{
   }
   @override Widget build(BuildContext context)=>Scaffold(body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
     const Icon(Icons.lock_reset,color:gold,size:56),const SizedBox(height:20),
-    const Text(widget.isForced?'Create your private password':'Choose a new password',textAlign:TextAlign.center,style:const TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
+    Text(widget.isForced?'Create your private password':'Choose a new password',textAlign:TextAlign.center,style:const TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
     const SizedBox(height:12),Text(widget.isForced?'Your administrator issued a temporary password. Choose a private password to continue.':'Your reset link is verified. Enter a new password below.',textAlign:TextAlign.center,style:const TextStyle(color:muted)),
     const SizedBox(height:24),
     TextField(controller:_password,obscureText:_obscure,decoration:InputDecoration(labelText:'New password',prefixIcon:const Icon(Icons.lock_outline),suffixIcon:IconButton(onPressed:()=>setState(()=>_obscure=!_obscure),icon:Icon(_obscure?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
@@ -3776,7 +3778,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final me=db.auth.currentUser!.id,localId='local-${DateTime.now().microsecondsSinceEpoch}';
     final replyToId=_replyingToId;
     final optimistic=<String,dynamic>{'id':localId,'sender_id':me,'body':body,'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,'reply_to_id':replyToId,'pending':true};
-    input.clear();if(mounted)setState(()=>{_replyingToId=null;_replyingToPreview=null;});_upsertMessage(optimistic);
+    input.clear();if(mounted)setState((){_replyingToId=null;_replyingToPreview=null;});_upsertMessage(optimistic);
     try{
       final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':me,'body':body,'reply_to_id':replyToId})
         .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size,reply_to_id,message_type,call_id').single();
@@ -3799,7 +3801,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       try{await db.rpc('cv_delete_direct_message_everyone',params:{'p_message_id':id});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete for everyone: $e')));}
     }else if(action=='reply'){
       final body=(message['body']??'').toString();
-      setState(()=>{_replyingToId=id;_replyingToPreview=body.isEmpty?'Attachment':body.length>90?'${body.substring(0,90)}…':body;});
+      setState((){_replyingToId=id;_replyingToPreview=body.isEmpty?'Attachment':body.length>90?'${body.substring(0,90)}…':body;});
     }else if(action=='delete_me'){
       try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: $e')));}
     }else if(action=='resend'){
@@ -3932,7 +3934,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 IconButton(tooltip:'Attach photo or video',onPressed:_sendingAttachment?null:attachMedia,
                   icon:_sendingAttachment?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.attach_file,color:gold)),
                 Expanded(child:TextField(controller:input,minLines:1,maxLines:4,textInputAction:TextInputAction.newline,
-                  onSubmitted:(_)=>send(),decoration:InputDecoration(hintText:_replyingToId==null?'Message...':'Replying: ${_replyingToPreview??'message'}',prefixIcon:_replyingToId==null?null:const Icon(Icons.reply,color:gold,size:18),suffixIcon:_replyingToId==null?null:IconButton(tooltip:'Cancel reply',onPressed:()=>setState(()=>{_replyingToId=null;_replyingToPreview=null;}),icon:const Icon(Icons.close,size:18))))),
+                  onSubmitted:(_)=>send(),decoration:InputDecoration(hintText:_replyingToId==null?'Message...':'Replying: ${_replyingToPreview??'message'}',prefixIcon:_replyingToId==null?null:const Icon(Icons.reply,color:gold,size:18),suffixIcon:_replyingToId==null?null:IconButton(tooltip:'Cancel reply',onPressed:()=>setState((){_replyingToId=null;_replyingToPreview=null;}),icon:const Icon(Icons.close,size:18))))),
                 const SizedBox(width:2),
                 IconButton(tooltip:'Record voice note',onPressed:_startVoiceRecording,
                   icon:const Icon(Icons.mic_none,color:gold)),
@@ -4294,7 +4296,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     }catch(e){
       await _stopOutgoingCallTone();
       _connectStarted=false;
-      if(mounted)setState(()=>{_connecting=false;_error=e.toString();});
+      if(mounted)setState((){_connecting=false;_error=e.toString();});
     }
   }
   Future<void> _toggleMicrophone() async{
