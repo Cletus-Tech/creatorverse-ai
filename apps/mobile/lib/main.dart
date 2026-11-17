@@ -3770,10 +3770,11 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
     try{await _room.disconnect();}catch(_){}
     if(mounted)material_widgets_ui.Navigator.pop(context);
   }
+  Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
     _room.removeListener(_onRoomChanged);
     final statusChannel=_callStatusChannel;if(statusChannel!=null)unawaited(statusChannel.unsubscribe());
-    unawaited(_room.dispose());
+    unawaited(_disposeLiveKitRoom());
     super.dispose();
   }
   @override Widget build(BuildContext context){
