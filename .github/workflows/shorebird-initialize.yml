@@ -1,0 +1,70 @@
+name: Initialize CreatorVerse Shorebird App
+on:
+  workflow_dispatch:
+    inputs:
+      organization_id:
+        description: "Optional Shorebird organization ID (leave blank if your account has one organization)"
+        required: false
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: creatorverse-shorebird-init
+  cancel-in-progress: false
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Verify token and prevent duplicate app creation
+        working-directory: apps/mobile
+        run: |
+          if [ -z "$SHOREBIRD_TOKEN" ]; then
+            echo "::error::Add the SHOREBIRD_TOKEN repository secret first."
+            exit 1
+          fi
+          if [ -f shorebird.yaml ]; then
+            echo "::error::apps/mobile/shorebird.yaml already exists. Refusing to create a second Shorebird app."
+            exit 1
+          fi
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android platform for Shorebird initialization
+        working-directory: apps/mobile
+        run: flutter create --platforms=android --org com.cletustech --project-name creatorverse_mobile .
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+      - name: Create Shorebird app and config
+        working-directory: apps/mobile
+        env:
+          SHOREBIRD_ORGANIZATION_ID: ${{ inputs.organization_id }}
+        run: |
+          if [ -n "$SHOREBIRD_ORGANIZATION_ID" ]; then
+            shorebird init --display-name "CreatorVerse" --organization-id "$SHOREBIRD_ORGANIZATION_ID"
+          else
+            shorebird init --display-name "CreatorVerse"
+          fi
+          test -s shorebird.yaml
+          grep -q '^app_id:' shorebird.yaml
+          echo "Created CreatorVerse Shorebird app:"
+          cat shorebird.yaml
+      - name: Commit Shorebird configuration to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/shorebird.yaml apps/mobile/pubspec.yaml
+          if git diff --cached --quiet; then
+            echo "No Shorebird configuration changes to commit."
+            exit 1
+          fi
+          git commit -m "Initialize Shorebird Code Push for CreatorVerse"
+          git push origin HEAD:main
