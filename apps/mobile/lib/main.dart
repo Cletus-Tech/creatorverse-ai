@@ -3929,7 +3929,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 background:Container(alignment:Alignment.centerLeft,padding:const EdgeInsets.only(left:18),child:const Icon(Icons.reply,color:gold,size:24)),
                 secondaryBackground:Container(alignment:Alignment.centerRight,padding:const EdgeInsets.only(right:18),child:const Icon(Icons.reply,color:gold,size:24)),
                 child:_messageBubble(message));
-            }),
+            })),
         SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(8,8,10,10),child:
           _recordingVoice
             ?Row(children:[
