@@ -2437,8 +2437,11 @@ class MessageInboxScreen extends StatefulWidget {
 }
 class _MessageInboxScreenState extends State<MessageInboxScreen> {
   final db = Supabase.instance.client;
+  final TextEditingController _searchController = TextEditingController();
   late Future<List<Map<String, dynamic>>> inbox;
   RealtimeChannel? _inboxChannel;
+  String _searchTerm = '';
+  bool _unreadOnly = false;
   @override
   void initState() {
     super.initState();
@@ -2453,9 +2456,15 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
   }
   @override
   void dispose() {
+    _searchController.dispose();
     final channel = _inboxChannel;
     if (channel != null) unawaited(channel.unsubscribe());
     super.dispose();
+  }
+  Future<void> refreshInbox() async {
+    final next = loadInbox();
+    if (mounted) setState(() => inbox = next);
+    await next;
   }
   Future<List<Map<String, dynamic>>> loadInbox() async {
     final me = db.auth.currentUser!.id;
@@ -2523,37 +2532,126 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
         }, child: const Text('Search'))]));
   }
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Messages'), actions: [
-    IconButton(onPressed: startChat, tooltip: 'New message', icon: const Icon(Icons.edit_square, color: gold))]),
-    body: FutureBuilder<List<Map<String, dynamic>>>(future: inbox, builder: (context, snap) {
-      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snap.hasError) return Center(child: Text('Messages could not load: ${snap.error}', style: const TextStyle(color: muted)));
-      final rows = snap.data ?? [];
-      if (rows.isEmpty) {
-        return Center(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.chat_bubble_outline, color: emerald, size: 44), const SizedBox(height: 12),
-          const Text('No conversations yet'), const SizedBox(height: 8),
-          FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add), label: const Text('Start a conversation'))]));
-      }
-      return ListView.separated(itemCount: rows.length, separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
-        itemBuilder: (context, i) {
-          final c = rows[i], person = Map<String, dynamic>.from(c['person'] as Map? ?? {}), latest = c['latest'] as Map?;
-          final name = (person['full_name'] ?? person['username'] ?? 'CreatorVerse member').toString();
-          return ListTile(leading: const CircleAvatar(backgroundColor: Color(0x3320B887), child: Icon(Icons.person, color: emerald)),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text((latest?['body'] ?? 'Start a conversation').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              if ((c['unread_count'] ?? 0) > 0) Container(
-                constraints: const BoxConstraints(minWidth: 19, minHeight: 19),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
-                child: Text((c['unread_count'] ?? 0).toString(), textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white))),
-              const SizedBox(width: 7), const Icon(Icons.chevron_right, color: muted),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Messages'), actions: [
+      IconButton(onPressed: startChat, tooltip: 'New message', icon: const Icon(Icons.edit_square, color: gold)),
+    ]),
+    body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: inbox,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: emerald));
+        }
+        if (snap.hasError) {
+          return Center(child: Text('Messages could not load: ${snap.error}',
+            style: const TextStyle(color: muted)));
+        }
+        final rows = snap.data ?? [];
+        final me = db.auth.currentUser?.id;
+        final filtered = rows.where((conversation) {
+          final person = Map<String, dynamic>.from(conversation['person'] as Map? ?? {});
+          final name = (person['full_name'] ?? person['username'] ?? '').toString().toLowerCase();
+          final username = (person['username'] ?? '').toString().toLowerCase();
+          final matchesSearch = _searchTerm.trim().isEmpty ||
+            name.contains(_searchTerm.toLowerCase()) || username.contains(_searchTerm.toLowerCase());
+          final matchesUnread = !_unreadOnly || ((conversation['unread_count'] ?? 0) as int) > 0;
+          return matchesSearch && matchesUnread;
+        }).toList();
+        return Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchTerm = value),
+              decoration: InputDecoration(
+                hintText: 'Search chats or people',
+                prefixIcon: const Icon(Icons.search, color: muted),
+                suffixIcon: _searchTerm.isEmpty ? null : IconButton(
+                  onPressed: () { _searchController.clear(); setState(() => _searchTerm = ''); },
+                  icon: const Icon(Icons.close, color: muted),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(children: [
+              ChoiceChip(label: const Text('All'), selected: !_unreadOnly,
+                onSelected: (_) => setState(() => _unreadOnly = false)),
+              const SizedBox(width: 8),
+              ChoiceChip(label: const Text('Unread'), selected: _unreadOnly,
+                onSelected: (_) => setState(() => _unreadOnly = true)),
             ]),
-            onTap: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person))); if (mounted) setState(() => inbox = loadInbox()); });
-        });
-    }));
+          ),
+          Expanded(child: rows.isEmpty
+            ? Center(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.chat_bubble_outline, color: emerald, size: 44),
+                const SizedBox(height: 12),
+                const Text('No conversations yet'),
+                const SizedBox(height: 8),
+                FilledButton.icon(onPressed: startChat, icon: const Icon(Icons.add),
+                  label: const Text('Start a conversation')),
+              ]))
+            : filtered.isEmpty
+              ? const Center(child: Text('No chats match this view.', style: TextStyle(color: muted)))
+              : RefreshIndicator(
+                  color: emerald,
+                  onRefresh: refreshInbox,
+                  child: ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+                    itemBuilder: (context, i) {
+                      final c = filtered[i];
+                      final person = Map<String, dynamic>.from(c['person'] as Map? ?? {});
+                      final latest = c['latest'] as Map?;
+                      final name = (person['full_name'] ?? person['username'] ?? 'CreatorVerse member').toString();
+                      final avatar = (person['avatar_url'] ?? '').toString();
+                      final unread = (c['unread_count'] ?? 0) as int;
+                      final body = (latest?['body'] ?? '').toString();
+                      final hasAttachment = (latest?['attachment_path'] ?? '').toString().isNotEmpty;
+                      final preview = hasAttachment
+                        ? ((latest?['attachment_mime'] ?? '').toString().startsWith('video/') ? 'Video' : 'Photo')
+                        : (body.isEmpty ? 'Start a conversation' : body);
+                      final prefix = latest != null && latest['sender_id'] == me ? 'You: ' : '';
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        leading: CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0x3320B887),
+                          backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+                          child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald),
+                        ),
+                        title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: unread > 0 ? FontWeight.w800 : FontWeight.w600)),
+                        subtitle: Text('$prefix$preview', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: unread > 0 ? Colors.white : muted,
+                            fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w400)),
+                        trailing: Column(mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Text(_timeAgo(latest?['created_at']?.toString()),
+                              style: TextStyle(fontSize: 10, color: unread > 0 ? emerald : muted)),
+                            const SizedBox(height: 6),
+                            if (unread > 0) Container(
+                              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: emerald, borderRadius: BorderRadius.circular(20)),
+                              child: Text(unread > 99 ? '99+' : unread.toString(), textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                            ),
+                          ]),
+                        onTap: () async {
+                          await material_widgets_ui.Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person)));
+                          if (mounted) await refreshInbox();
+                        },
+                      );
+                    },
+                  ),
+                )),
+        ]);
+      },
+    ),
+  );
 }
 
 class MessageThreadScreen extends StatefulWidget {
