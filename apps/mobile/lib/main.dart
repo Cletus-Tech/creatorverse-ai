@@ -406,14 +406,14 @@ class _MainShellState extends State<MainShell> {
     if(callerId.isEmpty||callerId==db.auth.currentUser?.id||callId.isEmpty||
        conversationId.isEmpty||!['audio','video'].contains(mode)||
        (expiry!=null&&expiry.isBefore(DateTime.now())))return;
+    _incomingCallDialogOpen=true;
     String callerName='CreatorVerse member';
     try{
       final profile=await db.from('public_profiles').select('full_name,username')
         .eq('id',callerId).maybeSingle();
       callerName=(profile?['full_name']??profile?['username']??callerName).toString();
     }catch(_){}
-    if(!mounted||_incomingCallDialogOpen)return;
-    _incomingCallDialogOpen=true;
+    if(!mounted){_incomingCallDialogOpen=false;return;}
     final accept=await showDialog<bool>(context:context,barrierDismissible:false,
       builder:(ctx)=>AlertDialog(backgroundColor:panel,
         title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
@@ -3693,7 +3693,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
         filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:widget.callId),
         callback:(payload){
           final status=(payload.newRecord['status']??'').toString();
-          if(mounted&&['declined','cancelled','ended','missed'].contains(status))setState(()=>_callStatus=status);
+          if(mounted)setState(()=>_callStatus=status);
         }).subscribe();
     _connect();
   }
@@ -3761,7 +3761,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
     _ending=true;
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
-        final status=isCaller&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
+        final status=isCaller&&_callStatus!='accepted'&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
         await db.rpc('cv_set_call_invite_status',params:{
           'p_call_id':widget.callId,'p_status':status
         });
