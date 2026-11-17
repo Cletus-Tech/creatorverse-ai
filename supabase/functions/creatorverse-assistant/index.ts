@@ -20,7 +20,7 @@ Deno.serve(async(req:Request)=>{
   if(error)return respond({error:"I couldn't access CreatorVerse's knowledge base.",detail:error.message},500);
   const ranked=(data||[]).map((x:any)=>({...x,relevance:score(question,x)})).filter((x:any)=>x.relevance>0).sort((a:any,b:any)=>b.relevance-a.relevance).slice(0,4);
   const key=Deno.env.get("AI_API_KEY")||Deno.env.get("OPENAI_API_KEY");if(!key)return respond({error:"Gemini API key is not configured in Supabase Edge Function secrets."},503);
-  const base=(Deno.env.get("AI_BASE_URL")||"https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/,""),preferred=Deno.env.get("AI_MODEL")||"gemini-3.8-flash",models=[preferred,"gemini-3.6-flash"].filter((x,i,a)=>a.indexOf(x)===i),knowledge=ranked.map((x:any)=>({title:x.title,category:x.category,content:String(x.content).slice(0,2500)}));
+  const base=(Deno.env.get("AI_BASE_URL")||"https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/,""),preferred=Deno.env.get("AI_MODEL")||"gemini-3.8-flash",models=[preferred,"gemini-3.7-flash","gemini-3.6-flash","gemini-3.5-flash-lite"].filter((x,i,a)=>a.indexOf(x)===i),knowledge=ranked.map((x:any)=>({title:x.title,category:x.category,content:String(x.content).slice(0,2500)}));
   const system=(mode==="creatorverse"?creator:general)+"\n\nCurrent website context (may be incomplete; never claim to control the page):\n"+context+"\n\nRelevant approved CreatorVerse knowledge:\n"+(knowledge.length?JSON.stringify(knowledge):"No matching excerpts. Do not fabricate platform-specific facts.");
   const messages=[{role:"system",content:system},...history,{role:"user",content:question}];
   let upstream:Response|null=null,lastStatus=0;
