@@ -10,7 +10,7 @@ const corsHeaders = {
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
-const resetRedirect = "https://creatorverse-ai.vercel.app/reset.html";
+
 
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -37,53 +37,51 @@ Deno.serve(async (request: Request) => {
 
     const body = await request.json();
     const action = String(body.action ?? "");
-    const mailer = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    let targets: Array<{ id: string; email: string }> = [];
 
-    if (action === "one") {
-      const userId = String(body.user_id ?? "");
-      if (!/^[0-9a-f-]{36}$/i.test(userId)) return json({ error: "Choose a valid account." }, 400);
-      const { data, error } = await admin.auth.admin.getUserById(userId);
-      if (error || !data.user?.email) return json({ error: "That account has no usable email address." }, 404);
-      targets = [{ id: data.user.id, email: data.user.email }];
-    } else if (action === "all") {
-      let page = 1;
-      const perPage = 500;
-      while (true) {
-        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-        if (error) return json({ error: "Could not load registered accounts for bulk reset." }, 500);
-        const users = data.users ?? [];
-        targets.push(...users.filter((u) => !!u.email).map((u) => ({ id: u.id, email: u.email! })));
-        if (users.length < perPage) break;
-        page += 1;
-        if (page > 20) return json({ error: "The account list is too large for one request. Contact support to run a managed bulk reset." }, 413);
-      }
-      if (!targets.length) return json({ sent: 0, failed: 0, message: "No registered accounts with email addresses were found." });
-    } else {
-      return json({ error: "Choose one account or all accounts." }, 400);
+    if (action === "complete") {
+      const current = authData.user.app_metadata ?? {};
+      if (current.force_password_change !== true) return json({ ok: true });
+      const { error } = await admin.auth.admin.updateUserById(authData.user.id, {
+        app_metadata: { ...current, force_password_change: false },
+      });
+      if (error) return json({ error: "Password changed, but security confirmation failed. Contact support." }, 500);
+      return json({ ok: true, message: "Password change confirmed." });
     }
 
-    let sent = 0;
-    const failures: string[] = [];
-    // Keep the batch small to avoid overwhelming the configured SMTP provider.
-    for (let i = 0; i < targets.length; i += 2) {
-      const batch = targets.slice(i, i + 2);
-      const outcomes = await Promise.all(batch.map(async (target) => {
-        const { error } = await mailer.auth.resetPasswordForEmail(target.email, { redirectTo: resetRedirect });
-        return { email: target.email, error };
-      }));
-      for (const outcome of outcomes) {
-        if (outcome.error) failures.push(outcome.email);
-        else sent += 1;
-      }
+    const { data: profile, error: profileError } = await admin.from("profiles")
+      .select("role").eq("id", authData.user.id).maybeSingle();
+    if (profileError || !["admin", "super_admin"].includes(profile?.role ?? "")) {
+      return json({ error: "Only an administrator can reset student passwords." }, 403);
     }
+    if (action !== "temporary") return json({ error: "Invalid reset action." }, 400);
+    const userId = String(body.user_id ?? "");
+    if (!/^[0-9a-f-]{36}$/i.test(userId)) return json({ error: "Choose a valid student account." }, 400);
+    const { data: targetProfile, error: targetProfileError } = await admin.from("profiles")
+      .select("id,role").eq("id", userId).maybeSingle();
+    if (targetProfileError || !targetProfile) return json({ error: "Student account was not found." }, 404);
+    if (targetProfile.role !== "student" || userId === authData.user.id) {
+      return json({ error: "This action is restricted to student accounts." }, 403);
+    }
+    const { data: targetAuth, error: targetAuthError } = await admin.auth.admin.getUserById(userId);
+    if (targetAuthError || !targetAuth.user) return json({ error: "Student Auth account was not found." }, 404);
+
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    const random = new Uint8Array(20);
+    crypto.getRandomValues(random);
+    const temporaryPassword = Array.from(random, (v) => alphabet[v % alphabet.length]).join("");
+    const existingMetadata = targetAuth.user.app_metadata ?? {};
+    const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+      password: temporaryPassword,
+      app_metadata: { ...existingMetadata, force_password_change: true },
+    });
+    if (updateError) return json({ error: updateError.message || "Could not reset the student's password." }, 400);
+    const { error: revokeError } = await admin.auth.admin.signOut(userId, "global");
+    if (revokeError) console.error("Could not revoke existing student sessions:", revokeError);
     return json({
-      attempted: targets.length,
-      sent,
-      failed: failures.length,
-      message: action === "one"
-        ? (sent ? "A password reset email has been requested for the selected account." : "The reset email could not be sent. Check your Auth email/SMTP settings.")
-        : "Bulk reset email request finished. Review the sent and failed counts; email delivery is subject to your SMTP provider's limits.",
+      ok: true,
+      temporary_password: temporaryPassword,
+      message: "A unique temporary password was generated. Share it privately with the student; they must change it at their next sign-in.",
+      force_password_change: true,
     });
   } catch (error) {
     console.error("Admin password reset request failed:", error);
