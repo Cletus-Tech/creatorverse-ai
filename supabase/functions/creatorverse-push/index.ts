@@ -83,7 +83,16 @@ Deno.serve(async (req: Request) => {
           entity_type: String(notification.entity_type ?? ""),
           entity_id: String(notification.entity_id ?? ""),
         },
-        android: { priority: "high", notification: { channel_id: "creatorverse_alerts", sound: "default" } },
+        android: {
+          priority: "high",
+          notification: {
+            channel_id: notification.type === "incoming_call" ? "creatorverse_calls" : "creatorverse_alerts",
+            sound: "default",
+            ...(notification.type === "incoming_call" && notification.entity_id
+              ? { tag: `creatorverse-call-${notification.entity_id}` }
+              : {}),
+          },
+        },
       };
       const response = await fetch(
         `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
