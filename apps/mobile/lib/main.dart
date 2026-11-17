@@ -516,6 +516,7 @@ class _MainShellState extends State<MainShell> {
       final currentExpiry=DateTime.tryParse((current['expires_at']??'').toString());
       if(currentExpiry!=null&&!currentExpiry.isAfter(DateTime.now()))return;
     }catch(error){
+      _handledIncomingCallIds.remove(callId);
       debugPrint('Could not mark incoming call as ringing: $error');
       return;
     }
