@@ -245,15 +245,58 @@ class _CreatorVerseLoadingGateState extends State<_CreatorVerseLoadingGate>
   );
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final auth = Supabase.instance.client.auth;
-    return StreamBuilder<AuthState>(stream: auth.onAuthStateChange,
-      initialData: AuthState(AuthChangeEvent.initialSession, auth.currentSession),
-      builder: (context, s) => s.data?.session == null ? const SignInScreen() : const MainShell());
+  @override State<AuthGate> createState()=>_AuthGateState();
+}
+class _AuthGateState extends State<AuthGate>{
+  StreamSubscription<AuthState>? _authEvents;
+  bool _recovering=false;
+  @override void initState(){super.initState();_authEvents=Supabase.instance.client.auth.onAuthStateChange.listen((state){if(state.event==AuthChangeEvent.passwordRecovery&&mounted)setState(()=>_recovering=true);});}
+  @override void dispose(){_authEvents?.cancel();super.dispose();}
+  void _finishRecovery(){if(mounted)setState(()=>_recovering=false);}
+  @override Widget build(BuildContext context){
+    final auth=Supabase.instance.client.auth;
+    if(_recovering)return PasswordRecoveryScreen(onComplete:_finishRecovery);
+    return StreamBuilder<AuthState>(stream:auth.onAuthStateChange,
+      initialData:AuthState(AuthChangeEvent.initialSession,auth.currentSession),
+      builder:(context,s)=>s.data?.session==null?const SignInScreen():const MainShell());
   }
+}
+class PasswordRecoveryScreen extends StatefulWidget{
+  final VoidCallback onComplete;
+  const PasswordRecoveryScreen({super.key,required this.onComplete});
+  @override State<PasswordRecoveryScreen> createState()=>_PasswordRecoveryScreenState();
+}
+class _PasswordRecoveryScreenState extends State<PasswordRecoveryScreen>{
+  final _password=TextEditingController(),_confirm=TextEditingController();
+  bool _busy=false,_obscure=true;
+  String? _message;
+  @override void dispose(){_password.dispose();_confirm.dispose();super.dispose();}
+  Future<void> _save()async{
+    if(_password.text.length<8){setState(()=>_message='Use at least 8 characters.');return;}
+    if(_password.text!=_confirm.text){setState(()=>_message='The passwords do not match.');return;}
+    setState(()=>_busy=true);
+    try{
+      await Supabase.instance.client.auth.updateUser(UserAttributes(password:_password.text));
+      if(!mounted)return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Your password has been updated. Please sign in again.')));
+      widget.onComplete();
+      await Supabase.instance.client.auth.signOut();
+    }on AuthException catch(e){if(mounted)setState(()=>_message=e.message);}
+    catch(_){if(mounted)setState(()=>_message='Could not update your password. Please reopen the reset link and try again.');}
+    finally{if(mounted)setState(()=>_busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+    const Icon(Icons.lock_reset,color:gold,size:56),const SizedBox(height:20),
+    const Text('Choose a new password',textAlign:TextAlign.center,style:TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
+    const SizedBox(height:12),const Text('Your reset link is verified. Enter a new password below.',textAlign:TextAlign.center,style:TextStyle(color:muted)),
+    const SizedBox(height:24),
+    TextField(controller:_password,obscureText:_obscure,decoration:InputDecoration(labelText:'New password',prefixIcon:const Icon(Icons.lock_outline),suffixIcon:IconButton(onPressed:()=>setState(()=>_obscure=!_obscure),icon:Icon(_obscure?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
+    const SizedBox(height:14),TextField(controller:_confirm,obscureText:_obscure,decoration:const InputDecoration(labelText:'Confirm new password',prefixIcon:Icon(Icons.verified_user_outlined))),
+    if(_message!=null)Padding(padding:const EdgeInsets.only(top:12),child:Text(_message!,style:const TextStyle(color:Colors.redAccent))),
+    const SizedBox(height:20),FilledButton(onPressed:_busy?null:_save,style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(52)),child:_busy?const CircularProgressIndicator():const Text('Update password'))
+  ]))))));
 }
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -263,13 +306,23 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final form = GlobalKey<FormState>();
   final email = TextEditingController(), password = TextEditingController(), name = TextEditingController();
-  bool create = false, busy = false, obscure = true, error = false;
+  bool create = false, busy = false, obscure = true, error = false, sendingReset = false;
   String? message;
   @override
   void initState() { super.initState(); SharedPreferences.getInstance().then((prefs) { final saved=prefs.getString('cv_last_login_email'); if(mounted && email.text.isEmpty && saved!=null) email.text=saved; }); }
   @override
   void dispose() { email.dispose(); password.dispose(); name.dispose(); super.dispose(); }
 
+  Future<void> requestPasswordReset() async {
+    if(email.text.trim().isEmpty||!email.text.contains('@')){setState(()=>{error=true;message='Enter your email address first, then tap Forgot password.';});return;}
+    setState(()=>{sendingReset=true;message=null;error=false;});
+    try{
+      await Supabase.instance.client.auth.resetPasswordForEmail(email.text.trim(),redirectTo:'io.supabase.creatorverse://reset-callback/');
+      if(mounted)setState(()=>{error=false;message='If an account exists for this email, a password reset link has been sent. Check your inbox.';});
+    }on AuthException catch(e){if(mounted)setState(()=>{error=true;message=e.message;});}
+    catch(_){if(mounted)setState(()=>{error=true;message='Could not send the reset link. Check your connection and try again.';});}
+    finally{if(mounted)setState(()=>sendingReset=false);}
+  }
   Future<void> signInSocial(OAuthProvider provider) async {
     setState(() { busy = true; message = null; });
     try {
@@ -337,6 +390,7 @@ class _SignInScreenState extends State<SignInScreen> {
         TextButton(onPressed: busy ? null : () => setState(() { create = !create; message = null; }),
           child: Text(create ? 'Already registered? Sign in' : 'New to CreatorVerse? Create an account')),
         if (!create) ...[
+          Align(alignment:Alignment.centerRight,child:TextButton(onPressed:busy||sendingReset?null:requestPasswordReset,child:sendingReset?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)):const Text('Forgot password?'))),
           const SizedBox(height: 10),
           const Row(children:[Expanded(child:Divider(color:Colors.white12)),Padding(padding:EdgeInsets.symmetric(horizontal:10),child:Text('OR CONTINUE WITH',style:TextStyle(color:muted,fontSize:10))),Expanded(child:Divider(color:Colors.white12))]),
           const SizedBox(height: 12),
@@ -4127,14 +4181,26 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
         callback:(payload){
           final status=(payload.newRecord['status']??'').toString();
           if(mounted)setState(()=>_callStatus=status);
+          unawaited(_syncOutgoingCallTone());
         }).subscribe();
     _loadCallStatus();
     _connect();
   }
-  void _onRoomChanged(){if(mounted)setState((){});}
+  void _onRoomChanged(){if(mounted)setState((){});if(_room.remoteParticipants.isNotEmpty)unawaited(_stopOutgoingCallTone());}
+  Future<void> _syncOutgoingCallTone() async{
+    if(!widget.isCaller)return;
+    final shouldRing=_callStatus=='ringing'&&!_ending&&_room.remoteParticipants.isEmpty;
+    try{await _callRingtoneChannel.invokeMethod(shouldRing?'start_outgoing':'stop_outgoing');}
+    catch(error){debugPrint('CreatorVerse outgoing ringback tone failed: $error');}
+  }
+  Future<void> _stopOutgoingCallTone() async{
+    if(!widget.isCaller)return;
+    try{await _callRingtoneChannel.invokeMethod('stop_outgoing');}catch(_){}
+  }
   Future<void> _loadCallStatus() async{
     try{final row=await db.from('cv_call_invites').select('status').eq('id',widget.callId).single();
-      if(mounted)setState(()=>_callStatus=(row['status']??'').toString());}catch(_){}
+      if(mounted)setState(()=>_callStatus=(row['status']??'').toString());
+      await _syncOutgoingCallTone();}catch(_){}
   }
   Future<void> _connect() async{
     try{
@@ -4153,6 +4219,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       if(url.isEmpty||token.isEmpty)throw Exception('Call server did not return connection credentials.');
       await _room.connect(url,token);
       await _room.localParticipant?.setMicrophoneEnabled(true);
+      await _syncOutgoingCallTone();
       if(widget.mode=='video'){
         await _room.localParticipant?.setCameraEnabled(true);
         _cameraEnabled=true;
@@ -4160,6 +4227,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       await AudioManager.instance.setSpeakerOutputPreferred(true);
       if(mounted)setState(()=>_connecting=false);
     }catch(e){
+      await _stopOutgoingCallTone();
       if(mounted)setState(()=>_error=e.toString());
     }
   }
@@ -4197,6 +4265,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   Future<void> _endCall() async{
     if(_ending)return;
     _ending=true;
+    await _stopOutgoingCallTone();
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
         final status=widget.isCaller&&_callStatus!='accepted'&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
@@ -4210,6 +4279,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   }
   Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
+    if(widget.isCaller)unawaited(_callRingtoneChannel.invokeMethod('stop_outgoing').catchError((_){}));
     _ringController.dispose();
     _room.removeListener(_onRoomChanged);
     final statusChannel=_callStatusChannel;if(statusChannel!=null)unawaited(statusChannel.unsubscribe());
@@ -4248,7 +4318,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
               const SizedBox(height:18),
               Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
-              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'Missed call':_connecting?'Connecting securely…':participantCount==0?'Calling… waiting for answer':'Connected'),
+              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'Missed call':_connecting?'Connecting securely…':participantCount==0?(widget.isCaller&&_callStatus=='ringing'?'Ringing…':'Calling… waiting for answer'):'Connected'),
                 style:const TextStyle(color:muted)),
               if(_error!=null)Padding(padding:const EdgeInsets.all(20),child:Text(
                 'Check that LiveKit is configured for CreatorVerse and try again.',
