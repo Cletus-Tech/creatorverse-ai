@@ -87,6 +87,10 @@ jobs:
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ContentValues
+import android.net.Uri
+import android.provider.MediaStore
+import java.net.URL
 import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -171,6 +175,80 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "creatorverse/media_saver"
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "save") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            val mediaUrl = call.argument<String>("url")
+            val mimeType = call.argument<String>("mime") ?: "image/jpeg"
+            val requestedName = call.argument<String>("name") ?: "creatorverse-media"
+            if (mediaUrl.isNullOrBlank() || (!mimeType.startsWith("image/") && !mimeType.startsWith("video/"))) {
+                result.error("INVALID_MEDIA", "A valid image or video URL is required.", null)
+                return@setMethodCallHandler
+            }
+            Thread {
+                var savedUri: Uri? = null
+                try {
+                    val connection = URL(mediaUrl).openConnection().apply {
+                        connectTimeout = 15000
+                        readTimeout = 45000
+                    }
+                    val isVideo = mimeType.startsWith("video/")
+                    val extension = when (mimeType.lowercase()) {
+                        "image/png" -> ".png"
+                        "image/webp" -> ".webp"
+                        "image/gif" -> ".gif"
+                        "video/webm" -> ".webm"
+                        "video/quicktime" -> ".mov"
+                        else -> if (isVideo) ".mp4" else ".jpg"
+                    }
+                    val cleanName = requestedName.replace(Regex("[^A-Za-z0-9._-]"), "-")
+                        .ifBlank { "creatorverse-media" }
+                    val displayName = if (cleanName.contains(".")) cleanName else cleanName + extension
+                    val collection = if (isVideo) {
+                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                    } else {
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                    }
+                    val values = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.MediaColumns.RELATIVE_PATH,
+                                if (isVideo) "Movies/CreatorVerse" else "Pictures/CreatorVerse")
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
+                        }
+                    }
+                    savedUri = contentResolver.insert(collection, values)
+                        ?: throw IllegalStateException("Android could not create the media file.")
+                    connection.getInputStream().use { input ->
+                        val output = contentResolver.openOutputStream(savedUri!!)
+                            ?: throw IllegalStateException("Android could not open the media file.")
+                        output.use { input.copyTo(it) }
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val readyValues = ContentValues().apply {
+                            put(MediaStore.MediaColumns.IS_PENDING, 0)
+                        }
+                        contentResolver.update(savedUri!!, readyValues, null, null)
+                    }
+                    runOnUiThread { result.success(savedUri.toString()) }
+                } catch (error: Exception) {
+                    savedUri?.let { try { contentResolver.delete(it, null, null) } catch (_: Exception) {} }
+                    runOnUiThread {
+                        result.error("SAVE_MEDIA_FAILED", error.message ?: "Could not save media.", null)
+                    }
+                }
+            }.start()
         }
     }
 
