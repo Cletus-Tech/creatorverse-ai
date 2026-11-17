@@ -1903,6 +1903,7 @@ class _CommunityTabState extends State<CommunityTab> {
   late Future<List<Map<String, dynamic>>> feed;
   late Future<List<Map<String, dynamic>>> stories;
   final db = Supabase.instance.client;
+  String _feedMode = 'for_you';
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
   @override
@@ -1933,10 +1934,27 @@ class _CommunityTabState extends State<CommunityTab> {
     super.dispose();
   }
   Future<List<Map<String, dynamic>>> loadFeed() async {
-    final raw = await db.from('community_posts')
-      .select('id,user_id,title,description,image_url,media_type,destination_url,category,tags,created_at')
-      .eq('status', 'published').order('created_at', ascending: false).limit(40);
-    final posts = List<Map<String, dynamic>>.from(raw);
+    final columns = 'id,user_id,title,description,image_url,media_type,destination_url,category,tags,created_at';
+    late final List<Map<String, dynamic>> posts;
+    if (_feedMode == 'following') {
+      final me = db.auth.currentUser?.id;
+      if (me == null) return [];
+      final followsRaw = await db.from('community_follows')
+        .select('following_id').eq('follower_id', me);
+      final visibleAuthors = <String>{
+        me,
+        ...List<Map<String, dynamic>>.from(followsRaw)
+          .map((row) => row['following_id'].toString()),
+      }.toList();
+      final raw = await db.from('community_posts').select(columns)
+        .eq('status', 'published').inFilter('user_id', visibleAuthors)
+        .order('created_at', ascending: false).limit(40);
+      posts = List<Map<String, dynamic>>.from(raw);
+    } else {
+      final raw = await db.from('community_posts').select(columns)
+        .eq('status', 'published').order('created_at', ascending: false).limit(40);
+      posts = List<Map<String, dynamic>>.from(raw);
+    }
     if (posts.isEmpty) return posts;
     final ids = posts.map((p) => p['id'].toString()).toList();
     final users = posts.map((p) => p['user_id'].toString()).toSet().toList();
@@ -1987,6 +2005,13 @@ class _CommunityTabState extends State<CommunityTab> {
     final nextFeed=loadFeed(),nextStories=loadStories();
     setState((){feed=nextFeed;stories=nextStories;});
     await Future.wait([nextFeed,nextStories]);
+  }
+  Future<void> selectFeedMode(String mode) async {
+    if (_feedMode == mode || !mounted) return;
+    setState(() => _feedMode = mode);
+    final next = loadFeed();
+    setState(() => feed = next);
+    await next;
   }
   Future<void> createStory() async {
     final input=TextEditingController();XFile? media;bool video=false;
@@ -2069,13 +2094,12 @@ class _CommunityTabState extends State<CommunityTab> {
       }));
   }
   Future<void> createPost() async {
-    final title = TextEditingController(), body = TextEditingController();XFile? media;bool video=false;
+    final body = TextEditingController();XFile? media;bool video=false;
     final ok = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
       backgroundColor: panel, title: const Text('Share with the community'),
       content: SizedBox(width: 420, child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: title, maxLength: 120, decoration: const InputDecoration(labelText: 'Post title')),
-        const SizedBox(height: 10), TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
-          decoration: const InputDecoration(labelText: 'What would you like to share?')),
+        TextField(controller: body, minLines: 3, maxLines: 6, maxLength: 3000,
+          decoration: const InputDecoration(hintText: "What's on your mind?")),
         const SizedBox(height:8),Wrap(spacing:8,children:[
           TextButton.icon(onPressed:()async{final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1600);if(picked!=null)setDialog((){media=picked;video=false;});},
             icon:const Icon(Icons.add_photo_alternate_outlined),label:Text(media==null?'Add photo':(!video?'Photo selected':'Change photo'))),
@@ -2085,11 +2109,11 @@ class _CommunityTabState extends State<CommunityTab> {
       ])),
       actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(dialogContext, true), child: const Text('Publish'))])));
-    if (!mounted) { title.dispose(); body.dispose(); return; }
-    if (ok != true) { title.dispose(); body.dispose(); return; }
-    final titleText=title.text.trim(),bodyText=body.text.trim();title.dispose();body.dispose();
-    if (titleText.length < 3 || (bodyText.isEmpty&&media==null)) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a title and some post content or a photo.')));
+    if (!mounted) { body.dispose(); return; }
+    if (ok != true) { body.dispose(); return; }
+    final bodyText=body.text.trim();body.dispose();
+    if (bodyText.isEmpty&&media==null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Write something or add a photo/video.')));
       return;
     }
     try {
@@ -2102,6 +2126,9 @@ class _CommunityTabState extends State<CommunityTab> {
         await db.storage.from('community-media').uploadBinary(path,await media!.readAsBytes(),fileOptions:FileOptions(contentType:mime));
         imageUrl=db.storage.from('community-media').getPublicUrl(path);
       }
+      final titleText = bodyText.isEmpty
+        ? (video ? 'Shared a video' : 'Shared a photo')
+        : (bodyText.length > 80 ? '${bodyText.substring(0, 77)}...' : bodyText);
       await db.from('community_posts').insert({'user_id':userId,'title':titleText,'description':bodyText,
         'image_url':imageUrl,'media_type':imageUrl==null?'none':(video?'video':'image'),'category':'General','tags':<String>[],'status':'published'});
       await refresh();
@@ -2167,7 +2194,15 @@ class _CommunityTabState extends State<CommunityTab> {
         const Text('Community', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: -.4)),
         const SizedBox(height: 3),
         const Text('Connect, share and learn together.', style: TextStyle(color: muted, fontSize: 12)),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
+        Row(children: [
+          ChoiceChip(label: const Text('For you'), selected: _feedMode == 'for_you',
+            onSelected: (_) => selectFeedMode('for_you')),
+          const SizedBox(width: 8),
+          ChoiceChip(label: const Text('Following'), selected: _feedMode == 'following',
+            onSelected: (_) => selectFeedMode('following')),
+        ]),
+        const SizedBox(height: 8),
         FutureBuilder<List<Map<String,dynamic>>>(future:stories,builder:(context,storySnap){
           final items=storySnap.data??[];
           return SizedBox(height:104,child:ListView(scrollDirection:Axis.horizontal,children:[
@@ -2230,10 +2265,15 @@ class _CommunityTabState extends State<CommunityTab> {
           ),
         ),
         const SizedBox(height: 14),
-        if (posts.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
-          Icon(Icons.forum_outlined, color: emerald, size: 44), SizedBox(height: 12),
-          Text('Your community starts here', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-          SizedBox(height: 6), Text('Be the first to share an update.', style: TextStyle(color: muted))])),
+        if (posts.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
+          const Icon(Icons.forum_outlined, color: emerald, size: 44), const SizedBox(height: 12),
+          Text(_feedMode == 'following' ? 'Your Following feed is quiet' : 'Your community starts here',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(_feedMode == 'following'
+            ? 'Follow members to see their updates here, or share your own post.'
+            : 'Be the first to share an update.',
+            textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
         for (final post in posts) CommunityPostCard(post: post, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onReport: () => reportPost(post)),
       ]));
     });
