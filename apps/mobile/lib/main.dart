@@ -494,7 +494,8 @@ class _MainShellState extends State<MainShell> {
   }
 
   Future<void> _handleIncomingCall(Map<String,dynamic> payload) async{
-    if(_incomingCallDialogOpen||(payload['status']??'')!='ringing')return;
+    final initialStatus=(payload['status']??'').toString();
+    if(_incomingCallDialogOpen||!['calling','ringing'].contains(initialStatus))return;
     final callerId=(payload['caller_id']??'').toString();
     final callId=(payload['id']??'').toString();
     final conversationId=(payload['conversation_id']??'').toString();
@@ -504,6 +505,20 @@ class _MainShellState extends State<MainShell> {
        conversationId.isEmpty||!['audio','video'].contains(mode)||
        (expiry!=null&&expiry.isBefore(DateTime.now()))||
        !_handledIncomingCallIds.add(callId)) { return; }
+    // The caller stays on Calling… until this recipient device actually receives
+    // the invite. Only now do we move the shared call state to Ringing… .
+    try {
+      if(initialStatus=='calling'){
+        await db.rpc('cv_set_call_invite_status',params:{'p_call_id':callId,'p_status':'ringing'});
+      }
+      final current=await db.from('cv_call_invites').select('status,expires_at').eq('id',callId).single();
+      if(current['status']!='ringing')return;
+      final currentExpiry=DateTime.tryParse((current['expires_at']??'').toString());
+      if(currentExpiry!=null&&!currentExpiry.isAfter(DateTime.now()))return;
+    }catch(error){
+      debugPrint('Could not mark incoming call as ringing: $error');
+      return;
+    }
     _incomingCallDialogOpen=true;
     try {
       await _callRingtoneChannel.invokeMethod('start');
@@ -4262,7 +4277,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       final status=(row['status']??'').toString();
       if(mounted)setState(()=>_callStatus=status);
       _handleCallStatus(status);
-      if(widget.isCaller&&status=='ringing'){
+      if(widget.isCaller&&['calling','ringing'].contains(status)){
         final expiry=DateTime.tryParse((row['expires_at']??'').toString());
         final remaining=expiry==null?const Duration(seconds:45):expiry.toUtc().difference(DateTime.now().toUtc());
         if(remaining<=Duration.zero){await _expireCallAsMissed();}else{_callTimeoutTimer=Timer(remaining,_expireCallAsMissed);}
@@ -4280,10 +4295,10 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     }
   }
   Future<void> _expireCallAsMissed() async{
-    if(!widget.isCaller||_ending||_callStatus!='ringing')return;
+    if(!widget.isCaller||_ending||!['calling','ringing'].contains(_callStatus))return;
     try{await db.rpc('cv_set_call_invite_status',params:{'p_call_id':widget.callId,'p_status':'missed'});}
     catch(e){debugPrint('CreatorVerse call expiry update failed: $e');}
-    if(mounted&&_callStatus=='ringing')setState(()=>_callStatus='missed');
+    if(mounted&&['calling','ringing'].contains(_callStatus))setState(()=>_callStatus='missed');
     _handleCallStatus('missed');
   }
   Future<void> _connect() async{
@@ -4407,7 +4422,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
               const SizedBox(height:18),
               Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
-              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'No answer':_connecting?'Connecting…':participantCount==0?(widget.isCaller&&_callStatus=='ringing'?'Ringing…':'Waiting for connection…'):'Connected'),
+              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'No answer':participantCount>0?'Connected':_connecting||_callStatus=='accepted'?'Connecting…':widget.isCaller&&_callStatus=='calling'?'Calling…':widget.isCaller&&_callStatus=='ringing'?'Ringing…':'Waiting for connection…'),
                 style:const TextStyle(color:muted)),
               if(_error!=null)Padding(padding:const EdgeInsets.all(20),child:Text(
                 'Check that LiveKit is configured for CreatorVerse and try again.',
