@@ -2055,7 +2055,6 @@ class _CommunityTabState extends State<CommunityTab> {
   String _feedMode = 'for_you';
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
-  @override
   String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode';
 
   Future<List<Map<String,dynamic>>> _initialFeed() async {
@@ -2085,6 +2084,7 @@ class _CommunityTabState extends State<CommunityTab> {
     }
   }
 
+  @override
   void initState() {
     super.initState(); feed = _initialFeed(); stories = loadStories();
     _syncChannel=db.channel('cv-community-feed-sync')
@@ -2521,11 +2521,26 @@ class CommunityMediaViewer extends StatelessWidget {
           _mediaMimeFromUrl(url,video:video),'creatorverse-${post['id']??'community-media'}'),
           icon:const Icon(Icons.download_rounded))]),
       body:Column(children:[
-        Expanded(child:Center(child:video
-          ?ConstrainedBox(constraints:const BoxConstraints(maxHeight:520),child:InlineVideoPlayer(url:url))
-          :InteractiveViewer(minScale:.6,maxScale:5,child:CachedNetworkImage(imageUrl:url,fit:BoxFit.contain,
-            memCacheWidth:1600,placeholder:(_,__)=>const Center(child:CircularProgressIndicator(color:emerald)),
-            errorWidget:(_,__,___)=>const Text('Media could not be loaded',style:TextStyle(color:Colors.white70))))),
+        Expanded(
+          child: Center(
+            child: video
+              ? ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 520),
+                  child: InlineVideoPlayer(url: url),
+                )
+              : InteractiveViewer(
+                  minScale: .6,
+                  maxScale: 5,
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.contain,
+                    memCacheWidth: 1600,
+                    placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: emerald)),
+                    errorWidget: (_, __, ___) => const Text('Media could not be loaded', style: TextStyle(color: Colors.white70)),
+                  ),
+                ),
+          ),
+        ),
         Container(width:double.infinity,color:const Color(0xFF101719),padding:const EdgeInsets.fromLTRB(16,12,16,18),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text((post['title']??'').toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:17)),
@@ -2573,11 +2588,23 @@ class CommunityPostCard extends StatelessWidget {
           alignment:Alignment.topRight,children:[
             GestureDetector(onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CommunityMediaViewer(
               post:post,onComments:onComments))),
-              child:post['media_type']=='video'
-                ?InlineVideoPlayer(url:image)
-                :ClipRRect(borderRadius:BorderRadius.circular(8),child:CachedNetworkImage(imageUrl:image,width:double.infinity,
-                  fit:BoxFit.cover,memCacheWidth:1000,placeholder:(_,__)=>const SizedBox(height:210,child:Center(child:CircularProgressIndicator(strokeWidth:2,color:emerald))),
-                  errorWidget:(_,__,___)=>const SizedBox.shrink())),
+              child: post['media_type'] == 'video'
+              ? InlineVideoPlayer(url: image)
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: image,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 1000,
+                    placeholder: (_, __) => const SizedBox(
+                      height: 210,
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: emerald)),
+                    ),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+          ),
             IconButton.filled(onPressed:()=>_saveRemoteMedia(context,image,
               _mediaMimeFromUrl(image,video:post['media_type']=='video'),
               'creatorverse-${post['id']??'community-media'}'),
