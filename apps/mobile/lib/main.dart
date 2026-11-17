@@ -3784,14 +3784,16 @@ class CreatorVerseCallScreen extends StatefulWidget{
   const CreatorVerseCallScreen({super.key,required this.conversationId,required this.callId,required this.peerName,required this.mode,required this.isCaller});
   @override State<CreatorVerseCallScreen> createState()=>_CreatorVerseCallScreenState();
 }
-class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
+class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with SingleTickerProviderStateMixin{
   final db=Supabase.instance.client;
   late final Room _room;
   bool _connecting=true,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
   String? _error,_callStatus;
   RealtimeChannel? _callStatusChannel;
+  late final AnimationController _ringController;
   @override void initState(){
     super.initState();
+    _ringController=AnimationController(vsync:this,duration:const Duration(milliseconds:1700))..repeat();
     _room=Room(roomOptions:const RoomOptions(adaptiveStream:true,dynacast:true));
     _room.addListener(_onRoomChanged);
     _callStatusChannel=db.channel('cv-call-status-${widget.callId}')
@@ -3801,9 +3803,14 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
           final status=(payload.newRecord['status']??'').toString();
           if(mounted)setState(()=>_callStatus=status);
         }).subscribe();
+    _loadCallStatus();
     _connect();
   }
   void _onRoomChanged(){if(mounted)setState((){});}
+  Future<void> _loadCallStatus() async{
+    try{final row=await db.from('cv_call_invites').select('status').eq('id',widget.callId).single();
+      if(mounted)setState(()=>_callStatus=(row['status']??'').toString());}catch(_){}
+  }
   Future<void> _connect() async{
     try{
       final mic=await Permission.microphone.request();
@@ -3878,6 +3885,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
   }
   Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
+    _ringController.dispose();
     _room.removeListener(_onRoomChanged);
     final statusChannel=_callStatusChannel;if(statusChannel!=null)unawaited(statusChannel.unsubscribe());
     unawaited(_disposeLiveKitRoom());
@@ -3895,8 +3903,23 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
           ?VideoTrackRenderer(remote,fit:VideoViewFit.cover)
           :Container(color:const Color(0xFF102329),child:Center(child:Column(
             mainAxisSize:MainAxisSize.min,children:[
-              CircleAvatar(radius:54,backgroundColor:emerald.withValues(alpha:.18),
-                child:const Icon(Icons.person,color:emerald,size:56)),
+              SizedBox(width:176,height:176,child:AnimatedBuilder(
+                animation:_ringController,
+                builder:(context,child){
+                  final phase=_ringController.value;
+                  return Stack(alignment:Alignment.center,children:[
+                    for(var ring=0;ring<2;ring++)
+                      Opacity(opacity:(1-((phase+ring*.5)%1)).clamp(0.0,1.0),
+                        child:Transform.scale(scale:1+(((phase+ring*.5)%1)*.48),
+                          child:Container(width:112,height:112,decoration:BoxDecoration(
+                            shape:BoxShape.circle,border:Border.all(
+                              color:emerald.withValues(alpha:.45),width:1.5))))),
+                    Container(width:108,height:108,decoration:BoxDecoration(
+                      shape:BoxShape.circle,color:emerald.withValues(alpha:.16),
+                      border:Border.all(color:emerald.withValues(alpha:.55),width:1.5)),
+                      child:const Icon(Icons.person,color:emerald,size:56)),
+                  ]);
+                })),
               const SizedBox(height:18),
               Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
@@ -3909,8 +3932,8 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
         if(widget.mode=='video'&&local!=null)Positioned(right:16,top:16,width:112,height:160,
           child:ClipRRect(borderRadius:BorderRadius.circular(16),
             child:VideoTrackRenderer(local,fit:VideoViewFit.cover))),
-        if(_connecting)const Positioned(top:18,left:0,right:0,
-          child:Center(child:CircularProgressIndicator(color:emerald))),
+        if(_connecting)const Positioned(top:24,left:0,right:0,
+          child:Center(child:Text('Connecting securely…',style:TextStyle(color:Colors.white70,fontSize:12)))),
         Positioned(left:0,right:0,bottom:28,child:Row(
           mainAxisAlignment:MainAxisAlignment.center,children:[
             _callControl(_muted?Icons.mic_off:Icons.mic,_muted?'Unmute':'Mute',_toggleMicrophone),
