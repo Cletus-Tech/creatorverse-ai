@@ -2507,13 +2507,27 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
         }
       }catch(_){}
     }
-    final msgRaw = await db.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at,attachment_path,attachment_name,attachment_mime')
+    final msgRaw = await db.from('cv_direct_messages').select('id,conversation_id,body,sender_id,created_at,read_at,attachment_path,attachment_name,attachment_mime')
       .inFilter('conversation_id', ids).order('created_at', ascending: false);
+    final groupConversationIds=groupRows.map((g)=>g['id'].toString()).toSet();
+    final groupIncomingIds=List<Map<String,dynamic>>.from(msgRaw)
+      .where((m)=>groupConversationIds.contains(m['conversation_id'].toString())&&m['sender_id']!=me)
+      .map((m)=>m['id'].toString()).toList();
+    final groupReadIds=<String>{};
+    if(groupIncomingIds.isNotEmpty){
+      try{
+        final receipts=await db.from('cv_message_receipts').select('message_id')
+          .eq('user_id',me).inFilter('message_id',groupIncomingIds).not('read_at','is',null);
+        groupReadIds.addAll(List<Map<String,dynamic>>.from(receipts).map((r)=>r['message_id'].toString()));
+      }catch(_){}
+    }
     final latest = <String, Map<String, dynamic>>{}, unreadByConversation = <String, int>{};
     for (final m in List<Map<String, dynamic>>.from(msgRaw)) {
       final cid = m['conversation_id'].toString();
       latest.putIfAbsent(cid, () => m);
-      if (m['sender_id'] != me && m['read_at'] == null) unreadByConversation[cid] = (unreadByConversation[cid] ?? 0) + 1;
+      final isGroup=groupConversationIds.contains(cid);
+      final isUnread=isGroup ? (m['read_at']==null&&!groupReadIds.contains(m['id'].toString())) : m['read_at']==null;
+      if (m['sender_id'] != me && isUnread) unreadByConversation[cid] = (unreadByConversation[cid] ?? 0) + 1;
     }
     for (final c in conversations) {
       if(c['is_group']==true){
@@ -2920,9 +2934,18 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Future<void> _markMessageRead(String id) async{
     final now=DateTime.now().toUtc().toIso8601String();
-    try{await db.from('cv_direct_messages').update({'read_at':now}).eq('id',id).eq('conversation_id',widget.conversationId)
-      .neq('sender_id',db.auth.currentUser!.id);
-      final i=_rows.indexWhere((m)=>m['id'].toString()==id);if(i>=0){_rows[i]['read_at']=now;if(mounted)setState((){});}
+    try{
+      if(widget.person['is_group']==true){
+        final me=db.auth.currentUser!.id;
+        await db.from('cv_message_receipts').upsert({
+          'message_id':id,'user_id':me,'delivered_at':now,'read_at':now
+        },onConflict:'message_id,user_id');
+      }else{
+        await db.from('cv_direct_messages').update({'read_at':now}).eq('id',id).eq('conversation_id',widget.conversationId)
+          .neq('sender_id',db.auth.currentUser!.id);
+      }
+      final i=_rows.indexWhere((m)=>m['id'].toString()==id);
+      if(i>=0){_rows[i]['read_at']=now;if(mounted)setState((){});}
     }catch(_){}
   }
   Future<void> _loadInitialMessages() async{
@@ -2932,10 +2955,32 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       final loaded=List<Map<String,dynamic>>.from(raw);
       unawaited(_loadSenderNames(loaded.map((m)=>m['sender_id'])));
       final me=db.auth.currentUser?.id;
-      final unread=loaded.where((m)=>m['sender_id']!=me&&m['read_at']==null).map((m)=>m['id'].toString()).toList();
-      if(unread.isNotEmpty&&me!=null){final now=DateTime.now().toUtc().toIso8601String();
-        try{await db.from('cv_direct_messages').update({'read_at':now}).inFilter('id',unread).eq('conversation_id',widget.conversationId);
-          for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}}catch(_){}
+      if(me!=null&&widget.person['is_group']==true){
+        final incomingIds=loaded.where((m)=>m['sender_id']!=me).map((m)=>m['id'].toString()).toList();
+        final readIds=<String>{};
+        if(incomingIds.isNotEmpty){
+          try{
+            final receipts=await db.from('cv_message_receipts').select('message_id')
+              .eq('user_id',me).inFilter('message_id',incomingIds).not('read_at','is',null);
+            readIds.addAll(List<Map<String,dynamic>>.from(receipts).map((r)=>r['message_id'].toString()));
+          }catch(_){}
+        }
+        final unread=incomingIds.where((id)=>!readIds.contains(id)).toList();
+        if(unread.isNotEmpty){
+          final now=DateTime.now().toUtc().toIso8601String();
+          try{
+            await db.from('cv_message_receipts').upsert(unread.map((id)=>{
+              'message_id':id,'user_id':me,'delivered_at':now,'read_at':now
+            }).toList(),onConflict:'message_id,user_id');
+            for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}
+          }catch(_){}
+        }
+      }else{
+        final unread=loaded.where((m)=>m['sender_id']!=me&&m['read_at']==null).map((m)=>m['id'].toString()).toList();
+        if(unread.isNotEmpty&&me!=null){final now=DateTime.now().toUtc().toIso8601String();
+          try{await db.from('cv_direct_messages').update({'read_at':now}).inFilter('id',unread).eq('conversation_id',widget.conversationId);
+            for(final m in loaded){if(unread.contains(m['id'].toString()))m['read_at']=now;}}catch(_){}
+        }
       }
       if(!mounted)return;final live={for(final row in _rows)row['id'].toString():row};for(final row in loaded){live[row['id'].toString()]=row;}final merged=live.values.toList()..sort((a,b)=>(a['created_at']??'').toString().compareTo((b['created_at']??'').toString()));setState((){_rows..clear()..addAll(merged);_initialLoading=false;});
       _scrollToLatest(force:true);
