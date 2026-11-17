@@ -579,8 +579,43 @@ jobs:
               output.write('version=' + version + chr(10))
           print(f'CreatorVerse release version: {version}')
           PY
+      - name: Check push contains only Dart source changes
+        id: change_scope
+        if: github.event_name == 'push'
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+          if printf '%s\n' "$changed_files" | grep -Ev '^apps/mobile/lib/.*\.dart
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          release-version: ${{ inputs.release_version || steps.app_version.outputs.version }}
+          track: stable
+          working-directory: apps/mobile
+          args: '--dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h'
+      - name: Create Shorebird Android release
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release'
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          flutter-version: '3.47.9'
+          platform: android
+          working-directory: apps/mobile
+          args: '--artifact=apk --dart-define=SUPABASE_URL=https://xgdngnekihhnkzurhvpe.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h'
+      - name: Upload Shorebird-enabled APK (first install or native release)
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: creatorverse-android-shorebird-release
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+ | grep -q .; then
+            echo "patchable=false" >> "$GITHUB_OUTPUT"
+            echo "Non-Dart changes detected. Skipping OTA; use a full release for native, plugin, asset or build changes."
+          else
+            echo "patchable=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish Shorebird OTA patch
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'patch')
+        if: (github.event_name == 'push' && steps.change_scope.outputs.patchable == 'true') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'patch')
         uses: shorebirdtech/shorebird-patch@v1
         with:
           platform: android
