@@ -17,7 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:livekit_client/livekit_client.dart';
+import 'package:livekit_client/livekit_client.dart' hide ConnectionState;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -436,8 +436,8 @@ class _MainShellState extends State<MainShell> {
           conversationId:conversationId,callId:callId,peerName:callerName,mode:mode,isCaller:false)));
       }
     }catch(e){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not answer the call: $e')));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not answer the call: $e')));}
     }
   }
 
@@ -2910,7 +2910,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   static const _wallpapers=<Color>[Color(0xFF07151A),Color(0xFF102329),Color(0xFF17142B),Color(0xFF202020),Color(0xFF0D2630),Color(0xFF292016)];
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   Timer? _typingHeartbeatTimer,_typingStopTimer;
-  bool _otherTyping=false,_otherOnline=false,_incomingCallDialogOpen=false;
+  bool _otherTyping=false,_otherOnline=false;
   final Set<String> _groupMemberIds=<String>{};
   int _onlineGroupCount=0;
   final AudioRecorder _voiceRecorder=AudioRecorder();
@@ -2968,8 +2968,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString(),
         mode:mode,isCaller:true)));
     }catch(e){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not start the call: $e')));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not start the call: $e')));}
     }
   }
   String get _themeKey=>'cv_chat_theme_${widget.conversationId}';
@@ -3375,8 +3375,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     try{
       final allowed=await _voiceRecorder.hasPermission();
       if(!allowed){
-        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:Text('Allow microphone access to record a voice note.')));
+        if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('Allow microphone access to record a voice note.')));}
         return;
       }
       final path='${Directory.systemTemp.path}/creatorverse_voice_${DateTime.now().microsecondsSinceEpoch}.m4a';
@@ -3394,8 +3394,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(mounted&&started!=null)setState(()=>_voiceRecordingDuration=DateTime.now().difference(started));
       });
     }catch(e){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not start voice recording: $e')));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not start voice recording: $e')));}
     }
   }
   Future<void> _finishVoiceRecording() async{
@@ -3413,14 +3413,14 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       });
       if(path==null||duration<const Duration(milliseconds:600)){
         if(path!=null){try{await File(path).delete();}catch(_){}}
-        if(mounted)setState(()=>_voicePreviewPath=null);
-        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:Text('Record a little longer before sending your voice note.')));
+        if(mounted){setState(()=>_voicePreviewPath=null);}
+        if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('Record a little longer before sending your voice note.')));}
       }
     }catch(e){
-      if(mounted)setState(()=>_recordingVoice=false);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not finish voice recording: $e')));
+      if(mounted){setState(()=>_recordingVoice=false);}
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not finish voice recording: $e')));}
     }
   }
   Future<void> _cancelVoiceRecording() async{
@@ -3436,7 +3436,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   Future<void> _discardVoiceNote() async{
     final path=_voicePreviewPath;
     if(path!=null){try{await File(path).delete();}catch(_){}}
-    if(mounted)setState(()=>_voicePreviewPath=null);
+    if(mounted){setState(()=>_voicePreviewPath=null);}
   }
   Future<void> _sendVoiceNote() async{
     final localPath=_voicePreviewPath;
@@ -3761,7 +3761,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
     _ending=true;
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
-        final status=isCaller&&_callStatus!='accepted'&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
+        final status=widget.isCaller&&_callStatus!='accepted'&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
         await db.rpc('cv_set_call_invite_status',params:{
           'p_call_id':widget.callId,'p_status':status
         });
@@ -3780,7 +3780,6 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen>{
   @override Widget build(BuildContext context){
     final remote=_remoteVideoTrack();
     final local=_localVideoTrack();
-    final connected=!_connecting&&_error==null;
     final participantCount=_room.remoteParticipants.length;
     return Scaffold(
       backgroundColor:const Color(0xFF06130C),
