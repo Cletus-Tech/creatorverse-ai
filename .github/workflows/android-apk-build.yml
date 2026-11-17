@@ -89,6 +89,27 @@ jobs:
         working-directory: apps/mobile
         run: flutter pub get
 
+      - name: Patch Android WebView ProGuard compatibility
+        working-directory: apps/mobile
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          matches = list(Path.home().joinpath('.pub-cache/hosted/pub.dev').glob('flutter_inappwebview_android-*/android/build.gradle'))
+          if not matches:
+              raise SystemExit('flutter_inappwebview_android Gradle file was not found in the pub cache')
+          for gradle in matches:
+              source = gradle.read_text()
+              old = "getDefaultProguardFile('proguard-android.txt')"
+              new = "getDefaultProguardFile('proguard-android-optimize.txt')"
+              if old in source:
+                  gradle.write_text(source.replace(old, new))
+                  print(f'Patched {gradle}')
+              elif new in source:
+                  print(f'Already compatible: {gradle}')
+              else:
+                  raise SystemExit(f'Expected ProGuard configuration not found in {gradle}')
+          PY
+
       - name: Analyze Flutter code
         working-directory: apps/mobile
         run: flutter analyze
