@@ -18,3 +18,7 @@ The app uses the same Supabase project as the website. Configure \`SUPABASE_URL\
 Native Flutter shell; sign-in and account creation; shared Supabase email/password identity and persisted session; Home, Learn, Campus, Community and Profile tabs; shared messages and notifications; native course, community, marketplace and selected admin workflows. The full website Admin Portal is opened inside an authenticated in-app WebView for role-authorized admin/super-admin users so the existing complete control board remains available while native admin parity is built. The WebView receives only the signed-in user's Supabase session; no service-role key is placed in the app.
 
 The app and website share the same Supabase project and user identity. This does not mean every website feature has a native Flutter implementation yet. Native feature parity will be delivered in tested vertical slices. No production database schema or RLS changes are made by the mobile client.
+
+## Over-the-air updates
+
+See [OTA_SETUP.md](OTA_SETUP.md) for the one-time Shorebird setup, Android signing-key setup, first release, and the rules for Dart patches versus native Android releases.
