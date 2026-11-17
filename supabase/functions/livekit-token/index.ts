@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { AccessToken } from "npm:livekit-server-sdk@2.19.2";
+import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.19.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,14 +54,25 @@ Deno.serve(async (request: Request) => {
       return json({ error: "This call invitation has expired." }, 410);
     }
 
-    const livekitUrl = Deno.env.get("LIVEKIT_URL");
+    const configuredLivekitUrl = Deno.env.get("LIVEKIT_URL");
     const livekitApiKey = Deno.env.get("LIVEKIT_API_KEY");
     const livekitApiSecret = Deno.env.get("LIVEKIT_API_SECRET");
-    if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
+    if (!configuredLivekitUrl || !livekitApiKey || !livekitApiSecret) {
       return json({ error: "LiveKit is not configured yet. Add LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to Supabase Edge Function secrets." }, 503);
     }
 
+    const livekitUrl = configuredLivekitUrl.trim().replace(/^https:/i, "wss:").replace(/^http:/i, "ws:").replace(/\/+$/, "");
+    if (!/^wss?:\/\//i.test(livekitUrl)) return json({ error: "LIVEKIT_URL must be the WebSocket URL from the same LiveKit project as the API key." }, 503);
+
     const roomName = `cvcall_${callId}`;
+    const livekitApiHost = livekitUrl.replace(/^wss:/i, "https:").replace(/^ws:/i, "http:");
+    try {
+      // Validate the key/secret pair against the selected LiveKit project before issuing a participant token.
+      await new RoomServiceClient(livekitApiHost, livekitApiKey, livekitApiSecret).listRooms([roomName]);
+    } catch (validationError) {
+      console.error("LiveKit credential validation failed:", validationError);
+      return json({ error: "LiveKit rejected the configured API key/secret. Confirm LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET all belong to the same LiveKit project." }, 503);
+    }
     const token = new AccessToken(livekitApiKey, livekitApiSecret, {
       identity: authData.user.id,
       name: "CreatorVerse member",
