@@ -317,7 +317,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if(email.text.trim().isEmpty||!email.text.contains('@')){setState(()=>{error=true;message='Enter your email address first, then tap Forgot password.';});return;}
     setState(()=>{sendingReset=true;message=null;error=false;});
     try{
-      await Supabase.instance.client.auth.resetPasswordForEmail(email.text.trim(),redirectTo:'io.supabase.creatorverse://reset-callback/');
+      await Supabase.instance.client.auth.resetPasswordForEmail(email.text.trim(),redirectTo:'io.supabase.creatorverse://login-callback/');
       if(mounted)setState(()=>{error=false;message='If an account exists for this email, a password reset link has been sent. Check your inbox.';});
     }on AuthException catch(e){if(mounted)setState(()=>{error=true;message=e.message;});}
     catch(_){if(mounted)setState(()=>{error=true;message='Could not send the reset link. Check your connection and try again.';});}
