@@ -503,8 +503,10 @@ class _MainShellState extends State<MainShell> {
       }
     }catch(e){
       _handledIncomingCallIds.remove(callId);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not answer the call: $e')));
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content:Text('Could not answer the call: $e')));
+      }
     }
   }
 
