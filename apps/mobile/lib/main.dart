@@ -3197,7 +3197,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   String? _activeRecordingPath,_voicePreviewPath;
   DateTime? _voiceRecordingStartedAt;
   Duration _voiceRecordingDuration=Duration.zero;
-  @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_loadGroupMemberIds();_subscribeToMessages();
+  @override void initState(){super.initState();_loadChatTheme();_loadInitialMessages();_loadGroupMemberIds();_subscribeToMessages();if(widget.person['is_group']!=true)unawaited(_refreshOtherLastSeen());
     input.addListener(_handleTypingInput);
     _chatScrollController.addListener(_handleScroll);}
   @override void dispose(){input.removeListener(_handleTypingInput);_typingHeartbeatTimer?.cancel();_typingStopTimer?.cancel();
@@ -3351,7 +3351,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(online)break;
       }
     }catch(_){}
-    if(mounted&&online!=_otherOnline){setState(()=>_otherOnline=online);if(!online)unawaited(_refreshOtherLastSeen());else setState(()=>_otherLastSeen='online');}
+    if(mounted&&online!=_otherOnline){setState(()=>_otherOnline=online);if(!online)unawaited(_refreshOtherLastSeen());else setState(()=>_otherLastSeen='online');}else if(!online)unawaited(_refreshOtherLastSeen());
   }
   Future<void> _refreshGroupReadCounts(Iterable<String> messageIds) async{
     if(widget.person['is_group']!=true)return;
