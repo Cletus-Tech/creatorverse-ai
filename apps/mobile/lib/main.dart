@@ -3628,31 +3628,63 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Widget _messageBubble(Map<String,dynamic> m){
     final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true;
-    final mediaPath=(m['attachment_path']??'').toString();
-    final mediaMime=(m['attachment_mime']??'').toString();
-    final standaloneMedia=mediaPath.isNotEmpty&&!mediaMime.startsWith('audio/');
     final groupReadCount=widget.person['is_group']==true?(_groupReadCounts[m['id'].toString()]??0):0;
     final read=widget.person['is_group']==true?groupReadCount>0:m['read_at']!=null;
     final time=DateTime.tryParse((m['created_at']??'').toString());
-    return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,child:Container(
-      constraints:const BoxConstraints(maxWidth:310),margin:EdgeInsets.symmetric(vertical:standaloneMedia?7:4),
-      padding:standaloneMedia?EdgeInsets.zero:const EdgeInsets.symmetric(horizontal:13,vertical:10),
-      decoration:standaloneMedia?null:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
-      child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
-        if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,child:Padding(
-          padding:const EdgeInsets.only(bottom:4),child:Text(_senderNames[(m['sender_id']??'').toString()]??'Group member',
-            style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
-        if((m['body']??'').toString().isNotEmpty&&!(m['attachment_mime']??'').toString().startsWith('audio/'))Align(alignment:Alignment.centerLeft,child:Text(m['body'].toString(),style:const TextStyle(height:1.35))),
-        if((m['attachment_path']??'').toString().isNotEmpty)
-          if((m['attachment_mime']??'').toString().startsWith('audio/'))
-            VoiceMessagePlayer(key:ValueKey(m['id']),path:m['attachment_path'].toString())
-          else
-            MessageAttachmentPreview(path:m['attachment_path'].toString(),mime:(m['attachment_mime']??'').toString(),name:(m['attachment_name']??'Attachment').toString()),
-        const SizedBox(height:4),Row(mainAxisSize:MainAxisSize.min,children:[
-          Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),style:const TextStyle(fontSize:9,color:Colors.white60)),
-          if(mine)...[if(widget.person['is_group']==true&&groupReadCount>0)Padding(padding:const EdgeInsets.only(right:4),child:Text('Seen by $groupReadCount',style:const TextStyle(fontSize:8,color:Colors.white70))),const SizedBox(width:5),Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)]
-        ])
-      ])));
+    final body=(m['body']??'').toString();
+    final path=(m['attachment_path']??'').toString();
+    final mime=(m['attachment_mime']??'').toString();
+    final hasAttachment=path.isNotEmpty;
+    final isAudio=mime.startsWith('audio/');
+    final standaloneMedia=hasAttachment&&!isAudio;
+    final senderName=_senderNames[(m['sender_id']??'').toString()]??'Group member';
+    final metadata=Row(mainAxisSize:MainAxisSize.min,children:[
+      Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),
+        style:const TextStyle(fontSize:9,color:Colors.white60)),
+      if(mine)...[
+        if(widget.person['is_group']==true&&groupReadCount>0)Padding(
+          padding:const EdgeInsets.only(right:4),
+          child:Text('Seen by $groupReadCount',style:const TextStyle(fontSize:8,color:Colors.white70))),
+        const SizedBox(width:5),
+        Icon(pending?Icons.schedule:read?Icons.done_all:Icons.done,size:14,
+          color:pending?Colors.white54:read?const Color(0xFF66C8FF):Colors.white60)
+      ]
+    ]);
+    if(standaloneMedia){
+      return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,
+        child:Column(crossAxisAlignment:mine?CrossAxisAlignment.end:CrossAxisAlignment.start,
+          mainAxisSize:MainAxisSize.min,children:[
+            if(widget.person['is_group']==true&&!mine)Padding(
+              padding:const EdgeInsets.only(left:5,bottom:3),
+              child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700))),
+            if(body.trim().isNotEmpty)Container(
+              constraints:const BoxConstraints(maxWidth:310),
+              margin:const EdgeInsets.symmetric(vertical:2),
+              padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
+              decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
+              child:Text(body,style:const TextStyle(height:1.35))),
+            Container(constraints:const BoxConstraints(maxWidth:310),
+              margin:const EdgeInsets.symmetric(vertical:3),
+              child:MessageAttachmentPreview(path:path,mime:mime,
+                name:(m['attachment_name']??'Attachment').toString())),
+            Padding(padding:const EdgeInsets.symmetric(horizontal:4,vertical:2),child:metadata),
+          ]));
+    }
+    return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,
+      child:Container(constraints:const BoxConstraints(maxWidth:310),
+        margin:const EdgeInsets.symmetric(vertical:4),
+        padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
+        decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
+        child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
+          if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,
+            child:Padding(padding:const EdgeInsets.only(bottom:4),
+              child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
+          if(body.isNotEmpty&&!isAudio)Align(alignment:Alignment.centerLeft,
+            child:Text(body,style:const TextStyle(height:1.35))),
+          if(hasAttachment&&isAudio)VoiceMessagePlayer(key:ValueKey(m['id']),path:path),
+          const SizedBox(height:4),
+          metadata,
+        ])));
   }
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:_wallpaper,
