@@ -2700,7 +2700,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
             Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>setState((){replyingTo=(row['parent_id']??row['id']).toString();replyingToName=((row['author'] as Map?)?['full_name']??(row['author'] as Map?)?['username']??'member').toString();}),style:TextButton.styleFrom(padding:const EdgeInsets.symmetric(horizontal:4),minimumSize:const Size(0,28)),child:const Text('Reply',style:TextStyle(fontSize:11,color:emerald))))
           ]))]))]);
       })),
-      if(replyingTo!=null)Padding(padding:const EdgeInsets.only(bottom:8),child:Row(children:[Expanded(child:Text('Replying to '+(replyingToName??'member'),style:const TextStyle(color:emerald,fontSize:12))),IconButton(onPressed:()=>setState((){replyingTo=null;replyingToName=null;}),icon:const Icon(Icons.close,size:18))])),
+      if(replyingTo!=null)Padding(padding:const EdgeInsets.only(bottom:8),child:Row(children:[Expanded(child:Text("Replying to ${replyingToName??'member'}",style:const TextStyle(color:emerald,fontSize:12))),IconButton(onPressed:()=>setState((){replyingTo=null;replyingToName=null;}),icon:const Icon(Icons.close,size:18))])),
       const SizedBox(height: 10), Row(children: [Expanded(child: TextField(controller: input, minLines: 1, maxLines: 3, decoration: const InputDecoration(hintText: 'Write a comment...'))),
         const SizedBox(width: 8), IconButton(onPressed: sending ? null : send, icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald))]),
     ]))));
