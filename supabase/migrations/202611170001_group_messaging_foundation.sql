@@ -35,10 +35,7 @@ on public.cv_conversations for select to authenticated
 using (
   (not is_group and (auth.uid() = user_a or auth.uid() = user_b))
   or
-  (is_group and exists (
-    select 1 from public.cv_conversation_members m
-    where m.conversation_id = id and m.user_id = auth.uid()
-  ))
+  (is_group and public.cv_is_conversation_member(id))
 );
 
 drop policy if exists "CV users start direct conversations" on public.cv_conversations;
@@ -63,12 +60,26 @@ drop policy if exists "CV conversation members read own groups" on public.cv_con
 create policy "CV conversation members read own groups"
 on public.cv_conversation_members for select to authenticated
 using (
-  exists (
-    select 1 from public.cv_conversation_members mine
-    where mine.conversation_id = cv_conversation_members.conversation_id
-      and mine.user_id = auth.uid()
-  )
+  public.cv_is_conversation_member(cv_conversation_members.conversation_id)
 );
+
+create or replace function public.cv_is_conversation_member(p_conversation_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $
+  select exists (
+    select 1
+    from public.cv_conversation_members m
+    where m.conversation_id = p_conversation_id
+      and m.user_id = auth.uid()
+  );
+$;
+
+revoke all on function public.cv_is_conversation_member(uuid) from public, anon;
+grant execute on function public.cv_is_conversation_member(uuid) to authenticated;
 
 -- Membership writes are intentionally performed through the security-definer RPC below.
 revoke insert, update, delete on public.cv_conversation_members from anon, authenticated;
@@ -83,10 +94,7 @@ using (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -111,10 +119,7 @@ with check (
                 case when c.user_a = auth.uid() then c.user_b else c.user_a end)
           ))
         or
-        (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -130,10 +135,7 @@ using (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 )
@@ -145,10 +147,7 @@ with check (
       and (
         (not c.is_group and (auth.uid() = c.user_a or auth.uid() = c.user_b))
         or
-        (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -163,10 +162,7 @@ using (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        or (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -181,10 +177,7 @@ with check (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        or (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -199,10 +192,7 @@ using (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        or (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 )
@@ -213,10 +203,7 @@ with check (
     where c.id = cv_chat_preferences.conversation_id
       and (
         (not c.is_group and (c.user_a = auth.uid() or c.user_b = auth.uid()))
-        or (c.is_group and exists (
-          select 1 from public.cv_conversation_members m
-          where m.conversation_id = c.id and m.user_id = auth.uid()
-        ))
+        or (c.is_group and public.cv_is_conversation_member(c.id))
       )
   )
 );
@@ -249,8 +236,8 @@ begin
     raise exception 'Do not include yourself in the member list';
   end if;
 
-  select count(distinct member_id) into v_member_count
-  from unnest(p_member_ids) as member_id;
+  select count(distinct invited.user_id) into v_member_count
+  from unnest(p_member_ids) as invited(user_id);
   if v_member_count < 1 then
     raise exception 'Choose at least one other member';
   end if;
