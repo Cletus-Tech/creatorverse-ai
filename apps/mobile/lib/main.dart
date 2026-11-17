@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,6 +26,7 @@ import 'package:printing/printing.dart';
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://xgdngnekihhnkzurhvpe.supabase.co');
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
 const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18A878), gold = Color(0xFFE6BC55), muted = Color(0xFF9BAEAA);
+const MethodChannel _callRingtoneChannel = MethodChannel('creatorverse/call_ringtone');
 
 List<String> parseSkillsInput(String input) => input.split(',')
   .map((value) => value.trim()).where((value) => value.isNotEmpty).toList();
@@ -332,6 +334,7 @@ class _MainShellState extends State<MainShell> {
   late final List<Widget?> _pages;
   RealtimeChannel? _notificationBadgeChannel, _academyNotificationBadgeChannel, _messageBadgeChannel, _callInviteChannel;
   bool _incomingCallDialogOpen=false;
+  final Set<String> _handledIncomingCallIds=<String>{};
   StreamSubscription<String>? _pushTokenSubscription;
   StreamSubscription<dynamic>? _authStateSubscription;
   bool _pushListenersInitialized = false;
@@ -396,6 +399,10 @@ class _MainShellState extends State<MainShell> {
   }
 
 
+  Future<void> _stopIncomingCallRingtone() async {
+    try { await _callRingtoneChannel.invokeMethod('stop'); } catch (_) {}
+  }
+
   Future<void> _handleIncomingCall(Map<String,dynamic> payload) async{
     if(_incomingCallDialogOpen||(payload['status']??'')!='ringing')return;
     final callerId=(payload['caller_id']??'').toString();
@@ -405,40 +412,61 @@ class _MainShellState extends State<MainShell> {
     final expiry=DateTime.tryParse((payload['expires_at']??'').toString());
     if(callerId.isEmpty||callerId==db.auth.currentUser?.id||callId.isEmpty||
        conversationId.isEmpty||!['audio','video'].contains(mode)||
-       (expiry!=null&&expiry.isBefore(DateTime.now()))){return;}
+       (expiry!=null&&expiry.isBefore(DateTime.now()))||
+       !_handledIncomingCallIds.add(callId))return;
     _incomingCallDialogOpen=true;
+    try{await _callRingtoneChannel.invokeMethod('start');}catch(_){}
     String callerName='CreatorVerse member';
     try{
-      final profile=await db.from('public_profiles').select('full_name,username')
-        .eq('id',callerId).maybeSingle();
+      final profile=await db.from('public_profiles').select('full_name,username').eq('id',callerId).maybeSingle();
       callerName=(profile?['full_name']??profile?['username']??callerName).toString();
     }catch(_){}
-    if(!mounted){_incomingCallDialogOpen=false;return;}
-    final accept=await showDialog<bool>(context:context,barrierDismissible:false,
-      builder:(ctx)=>AlertDialog(backgroundColor:panel,
-        title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
-        content:Text('$callerName is calling you.'),
-        actions:[
-          TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
-            child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
-          FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
-            icon:const Icon(Icons.call),label:const Text('Accept'),
-            style:FilledButton.styleFrom(backgroundColor:emerald))
-        ]));
-    _incomingCallDialogOpen=false;
+    if(!mounted){_incomingCallDialogOpen=false;await _stopIncomingCallRingtone();return;}
+    bool? accept;
+    try{
+      accept=await showDialog<bool>(context:context,barrierDismissible:false,
+        builder:(ctx)=>AlertDialog(backgroundColor:panel,
+          title:Text(mode=='video'?'Incoming video call':'Incoming audio call'),
+          content:Text('$callerName is calling you.'),
+          actions:[
+            TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),
+              child:const Text('Decline',style:TextStyle(color:Colors.redAccent))),
+            FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),
+              icon:const Icon(Icons.call),label:const Text('Accept'),
+              style:FilledButton.styleFrom(backgroundColor:emerald))
+          ]));
+    }finally{
+      _incomingCallDialogOpen=false;
+      await _stopIncomingCallRingtone();
+    }
     if(!mounted)return;
     try{
-      await db.rpc('cv_set_call_invite_status',params:{
-        'p_call_id':callId,'p_status':accept==true?'accepted':'declined'
-      });
-      if(accept==true&&mounted){
+      await db.rpc('cv_set_call_invite_status',params:{'p_call_id':callId,'p_status':accept==true?'accepted':'declined'});
+      final latest=await db.from('cv_call_invites').select('status').eq('id',callId).single();
+      if(accept==true&&latest['status']=='accepted'&&mounted){
         await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
           conversationId:conversationId,callId:callId,peerName:callerName,mode:mode,isCaller:false)));
       }
     }catch(e){
-      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not answer the call: $e')));}
+      _handledIncomingCallIds.remove(callId);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not answer the call: $e')));
     }
+  }
+
+  Future<void> _handleCallPush(RemoteMessage message,{bool opened=false}) async{
+    final type=(message.data['type']??'').toString();
+    final entityType=(message.data['entity_type']??'').toString();
+    final callId=(message.data['entity_id']??'').toString();
+    if(type=='incoming_call'&&entityType=='call'&&callId.isNotEmpty){
+      try{
+        final row=await db.from('cv_call_invites')
+          .select('id,conversation_id,caller_id,callee_id,mode,status,created_at,expires_at')
+          .eq('id',callId).maybeSingle();
+        if(row!=null&&mounted)await _handleIncomingCall(Map<String,dynamic>.from(row));
+      }catch(error){debugPrint('Could not load incoming call from notification: $error');}
+      return;
+    }
+    if(opened&&mounted)_openNotifications();
   }
 
   Future<void> _registerPushNotifications() async {
@@ -477,11 +505,15 @@ class _MainShellState extends State<MainShell> {
           debugPrint('Could not refresh CreatorVerse push token: $error');
         });
       });
-      _pushOpenSubscription = FirebaseMessaging.onMessageOpenedApp.listen((_) {
-        if (mounted) _openNotifications();
+      _pushOpenSubscription = FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        unawaited(_handleCallPush(message,opened:true));
       });
       _pushForegroundSubscription = FirebaseMessaging.onMessage.listen((message) {
         if (!mounted) return;
+        if ((message.data['type']??'').toString()=='incoming_call') {
+          unawaited(_handleCallPush(message));
+          return;
+        }
         final title = message.notification?.title ?? message.data['title']?.toString() ?? 'CreatorVerse update';
         final body = message.notification?.body ?? message.data['body']?.toString() ?? 'You have a new notification.';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -493,7 +525,7 @@ class _MainShellState extends State<MainShell> {
       final initialMessage = await messaging.getInitialMessage();
       if (initialMessage != null && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _openNotifications();
+          if (mounted) unawaited(_handleCallPush(initialMessage,opened:true));
         });
       }
     } catch (error) {
@@ -572,6 +604,7 @@ class _MainShellState extends State<MainShell> {
     _pushTokenSubscription?.cancel();
     _pushOpenSubscription?.cancel();
     _pushForegroundSubscription?.cancel();
+    unawaited(_stopIncomingCallRingtone());
     super.dispose();
   }
 
@@ -3490,13 +3523,16 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Widget _messageBubble(Map<String,dynamic> m){
     final mine=m['sender_id']==db.auth.currentUser!.id,pending=m['pending']==true;
+    final mediaPath=(m['attachment_path']??'').toString();
+    final mediaMime=(m['attachment_mime']??'').toString();
+    final standaloneMedia=mediaPath.isNotEmpty&&!mediaMime.startsWith('audio/');
     final groupReadCount=widget.person['is_group']==true?(_groupReadCounts[m['id'].toString()]??0):0;
     final read=widget.person['is_group']==true?groupReadCount>0:m['read_at']!=null;
     final time=DateTime.tryParse((m['created_at']??'').toString());
     return Align(alignment:mine?Alignment.centerRight:Alignment.centerLeft,child:Container(
-      constraints:const BoxConstraints(maxWidth:310),margin:const EdgeInsets.symmetric(vertical:4),
-      padding:const EdgeInsets.symmetric(horizontal:13,vertical:10),
-      decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
+      constraints:const BoxConstraints(maxWidth:310),margin:EdgeInsets.symmetric(vertical:standaloneMedia?7:4),
+      padding:standaloneMedia?EdgeInsets.zero:const EdgeInsets.symmetric(horizontal:13,vertical:10),
+      decoration:standaloneMedia?null:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(15)),
       child:Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
         if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,child:Padding(
           padding:const EdgeInsets.only(bottom:4),child:Text(_senderNames[(m['sender_id']??'').toString()]??'Group member',
@@ -3525,6 +3561,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(widget.person['is_group']==true)IconButton(tooltip:'Group information',onPressed:_showGroupInfo,icon:const Icon(Icons.group_outlined,color:emerald)),
         if(widget.person['is_group']!=true)IconButton(tooltip:'Audio call',onPressed:()=>_startCall(video:false),icon:const Icon(Icons.call_outlined,color:emerald)),
         if(widget.person['is_group']!=true)IconButton(tooltip:'Video call',onPressed:()=>_startCall(video:true),icon:const Icon(Icons.videocam_outlined,color:gold)),
+        if(widget.person['is_group']!=true)IconButton(tooltip:'Call history',onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CallHistoryScreen(conversationId:widget.conversationId,peerId:(widget.person['id']??'').toString(),peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString()))),icon:const Icon(Icons.history,color:muted)),
         IconButton(tooltip:'Chat wallpaper and theme',onPressed:_openChatAppearance,icon:const Icon(Icons.palette_outlined,color:gold))
       ]),
     body:Stack(children:[
@@ -3670,6 +3707,75 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>{
       })
     ]))
   ]));
+}
+
+class CallHistoryScreen extends StatefulWidget {
+  final String conversationId,peerId,peerName;
+  const CallHistoryScreen({super.key,required this.conversationId,required this.peerId,required this.peerName});
+  @override State<CallHistoryScreen> createState()=>_CallHistoryScreenState();
+}
+class _CallHistoryScreenState extends State<CallHistoryScreen> {
+  final db=Supabase.instance.client;
+  late Future<List<Map<String,dynamic>>> calls;
+  @override void initState(){super.initState();calls=_load();}
+  Future<List<Map<String,dynamic>>> _load() async {
+    final rows=await db.from('cv_call_invites')
+      .select('id,caller_id,callee_id,mode,status,created_at,answered_at,ended_at')
+      .eq('conversation_id',widget.conversationId).order('created_at',ascending:false).limit(100);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  String _label(Map<String,dynamic> row,String me) {
+    final status=(row['status']??'').toString(),incoming=row['callee_id']==me;
+    if(status=='missed')return incoming?'Missed call':'No answer';
+    if(status=='declined')return incoming?'You declined':'Declined';
+    if(status=='cancelled')return 'Call cancelled';
+    if(status=='accepted')return incoming?'Incoming call answered':'Outgoing call answered';
+    if(status=='ended')return 'Call ended';
+    return incoming?'Incoming call':'Outgoing call';
+  }
+  Future<void> _callBack(Map<String,dynamic> row) async {
+    final me=db.auth.currentUser?.id;if(me==null)return;
+    final recipient=row['caller_id']==me?row['callee_id'].toString():row['caller_id'].toString();
+    try{
+      final created=await db.rpc('cv_create_call_invite',params:{
+        'p_conversation_id':widget.conversationId,'p_callee_id':recipient,
+        'p_mode':row['mode']=='video'?'video':'audio'
+      });
+      if(!mounted)return;
+      await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+        conversationId:widget.conversationId,callId:created.toString(),peerName:widget.peerName,
+        mode:row['mode']=='video'?'video':'audio',isCaller:true)));
+      if(mounted)setState(()=>calls=_load());
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not call back: $e')));
+    }
+  }
+  @override Widget build(BuildContext context) {
+    final me=db.auth.currentUser?.id??'';
+    return Scaffold(appBar:AppBar(title:const Text('Call history')),
+      body:FutureBuilder<List<Map<String,dynamic>>>(future:calls,builder:(context,snapshot){
+        if(snapshot.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+        if(snapshot.hasError)return Center(child:Text('Could not load call history: ${snapshot.error}'));
+        final rows=snapshot.data??[];
+        if(rows.isEmpty)return const Center(child:Text('No calls in this conversation yet.',style:TextStyle(color:muted)));
+        return RefreshIndicator(onRefresh:()async{setState(()=>calls=_load());await calls;},
+          child:ListView.separated(itemCount:rows.length,padding:const EdgeInsets.all(12),
+            separatorBuilder:(_,__)=>const Divider(color:Colors.white10),
+            itemBuilder:(context,index){
+              final row=rows[index],status=(row['status']??'').toString();
+              final incoming=row['callee_id']==me,missed=status=='missed';
+              final date=DateTime.tryParse((row['created_at']??'').toString())?.toLocal();
+              final when=date==null?'':'${date.day}/${date.month}/${date.year} · ${TimeOfDay.fromDateTime(date).format(context)}';
+              return ListTile(
+                leading:CircleAvatar(backgroundColor:(missed?Colors.redAccent:emerald).withValues(alpha:.14),
+                  child:Icon(missed?Icons.call_missed:incoming?Icons.call_received:Icons.call_made,color:missed?Colors.redAccent:emerald)),
+                title:Text(_label(row,me),style:TextStyle(fontWeight:FontWeight.w700,color:missed?Colors.redAccent:null)),
+                subtitle:Text('${row['mode']=='video'?'Video':'Audio'} call · ${incoming?'Incoming':'Outgoing'} · $when',style:const TextStyle(color:muted,fontSize:11)),
+                trailing:IconButton(tooltip:'Call back',onPressed:()=>_callBack(row),icon:const Icon(Icons.call,color:emerald)),
+              );
+            }));
+      }));
+  }
 }
 
 class CreatorVerseCallScreen extends StatefulWidget{
