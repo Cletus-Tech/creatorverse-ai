@@ -33,23 +33,26 @@ Deno.serve(async (request: Request) => {
     if (authError || !authData.user) return json({ error: "Your session is invalid. Sign in again." }, 401);
 
     const body = await request.json();
-    const conversationId = String(body.conversation_id ?? "");
     const callId = String(body.call_id ?? "");
-    const mode = String(body.mode ?? "");
-    if (!/^[0-9a-f-]{36}$/i.test(conversationId) ||
-        !/^[A-Za-z0-9_-]{8,80}$/.test(callId) ||
-        !["audio", "video"].includes(mode)) {
+    const requestedMode = String(body.mode ?? "");
+    if (!/^[0-9a-f-]{36}$/i.test(callId) || !["audio", "video"].includes(requestedMode)) {
       return json({ error: "Invalid call request." }, 400);
     }
 
-    // This query is scoped by the caller's JWT and the conversation's RLS policies.
-    // A user who is not a direct-chat participant or group member cannot mint a room token.
-    const { data: conversation, error: conversationError } = await supabase
-      .from("cv_conversations")
-      .select("id")
-      .eq("id", conversationId)
-      .maybeSingle();
-    if (conversationError || !conversation) return json({ error: "You are not a member of this conversation." }, 403);
+    // This RLS-protected RPC returns an invite only to its caller or invited participant.
+    const { data: invite, error: inviteError } = await supabase.rpc("cv_get_call_invite", {
+      p_call_id: callId,
+    });
+    if (inviteError || !invite) return json({ error: "Call invite not found or access denied." }, 403);
+    if (![invite.caller_id, invite.callee_id].includes(authData.user.id)) {
+      return json({ error: "You are not a participant in this call." }, 403);
+    }
+    if (invite.mode !== requestedMode || !["ringing", "accepted"].includes(invite.status)) {
+      return json({ error: "This call is no longer available." }, 410);
+    }
+    if (new Date(invite.expires_at).getTime() < Date.now()) {
+      return json({ error: "This call invitation has expired." }, 410);
+    }
 
     const livekitUrl = Deno.env.get("LIVEKIT_URL");
     const livekitApiKey = Deno.env.get("LIVEKIT_API_KEY");
@@ -58,7 +61,7 @@ Deno.serve(async (request: Request) => {
       return json({ error: "LiveKit is not configured yet. Add LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to Supabase Edge Function secrets." }, 503);
     }
 
-    const roomName = `cv_${conversationId}_${callId}`;
+    const roomName = `cvcall_${callId}`;
     const token = new AccessToken(livekitApiKey, livekitApiSecret, {
       identity: authData.user.id,
       name: "CreatorVerse member",
@@ -72,7 +75,7 @@ Deno.serve(async (request: Request) => {
       canPublishData: true,
     });
 
-    return json({ url: livekitUrl, token: await token.toJwt(), room_name: roomName, mode });
+    return json({ url: livekitUrl, token: await token.toJwt(), room_name: roomName, mode: invite.mode });
   } catch (error) {
     console.error("LiveKit token request failed:", error);
     return json({ error: "Could not prepare this call. Please try again." }, 500);
