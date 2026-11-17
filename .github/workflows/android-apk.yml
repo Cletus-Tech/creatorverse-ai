@@ -171,6 +171,13 @@ jobs:
           for permission in permissions:
               if permission not in result:
                   raise SystemExit(f'Android permission was not added: {permission}')
+          gradle = Path('android/app/build.gradle.kts')
+          gradle_source = gradle.read_text()
+          if 'minSdk = flutter.minSdkVersion' in gradle_source:
+              gradle_source = gradle_source.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23', 1)
+          if 'minSdk = 23' not in gradle_source:
+              raise SystemExit('Could not set Android minSdk to 23 for the microphone recorder plugin')
+          gradle.write_text(gradle_source)
           PY
       - name: Configure OAuth callback deep link
         working-directory: apps/mobile
