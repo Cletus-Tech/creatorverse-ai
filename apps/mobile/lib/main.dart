@@ -3428,10 +3428,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final path=_activeRecordingPath;
     try{await _voiceRecorder.cancel();}catch(_){}
     if(path!=null){try{await File(path).delete();}catch(_){}}
-    if(mounted)setState((){
+    if(mounted){setState((){
       _recordingVoice=false;_activeRecordingPath=null;
       _voiceRecordingStartedAt=null;_voiceRecordingDuration=Duration.zero;
-    });
+    });}
   }
   Future<void> _discardVoiceNote() async{
     final path=_voicePreviewPath;
