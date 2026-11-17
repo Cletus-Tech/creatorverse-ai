@@ -423,6 +423,7 @@ class _MainShellState extends State<MainShell> {
   StreamSubscription<String>? _pushTokenSubscription;
   StreamSubscription<dynamic>? _authStateSubscription;
   bool _pushListenersInitialized = false;
+  Timer? _lastSeenHeartbeat;
   StreamSubscription<RemoteMessage>? _pushOpenSubscription;
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   final db = Supabase.instance.client;
@@ -454,6 +455,8 @@ class _MainShellState extends State<MainShell> {
     _pages = List<Widget?>.filled(labels.length, null);
     _pages[0] = const CommunityTab();
     _refreshBadges();
+    unawaited(db.rpc('cv_touch_last_seen').catchError((_) {}));
+    _lastSeenHeartbeat=Timer.periodic(const Duration(seconds:60),(_){unawaited(db.rpc('cv_touch_last_seen').catchError((_) {}));});
     _registerPushNotifications();
     _authStateSubscription = db.auth.onAuthStateChange.listen((state) {
       if (state.session != null) _registerPushNotifications();
@@ -717,6 +720,7 @@ class _MainShellState extends State<MainShell> {
     if (m != null) unawaited(m.unsubscribe());
     final incoming=_callInviteChannel;if(incoming!=null)unawaited(incoming.unsubscribe());
     _authStateSubscription?.cancel();
+    _lastSeenHeartbeat?.cancel();
     _pushTokenSubscription?.cancel();
     _pushOpenSubscription?.cancel();
     _pushForegroundSubscription?.cancel();
@@ -3183,6 +3187,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   static const _myBubbles=<Color>[Color(0xFF155E48),Color(0xFF184D70),Color(0xFF553A78),Color(0xFF76502C),Color(0xFF343F4D)];
   Timer? _typingHeartbeatTimer,_typingStopTimer;
   bool _otherTyping=false,_otherOnline=false;
+  String? _otherLastSeen;
+  String? _replyingToId,_replyingToPreview;
   final Set<String> _groupMemberIds=<String>{};
   int _onlineGroupCount=0;
   final AudioRecorder _voiceRecorder=AudioRecorder();
@@ -3301,6 +3307,22 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         }
       });
   }
+  Future<void> _refreshOtherLastSeen() async{
+    if(widget.person['is_group']==true)return;
+    final peerId=(widget.person['id']??'').toString();if(peerId.isEmpty)return;
+    try{
+      final raw=await db.rpc('cv_get_chat_last_seen',params:{'p_user_id':peerId});
+      final seen=DateTime.tryParse((raw??'').toString());
+      if(!mounted||_otherOnline)return;
+      String label='offline';
+      if(seen!=null){final age=DateTime.now().toUtc().difference(seen.toUtc());
+        if(age.inMinutes<1)label='last seen just now';
+        else if(age.inMinutes<60)label='last seen ${age.inMinutes}m ago';
+        else if(age.inHours<24)label='last seen ${age.inHours}h ago';
+        else label='last seen ${age.inDays}d ago';}
+      setState(()=>_otherLastSeen=label);
+    }catch(_){}
+  }
   void _syncPeerPresence(){
     final channel=_messageChannel;
     if(channel==null)return;
@@ -3329,7 +3351,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         if(online)break;
       }
     }catch(_){}
-    if(mounted&&online!=_otherOnline)setState(()=>_otherOnline=online);
+    if(mounted&&online!=_otherOnline){setState(()=>_otherOnline=online);if(!online)unawaited(_refreshOtherLastSeen());else setState(()=>_otherLastSeen='online');}
   }
   Future<void> _refreshGroupReadCounts(Iterable<String> messageIds) async{
     if(widget.person['is_group']!=true)return;
@@ -3562,7 +3584,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
   Future<void> _loadInitialMessages() async{
     try{
-      final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size')
+      final raw=await db.from('cv_direct_messages').select('id,sender_id,body,created_at,read_at,edited_at,deleted_at,attachment_path,attachment_name,attachment_mime,attachment_size,reply_to_id,message_type,call_id')
         .eq('conversation_id',widget.conversationId).order('created_at',ascending:true);
       final loaded=List<Map<String,dynamic>>.from(raw);
       unawaited(_loadSenderNames(loaded.map((m)=>m['sender_id'])));
@@ -3752,11 +3774,12 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final body=input.text.trim();if(body.isEmpty)return;
     _typingHeartbeatTimer?.cancel();_typingHeartbeatTimer=null;_broadcastTyping(false);
     final me=db.auth.currentUser!.id,localId='local-${DateTime.now().microsecondsSinceEpoch}';
-    final optimistic=<String,dynamic>{'id':localId,'sender_id':me,'body':body,'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,'pending':true};
-    input.clear();_upsertMessage(optimistic);
+    final replyToId=_replyingToId;
+    final optimistic=<String,dynamic>{'id':localId,'sender_id':me,'body':body,'created_at':DateTime.now().toUtc().toIso8601String(),'read_at':null,'reply_to_id':replyToId,'pending':true};
+    input.clear();if(mounted)setState(()=>{_replyingToId=null;_replyingToPreview=null;});_upsertMessage(optimistic);
     try{
-      final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':me,'body':body})
-        .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size').single();
+      final result=await db.from('cv_direct_messages').insert({'conversation_id':widget.conversationId,'sender_id':me,'body':body,'reply_to_id':replyToId})
+        .select('id,sender_id,body,created_at,read_at,attachment_path,attachment_name,attachment_mime,attachment_size,reply_to_id,message_type,call_id').single();
       _upsertMessage(Map<String,dynamic>.from(result),replaceLocalId:localId);
     }catch(e){
       if(!mounted)return;setState((){final index=_rows.indexWhere((m)=>m['id']==localId);if(index>=0){_rows[index]['pending']=false;_rows[index]['failed']=true;}});
@@ -3774,6 +3797,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }else if(action=='delete_everyone'){
       final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,title:const Text('Delete for everyone?'),content:const Text('This message will be removed for everyone in this conversation.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(style:FilledButton.styleFrom(backgroundColor:Colors.redAccent),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete for everyone'))]));if(ok!=true)return;
       try{await db.rpc('cv_delete_direct_message_everyone',params:{'p_message_id':id});await _loadInitialMessages();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete for everyone: $e')));}
+    }else if(action=='reply'){
+      final body=(message['body']??'').toString();
+      setState(()=>{_replyingToId=id;_replyingToPreview=body.isEmpty?'Attachment':body.length>90?'${body.substring(0,90)}…':body;});
     }else if(action=='delete_me'){
       try{await db.from('cv_message_hidden_for').insert({'message_id':id,'user_id':db.auth.currentUser!.id});if(mounted)setState(()=>_rows.removeWhere((row)=>row['id'].toString()==id));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete this message for you: $e')));}
     }else if(action=='resend'){
@@ -3785,6 +3811,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   Widget _messageActions(Map<String,dynamic> message){
     final mine=message['sender_id']==db.auth.currentUser?.id,within=_messageWithinEditWindow(message),deleted=message['deleted_at']!=null;
     return PopupMenuButton<String>(tooltip:'Message options',onSelected:(action)=>_handleMessageAction(message,action),itemBuilder:(_)=>[
+      const PopupMenuItem(value:'reply',child:Row(children:[Icon(Icons.reply,size:18),SizedBox(width:8),Text('Reply')])),
       if(message['failed']==true)const PopupMenuItem(value:'resend',child:Row(children:[Icon(Icons.refresh,size:18),SizedBox(width:8),Text('Resend message')])),
       if(mine&&!deleted&&within)const PopupMenuItem(value:'edit',child:Row(children:[Icon(Icons.edit_outlined,size:18),SizedBox(width:8),Text('Edit message')])),
       if(mine&&!deleted&&within)const PopupMenuItem(value:'delete_everyone',child:Row(children:[Icon(Icons.delete_sweep_outlined,size:18,color:Colors.redAccent),SizedBox(width:8),Text('Delete for everyone')])),
@@ -3801,6 +3828,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final hasAttachment=path.isNotEmpty;
     final isAudio=mime.startsWith('audio/');
     final standaloneMedia=hasAttachment&&!isAudio;
+    final replyId=(m['reply_to_id']??'').toString();
+    final replied=replyId.isEmpty||!_rows.any((x)=>x['id'].toString()==replyId)?null:_rows.firstWhere((x)=>x['id'].toString()==replyId);
+    final replyQuote=replied==null?null:Container(width:double.infinity,margin:const EdgeInsets.only(bottom:6),padding:const EdgeInsets.all(7),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.18),borderRadius:BorderRadius.circular(7),border:const Border(left:BorderSide(color:gold,width:3))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Replying to ${(replied['sender_id']==db.auth.currentUser?.id)?'your message':'message'}',style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w700)),Text((replied['body']??replied['attachment_name']??'Message').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:11))]));
+    final isMissedCall=m['message_type']=='missed_call';
     final senderName=_senderNames[(m['sender_id']??'').toString()]??'Group member';
     final metadata=Row(mainAxisSize:MainAxisSize.min,children:[
       Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),
@@ -3822,7 +3853,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
             if(widget.person['is_group']==true&&!mine)Padding(
               padding:const EdgeInsets.only(left:5,bottom:3),
               child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700))),
-            if(body.trim().isNotEmpty)Container(
+            if(replyQuote!=null)replyQuote,
+            if(isMissedCall)Padding(padding:const EdgeInsets.only(bottom:6),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.phone_missed,color:Colors.redAccent,size:17),const SizedBox(width:6),Text(body,style:const TextStyle(color:Colors.redAccent,fontWeight:FontWeight.w700,fontSize:12)),TextButton(onPressed:()=>_startCall(video:body.toLowerCase().contains('video')),child:const Text('Call back',style:TextStyle(fontSize:11,color:emerald)))])),
+            if(body.trim().isNotEmpty&&!isMissedCall)Container(
               constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:2),
               padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),
@@ -3844,7 +3877,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           if(widget.person['is_group']==true&&!mine)Align(alignment:Alignment.centerLeft,
             child:Padding(padding:const EdgeInsets.only(bottom:4),
               child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700)))),
-          if(body.isNotEmpty&&!isAudio)Align(alignment:Alignment.centerLeft,
+          if(replyQuote!=null)replyQuote,
+          if(isMissedCall)Align(alignment:Alignment.centerLeft,child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.phone_missed,color:Colors.redAccent,size:17),const SizedBox(width:6),Text(body,style:const TextStyle(color:Colors.redAccent,fontWeight:FontWeight.w700,fontSize:12)),TextButton(onPressed:()=>_startCall(video:body.toLowerCase().contains('video')),child:const Text('Call back',style:TextStyle(fontSize:11,color:emerald)))])),
+          if(body.isNotEmpty&&!isAudio&&!isMissedCall)Align(alignment:Alignment.centerLeft,
             child:Text(body,style:const TextStyle(height:1.25))),
           if(hasAttachment&&isAudio)VoiceMessagePlayer(key:ValueKey(m['id']),path:path),
           const SizedBox(height:4),
@@ -3857,7 +3892,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       Text((widget.person['full_name']??widget.person['username']??'Chat').toString()),
       if(widget.person['is_group']==true)Text(_otherTyping?'Someone is typing…':'Group · ${widget.person['member_count']??0} members · $_onlineGroupCount online',style:TextStyle(fontSize:11,color:_otherTyping?emerald:muted,fontWeight:_otherTyping?FontWeight.w600:FontWeight.normal))
       else if(_otherTyping)const Text('typing…',style:TextStyle(fontSize:11,color:emerald,fontWeight:FontWeight.w500))
-      else Text(_otherOnline?'online':'offline',style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
+      else Text(_otherOnline?'online':(_otherLastSeen??'offline'),style:TextStyle(fontSize:11,color:_otherOnline?emerald:muted,fontWeight:FontWeight.w500))
     ]),
       actions:[
         if(widget.person['is_group']==true)IconButton(tooltip:'Group information',onPressed:_showGroupInfo,icon:const Icon(Icons.group_outlined,color:emerald)),
@@ -3897,7 +3932,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 IconButton(tooltip:'Attach photo or video',onPressed:_sendingAttachment?null:attachMedia,
                   icon:_sendingAttachment?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.attach_file,color:gold)),
                 Expanded(child:TextField(controller:input,minLines:1,maxLines:4,textInputAction:TextInputAction.newline,
-                  onSubmitted:(_)=>send(),decoration:const InputDecoration(hintText:'Message...'))),
+                  onSubmitted:(_)=>send(),decoration:InputDecoration(hintText:_replyingToId==null?'Message...':'Replying: ${_replyingToPreview??'message'}',prefixIcon:_replyingToId==null?null:const Icon(Icons.reply,color:gold,size:18),suffixIcon:_replyingToId==null?null:IconButton(tooltip:'Cancel reply',onPressed:()=>setState(()=>{_replyingToId=null;_replyingToPreview=null;}),icon:const Icon(Icons.close,size:18))))),
                 const SizedBox(width:2),
                 IconButton(tooltip:'Record voice note',onPressed:_startVoiceRecording,
                   icon:const Icon(Icons.mic_none,color:gold)),
@@ -4166,8 +4201,9 @@ class CreatorVerseCallScreen extends StatefulWidget{
 class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with SingleTickerProviderStateMixin{
   final db=Supabase.instance.client;
   late final Room _room;
-  bool _connecting=true,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
+  bool _connecting=false,_connectStarted=false,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
   String? _error,_callStatus;
+  Timer? _callTimeoutTimer,_terminalStatusTimer;
   RealtimeChannel? _callStatusChannel;
   late final AnimationController _ringController;
   @override void initState(){
@@ -4181,10 +4217,11 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
         callback:(payload){
           final status=(payload.newRecord['status']??'').toString();
           if(mounted)setState(()=>_callStatus=status);
+          _handleCallStatus(status);
           unawaited(_syncOutgoingCallTone());
         }).subscribe();
     _loadCallStatus();
-    _connect();
+    if(!widget.isCaller)_connect();
   }
   void _onRoomChanged(){if(mounted)setState((){});if(_room.remoteParticipants.isNotEmpty)unawaited(_stopOutgoingCallTone());}
   Future<void> _syncOutgoingCallTone() async{
@@ -4198,11 +4235,39 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     try{await _callRingtoneChannel.invokeMethod('stop_outgoing');}catch(_){}
   }
   Future<void> _loadCallStatus() async{
-    try{final row=await db.from('cv_call_invites').select('status').eq('id',widget.callId).single();
-      if(mounted)setState(()=>_callStatus=(row['status']??'').toString());
-      await _syncOutgoingCallTone();}catch(_){}
+    try{
+      final row=await db.from('cv_call_invites').select('status,expires_at').eq('id',widget.callId).single();
+      final status=(row['status']??'').toString();
+      if(mounted)setState(()=>_callStatus=status);
+      _handleCallStatus(status);
+      if(widget.isCaller&&status=='ringing'){
+        final expiry=DateTime.tryParse((row['expires_at']??'').toString());
+        final remaining=expiry==null?const Duration(seconds:45):expiry.toUtc().difference(DateTime.now().toUtc());
+        if(remaining<=Duration.zero){await _expireCallAsMissed();}else{_callTimeoutTimer=Timer(remaining,_expireCallAsMissed);}
+      }else if(widget.isCaller&&status=='accepted'){_connect();}
+      await _syncOutgoingCallTone();
+    }catch(_){}
+  }
+  void _handleCallStatus(String status){
+    if(status=='accepted'){
+      _callTimeoutTimer?.cancel();
+      if(widget.isCaller)unawaited(_connect());
+    }else if(['missed','declined','cancelled','ended'].contains(status)){
+      _callTimeoutTimer?.cancel();unawaited(_stopOutgoingCallTone());
+      if(!_ending&&mounted){_terminalStatusTimer?.cancel();_terminalStatusTimer=Timer(const Duration(milliseconds:2200),(){if(mounted)material_widgets_ui.Navigator.maybePop(context);});}
+    }
+  }
+  Future<void> _expireCallAsMissed() async{
+    if(!widget.isCaller||_ending||_callStatus!='ringing')return;
+    try{await db.rpc('cv_set_call_invite_status',params:{'p_call_id':widget.callId,'p_status':'missed'});}
+    catch(e){debugPrint('CreatorVerse call expiry update failed: $e');}
+    if(mounted&&_callStatus=='ringing')setState(()=>_callStatus='missed');
+    _handleCallStatus('missed');
   }
   Future<void> _connect() async{
+    if(_connectStarted||_ending)return;
+    _connectStarted=true;
+    if(mounted)setState(()=>_connecting=true);
     try{
       final mic=await Permission.microphone.request();
       if(!mic.isGranted)throw Exception('Microphone permission is required for calls.');
@@ -4228,7 +4293,8 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       if(mounted)setState(()=>_connecting=false);
     }catch(e){
       await _stopOutgoingCallTone();
-      if(mounted)setState(()=>_error=e.toString());
+      _connectStarted=false;
+      if(mounted)setState(()=>{_connecting=false;_error=e.toString();});
     }
   }
   Future<void> _toggleMicrophone() async{
@@ -4268,7 +4334,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     await _stopOutgoingCallTone();
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
-        final status=widget.isCaller&&_callStatus!='accepted'&&_room.remoteParticipants.isEmpty?'cancelled':'ended';
+        final status=widget.isCaller&&_callStatus!='accepted'?'cancelled':'ended';
         await db.rpc('cv_set_call_invite_status',params:{
           'p_call_id':widget.callId,'p_status':status
         });
@@ -4279,6 +4345,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   }
   Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
+    _callTimeoutTimer?.cancel();_terminalStatusTimer?.cancel();
     if(widget.isCaller)unawaited(_callRingtoneChannel.invokeMethod('stop_outgoing').catchError((_){}));
     _ringController.dispose();
     _room.removeListener(_onRoomChanged);
@@ -4318,7 +4385,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
               const SizedBox(height:18),
               Text(widget.peerName,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
               const SizedBox(height:8),
-              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'Missed call':_connecting?'Connecting securely…':participantCount==0?(widget.isCaller&&_callStatus=='ringing'?'Ringing…':'Calling… waiting for answer'):'Connected'),
+              Text(_error??(_callStatus=='declined'?'Call declined':_callStatus=='cancelled'?'Call cancelled':_callStatus=='ended'?'Call ended':_callStatus=='missed'?'No answer':_connecting?'Connecting…':participantCount==0?(widget.isCaller&&_callStatus=='ringing'?'Ringing…':'Waiting for connection…'):'Connected'),
                 style:const TextStyle(color:muted)),
               if(_error!=null)Padding(padding:const EdgeInsets.all(20),child:Text(
                 'Check that LiveKit is configured for CreatorVerse and try again.',
