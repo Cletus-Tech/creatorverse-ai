@@ -57,12 +57,8 @@ if(new URLSearchParams(location.search).get('cv_native')!=='1'){
  gate.innerHTML='<div class="cv-logo-loader"><img src="assets/creatorverse-brand.svg?v=20261115-connected-world-3d" alt="CreatorVerse"><i aria-hidden="true"></i></div>';
  function touch(){lastActivity=Date.now()}
  function track(p){pending++;touch();return p.finally(function(){pending=Math.max(0,pending-1);touch();schedule()})}
- if(window.fetch){var originalFetch=window.fetch.bind(window);window.fetch=function(){return track(originalFetch.apply(this,arguments))}}
- if(window.XMLHttpRequest){
-  var xo=XMLHttpRequest.prototype.open,xs=XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open=function(){this.__cvTrack=true;return xo.apply(this,arguments)};
-  XMLHttpRequest.prototype.send=function(){if(this.__cvTrack){pending++;touch();this.addEventListener('loadend',function(){pending=Math.max(0,pending-1);touch();schedule()},{once:true})}return xs.apply(this,arguments)};
- }
+ // Do not intercept global fetch or XMLHttpRequest. Background API calls must not
+ // hold the page behind a full-screen loader or change application network behavior.
  function show(){if(done||shown)return;shown=true;gate.classList.add('is-visible')}
  function finish(){if(done)return;done=true;if(timer)clearTimeout(timer);gate.classList.remove('is-visible');setTimeout(function(){if(gate&&gate.parentNode)gate.remove();if(style&&style.parentNode)style.remove()},340)}
  function schedule(){if(done||timer)return;timer=setTimeout(check,120)}
@@ -75,7 +71,7 @@ if(new URLSearchParams(location.search).get('cv_native')!=='1'){
    Promise.race([fonts,new Promise(function(resolve){setTimeout(resolve,450)})]).then(function(){if(!done&&document.readyState==='complete'&&pending===0)finish();else schedule()});
   }else schedule();
  }
- setTimeout(show,420);
+ setTimeout(function(){if(document.readyState!=='complete')show()},1600);
  window.addEventListener('load',function(){touch();schedule()},{once:true});
  window.addEventListener('pageshow',function(e){if(e.persisted)finish()});
  schedule();
