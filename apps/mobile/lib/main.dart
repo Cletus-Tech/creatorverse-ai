@@ -3914,7 +3914,22 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           _loadError!=null?Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Text('Could not load this conversation.',style:TextStyle(color:muted)),TextButton(onPressed:(){setState((){_initialLoading=true;_loadError=null;});_loadInitialMessages();},child:const Text('Try again'))])):
           _rows.isEmpty?const Center(child:Text('Say hello to start the conversation.',style:TextStyle(color:muted))):
           ListView.builder(controller:_chatScrollController,padding:const EdgeInsets.all(14),itemCount:_rows.length,
-            itemBuilder:(ctx,i)=>_messageBubble(_rows[i]))),
+            itemBuilder:(ctx,i){
+              final message=_rows[i],body=(message['body']??'').toString();
+              return Dismissible(
+                key:ValueKey('chat-message-${message['id']}'),
+                direction:DismissDirection.horizontal,
+                confirmDismiss:(_) async{
+                  setState((){
+                    _replyingToId=message['id'].toString();
+                    _replyingToPreview=body.isEmpty?'Attachment':body.length>90?'${body.substring(0,90)}…':body;
+                  });
+                  return false;
+                },
+                background:Container(alignment:Alignment.centerLeft,padding:const EdgeInsets.only(left:18),child:const Icon(Icons.reply,color:gold,size:24)),
+                secondaryBackground:Container(alignment:Alignment.centerRight,padding:const EdgeInsets.only(right:18),child:const Icon(Icons.reply,color:gold,size:24)),
+                child:_messageBubble(message));
+            }),
         SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(8,8,10,10),child:
           _recordingVoice
             ?Row(children:[
