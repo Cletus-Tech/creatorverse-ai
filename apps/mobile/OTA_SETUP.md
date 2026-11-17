@@ -5,29 +5,17 @@ CreatorVerse uses Shorebird Code Push for Flutter/Dart-only updates. The normal 
 ## One-time account and project setup
 
 1. Create a Shorebird account at https://console.shorebird.dev.
-2. On the Windows development computer, open PowerShell and install the Shorebird CLI:
-
-   ```powershell
-   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-   iwr -UseBasicParsing 'https://raw.githubusercontent.com/shorebirdtech/install/main/install.ps1' | iex
-   ```
-
-3. Restart PowerShell, then open the Flutter app directory:
-
-   ```powershell
-   cd <path-to-repository>\apps\mobile
-   shorebird doctor
-   shorebird login
-   shorebird init --display-name "CreatorVerse"
-   ```
-
-   `shorebird init` creates `shorebird.yaml` with a public app ID and adds that file to the Flutter assets in `pubspec.yaml`. Commit both changes to the existing `main` branch. The app ID is not a secret; the API token is.
-
-4. In the Shorebird Console, open **Account → API Keys**, create an API key, and copy it. In GitHub, open **Cletus-Tech/creatorverse-ai → Settings → Secrets and variables → Actions**, then create this repository secret:
+2. In the Shorebird Console, open **Account → API Keys**, create an API key with permission to create/manage apps and releases, and copy it. In GitHub, open **Cletus-Tech/creatorverse-ai → Settings → Secrets and variables → Actions**, then create this repository secret:
 
    - `SHOREBIRD_TOKEN` — the Shorebird API key.
 
-   Never commit or share this token.
+   Never commit or share this token. You do not need to send it to ChatGPT.
+
+3. In GitHub, open **Actions → Initialize CreatorVerse Shorebird App → Run workflow**. If your Shorebird account belongs to more than one organization, enter the organization ID; otherwise leave it blank. The workflow creates the Shorebird app, generates `apps/mobile/shorebird.yaml`, adds it to the Flutter asset list, and commits those configuration changes to the existing `main` branch.
+
+   The generated `app_id` is public configuration and is safe to keep in GitHub. The API token remains in GitHub Actions secrets.
+
+   You can do the same setup locally instead, if preferred: install the Shorebird CLI, run `shorebird login`, then `shorebird init --display-name "CreatorVerse"` from `apps/mobile`.
 
 ## One-time Android signing setup
 
