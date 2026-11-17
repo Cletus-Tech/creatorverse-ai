@@ -334,13 +334,14 @@ class _MainShellState extends State<MainShell> {
   StreamSubscription<RemoteMessage>? _pushForegroundSubscription;
   final db = Supabase.instance.client;
   // The social feed is the signed-in app's primary landing screen.
-  static const labels = ['Community', 'Learn', 'Campus', 'Profile'];
+  static const labels = ['Community', 'Learn', 'Explore', 'Campus', 'Profile'];
 
   Widget _pageFor(int tab) => switch (tab) {
     0 => const CommunityTab(),
     1 => const LearnTab(),
-    2 => const CampusTab(),
-    3 => const ProfileTab(),
+    2 => const HomeTab(),
+    3 => const CampusTab(),
+    4 => const ProfileTab(),
     _ => const CommunityTab(),
   };
 
@@ -542,6 +543,7 @@ class _MainShellState extends State<MainShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Community'),
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Learn'),
+          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Explore'),
           NavigationDestination(icon: Icon(Icons.location_city_outlined), selectedIcon: Icon(Icons.location_city), label: 'Campus'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
@@ -2585,8 +2587,25 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
     final nameController=TextEditingController();
     final searchController=TextEditingController();
     final selected=<String,Map<String,dynamic>>{};
+    List<Map<String,dynamic>> friends=[];
     List<Map<String,dynamic>> results=[];
     bool searching=false,creating=false;
+    try{
+      final me=db.auth.currentUser!.id;
+      final follows=await db.from('community_follows').select('following_id').eq('follower_id',me);
+      final friendIds=List<Map<String,dynamic>>.from(follows)
+        .map((row)=>row['following_id'].toString()).where((id)=>id!=me).toSet().toList();
+      if(friendIds.isNotEmpty){
+        final profiles=await db.from('public_profiles').select('id,full_name,username,avatar_url')
+          .inFilter('id',friendIds);
+        friends=List<Map<String,dynamic>>.from(profiles);
+        friends.sort((a,b)=>(a['full_name']??a['username']??'').toString()
+          .toLowerCase().compareTo((b['full_name']??b['username']??'').toString().toLowerCase()));
+      }
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not load your followed people: $e')));
+    }
     Future<void> performSearch(StateSetter update) async {
       final q=sanitizeSearchTerm(searchController.text);
       if(q.length<2)return;
@@ -2602,52 +2621,91 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
     await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(ctx,update)=>AlertDialog(
       backgroundColor:panel,
       title:const Text('Create a group'),
-      content:SizedBox(width:440,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+      content:SizedBox(width:440,child:SingleChildScrollView(child:Column(
+        mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         TextField(controller:nameController,decoration:const InputDecoration(labelText:'Group name',hintText:'e.g. Design learners')),
         const SizedBox(height:12),
-        Row(children:[
-          Expanded(child:TextField(controller:searchController,decoration:const InputDecoration(labelText:'Find members',hintText:'Name or username'),
-            onSubmitted:(_)=>performSearch(update))),
-          const SizedBox(width:8),
-          IconButton(onPressed:searching?null:()=>performSearch(update),icon:const Icon(Icons.search,color:emerald)),
-        ]),
+        ExpansionTile(
+          tilePadding:EdgeInsets.zero,
+          initiallyExpanded:true,
+          leading:const Icon(Icons.people_outline,color:emerald),
+          title:const Text('Add friends'),
+          subtitle:Text(friends.isEmpty?'You are not following anyone yet':'${friends.length} people you follow'),
+          children:friends.isEmpty
+            ?[const Padding(padding:EdgeInsets.all(12),child:Text(
+              'Follow people in Community first, and they will appear here. You can also search for members below.',
+              style:TextStyle(color:muted,fontSize:12)))]
+            :friends.map((p){
+              final id=p['id'].toString(),isSelected=selected.containsKey(id);
+              return CheckboxListTile(
+                dense:true,contentPadding:EdgeInsets.zero,
+                value:isSelected,activeColor:emerald,
+                title:Text((p['full_name']??p['username']??'Member').toString()),
+                subtitle:Text('@${p['username']??''}'),
+                secondary:CircleAvatar(
+                  backgroundColor:panel,
+                  backgroundImage:(p['avatar_url']??'').toString().isNotEmpty
+                    ?NetworkImage(p['avatar_url'].toString()):null,
+                  child:(p['avatar_url']??'').toString().isEmpty
+                    ?const Icon(Icons.person_outline,color:muted):null),
+                onChanged:(value)=>update((){
+                  if(value==true){selected[id]=p;}else{selected.remove(id);}
+                }));
+            }).toList(),
+        ),
+        const Divider(height:18),
+        TextField(controller:searchController,decoration:const InputDecoration(
+          labelText:'Search other members',hintText:'Name or username',prefixIcon:Icon(Icons.search)),
+          onSubmitted:(_)=>performSearch(update)),
+        if(searching)const Center(child:Padding(padding:EdgeInsets.all(12),
+          child:CircularProgressIndicator(color:emerald))),
+        if(results.isNotEmpty)SizedBox(height:150,child:ListView.builder(
+          shrinkWrap:true,itemCount:results.length,itemBuilder:(_,i){
+            final p=results[i],id=p['id'].toString(),isSelected=selected.containsKey(id);
+            return ListTile(dense:true,title:Text((p['full_name']??p['username']??'Member').toString()),
+              subtitle:Text('@${p['username']??''}'),
+              trailing:Icon(isSelected?Icons.check_circle:Icons.add_circle_outline,
+                color:isSelected?emerald:muted),
+              onTap:()=>update(()=>isSelected?selected.remove(id):selected[id]=p));
+          })),
         if(selected.isNotEmpty)...[
-          const SizedBox(height:8),
-          Text('${selected.length} selected',style:const TextStyle(color:emerald,fontWeight:FontWeight.w700)),
-          Wrap(spacing:6,children:[for(final entry in selected.entries)InputChip(label:Text((entry.value['full_name']??entry.value['username']??'Member').toString()),
-            onDeleted:()=>update(()=>selected.remove(entry.key)))])
+          const SizedBox(height:10),
+          Text('${selected.length} selected',style:const TextStyle(
+            color:emerald,fontWeight:FontWeight.w700)),
+          Wrap(spacing:6,children:[for(final entry in selected.entries)
+            InputChip(label:Text((entry.value['full_name']??entry.value['username']??'Member').toString()),
+              onDeleted:()=>update(()=>selected.remove(entry.key)))])
         ],
-        const SizedBox(height:8),
-        if(searching)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator(color:emerald))),
-        if(results.isNotEmpty)SizedBox(height:190,child:ListView.builder(shrinkWrap:true,itemCount:results.length,itemBuilder:(_,i){
-          final p=results[i],id=p['id'].toString(),isSelected=selected.containsKey(id);
-          return ListTile(dense:true,title:Text((p['full_name']??p['username']??'Member').toString()),
-            subtitle:Text('@${p['username']??''}'),trailing:Icon(isSelected?Icons.check_circle:Icons.add_circle_outline,color:isSelected?emerald:muted),
-            onTap:()=>update(()=>isSelected?selected.remove(id):selected[id]=p));
-        })),
-      ])),
+      ]))),
       actions:[
-        TextButton(onPressed:creating?null:()=>material_widgets_ui.Navigator.pop(ctx),child:const Text('Cancel')),
+        TextButton(onPressed:creating?null:()=>material_widgets_ui.Navigator.pop(ctx),
+          child:const Text('Cancel')),
         FilledButton(onPressed:creating?null:()async{
           final groupName=nameController.text.trim();
           if(groupName.length<2||groupName.length>80||selected.isEmpty){
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter a group name and select at least one member.')));return;
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content:Text('Enter a group name and select at least one person.')));
+            return;
           }
           update(()=>creating=true);
           try{
-            final result=await db.rpc('cv_create_group_conversation',params:{'p_group_name':groupName,'p_member_ids':selected.keys.toList()});
+            final result=await db.rpc('cv_create_group_conversation',
+              params:{'p_group_name':groupName,'p_member_ids':selected.keys.toList()});
             final id=result.toString();
             if(!ctx.mounted)return;
             material_widgets_ui.Navigator.pop(ctx);
             if(!mounted)return;
             await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MessageThreadScreen(
-              conversationId:id,person:{'id':'','full_name':groupName,'username':'','is_group':true,'member_count':selected.length+1})));
+              conversationId:id,person:{'id':'','full_name':groupName,'username':'',
+                'is_group':true,'member_count':selected.length+1})));
             if(mounted)await refreshInbox();
           }catch(e){
             update(()=>creating=false);
-            if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Group creation unavailable: $e')));
+            if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content:Text('Group creation unavailable: $e')));
           }
-        },child:creating?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Create group')),
+        },child:creating?const SizedBox(width:18,height:18,
+          child:CircularProgressIndicator(strokeWidth:2)):const Text('Create group')),
       ],
     )));
     nameController.dispose();searchController.dispose();
@@ -3274,29 +3332,6 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ]),
     body:Stack(children:[
       Column(children:[
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(12, 10, 12, 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0x1AFFC857),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0x55FFC857)),
-          ),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.lock_outline, color: gold, size: 17),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'End-to-end encryption is not active yet. Avoid sending passwords or highly sensitive information in this chat.',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.35),
-                ),
-              ),
-            ],
-          ),
-        ),
         Expanded(child:_initialLoading?const Center(child:CircularProgressIndicator(color:emerald)):
           _loadError!=null?Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Text('Could not load this conversation.',style:TextStyle(color:muted)),TextButton(onPressed:(){setState((){_initialLoading=true;_loadError=null;});_loadInitialMessages();},child:const Text('Try again'))])):
           _rows.isEmpty?const Center(child:Text('Say hello to start the conversation.',style:TextStyle(color:muted))):
