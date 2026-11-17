@@ -2468,14 +2468,38 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
   }
   Future<List<Map<String, dynamic>>> loadInbox() async {
     final me = db.auth.currentUser!.id;
-    final raw = await db.from('cv_conversations').select('id,user_a,user_b,last_message_at')
-      .or('user_a.eq.$me,user_b.eq.$me').order('last_message_at', ascending: false);
-    final conversations = List<Map<String, dynamic>>.from(raw);
+    final directRaw = await db.from('cv_conversations').select('id,user_a,user_b,last_message_at,is_group,group_name,group_avatar_path')
+      .eq('is_group',false).or('user_a.eq.$me,user_b.eq.$me').order('last_message_at', ascending: false);
+    final conversations = List<Map<String, dynamic>>.from(directRaw);
+    // Group conversations are visible only through the caller's membership rows.
+    try {
+      final memberships = await db.from('cv_conversation_members').select('conversation_id').eq('user_id',me);
+      final groupIds = List<Map<String,dynamic>>.from(memberships).map((m)=>m['conversation_id'].toString()).toList();
+      if(groupIds.isNotEmpty){
+        final groupRaw=await db.from('cv_conversations').select('id,user_a,user_b,last_message_at,is_group,group_name,group_avatar_path')
+          .eq('is_group',true).inFilter('id',groupIds).order('last_message_at',ascending:false);
+        conversations.addAll(List<Map<String,dynamic>>.from(groupRaw));
+      }
+    } catch (_) {
+      // Until the additive group migration is applied, keep existing direct chats available.
+    }
     if (conversations.isEmpty) return [];
+    conversations.sort((a,b)=>(b['last_message_at']??'').toString().compareTo((a['last_message_at']??'').toString()));
     final ids = conversations.map((c) => c['id'].toString()).toList();
-    final otherIds = conversations.map((c) => (c['user_a'] == me ? c['user_b'] : c['user_a']).toString()).toSet().toList();
-    final peopleRaw = await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', otherIds);
+    final otherIds = conversations.where((c)=>c['is_group']!=true)
+      .map((c) => (c['user_a'] == me ? c['user_b'] : c['user_a']).toString()).toSet().toList();
+    final peopleRaw = otherIds.isEmpty ? <dynamic>[] : await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', otherIds);
     final people = {for (final p in List<Map<String, dynamic>>.from(peopleRaw)) p['id'].toString(): p};
+    final groupMemberIds=<String,Set<String>>{};
+    final groupRows=conversations.where((c)=>c['is_group']==true).toList();
+    if(groupRows.isNotEmpty){
+      try{
+        final memberships=await db.from('cv_conversation_members').select('conversation_id,user_id').inFilter('conversation_id',groupRows.map((g)=>g['id'].toString()).toList());
+        for(final m in List<Map<String,dynamic>>.from(memberships)){
+          groupMemberIds.putIfAbsent(m['conversation_id'].toString(),()=>{}).add(m['user_id'].toString());
+        }
+      }catch(_){}
+    }
     final msgRaw = await db.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at,attachment_path,attachment_name,attachment_mime')
       .inFilter('conversation_id', ids).order('created_at', ascending: false);
     final latest = <String, Map<String, dynamic>>{}, unreadByConversation = <String, int>{};
@@ -2485,7 +2509,12 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
       if (m['sender_id'] != me && m['read_at'] == null) unreadByConversation[cid] = (unreadByConversation[cid] ?? 0) + 1;
     }
     for (final c in conversations) {
-      c['person'] = people[(c['user_a'] == me ? c['user_b'] : c['user_a']).toString()] ?? {};
+      if(c['is_group']==true){
+        c['person']={'id':'','full_name':(c['group_name']??'Group conversation').toString(),'username':'','is_group':true,
+          'member_count':groupMemberIds[c['id'].toString()]?.length??0};
+      }else{
+        c['person'] = people[(c['user_a'] == me ? c['user_b'] : c['user_a']).toString()] ?? {};
+      }
       c['latest'] = latest[c['id'].toString()];
       c['unread_count'] = unreadByConversation[c['id'].toString()] ?? 0;
     }
@@ -2531,9 +2560,81 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
           } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Search failed: $e'))); }
         }, child: const Text('Search'))]));
   }
+  Future<void> startGroupChat() async {
+    final nameController=TextEditingController();
+    final searchController=TextEditingController();
+    final selected=<String,Map<String,dynamic>>{};
+    List<Map<String,dynamic>> results=[];
+    bool searching=false,creating=false;
+    await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(ctx,update)=>AlertDialog(
+      backgroundColor:panel,
+      title:const Text('Create a group'),
+      content:SizedBox(width:440,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        TextField(controller:nameController,decoration:const InputDecoration(labelText:'Group name',hintText:'e.g. Design learners')),
+        const SizedBox(height:12),
+        Row(children:[
+          Expanded(child:TextField(controller:searchController,decoration:const InputDecoration(labelText:'Find members',hintText:'Name or username'),
+            onSubmitted:(_)=>searchMembers())),
+          const SizedBox(width:8),
+          IconButton(onPressed:searching?null:searchMembers,icon:const Icon(Icons.search,color:emerald)),
+        ]),
+        if(selected.isNotEmpty)...[
+          const SizedBox(height:8),
+          Text('${selected.length} selected',style:const TextStyle(color:emerald,fontWeight:FontWeight.w700)),
+          Wrap(spacing:6,children:[for(final entry in selected.entries)InputChip(label:Text((entry.value['full_name']??entry.value['username']??'Member').toString()),
+            onDeleted:()=>update(()=>selected.remove(entry.key)))])
+        ],
+        const SizedBox(height:8),
+        if(searching)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator(color:emerald))),
+        if(results.isNotEmpty)SizedBox(height:190,child:ListView.builder(shrinkWrap:true,itemCount:results.length,itemBuilder:(_,i){
+          final p=results[i],id=p['id'].toString(),isSelected=selected.containsKey(id);
+          return ListTile(dense:true,title:Text((p['full_name']??p['username']??'Member').toString()),
+            subtitle:Text('@${p['username']??''}'),trailing:Icon(isSelected?Icons.check_circle:Icons.add_circle_outline,color:isSelected?emerald:muted),
+            onTap:()=>update(()=>isSelected?selected.remove(id):selected[id]=p));
+        })),
+      ])),
+      actions:[
+        TextButton(onPressed:creating?null:()=>material_widgets_ui.Navigator.pop(ctx),child:const Text('Cancel')),
+        FilledButton(onPressed:creating?null:()async{
+          final groupName=nameController.text.trim();
+          if(groupName.length<2||groupName.length>80||selected.isEmpty){
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter a group name and select at least one member.')));return;
+          }
+          update(()=>creating=true);
+          try{
+            final result=await db.rpc('cv_create_group_conversation',params:{'p_group_name':groupName,'p_member_ids':selected.keys.toList()});
+            final id=result.toString();
+            if(!ctx.mounted)return;
+            material_widgets_ui.Navigator.pop(ctx);
+            if(!mounted)return;
+            await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MessageThreadScreen(
+              conversationId:id,person:{'id':'','full_name':groupName,'username':'','is_group':true,'member_count':selected.length+1})));
+            if(mounted)await refreshInbox();
+          }catch(e){
+            update(()=>creating=false);
+            if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Group creation unavailable: $e')));
+          }
+        },child:creating?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Create group')),
+      ],
+    )));
+    nameController.dispose();searchController.dispose();
+    Future<void> searchMembers() async {
+      final q=sanitizeSearchTerm(searchController.text);
+      if(q.length<2)return;
+      update(()=>searching=true);
+      try{
+        final found=await db.from('public_profiles').select('id,full_name,username,avatar_url')
+          .or('full_name.ilike.%$q%,username.ilike.%$q%').neq('id',db.auth.currentUser!.id).limit(20);
+        update(()=>results=List<Map<String,dynamic>>.from(found));
+      }catch(e){
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Member search failed: $e')));
+      }finally{update(()=>searching=false);}
+    }
+  }
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Messages'), actions: [
+      IconButton(onPressed: startGroupChat, tooltip: 'Create group', icon: const Icon(Icons.group_add_outlined, color: emerald)),
       IconButton(onPressed: startChat, tooltip: 'New message', icon: const Icon(Icons.edit_square, color: gold)),
     ]),
     body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -2606,6 +2707,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                       final latest = c['latest'] as Map?;
                       final name = (person['full_name'] ?? person['username'] ?? 'CreatorVerse member').toString();
                       final avatar = (person['avatar_url'] ?? '').toString();
+                      final isGroup=person['is_group']==true;
                       final unread = (c['unread_count'] ?? 0) as int;
                       final body = (latest?['body'] ?? '').toString();
                       final hasAttachment = (latest?['attachment_path'] ?? '').toString().isNotEmpty;
@@ -2619,11 +2721,11 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                           radius: 25,
                           backgroundColor: const Color(0x3320B887),
                           backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
-                          child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald),
+                          child: avatar.startsWith('https://') ? null : Icon(isGroup?Icons.groups_rounded:Icons.person, color: emerald),
                         ),
                         title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontWeight: unread > 0 ? FontWeight.w800 : FontWeight.w600)),
-                        subtitle: Text('$prefix$preview', maxLines: 1, overflow: TextOverflow.ellipsis,
+                        subtitle: Text(isGroup?'Group · ${person['member_count']??0} members · $preview':'$prefix$preview', maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: unread > 0 ? Colors.white : muted,
                             fontWeight: unread > 0 ? FontWeight.w600 : FontWeight.w400)),
                         trailing: Column(mainAxisAlignment: MainAxisAlignment.center,
