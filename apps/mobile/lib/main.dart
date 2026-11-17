@@ -2686,7 +2686,10 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   void _broadcastTyping(bool typing){
     final channel=_messageChannel,userId=db.auth.currentUser?.id;
     if(channel==null||userId==null)return;
-    unawaited(channel.sendBroadcastMessage(event:'typing',payload:{'user_id':userId,'typing':typing}).catchError((_){ }));
+    unawaited(_sendTypingBroadcast(channel,userId,typing));
+  }
+  Future<void> _sendTypingBroadcast(RealtimeChannel channel,String userId,bool typing) async{
+    try{await channel.sendBroadcastMessage(event:'typing',payload:{'user_id':userId,'typing':typing});}catch(_){}
   }
   void _receiveTyping(Map<String,dynamic> payload){
     if(payload['user_id']==db.auth.currentUser?.id)return;
