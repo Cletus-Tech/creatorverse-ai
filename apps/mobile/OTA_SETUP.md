@@ -51,7 +51,7 @@ The workflow intentionally skips automatic OTA jobs until this variable is enabl
 2. Confirm all five GitHub Actions secrets are present.
 3. Open **Actions → CreatorVerse Android — Shorebird OTA and Releases → Run workflow**.
 4. Choose operation **release** and run it.
-5. When the workflow succeeds, download the `creatorverse-android-shorebird-release` artifact and install its APK.
+5. When the workflow succeeds, download the `creatorverse-android-shorebird-release` artifact and install its APK. The workflow also produces a separate `creatorverse-android-shorebird-aab` artifact for a future Google Play release.
 
 This is the one required transition from the previous non-Shorebird APK to a Shorebird-enabled installation. If Android refuses to update the old APK because it was signed with a different key, uninstall the old app once and install this baseline. CreatorVerse account data, messages, courses, and other server-side records remain in Supabase; you may need to sign in again.
 
