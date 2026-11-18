@@ -5,6 +5,103 @@ function el(t,a,children){var n=document.createElement(t);Object.keys(a||{}).for
 function hideCommunityLoader(){var l=$('community-loader');if(l)l.classList.add('is-hidden')}
 function msg(t,bad){$('community-msg').textContent=t||'';$('community-msg').className='community-msg'+(bad?' error':'')}
 function modal(on){$('post-modal').classList.toggle('open',!!on);document.body.style.overflow=on?'hidden':''}
+async function sharePostToChat(post){
+ if(!user){location.href='login.html?next='+encodeURIComponent('community.html#post-'+post.id);return}
+ var dialog=el('dialog',{class:'cv-share-dialog','aria-labelledby':'cv-share-title'});
+ var panel=el('div',{class:'cv-share-panel'});
+ var title=el('h2',{id:'cv-share-title',text:'Share post to a chat'});
+ var close=el('button',{type:'button',class:'cv-share-close',text:'×','aria-label':'Close'});
+ var head=el('div',{class:'cv-share-head'},[title,close]);
+ var search=el('input',{type:'search',class:'cv-share-search',placeholder:'Search people and groups','aria-label':'Search conversations'});
+ var status=el('p',{class:'cv-share-status',text:'Loading your conversations…','aria-live':'polite'});
+ var list=el('div',{class:'cv-share-list'});
+ var footer=el('div',{class:'cv-share-footer'});
+ var copy=el('button',{type:'button',class:'cv-share-copy',text:'Copy post link'});
+ panel.append(head,search,status,list,footer);dialog.appendChild(panel);document.body.appendChild(dialog);
+ function closeDialog(){if(dialog.open)dialog.close();dialog.remove()}
+ close.onclick=closeDialog;
+ dialog.addEventListener('click',function(event){if(event.target===dialog)closeDialog()});
+ dialog.addEventListener('close',function(){dialog.remove()});
+ copy.onclick=async function(){
+  var url=location.origin+location.pathname+'#post-'+post.id;
+  try{await navigator.clipboard.writeText(url);msg('Post link copied. You can paste it anywhere.')}
+  catch(_){msg('Your browser could not copy the link. Open the post and copy its address.',true)}
+ };
+ footer.appendChild(copy);
+ try{dialog.showModal()}catch(_){dialog.setAttribute('open','open')}
+ var targets=[];
+ function drawTargets(){
+  list.textContent='';
+  var term=search.value.trim().toLowerCase();
+  var visible=targets.filter(function(item){return (item.label+' '+item.subtitle).toLowerCase().includes(term)});
+  if(!visible.length){status.textContent=targets.length?'No conversations match your search.':'You do not have any conversations yet. Start a chat first.';return}
+  status.textContent='Choose a person or group to send this post to.';
+  visible.forEach(function(item){
+   var icon=el('span',{class:'cv-share-avatar',text:item.initials});
+   var copy=el('span',{class:'cv-share-target-copy'},[
+    el('strong',{text:item.label}),
+    el('small',{text:item.subtitle})
+   ]);
+   var button=el('button',{type:'button',class:'cv-share-target'},[icon,copy,el('span',{class:'cv-share-send',text:'Send'})]);
+   button.onclick=async function(){
+    button.disabled=true;button.querySelector('.cv-share-send').textContent='Sending…';
+    var url=location.origin+location.pathname+'#post-'+post.id;
+    var body=['Shared a post from CreatorVerse',post.title||'',post.description||'',url].filter(Boolean).join('\n\n');
+    try{
+     var result=await sb.from('cv_direct_messages').insert({
+      conversation_id:item.id,sender_id:user.id,body:body
+     }).select('id').single();
+     if(result.error)throw result.error;
+     msg('Post shared with '+item.label+'.');
+     closeDialog();
+    }catch(error){
+     button.disabled=false;button.querySelector('.cv-share-send').textContent='Send';
+     status.textContent='Could not send this post. Please try again.';
+     msg('Share failed: '+(error.message||'The message could not be saved.'),true);
+    }
+   };
+   list.appendChild(button);
+  });
+ }
+ search.addEventListener('input',drawTargets);
+ try{
+  var directResult=await sb.from('cv_conversations').select('id,user_a,user_b,is_group,group_name,last_message_at')
+   .or('user_a.eq.'+user.id+',user_b.eq.'+user.id).eq('is_group',false)
+   .order('last_message_at',{ascending:false}).limit(100);
+  if(directResult.error)throw directResult.error;
+  var direct=directResult.data||[];
+  var membership=await sb.from('cv_conversation_members').select('conversation_id').eq('user_id',user.id);
+  if(membership.error)throw membership.error;
+  var groupIds=Array.from(new Set((membership.data||[]).map(function(row){return row.conversation_id})));
+  var groups=[];
+  if(groupIds.length){
+   var groupResult=await sb.from('cv_conversations').select('id,user_a,user_b,is_group,group_name,last_message_at')
+    .in('id',groupIds).eq('is_group',true);
+   if(groupResult.error)throw groupResult.error;
+   groups=groupResult.data||[];
+  }
+  var peerIds=Array.from(new Set(direct.map(function(row){return row.user_a===user.id?row.user_b:row.user_a}).filter(Boolean)));
+  var people={};
+  if(peerIds.length){
+   var peopleResult=await sb.from('public_profiles').select('id,full_name,username,avatar_url').in('id',peerIds);
+   if(peopleResult.error)throw peopleResult.error;
+   (peopleResult.data||[]).forEach(function(person){people[person.id]=person});
+  }
+  targets=direct.map(function(row){
+   var peer=row.user_a===user.id?row.user_b:row.user_a,p=people[peer]||{};
+   return {id:row.id,label:p.full_name||p.username||'CreatorVerse member',
+    subtitle:p.username?'@'+p.username:'Direct message',
+    initials:initials(p),isGroup:false};
+  }).concat(groups.map(function(row){
+   var label=row.group_name||'CreatorVerse group';
+   return {id:row.id,label:label,subtitle:'Group conversation',initials:label.split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase(),isGroup:true};
+  }));
+  drawTargets();
+ }catch(error){
+  status.textContent='Could not load conversations. Check your connection and try again.';
+  msg('Share could not load your chats: '+(error.message||'Unknown error'),true);
+ }
+}
 function initials(p){return((p&&p.full_name)||'Creator').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
 function avatar(p){return p&&p.avatar_url?el('img',{src:p.avatar_url,alt:''}):el('span',{text:initials(p)})}
 var communityLoadTimer=null,communityLoadStarted=false;
@@ -114,7 +211,7 @@ function card(p){
  var actions=el('div',{class:'pin-actions'},[el('button',{class:'pin-action'+(likedByMe?' active':''),text:(likedByMe?'♥ Like':'♡ Like')+' · '+(p._likes||0),title:'Like this post'}),el('button',{class:'pin-action'+(savedByMe?' active':''),text:savedByMe?'✓ Saved':'☆ Save',title:'Save this post'}),el('button',{class:'pin-action',text:'Comment · '+(p._comments||0),title:'View and add comments'}),el('button',{class:'pin-action',text:'Share',title:'Share this post'})]);
  actions.children[0].onclick=function(){if(!user)return location.href='login.html';var call=likedByMe?sb.from('community_likes').delete().eq('post_id',p.id).eq('user_id',user.id):sb.from('community_likes').insert({post_id:p.id,user_id:user.id});call.then(function(r){if(r.error)return msg(r.error.message,true);liked[p.id]=likedByMe?0:1;draw()})};
  actions.children[1].onclick=function(){if(!user)return location.href='login.html';var call=savedByMe?sb.from('community_saves').delete().eq('post_id',p.id).eq('user_id',user.id):sb.from('community_saves').insert({post_id:p.id,user_id:user.id});call.then(function(r){if(r.error)return msg(r.error.message,true);saved[p.id]=savedByMe?0:1;draw()})};
- var comments=el('div',{class:'pin-comments'});actions.children[2].onclick=function(){comments.classList.toggle('open');if(comments.classList.contains('open'))loadComments(p.id,comments)};actions.children[3].onclick=function(){var url=location.origin+location.pathname+'#post-'+p.id;var shareData={title:p.title||'CreatorVerse community post',text:p.description||'See this post on CreatorVerse',url:url};if(navigator.share){navigator.share(shareData).catch(function(e){if(e.name!=='AbortError')msg('Sharing was cancelled or unavailable.',true)})}else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){msg('Post link copied. Share it with your community.')}).catch(function(){msg(url)})}else{msg(url)}};
+ var comments=el('div',{class:'pin-comments'});actions.children[2].onclick=function(){comments.classList.toggle('open');if(comments.classList.contains('open'))loadComments(p.id,comments)};actions.children[3].onclick=function(){sharePostToChat(p)};
  var footer=el('div',{class:'pin-footer'},[author,p.title?el('h3',{text:p.title}):null,p.description?el('p',{class:'pin-description',text:p.description}):null,p.category&&p.category!=='Other'?el('span',{class:'pin-category',text:p.category}):null,p.destination_url?el('a',{class:'pin-link',href:p.destination_url,target:'_blank',rel:'noopener',text:'View link ↗'}):null,actions,comments]);
  var box=el('article',{class:'pin-card','data-post-id':p.id,id:'post-'+p.id},[art?el('div',{class:'pin-art-wrap'},[art]):null,footer]);
  if(isOwner||isAdmin){var menu=el('div',{class:'pin-menu'}),hide=el('button',{text:'Hide post'}),del=el('button',{text:'Delete post'});hide.onclick=function(){sb.from('community_posts').update({status:'hidden'}).eq('id',p.id).then(function(r){if(r.error)return msg(r.error.message,true);posts=posts.filter(function(x){return x.id!==p.id});draw()})};del.onclick=function(){if(!confirm('Permanently delete this post and its comments?'))return;sb.from('community_posts').delete().eq('id',p.id).then(function(r){if(r.error)return msg(r.error.message,true);posts=posts.filter(function(x){return x.id!==p.id});draw()})};menu.append(hide,del);footer.insertBefore(menu,footer.children[0])}
