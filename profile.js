@@ -263,7 +263,8 @@ function renderTab(){
 }
 async function showList(which){
  var box=document.getElementById('profile-list');if(!box)return;
- box.classList.toggle('open');if(!box.classList.contains('open'))return;
+ if(box.classList.contains('open')&&box.dataset.kind===which){box.classList.remove('open');return}
+ box.classList.add('open');box.dataset.kind=which;
  box.textContent='Loading '+which+'…';
  var column=which==='followers'?'follower_id':'following_id';
  var result=await sb.from('community_follows').select(column).eq(which==='followers'?'following_id':'follower_id',target);
