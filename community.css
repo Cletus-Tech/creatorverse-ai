@@ -200,3 +200,5 @@ body[data-page="community"] .community-composer-actions button span{margin-right
 .cv-share-footer{display:flex;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
 .cv-share-copy{padding:9px 13px;border:1px solid rgba(232,196,107,.3);border-radius:9px;background:rgba(232,196,107,.08);color:#e8c46b;font-size:11px;font-weight:700;cursor:pointer}
 @media(max-width:600px){.cv-share-dialog{width:calc(100vw - 18px);max-height:82dvh}.cv-share-panel{max-height:82dvh;padding:14px}.cv-share-list{max-height:56dvh}}
+
+.comment-author-link{display:inline-flex;align-items:center;gap:5px;color:#dce8ff;font-size:11px;font-weight:700;text-decoration:none}.comment-author-link:hover{color:#8fe5d0;text-decoration:underline}
