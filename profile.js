@@ -165,7 +165,7 @@ function buildEditForm(isMe){
 }
 async function uploadProfileImage(file,prefix){
  if(!file||!file.size)return null;
- if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>8*1024*1024)throw new Error('Choose a JPG, PNG or WEBP image up to 8 MB.');
+ if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>5*1024*1024)throw new Error('Choose a JPG, PNG or WEBP image up to 5 MB.');
  var extension=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
  var path=target+'/'+prefix+'_'+Date.now()+'.'+extension;
  var uploaded=await sb.storage.from('profile-avatars').upload(path,file,{upsert:false,contentType:file.type});
