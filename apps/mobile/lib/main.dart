@@ -2321,40 +2321,94 @@ class _CommunityTabState extends State<CommunityTab> {
     var index=0;
     await recordView(entries[index]);
     if(!mounted)return;
-    await showModalBottomSheet<void>(context:context,backgroundColor:panel,isScrollControlled:true,
-      builder:(sheetContext)=>StatefulBuilder(builder:(sheetContext,setSheetState){
+    await showDialog<void>(
+      context:context,
+      barrierDismissible:false,
+      barrierColor:Colors.black,
+      builder:(dialogContext)=>StatefulBuilder(builder:(dialogContext,setStoryState){
         final story=entries[index];
         final author=Map<String,dynamic>.from(story['author'] as Map? ?? creator['author'] as Map? ?? {});
         final media=(story['media_url']??'').toString();
-        return SafeArea(child:Padding(padding:const EdgeInsets.all(20),child:material_widgets_ui.Column(
-          mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Row(children:[
-              Expanded(child:Text((author['full_name']??author['username']??'CreatorVerse member').toString(),style:const TextStyle(color:gold,fontWeight:FontWeight.w800))),
-              Text('${index+1}/${entries.length}',style:const TextStyle(color:muted,fontSize:12)),
-            ]),
-            const SizedBox(height:12),
-            if(media.startsWith('https://')&&story['media_type']=='image')
-              ClipRRect(borderRadius:BorderRadius.circular(14),child:CachedNetworkImage(imageUrl:media,fit:BoxFit.contain,memCacheWidth:1200,placeholder:(_,__)=>const SizedBox(height:220,child:Center(child:CircularProgressIndicator(color:emerald))),errorWidget:(_,__,___)=>const Text('Story media could not be loaded'))),
-            if(media.startsWith('https://')&&story['media_type']=='video')
-              InlineVideoPlayer(url:media),
-            if((story['content']??'').toString().isNotEmpty)
-              Padding(padding:const EdgeInsets.only(top:12),child:Text(story['content'].toString(),style:const TextStyle(fontSize:20,height:1.5))),
-            const SizedBox(height:18),
-            Row(children:[
-              Expanded(child:OutlinedButton(onPressed:index==0?null:()=>setSheetState(()=>index--),child:const Text('Previous'))),
-              const SizedBox(width:10),
-              Expanded(child:FilledButton(onPressed:()async{
-                if(index<entries.length-1){
-                  final next=index+1;
-                  await recordView(entries[next]);
-                  if(sheetContext.mounted)setSheetState(()=>index=next);
-                }else if(sheetContext.mounted){material_widgets_ui.Navigator.pop(sheetContext);}
-              },child:Text(index==entries.length-1?'Done':'Next'))),
-            ]),
-            const SizedBox(height:8),
-            Align(alignment:Alignment.centerRight,child:Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:muted,fontSize:11))),
-          ])));
-      }));
+        final content=(story['content']??'').toString();
+        final avatar=(author['avatar_url']??'').toString();
+        void advance({required bool forward}){
+          final next=index+(forward?1:-1);
+          if(next<0)return;
+          if(next>=entries.length){material_widgets_ui.Navigator.of(dialogContext).pop();return;}
+          unawaited(recordView(entries[next]));
+          setStoryState(()=>index=next);
+        }
+        final textOnly=media.isEmpty;
+        Color storyBackground=const Color(0xFF123D35);
+        final rawBackground=(story['background']??'').toString().replaceFirst('#','');
+        if(rawBackground.length==6){
+          final parsed=int.tryParse(rawBackground,radix:16);
+          if(parsed!=null)storyBackground=Color(0xFF000000|parsed);
+        }
+        return Dialog.fullscreen(
+          backgroundColor:Colors.black,
+          child:Material(
+            color:Colors.black,
+            child:SafeArea(
+              child:Stack(children:[
+                Positioned.fill(
+                  child:textOnly
+                    ?Container(color:storyBackground,alignment:Alignment.center,padding:const EdgeInsets.all(34),
+                      child:Text(content,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w600,height:1.4)))
+                    :media.startsWith('https://')&&story['media_type']=='image'
+                      ?CachedNetworkImage(imageUrl:media,fit:BoxFit.contain,memCacheWidth:1400,
+                        placeholder:(_,__)=>const Center(child:CircularProgressIndicator(color:emerald)),
+                        errorWidget:(_,__,___)=>const Center(child:Text('Story media could not be loaded',style:TextStyle(color:Colors.white70))))
+                      :media.startsWith('https://')&&story['media_type']=='video'
+                        ?Center(child:InlineVideoPlayer(url:media))
+                        :Center(child:Padding(padding:const EdgeInsets.all(24),child:Text(content.isEmpty?'Story':content,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:22)))),
+                ),
+                Positioned(
+                  left:10,right:10,top:8,
+                  child:Row(children:[
+                    for(var i=0;i<entries.length;i++)...[
+                      Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(8),child:SizedBox(height:3,
+                        child:i<index?const ColoredBox(color:Colors.white)
+                          :i==index?TweenAnimationBuilder<double>(
+                            key:ValueKey(story['id']),
+                            tween:Tween(begin:0,end:1),
+                            duration:Duration(seconds:story['media_type']=='video'?15:7),
+                            onEnd:()=>advance(forward:true),
+                            builder:(context,value,_)=>LinearProgressIndicator(value:value,minHeight:3,backgroundColor:Colors.white30,color:Colors.white))
+                          :const ColoredBox(color:Colors.white30)))),
+                      if(i<entries.length-1)const SizedBox(width:4),
+                    ],
+                  ]),
+                ),
+                Positioned(left:12,right:12,top:22,child:Row(children:[
+                  CircleAvatar(radius:17,backgroundColor:panel,
+                    backgroundImage:avatar.startsWith('https://')?NetworkImage(avatar):null,
+                    child:avatar.startsWith('https://')?null:const Icon(Icons.person,color:emerald,size:18)),
+                  const SizedBox(width:9),
+                  Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                    Text((author['full_name']??author['username']??'CreatorVerse member').toString(),
+                      maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w700,fontSize:13)),
+                    Text(_timeAgo(story['created_at']?.toString()),style:const TextStyle(color:Colors.white70,fontSize:10)),
+                  ])),
+                  IconButton(onPressed:()=>material_widgets_ui.Navigator.of(dialogContext).pop(),
+                    icon:const Icon(Icons.close,color:Colors.white),tooltip:'Close status'),
+                ])),
+                if(content.isNotEmpty&&!textOnly)
+                  Positioned(left:18,right:18,bottom:22,child:Container(
+                    padding:const EdgeInsets.symmetric(horizontal:14,vertical:10),
+                    decoration:BoxDecoration(color:Colors.black.withValues(alpha:.48),borderRadius:BorderRadius.circular(14)),
+                    child:Text(content,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:15,height:1.35)))),
+                Positioned.fill(child:Row(children:[
+                  Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:false))),
+                  const Expanded(child:SizedBox.expand()),
+                  Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:true))),
+                ])),
+              ]),
+            ),
+          ),
+        );
+      }),
+    );
   }
   Future<void> createPost() async {
     final body = TextEditingController();XFile? media;bool video=false;
