@@ -363,3 +363,8 @@ body[data-page="messages"] .msg-voice-btn{flex:0 0 auto;border:1px solid rgba(32
 body[data-page="messages"] .msg-voice-btn:disabled{opacity:.6;cursor:wait}
 body[data-page="messages"] .msg-message-content audio{display:block;width:min(260px,100%);height:38px;margin:5px 0}
 @media(max-width:700px){body[data-page="messages"] .msg-voice-btn{padding:8px 7px;font-size:10px}}
+
+/* Message edit/delete actions and deleted-message state. */
+body[data-page="messages"] .msg-bubble-edit,body[data-page="messages"] .msg-bubble-delete{border:0;background:transparent;color:#a9c7ba;padding:4px 7px;font-size:11px;cursor:pointer}
+body[data-page="messages"] .msg-bubble-delete{color:#e79a9a}
+body[data-page="messages"] .msg-deleted-copy{color:#a9bbb3;font-style:italic}
