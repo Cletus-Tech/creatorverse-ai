@@ -4084,7 +4084,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final replied=replyId.isEmpty||!_rows.any((x)=>x['id'].toString()==replyId)?null:_rows.firstWhere((x)=>x['id'].toString()==replyId);
     final replyQuote=replied==null?null:Container(width:double.infinity,margin:const EdgeInsets.only(bottom:6),padding:const EdgeInsets.all(7),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.18),borderRadius:BorderRadius.circular(7),border:const Border(left:BorderSide(color:gold,width:3))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Replying to ${(replied['sender_id']==db.auth.currentUser?.id)?'your message':'message'}',style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w700)),Text((replied['body']??replied['attachment_name']??'Message').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:11))]));
     final isMissedCall=m['message_type']=='missed_call';
-    final sharedPostUrl=RegExp(r'https://creatorverse-ai\\.vercel\\.app/community\\.html#post-[A-Za-z0-9-]+').firstMatch(body)?.group(0);
+    final sharedPostUrl=RegExp(r'https://creatorverse-ai\.vercel\.app/community\.html#post-[A-Za-z0-9-]+').firstMatch(body)?.group(0);
     final senderName=_senderNames[(m['sender_id']??'').toString()]??'Group member';
     final metadata=Row(mainAxisSize:MainAxisSize.min,children:[
       Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),
