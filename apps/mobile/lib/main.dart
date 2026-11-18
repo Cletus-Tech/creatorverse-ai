@@ -4479,7 +4479,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   String? _error,_callStatus;
   Timer? _callTimeoutTimer,_terminalStatusTimer,_remoteDisconnectTimer,_callPollTimer;
   int _expiryRetryCount=0;
-  bool _hadRemoteParticipant=false;
+  bool _expiringCall=false,_hadRemoteParticipant=false;
   RealtimeChannel? _callStatusChannel;
   late final AnimationController _ringController;
   @override void initState(){
@@ -4581,7 +4581,8 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     }
   }
   Future<void> _expireCallAsMissed() async{
-    if(!widget.isCaller||_ending||!['calling','ringing'].contains(_callStatus))return;
+    if(!widget.isCaller||_ending||_expiringCall||!['calling','ringing'].contains(_callStatus))return;
+    _expiringCall=true;
     try{
       await db.rpc('cv_set_call_invite_status',params:{
         'p_call_id':widget.callId,'p_status':'missed'
@@ -4599,6 +4600,8 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     }catch(error){
       debugPrint('CreatorVerse call expiry update failed: $error');
       _scheduleCallExpiryRetry();
+    }finally{
+      _expiringCall=false;
     }
   }
   void _scheduleCallExpiryRetry(){
