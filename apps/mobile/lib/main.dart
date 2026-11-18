@@ -2398,7 +2398,7 @@ class _CommunityTabState extends State<CommunityTab> {
                     padding:const EdgeInsets.symmetric(horizontal:14,vertical:10),
                     decoration:BoxDecoration(color:Colors.black.withValues(alpha:.48),borderRadius:BorderRadius.circular(14)),
                     child:Text(content,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:15,height:1.35)))),
-                Positioned.fill(child:Row(children:[
+                Positioned(left:0,right:0,top:72,bottom:0,child:Row(children:[
                   Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:false))),
                   const Expanded(child:SizedBox.expand()),
                   Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:true))),
