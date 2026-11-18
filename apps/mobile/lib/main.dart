@@ -4717,6 +4717,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     _callTimeoutTimer?.cancel();
     _terminalStatusTimer?.cancel();
     _remoteDisconnectTimer?.cancel();
+    _callPollTimer?.cancel();
     await _stopOutgoingCallTone();
     try{await _room.disconnect().timeout(const Duration(seconds:3));}catch(_){}
     if(!mounted)return;
