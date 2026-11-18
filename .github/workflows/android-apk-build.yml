@@ -216,7 +216,7 @@ jobs:
 
               private fun startOutgoingRingback() {
                   if (outgoingRingback != null) return
-                  outgoingRingback = ToneGenerator(AudioManager.STREAM_MUSIC, 78).also {
+                  outgoingRingback = ToneGenerator(AudioManager.STREAM_RING, 85).also {
                       it.startTone(ToneGenerator.TONE_SUP_RINGTONE, 60000)
                   }
               }
