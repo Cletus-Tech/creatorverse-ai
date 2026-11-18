@@ -2519,11 +2519,15 @@ class _CommunityTabState extends State<CommunityTab> {
     final message = [if (title.isNotEmpty) title, if (description.isNotEmpty) description, url].join('\n\n');
     try {
       await Clipboard.setData(ClipboardData(text: message));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post link copied. You can now share it in a chat or another app.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post link copied. You can now share it in a chat or another app.')));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not prepare the post link: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not prepare the post link: $e')));
+      }
     }
   }
   @override
