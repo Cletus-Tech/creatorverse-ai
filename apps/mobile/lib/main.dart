@@ -536,6 +536,7 @@ class _MainShellState extends State<MainShell> {
     bool callClosedRemotely=false;
     BuildContext? incomingDialogContext;
     RealtimeChannel? incomingStatusChannel;
+    Timer? incomingPollTimer;
     try{
       incomingStatusChannel=db.channel('cv-incoming-status-$callId')
         .onPostgresChanges(event:PostgresChangeEvent.update,schema:'public',table:'cv_call_invites',
@@ -551,6 +552,25 @@ class _MainShellState extends State<MainShell> {
               }
             }
           }).subscribe();
+      // Realtime is the fast path; polling closes the small race window before
+      // the subscription is fully active and also covers temporary socket loss.
+      incomingPollTimer=Timer.periodic(const Duration(seconds:2),(_)async{
+        if(!_incomingCallDialogOpen||!mounted||callClosedRemotely)return;
+        try{
+          final latest=await db.from('cv_call_invites').select('status')
+            .eq('id',callId).single();
+          if(latest['status']!='ringing'){
+            callClosedRemotely=true;
+            final dialogContext=incomingDialogContext;
+            if(dialogContext!=null&&dialogContext.mounted){
+              final navigator=material_widgets_ui.Navigator.of(dialogContext);
+              if(navigator.canPop())navigator.pop(false);
+            }
+          }
+        }catch(error){
+          debugPrint('Incoming call status check failed: $error');
+        }
+      });
       accept=await showDialog<bool>(context:context,barrierDismissible:false,
         builder:(ctx){
           incomingDialogContext=ctx;
@@ -566,6 +586,7 @@ class _MainShellState extends State<MainShell> {
             ]);
         });
     }finally{
+      incomingPollTimer?.cancel();
       _incomingCallDialogOpen=false;
       await _stopIncomingCallRingtone();
       final statusChannel=incomingStatusChannel;
