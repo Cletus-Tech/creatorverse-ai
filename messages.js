@@ -46,6 +46,35 @@ if(mine&&!m.deleted_at){
  };
  tools.append(edit,remove);
 }
+if(!m.deleted_at){
+ var forward=el('button',{type:'button',class:'msg-bubble-forward',text:'Forward'});
+ forward.onclick=async function(){
+  var targets=conversations.filter(function(c){return c.id!==m.conversation_id});
+  if(!targets.length){alert('Start another conversation before forwarding this message.');return}
+  var options=targets.map(function(c,i){return (i+1)+'. '+name(profiles[other(c)]||{})}).join('\\n');
+  var choice=prompt('Forward to which conversation?\\n'+options,'1');
+  if(choice===null)return;var target=targets[Number(choice)-1];if(!target){alert('Choose a valid conversation number.');return}
+  forward.disabled=true;
+  try{
+   var attachmentPath=null;
+   if(m.attachment_path){
+    var safeName=(m.attachment_name||'shared-file').replace(/[^a-zA-Z0-9._-]/g,'_');
+    attachmentPath=target.id+'/'+user.id+'/forward_'+crypto.randomUUID()+'_'+safeName;
+    var copied=await sb.storage.from('cv-chat-files').copy(m.attachment_path,attachmentPath);
+    if(copied.error)throw copied.error;
+   }
+   var payload={conversation_id:target.id,sender_id:user.id,body:m.body||'[Attachment]'};
+   if(attachmentPath){payload.attachment_path=attachmentPath;payload.attachment_name=m.attachment_name;payload.attachment_mime=m.attachment_mime;payload.attachment_size=m.attachment_size}
+   var sent=await sb.from('cv_direct_messages').insert(payload).select('*').single();
+   if(sent.error)throw sent.error;
+   target._last=sent.data;target.last_message_at=sent.data.created_at;
+   conversations.sort(function(a,b){return new Date(b.last_message_at)-new Date(a.last_message_at)});
+   renderConversations();alert('Message forwarded.');
+  }catch(error){alert('Message could not be forwarded: '+errorText(error))}
+  finally{forward.disabled=false}
+ };
+ tools.appendChild(forward);
+}
 if(!mine){var b=el('button',{type:'button',class:'msg-bubble-report',text:'Report'});b.onclick=function(){report('message',m.id,m.sender_id,m.body)};tools.appendChild(b)}
 bubble.appendChild(tools);row.dataset.messageId=m.id;if(m._pending)row.dataset.pendingMessage='true';return row}
 function appendMessage(m){messageCache[m.id]=m;var t=$('chat-thread');if(!t)return;var existing=t.querySelector('[data-message-id="'+m.id+'"]');if(existing){setMessageStatus(m.id,m.read_at);return}var empty=t.querySelector('.msg-thread-empty');if(empty)empty.remove();var near=t.scrollHeight-t.scrollTop-t.clientHeight<160;t.appendChild(renderMessage(m));if(mineMessage(m)||near)scrollLatest(true)}
