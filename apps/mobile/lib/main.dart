@@ -533,7 +533,7 @@ class _MainShellState extends State<MainShell> {
     }catch(_){}
     if(!mounted){_incomingCallDialogOpen=false;await _stopIncomingCallRingtone();return;}
     bool? accept;
-    bool callClosedRemotely=false;
+    bool callClosedRemotely=false,incomingPollInFlight=false;
     BuildContext? incomingDialogContext;
     RealtimeChannel? incomingStatusChannel;
     Timer? incomingPollTimer;
@@ -555,7 +555,8 @@ class _MainShellState extends State<MainShell> {
       // Realtime is the fast path; polling closes the small race window before
       // the subscription is fully active and also covers temporary socket loss.
       incomingPollTimer=Timer.periodic(const Duration(seconds:2),(_)async{
-        if(!_incomingCallDialogOpen||!mounted||callClosedRemotely)return;
+        if(!_incomingCallDialogOpen||!mounted||callClosedRemotely||incomingPollInFlight)return;
+        incomingPollInFlight=true;
         try{
           final latest=await db.from('cv_call_invites').select('status')
             .eq('id',callId).single();
@@ -569,6 +570,8 @@ class _MainShellState extends State<MainShell> {
           }
         }catch(error){
           debugPrint('Incoming call status check failed: $error');
+        }finally{
+          incomingPollInFlight=false;
         }
       });
       accept=await showDialog<bool>(context:context,barrierDismissible:false,
