@@ -368,3 +368,6 @@ body[data-page="messages"] .msg-message-content audio{display:block;width:min(26
 body[data-page="messages"] .msg-bubble-edit,body[data-page="messages"] .msg-bubble-delete{border:0;background:transparent;color:#a9c7ba;padding:4px 7px;font-size:11px;cursor:pointer}
 body[data-page="messages"] .msg-bubble-delete{color:#e79a9a}
 body[data-page="messages"] .msg-deleted-copy{color:#a9bbb3;font-style:italic}
+
+body[data-page="messages"] .msg-bubble-forward{border:0;background:transparent;color:#8fcbb1;padding:4px 7px;font-size:11px;cursor:pointer}
+body[data-page="messages"] .msg-bubble-forward:hover{color:#d4f3e5}
