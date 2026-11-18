@@ -47,13 +47,13 @@ jobs:
           cp firebase/google-services.json android/app/google-services.json
           python3 - <<'PY'
           from pathlib import Path
+          import os
           settings = Path('android/settings.gradle.kts')
           source = settings.read_text()
-          # Resolve plugin transitives from Google's Maven repository and Maven Central,
-          # not only the Gradle Plugin Portal.
+          # The app's plugin management must resolve Kotlin plugin transitives from Maven Central.
           plugin_start = source.find('pluginManagement {')
           if plugin_start < 0:
-              source = 'pluginManagement {\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n}\\n' + source
+              source = 'pluginManagement {' + chr(10) + '    repositories {' + chr(10) + '        google()' + chr(10) + '        mavenCentral()' + chr(10) + '        gradlePluginPortal()' + chr(10) + '    }' + chr(10) + '}' + chr(10) + source
           else:
               repositories_start = source.find('repositories {', plugin_start)
               if repositories_start < 0:
@@ -62,10 +62,27 @@ jobs:
               if repositories_end < 0:
                   raise SystemExit('Could not close pluginManagement repositories in settings.gradle.kts')
               repository_block = source[repositories_start:repositories_end]
-              missing_repositories = [repo for repo in ('google()', 'mavenCentral()', 'gradlePluginPortal()') if repo not in repository_block]
+              missing_repositories = [repository for repository in ('google()', 'mavenCentral()', 'gradlePluginPortal()') if repository not in repository_block]
               if missing_repositories:
-                  addition = ''.join('        ' + repo + '\\n' for repo in missing_repositories)
+                  addition = ''.join('        ' + repository + chr(10) for repository in missing_repositories)
                   source = source[:repositories_end] + addition + source[repositories_end:]
+          settings.write_text(source)
+
+          # Flutter's included Gradle build has its own plugin repositories. Patch those too.
+          flutter_gradle_settings = Path(os.environ['FLUTTER_ROOT']) / 'packages/flutter_tools/gradle/settings.gradle.kts'
+          flutter_source = flutter_gradle_settings.read_text()
+          if 'pluginManagement {' not in flutter_source:
+              flutter_plugin_management = (
+                  'pluginManagement {' + chr(10)
+                  + '    repositories {' + chr(10)
+                  + '        google()' + chr(10)
+                  + '        mavenCentral()' + chr(10)
+                  + '        gradlePluginPortal()' + chr(10)
+                  + '    }' + chr(10)
+                  + '}' + chr(10)
+              )
+              flutter_source = flutter_plugin_management + flutter_source
+          flutter_gradle_settings.write_text(flutter_source)
           kotlin_marker = 'id("org.jetbrains.kotlin.android")'
           if kotlin_marker not in source:
               raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
