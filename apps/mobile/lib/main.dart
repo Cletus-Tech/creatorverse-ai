@@ -4477,7 +4477,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   late final Room _room;
   bool _connecting=false,_connectStarted=false,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false,_localFinishing=false,_allowPop=false;
   String? _error,_callStatus;
-  Timer? _callTimeoutTimer,_terminalStatusTimer,_remoteDisconnectTimer;
+  Timer? _callTimeoutTimer,_terminalStatusTimer,_remoteDisconnectTimer,_callPollTimer;
   int _expiryRetryCount=0;
   bool _hadRemoteParticipant=false;
   RealtimeChannel? _callStatusChannel;
@@ -4501,6 +4501,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
           unawaited(_syncOutgoingCallTone());
         }).subscribe();
     _loadCallStatus();
+    _callPollTimer=Timer.periodic(const Duration(seconds:4),(_){unawaited(_pollCallStatus());});
     if(!widget.isCaller)_connect();
   }
   void _onRoomChanged(){
@@ -4542,6 +4543,27 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       }else if(widget.isCaller&&status=='accepted'){_connect();}
       await _syncOutgoingCallTone();
     }catch(_){}
+  }
+  Future<void> _pollCallStatus() async{
+    if(_ending||!mounted)return;
+    try{
+      final row=await db.from('cv_call_invites').select('status,expires_at')
+        .eq('id',widget.callId).single();
+      final status=(row['status']??'').toString();
+      if(status!=_callStatus){
+        if(mounted)setState(()=>_callStatus=status);
+        _handleCallStatus(status);
+      }
+      if(widget.isCaller&&['calling','ringing'].contains(status)){
+        final expiry=DateTime.tryParse((row['expires_at']??'').toString());
+        if(expiry!=null&&!expiry.isAfter(DateTime.now().toUtc())){
+          await _expireCallAsMissed();
+        }
+      }
+      await _syncOutgoingCallTone();
+    }catch(error){
+      debugPrint('CreatorVerse call status refresh failed: $error');
+    }
   }
   void _handleCallStatus(String status){
     if(status=='accepted'){
@@ -4661,6 +4683,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     _ending=true;
     _callTimeoutTimer?.cancel();
     _terminalStatusTimer?.cancel();
+    _callPollTimer?.cancel();
     final messenger=ScaffoldMessenger.maybeOf(context);
     Future<dynamic>? statusUpdate;
     try{
@@ -4706,7 +4729,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   }
   Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
-    _callTimeoutTimer?.cancel();_terminalStatusTimer?.cancel();_remoteDisconnectTimer?.cancel();
+    _callTimeoutTimer?.cancel();_terminalStatusTimer?.cancel();_remoteDisconnectTimer?.cancel();_callPollTimer?.cancel();
     if(widget.isCaller)unawaited(_callRingtoneChannel.invokeMethod('stop_outgoing').catchError((_){}));
     _ringController.dispose();
     _room.removeListener(_onRoomChanged);
