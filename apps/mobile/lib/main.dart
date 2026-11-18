@@ -4606,21 +4606,27 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     _ending=true;
     _callTimeoutTimer?.cancel();
     _terminalStatusTimer?.cancel();
-    String? updateError;
+    final messenger=ScaffoldMessenger.maybeOf(context);
+    Future<dynamic>? statusUpdate;
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
         final status=widget.isCaller&&_callStatus!='accepted'?'cancelled':'ended';
-        await db.rpc('cv_set_call_invite_status',params:{
+        statusUpdate=db.rpc('cv_set_call_invite_status',params:{
           'p_call_id':widget.callId,'p_status':status
         }).timeout(const Duration(seconds:5));
       }
     }catch(error){
-      updateError=error.toString();
+      debugPrint('CreatorVerse call end signal could not start: $error');
     }
+    // Stop local media and leave the call immediately; server signalling continues
+    // concurrently so a slow network cannot trap the user on the call screen.
     await _finishCallLocally();
-    if(updateError!=null&&mounted){
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:Text('The call ended on this device, but the other device may not have received the end signal: '+updateError)));
+    if(statusUpdate!=null){
+      try{await statusUpdate;}
+      catch(error){
+        messenger?.showSnackBar(SnackBar(
+          content:Text('You left the call, but the other device may not have received the end signal: '+error.toString())));
+      }
     }
   }
   Future<void> _finishCallLocally() async{
