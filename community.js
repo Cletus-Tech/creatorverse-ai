@@ -24,6 +24,11 @@ function load(){
   var postResult=await sb.from('community_posts').select('*').eq('status','published').order('created_at',{ascending:false}).limit(100);
   if(postResult.error)throw postResult.error;
   posts=postResult.data||[];
+  var sharedPostId=location.hash&&location.hash.indexOf('#post-')===0?location.hash.slice(6):'';
+  if(sharedPostId&&!posts.some(function(p){return String(p.id)===sharedPostId})){
+   var sharedPostResult=await sb.from('community_posts').select('*').eq('id',sharedPostId).eq('status','published').maybeSingle();
+   if(sharedPostResult.data)posts.unshift(sharedPostResult.data);
+  }
   if(communityLoadTimer)clearTimeout(communityLoadTimer);
   hideCommunityLoader();
   // Render the public feed immediately; optional social data must never hold posts behind a spinner.
