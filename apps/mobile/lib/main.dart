@@ -4485,6 +4485,10 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     _ringController=AnimationController(vsync:this,duration:const Duration(milliseconds:1700))..repeat();
     _room=Room(roomOptions:const RoomOptions(adaptiveStream:true,dynacast:true));
     _room.addListener(_onRoomChanged);
+    if(widget.isCaller){
+      _callStatus='calling';
+      unawaited(_syncOutgoingCallTone());
+    }
     _callStatusChannel=db.channel('cv-call-status-${widget.callId}')
       .onPostgresChanges(event:PostgresChangeEvent.update,schema:'public',table:'cv_call_invites',
         filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'id',value:widget.callId),
