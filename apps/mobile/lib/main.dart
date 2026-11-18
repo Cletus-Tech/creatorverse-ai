@@ -2575,8 +2575,9 @@ class _CommunityTabState extends State<CommunityTab> {
     final id=(post['id']??'').toString();
     final me=db.auth.currentUser?.id;
     if(id.isEmpty||me==null){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content:Text('Sign in to share a community post.')));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('Sign in to share a community post.')));}
+
       return;
     }
     final title=(post['title']??'').toString().trim();
@@ -2618,7 +2619,7 @@ class _CommunityTabState extends State<CommunityTab> {
           'label':isGroup?(row['group_name']??'CreatorVerse group').toString():
             (person['full_name']??person['username']??'CreatorVerse member').toString(),
           'subtitle':isGroup?'Group conversation':
-            (person['username']==null?'Direct conversation':'@'+person['username'].toString()),
+            (person['username']==null?'Direct conversation':'@${person['username']}'),
           'is_group':isGroup,
         };
       }).toList();
@@ -2663,13 +2664,13 @@ class _CommunityTabState extends State<CommunityTab> {
                               'conversation_id':targetId,'sender_id':me,'body':message,
                             }).select('id').single();
                             if(sent['id']==null)throw Exception('The message was not confirmed by the server.');
-                            if(sheetContext.mounted)material_widgets_ui.Navigator.pop(sheetContext);
-                            if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(content:Text('Post shared with '+row['label'].toString()+'.')));
+                            if(sheetContext.mounted){material_widgets_ui.Navigator.pop(sheetContext);}
+                            if(mounted){ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content:Text('Post shared with ${row['label']}.')));}
                           }catch(error){
-                            if(sheetContext.mounted)setSheetState(()=>sendingId=null);
-                            if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(content:Text('Could not share this post: '+error.toString())));
+                            if(sheetContext.mounted){setSheetState(()=>sendingId=null);}
+                            if(mounted){ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content:Text('Could not share this post: $error')));}
                           }
                         },
                       );
@@ -2679,8 +2680,8 @@ class _CommunityTabState extends State<CommunityTab> {
       );
       search.dispose();
     }catch(error){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('Could not load conversations for sharing: '+error.toString())));
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not load conversations for sharing: $error')));}
     }
   }
   @override
@@ -2778,7 +2779,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ? 'Follow members to see their updates here, or share your own post.'
             : 'Be the first to share an update.',
             textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post), onAuthorTap: () { final author=Map<String,dynamic>.from(post['author'] as Map? ?? {}); final key=(author['username']??post['user_id']??'').toString(); if(key.isNotEmpty)openFeature(context,'/profile.html?u='+Uri.encodeComponent(key)); }),
+        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post), onAuthorTap: () { final author=Map<String,dynamic>.from(post['author'] as Map? ?? {}); final key=(author['username']??post['user_id']??'').toString(); if(key.isNotEmpty){openFeature(context,'/profile.html?u=${Uri.encodeComponent(key)}');} }),
       ]));
     });
 }
@@ -4654,7 +4655,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       try{await statusUpdate;}
       catch(error){
         messenger?.showSnackBar(SnackBar(
-          content:Text('You left the call, but the other device may not have received the end signal: '+error.toString())));
+          content:Text('You left the call, but the other device may not have received the end signal: $error')));
       }
     }
   }
@@ -6345,7 +6346,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(child:FilledButton.icon(onPressed:()=>editProfile(p),icon:const Icon(Icons.edit_outlined),label:const Text('Edit profile'),
             style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(48)))),
           const SizedBox(width:10),
-          Expanded(child:OutlinedButton.icon(onPressed:()=>openFeature(context,'/profile.html?u='+Uri.encodeComponent((p['username']??user?.id??'').toString())),
+          Expanded(child:OutlinedButton.icon(onPressed:()=>openFeature(context,'/profile.html?u=${Uri.encodeComponent((p['username']??user?.id??'').toString())}'),
             icon:const Icon(Icons.open_in_new),label:const Text('Public profile'),
             style:OutlinedButton.styleFrom(foregroundColor:gold,minimumSize:const Size.fromHeight(48)))),
         ]),
