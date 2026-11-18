@@ -4083,7 +4083,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final mime=(m['attachment_mime']??'').toString();
     final hasAttachment=path.isNotEmpty;
     final isAudio=mime.startsWith('audio/');
-    final standaloneMedia=hasAttachment&&!isAudio;
+    final standaloneMedia=(hasAttachment&&!isAudio)||isMissedCall;
     final replyId=(m['reply_to_id']??'').toString();
     final replied=replyId.isEmpty||!_rows.any((x)=>x['id'].toString()==replyId)?null:_rows.firstWhere((x)=>x['id'].toString()==replyId);
     final replyQuote=replied==null?null:Container(width:double.infinity,margin:const EdgeInsets.only(bottom:6),padding:const EdgeInsets.all(7),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.18),borderRadius:BorderRadius.circular(7),border:const Border(left:BorderSide(color:gold,width:3))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Replying to ${(replied['sender_id']==db.auth.currentUser?.id)?'your message':'message'}',style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w700)),Text((replied['body']??replied['attachment_name']??'Message').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:11))]));
@@ -4111,7 +4111,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               padding:const EdgeInsets.only(left:5,bottom:3),
               child:Text(senderName,style:const TextStyle(fontSize:10,color:gold,fontWeight:FontWeight.w700))),
             if(replyQuote!=null)replyQuote,
-            if(isMissedCall)Padding(padding:const EdgeInsets.only(bottom:6),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.phone_missed,color:Colors.redAccent,size:17),const SizedBox(width:6),Text(body,style:const TextStyle(color:Colors.redAccent,fontWeight:FontWeight.w700,fontSize:12)),TextButton(onPressed:()=>_startCall(video:body.toLowerCase().contains('video')),child:const Text('Call back',style:TextStyle(fontSize:11,color:emerald)))])),
+            if(isMissedCall)Padding(padding:const EdgeInsets.only(bottom:6),child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.phone_missed,color:Colors.redAccent,size:17),const SizedBox(width:6),Text(mine?'No answer':body,style:const TextStyle(color:Colors.redAccent,fontWeight:FontWeight.w700,fontSize:12)),TextButton(onPressed:()=>_startCall(video:body.toLowerCase().contains('video')),child:const Text('Call back',style:TextStyle(fontSize:11,color:emerald)))])),
             if(body.trim().isNotEmpty&&!isMissedCall)Container(
               constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:2),
@@ -4119,7 +4119,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(12)),
               child:Text(m['deleted_at']!=null?'This message was deleted':body,style:TextStyle(height:1.25,fontStyle:m['deleted_at']!=null?FontStyle.italic:FontStyle.normal,color:m['deleted_at']!=null?Colors.white60:null))),
             if(sharedPostUrl!=null)TextButton.icon(onPressed:()=>launchUrl(Uri.parse(sharedPostUrl),mode:LaunchMode.externalApplication),icon:const Icon(Icons.open_in_new,size:14),label:const Text('View shared post',style:TextStyle(fontSize:11,color:emerald))),
-            Container(constraints:const BoxConstraints(maxWidth:310),
+            if(hasAttachment)Container(constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:3),
               child:MessageAttachmentPreview(path:path,mime:mime,
                 name:(m['attachment_name']??'Attachment').toString())),
