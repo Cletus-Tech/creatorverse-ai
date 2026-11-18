@@ -4478,6 +4478,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   bool _connecting=false,_connectStarted=false,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false,_localFinishing=false,_allowPop=false;
   String? _error,_callStatus;
   Timer? _callTimeoutTimer,_terminalStatusTimer,_remoteDisconnectTimer;
+  int _expiryRetryCount=0;
   bool _hadRemoteParticipant=false;
   RealtimeChannel? _callStatusChannel;
   late final AnimationController _ringController;
@@ -4537,7 +4538,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       if(widget.isCaller&&['calling','ringing'].contains(status)){
         final expiry=DateTime.tryParse((row['expires_at']??'').toString());
         final remaining=expiry==null?const Duration(seconds:45):expiry.toUtc().difference(DateTime.now().toUtc());
-        if(remaining<=Duration.zero){await _expireCallAsMissed();}else{_callTimeoutTimer=Timer(remaining,_expireCallAsMissed);}
+        if(remaining<=Duration.zero){await _expireCallAsMissed();}else{_callTimeoutTimer=Timer(remaining+const Duration(seconds:1),_expireCallAsMissed);}
       }else if(widget.isCaller&&status=='accepted'){_connect();}
       await _syncOutgoingCallTone();
     }catch(_){}
@@ -4559,9 +4560,36 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   }
   Future<void> _expireCallAsMissed() async{
     if(!widget.isCaller||_ending||!['calling','ringing'].contains(_callStatus))return;
-    try{await db.rpc('cv_set_call_invite_status',params:{'p_call_id':widget.callId,'p_status':'missed'});}
-    catch(e){debugPrint('CreatorVerse call expiry update failed: $e');}
-    if(mounted&&['calling','ringing'].contains(_callStatus))setState(()=>_callStatus='missed');
+    try{
+      await db.rpc('cv_set_call_invite_status',params:{
+        'p_call_id':widget.callId,'p_status':'missed'
+      });
+      final latest=await db.from('cv_call_invites').select('status')
+        .eq('id',widget.callId).single();
+      final status=(latest['status']??'').toString();
+      if(mounted)setState(()=>_callStatus=status);
+      if(['calling','ringing'].contains(status)){
+        _scheduleCallExpiryRetry();
+      }else{
+        _expiryRetryCount=0;
+        _handleCallStatus(status);
+      }
+    }catch(error){
+      debugPrint('CreatorVerse call expiry update failed: $error');
+      _scheduleCallExpiryRetry();
+    }
+  }
+  void _scheduleCallExpiryRetry(){
+    if(_ending||!mounted)return;
+    if(_expiryRetryCount<4){
+      _expiryRetryCount++;
+      _callTimeoutTimer?.cancel();
+      _callTimeoutTimer=Timer(const Duration(seconds:2),_expireCallAsMissed);
+      return;
+    }
+    // Do not leave the caller staring at an unanswered call indefinitely.
+    // The database's scheduled expiry worker will still mark it missed.
+    if(mounted)setState(()=>_error='No answer. The call has ended.');
     _handleCallStatus('missed');
   }
   Future<void> _connect() async{
