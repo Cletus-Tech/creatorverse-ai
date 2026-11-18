@@ -371,3 +371,6 @@ body[data-page="messages"] .msg-deleted-copy{color:#a9bbb3;font-style:italic}
 
 body[data-page="messages"] .msg-bubble-forward{border:0;background:transparent;color:#8fcbb1;padding:4px 7px;font-size:11px;cursor:pointer}
 body[data-page="messages"] .msg-bubble-forward:hover{color:#d4f3e5}
+
+body[data-page="messages"] .msg-inline-link{display:inline-flex;margin-top:5px;color:#8fe0bc;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+body[data-page="messages"] .msg-message-text{white-space:pre-wrap;overflow-wrap:anywhere}
