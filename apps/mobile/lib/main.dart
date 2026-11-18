@@ -2778,7 +2778,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ? 'Follow members to see their updates here, or share your own post.'
             : 'Be the first to share an update.',
             textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post)),
+        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post), onAuthorTap: () { final author=Map<String,dynamic>.from(post['author'] as Map? ?? {}); final key=(author['username']??post['user_id']??'').toString(); if(key.isNotEmpty)openFeature(context,'/profile.html?u='+Uri.encodeComponent(key)); }),
       ]));
     });
 }
@@ -2880,8 +2880,8 @@ class CommunityMediaViewer extends StatelessWidget {
 }
 
 class CommunityPostCard extends StatelessWidget {
-  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onShare, onReport, onEdit, onDelete; final bool isMine;
-  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onShare, required this.onReport, required this.onEdit, required this.onDelete, required this.isMine});
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onShare, onReport, onEdit, onDelete, onAuthorTap; final bool isMine;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onShare, required this.onReport, required this.onEdit, required this.onDelete, required this.onAuthorTap, required this.isMine});
   @override
   Widget build(BuildContext context) {
     final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
@@ -2891,13 +2891,16 @@ class CommunityPostCard extends StatelessWidget {
     return Container(margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18)),
       child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.all(14), child: Row(children: [
-          CircleAvatar(radius: 19, backgroundColor: emerald.withValues(alpha: .18),
-            backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
-            child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 20)),
-          const SizedBox(width: 10), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
-              if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
-            Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
+          Expanded(child: InkWell(onTap:onAuthorTap,borderRadius:BorderRadius.circular(12),
+            child: Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Row(children:[
+              CircleAvatar(radius: 19, backgroundColor: emerald.withValues(alpha: .18),
+                backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
+                child: avatar.startsWith('https://') ? null : const Icon(Icons.person, color: emerald, size: 20)),
+              const SizedBox(width: 10), Expanded(child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
+                  if (author['verified_badge']?.toString() != null && author['verified_badge'] != 'none') const Padding(padding: EdgeInsets.only(left: 5), child: Icon(Icons.verified, color: gold, size: 15))]),
+                Text((post['category'] ?? 'Community').toString(), style: const TextStyle(color: muted, fontSize: 11))])),
+            ])))),
           Text(_timeAgo(post['created_at']?.toString()), style: const TextStyle(color: muted, fontSize: 10)),
           PopupMenuButton<String>(onSelected:(value){if(value=='report'){onReport();}else if(value=='edit'){onEdit();}else if(value=='delete'){onDelete();}},itemBuilder:(_)=>[
             if(isMine)const PopupMenuItem(value:'edit',child:Row(children:[Icon(Icons.edit_outlined,size:18),SizedBox(width:8),Text('Edit post')])),
@@ -4905,7 +4908,7 @@ class _AuthenticatedAcademyWebScreenState extends State<AuthenticatedAcademyWebS
       'cv_native': '1',
     }).toString();
   }
-  String get pageTitle=>widget.path.contains('admin.html')?'CreatorVerse Admin Portal':widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
+  String get pageTitle=>widget.path.contains('admin.html')?'CreatorVerse Admin Portal':widget.path.contains('profile.html')?'Creator profile':widget.path.contains('live-room')?'Live interview room':widget.path.contains('interviewer')?'Interview workspace':'Recorded interview response';
   Future<void> injectSessionAndOpen() async {
     if(injected||controller==null)return;
     final session=Supabase.instance.client.auth.currentSession;
@@ -6361,6 +6364,11 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 }
 
 void openFeature(BuildContext context, String path) {
+  if(path.startsWith('/profile.html?u=')){
+    material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+      builder:(_)=>AuthenticatedAcademyWebScreen(path:path)));
+    return;
+  }
   if (path == '/certificates') {
     material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
     return;
