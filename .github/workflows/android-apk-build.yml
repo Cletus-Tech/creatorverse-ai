@@ -142,17 +142,64 @@ jobs:
           cat > android/app/src/main/kotlin/com/cletustech/creatorverse_mobile/MainActivity.kt <<'KOTLIN'
           package com.cletustech.creatorverse_mobile
 
+          import android.app.Notification
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.media.AudioAttributes
           import android.media.AudioManager
           import android.media.Ringtone
           import android.media.RingtoneManager
           import android.media.ToneGenerator
           import android.os.Build
+          import android.os.Bundle
           import io.flutter.embedding.android.FlutterActivity
           import io.flutter.embedding.engine.FlutterEngine
           import io.flutter.plugin.common.MethodChannel
 
           class MainActivity : FlutterActivity() {
               private val channelName = "creatorverse/call_ringtone"
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val manager = getSystemService(NotificationManager::class.java)
+                      if (manager.getNotificationChannel("creatorverse_alerts") == null) {
+                          val alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                          val alertAudio = AudioAttributes.Builder()
+                              .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                              .build()
+                          val alerts = NotificationChannel(
+                              "creatorverse_alerts",
+                              "CreatorVerse notifications",
+                              NotificationManager.IMPORTANCE_DEFAULT
+                          ).apply {
+                              description = "Messages, updates and activity from CreatorVerse"
+                              enableVibration(true)
+                              setSound(alertSound, alertAudio)
+                          }
+                          manager.createNotificationChannel(alerts)
+                      }
+                      if (manager.getNotificationChannel("creatorverse_calls_v2") == null) {
+                          val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                          val ringtoneAudio = AudioAttributes.Builder()
+                              .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                              .build()
+                          val calls = NotificationChannel(
+                              "creatorverse_calls_v2",
+                              "Incoming calls",
+                              NotificationManager.IMPORTANCE_HIGH
+                          ).apply {
+                              description = "Incoming CreatorVerse audio and video calls"
+                              enableVibration(true)
+                              lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                              setSound(ringtoneUri, ringtoneAudio)
+                          }
+                          manager.createNotificationChannel(calls)
+                      }
+                  }
+              }
               private var incomingRingtone: Ringtone? = null
               private var fallbackTone: ToneGenerator? = null
               private var outgoingRingback: ToneGenerator? = null
