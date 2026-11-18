@@ -95,7 +95,11 @@ function draw(){
  var list=posts.filter(function(p){var text=(p.title+' '+p.description+' '+p.category+' '+(p.tags||[]).join(' ')+' '+((profiles[p.user_id]||{}).full_name||'')).toLowerCase();return(!blocked[p.user_id])&&(!term||text.indexOf(term)>-1)&&(filter!=='saved'||saved[p.id])&&(filter!=='following'||following.indexOf(p.user_id)>-1)});
  if(sort==='popular')list.sort(function(a,b){return (b._likes||0)-(a._likes||0)});else list.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)});
  var feed=$('community-feed');feed.textContent='';if(!list.length){feed.appendChild(el('div',{class:'feed-empty'},[el('div',{class:'empty-orb',text:'✦'}),el('h3',{text:filter==='saved'?'No saved creations yet':filter==='following'?'Your following feed is ready':'The community is waiting for its first showcase'}),el('p',{text:'Be among the first to share a project, a design, an experiment or a learning milestone.'}),el('button',{class:'btn btn-primary',text:'Share your work',id:'empty-create'})]));var b=feed.querySelector('#empty-create');if(b)b.onclick=function(){user?modal(true):location.href='login.html'};return}
- list.forEach(function(p){feed.appendChild(card(p))})
+ list.forEach(function(p){feed.appendChild(card(p))});
+ var sharedPostId=location.hash&&location.hash.indexOf('#post-')===0?location.hash.slice(6):'';
+ if(sharedPostId&&list.some(function(p){return String(p.id)===sharedPostId})){
+  setTimeout(function(){var target=document.getElementById('post-'+sharedPostId);if(target)target.scrollIntoView({behavior:'smooth',block:'start'})},120);
+ }
 }
 function card(p){
  var profile=profiles[p.user_id]||{},likedByMe=!!liked[p.id],savedByMe=!!saved[p.id],isOwner=user&&user.id===p.user_id,isAdmin=role==='admin'||role==='super_admin';
