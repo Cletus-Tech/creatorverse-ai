@@ -49,6 +49,23 @@ jobs:
           from pathlib import Path
           settings = Path('android/settings.gradle.kts')
           source = settings.read_text()
+          # Resolve plugin transitives from Google's Maven repository and Maven Central,
+          # not only the Gradle Plugin Portal.
+          plugin_start = source.find('pluginManagement {')
+          if plugin_start < 0:
+              source = 'pluginManagement {\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n}\\n' + source
+          else:
+              repositories_start = source.find('repositories {', plugin_start)
+              if repositories_start < 0:
+                  raise SystemExit('Could not find pluginManagement repositories in settings.gradle.kts')
+              repositories_end = source.find('}', repositories_start)
+              if repositories_end < 0:
+                  raise SystemExit('Could not close pluginManagement repositories in settings.gradle.kts')
+              repository_block = source[repositories_start:repositories_end]
+              missing_repositories = [repo for repo in ('google()', 'mavenCentral()', 'gradlePluginPortal()') if repo not in repository_block]
+              if missing_repositories:
+                  addition = ''.join('        ' + repo + '\\n' for repo in missing_repositories)
+                  source = source[:repositories_end] + addition + source[repositories_end:]
           kotlin_marker = 'id("org.jetbrains.kotlin.android")'
           if kotlin_marker not in source:
               raise SystemExit('Could not find Kotlin plugin declaration in settings.gradle.kts')
