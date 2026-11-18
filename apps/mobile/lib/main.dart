@@ -6218,9 +6218,20 @@ class _ProfileTabState extends State<ProfileTab> {
     if (row == null) {
       return {'id': user.id, 'full_name': user.userMetadata?['full_name'] ?? '', 'email': user.email ?? '', 'role': 'student'};
     }
-    return Map<String, dynamic>.from(row);
+    final followers=await db.from('community_follows').select('follower_id')
+      .eq('following_id',user.id).count(CountOption.exact);
+    final following=await db.from('community_follows').select('following_id')
+      .eq('follower_id',user.id).count(CountOption.exact);
+    return {...Map<String,dynamic>.from(row),
+      'followers_count':followers.count??0,
+      'following_count':following.count??0,
+    };
   }
   Future<void> refresh() async => setState(() => profile = loadProfile());
+  Widget _profileCount(String value,String label)=>Column(mainAxisSize:MainAxisSize.min,children:[
+    Text(value,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:18)),
+    Text(label,style:const TextStyle(color:muted,fontSize:11)),
+  ]);
   Future<void> editProfile(Map<String, dynamic> current) async {
     final name = TextEditingController(text: (current['full_name'] ?? '').toString());
     final username = TextEditingController(text: (current['username'] ?? '').toString());
@@ -6286,6 +6297,11 @@ class _ProfileTabState extends State<ProfileTab> {
       final avatar = (p['avatar_url'] ?? '').toString();
       final isAdmin = role == 'admin' || role == 'super_admin';
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.all(20), children: [
+        if ((p['cover_url']??'').toString().startsWith('https://'))
+          ClipRRect(borderRadius:BorderRadius.circular(18),child:CachedNetworkImage(
+            imageUrl:p['cover_url'].toString(),height:145,width:double.infinity,fit:BoxFit.cover,
+            placeholder:(_,__)=>Container(height:145,color:panel),
+            errorWidget:(_,__,___)=>const SizedBox.shrink())),
         Center(child: material_widgets_ui.Column(children: [
           CircleAvatar(radius: 42, backgroundColor: const Color(0x3320B887),
             backgroundImage: avatar.startsWith('https://') ? NetworkImage(avatar) : null,
@@ -6304,9 +6320,21 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 16), Text(p['bio'].toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5)),
         ],
         const SizedBox(height: 20),
-        FilledButton.icon(onPressed: () => editProfile(p), icon: const Icon(Icons.edit_outlined), label: const Text('Edit profile'),
-          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48))),
-        const SizedBox(height: 18),
+        Row(children:[
+          Expanded(child:FilledButton.icon(onPressed:()=>editProfile(p),icon:const Icon(Icons.edit_outlined),label:const Text('Edit profile'),
+            style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(48)))),
+          const SizedBox(width:10),
+          Expanded(child:OutlinedButton.icon(onPressed:()=>openFeature(context,'/profile.html?u='+Uri.encodeComponent((p['username']??user?.id??'').toString())),
+            icon:const Icon(Icons.open_in_new),label:const Text('Public profile'),
+            style:OutlinedButton.styleFrom(foregroundColor:gold,minimumSize:const Size.fromHeight(48)))),
+        ]),
+        const SizedBox(height:12),
+        Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+          _profileCount((p['followers_count']??0).toString(),'Followers'),
+          const SizedBox(width:24),
+          _profileCount((p['following_count']??0).toString(),'Following'),
+        ]),
+        const SizedBox(height:18),
         if ((p['location'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(p['location'].toString()), dense: true),
         if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
         if (p['skills'] is List && (p['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((p['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
