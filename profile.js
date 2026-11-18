@@ -247,7 +247,7 @@ function renderTab(){
   var card=node('a',{href:href,class:'profile-post'});
   if(post.image_url){
    if(post.media_type==='video')card.appendChild(node('div',{class:'profile-post-video'},[
-    node('img',{src:post.image_url,alt:post.title||'Creator post',loading:'lazy'}),
+    node('video',{src:post.image_url,muted:'muted',playsinline:'playsinline',preload:'metadata'}),
     node('span',{text:'▶ Video'})
    ]));
    else card.appendChild(node('img',{src:post.image_url,alt:post.title||'Creator post',loading:'lazy'}));
