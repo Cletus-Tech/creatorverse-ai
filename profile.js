@@ -204,11 +204,11 @@ async function toggleFollow(){
   if(following){
    var removed=await sb.from('community_follows').delete().eq('follower_id',me.id).eq('following_id',target);
    if(removed.error)throw removed.error;
-   following=false;followerCount=Math.max(0,followerCount-1);followingCount=Math.max(0,followingCount-1);
+   following=false;followerCount=Math.max(0,followerCount-1);
   }else{
    var added=await sb.from('community_follows').insert({follower_id:me.id,following_id:target});
    if(added.error)throw added.error;
-   following=true;followerCount+=1;followingCount+=1;
+   following=true;followerCount+=1;
   }
   render();
  }catch(error){
