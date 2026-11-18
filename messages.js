@@ -51,7 +51,7 @@ if(!m.deleted_at){
  forward.onclick=async function(){
   var targets=conversations.filter(function(c){return c.id!==m.conversation_id});
   if(!targets.length){alert('Start another conversation before forwarding this message.');return}
-  var options=targets.map(function(c,i){return (i+1)+'. '+name(profiles[other(c)]||{})}).join('\\n');
+  var options=targets.map(function(c,i){return (i+1)+'. '+name(profiles[other(c)]||{})}).join('\n');
   var choice=prompt('Forward to which conversation?\\n'+options,'1');
   if(choice===null)return;var target=targets[Number(choice)-1];if(!target){alert('Choose a valid conversation number.');return}
   forward.disabled=true;
