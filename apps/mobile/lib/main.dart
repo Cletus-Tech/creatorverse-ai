@@ -4612,12 +4612,15 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     final messenger=ScaffoldMessenger.maybeOf(context);
     Future<dynamic>? statusUpdate;
     try{
-      if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
-        final status=widget.isCaller&&_callStatus!='accepted'?'cancelled':'ended';
-        statusUpdate=db.rpc('cv_set_call_invite_status',params:{
-          'p_call_id':widget.callId,'p_status':status
+      statusUpdate=db.from('cv_call_invites').select('status')
+        .eq('id',widget.callId).single().then((row)async{
+          final current=(row['status']??'').toString();
+          if(['declined','cancelled','ended','missed'].contains(current))return;
+          final next=current=='accepted'?'ended':(widget.isCaller?'cancelled':'ended');
+          await db.rpc('cv_set_call_invite_status',params:{
+            'p_call_id':widget.callId,'p_status':next
+          });
         }).timeout(const Duration(seconds:5));
-      }
     }catch(error){
       debugPrint('CreatorVerse call end signal could not start: $error');
     }
