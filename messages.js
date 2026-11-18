@@ -7,7 +7,8 @@ function el(tag,attrs,kids){var n=document.createElement(tag);Object.keys(attrs|
 function initials(p){return ((p&&p.full_name)||p&&p.username||'CV').trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||''}).join('').toUpperCase()}
 function name(p){return p&&(p.full_name||p.username)||'Creator'}function nameNode(p,cls){var n=el('strong',{class:cls||'',text:name(p)}),tick=window.CV_BADGE_ICON&&window.CV_BADGE_ICON(p);if(tick)n.appendChild(tick);return n}
 function avatar(p,isOnline){var a=el('div',{class:'msg-avatar'});if(p&&p.avatar_url)a.appendChild(el('img',{src:p.avatar_url,alt:''}));else a.appendChild(el('span',{text:initials(p)}));if(isOnline)a.appendChild(el('i',{class:'online-indicator'}));return a}
-function other(c){return c.user_a===user.id?c.user_b:c.user_a}
+function groupAvatar(c){return el('div',{class:'msg-avatar msg-group-avatar'},[el('span',{text:'G'})])}
+function other(c){return c&&c.is_group?null:(c.user_a===user.id?c.user_b:c.user_a)}
 function online(id){return !!presence[id]}
 function ago(d){var n=Date.now()-new Date(d).getTime();if(n<60000)return'now';if(n<3600000)return Math.floor(n/60000)+'m';if(n<86400000)return Math.floor(n/3600000)+'h';return new Date(d).toLocaleDateString([],{month:'short',day:'numeric'})}
 function errorText(e){return e&&e.message?e.message:'Something went wrong. Please try again.'}
@@ -17,9 +18,119 @@ function isBlocked(id){return !!blocked[id]}
 function loadBlocks(){return sb.from('community_blocks').select('blocker_id,blocked_id').or('blocker_id.eq.'+user.id+',blocked_id.eq.'+user.id).then(function(r){if(r.error)throw r.error;blocked={};(r.data||[]).forEach(function(x){blocked[x.blocker_id===user.id?x.blocked_id:x.blocker_id]=true})})}
 function renderPresence(){var state=presenceChannel&&presenceChannel.presenceState?presenceChannel.presenceState():{};presence={};Object.keys(state||{}).forEach(function(k){(state[k]||[]).forEach(function(x){if(x.user_id)presence[x.user_id]=x})});var n=Object.keys(presence).filter(function(id){return id!==user.id}).length;status(n+' creators online now');renderConversations();if(active)renderHeader()}
 function startPresence(){sb.rpc('cv_touch_last_seen').catch(function(){});if(lastSeenTimer)clearInterval(lastSeenTimer);lastSeenTimer=setInterval(function(){sb.rpc('cv_touch_last_seen').catch(function(){})},60000);presenceChannel=sb.channel('cv:presence',{config:{private:true,presence:{key:user.id}}});presenceChannel.on('presence',{event:'sync'},renderPresence).on('presence',{event:'join'},renderPresence).on('presence',{event:'leave'},renderPresence).subscribe(function(s){if(s==='SUBSCRIBED'){presenceChannel.track({user_id:user.id,full_name:name(me),avatar_url:me.avatar_url||null,online_at:new Date().toISOString()});status('You are online · '+Object.keys(presence).length+' others')}})}
-function renderConversations(){var box=$('conversation-list');box.textContent='';var visible=conversations.filter(function(c){if(inboxFilter==='unread'&&!(c._unread||0))return false;if(conversationSearchTerm){var p=profiles[other(c)]||{},last=c._last&&c._last.body||'',hay=[name(p),p.username||'',last].join(' ').toLowerCase();if(hay.indexOf(conversationSearchTerm.toLowerCase())<0)return false}return true});if(!visible.length){box.appendChild(el('div',{class:'msg-loading',text:conversationSearchTerm?'No conversations match your search.':inboxFilter==='unread'?'You have no unread messages.':'No conversations yet. Find a creator and say hello.'}));return}visible.forEach(function(c){var id=other(c),p=profiles[id]||{},m=c._last,b=el('button',{type:'button',class:'msg-conversation'+(active&&active.id===c.id?' active':'')});b.append(avatar(p,online(id)),el('span',{class:'msg-conversation-copy'},[nameNode(p),el('small',{text:m?(m.sender_id===user.id?'You: ':'')+m.body:'Start a conversation'})]),el('time',{class:'msg-conversation-time',text:ago(m?m.created_at:c.last_message_at)}));if(c._unread)b.appendChild(el('span',{class:'msg-unread-badge',text:String(c._unread)}));b.onclick=function(){openConversation(c)};box.appendChild(b)})}
-function loadConversations(){return sb.from('cv_conversations').select('*').or('user_a.eq.'+user.id+',user_b.eq.'+user.id).order('last_message_at',{ascending:false}).then(async function(r){if(r.error)throw r.error;conversations=r.data||[];await getProfiles(conversations.map(other));var ids=conversations.map(function(c){return c.id});if(ids.length){var m=await sb.from('cv_direct_messages').select('conversation_id,body,sender_id,created_at,read_at').in('conversation_id',ids).order('created_at',{ascending:false}).limit(400);if(m.error)console.warn('Could not load message previews',m.error);else{var latest={},unread={};(m.data||[]).forEach(function(x){if(!latest[x.conversation_id])latest[x.conversation_id]=x;if(x.sender_id!==user.id&&!x.read_at)unread[x.conversation_id]=(unread[x.conversation_id]||0)+1});conversations.forEach(function(c){c._last=latest[c.id]||null;c._unread=unread[c.id]||0})}}renderConversations()})}
-function renderHeader(){if(!active)return;var p=profiles[other(active)]||{},peerId=other(active),box=$('chat-person');box.textContent='';box.append(avatar(p,online(p.id)),el('div',{},[nameNode(p),el('small',{text:online(p.id)?'Online now':'Checking last seen…'})]));$('chat-report').hidden=false;if(!online(peerId)){var selected=active.id;sb.rpc('cv_get_chat_last_seen',{p_user_id:peerId}).then(function(r){if(!active||active.id!==selected||online(peerId))return;var d=r.data?new Date(r.data):null,label='Offline';if(d&&!isNaN(d.getTime())){var mins=Math.floor((Date.now()-d.getTime())/60000);label=mins<1?'Last seen just now':mins<60?'Last seen '+mins+'m ago':mins<1440?'Last seen '+Math.floor(mins/60)+'h ago':'Last seen '+Math.floor(mins/1440)+'d ago'};var small=box.querySelector('small');if(small)small.textContent=label}).catch(function(){var small=box.querySelector('small');if(small)small.textContent='Offline'})}}
+function renderConversations(){
+ var box=$('conversation-list');box.textContent='';
+ var visible=conversations.filter(function(c){
+  if(inboxFilter==='unread'&&!(c._unread||0))return false;
+  if(conversationSearchTerm){
+   var p=profiles[other(c)]||{},last=c._last&&c._last.body||'';
+   var hay=[c.is_group?(c.group_name||'Group chat'):'',name(p),p.username||'',last].join(' ').toLowerCase();
+   if(hay.indexOf(conversationSearchTerm.toLowerCase())<0)return false
+  }
+  return true
+ });
+ if(!visible.length){
+  box.appendChild(el('div',{class:'msg-loading',text:conversationSearchTerm?'No conversations match your search.':inboxFilter==='unread'?'You have no unread messages.':'No conversations yet. Find a creator and say hello.'}));
+  return
+ }
+ visible.forEach(function(c){
+  var id=other(c),p=profiles[id]||{},m=c._last;
+  var label=c.is_group?(c.group_name||'Group chat'):name(p);
+  var preview=m?(m.sender_id===user.id?'You: ':'')+(m.body||'Attachment'):'Start a conversation';
+  if(c.is_group&&m&&m.sender_id!==user.id)preview=(name(profiles[m.sender_id]||{username:'Member'})+': ')+(m.body||'Attachment');
+  var b=el('button',{type:'button',class:'msg-conversation'+(active&&active.id===c.id?' active':'')});
+  b.append(c.is_group?groupAvatar(c):avatar(p,online(id)),
+    el('span',{class:'msg-conversation-copy'},[
+      nameNode(c.is_group?{full_name:label}:p),
+      el('small',{text:preview})
+    ]),
+    el('time',{class:'msg-conversation-time',text:ago(m?m.created_at:c.last_message_at)}));
+  if(c._unread)b.appendChild(el('span',{class:'msg-unread-badge',text:String(c._unread)}));
+  b.onclick=function(){openConversation(c)};
+  box.appendChild(b)
+ })
+}
+function loadConversations(){
+ return sb.from('cv_conversations').select('*')
+  .or('user_a.eq.'+user.id+',user_b.eq.'+user.id)
+  .order('last_message_at',{ascending:false})
+  .then(async function(r){
+   if(r.error)throw r.error;
+   var direct=(r.data||[]).filter(function(c){return !c.is_group});
+   var membership=await sb.from('cv_conversation_members').select('conversation_id')
+    .eq('user_id',user.id);
+   if(membership.error)throw membership.error;
+   var groupIds=Array.from(new Set((membership.data||[]).map(function(x){return x.conversation_id})));
+   var groups=[],memberCounts={},groupMemberIds=[];
+   if(groupIds.length){
+    var groupResult=await sb.from('cv_conversations').select('*').in('id',groupIds).eq('is_group',true);
+    if(groupResult.error)throw groupResult.error;
+    groups=groupResult.data||[];
+    var memberResult=await sb.from('cv_conversation_members').select('conversation_id,user_id').in('conversation_id',groupIds);
+    if(memberResult.error)throw memberResult.error;
+    (memberResult.data||[]).forEach(function(row){
+     memberCounts[row.conversation_id]=(memberCounts[row.conversation_id]||0)+1;
+     if(row.user_id!==user.id)groupMemberIds.push(row.user_id);
+    });
+   }
+   conversations=direct.concat(groups).sort(function(a,b){return new Date(b.last_message_at)-new Date(a.last_message_at)});
+   conversations.forEach(function(c){if(c.is_group)c._memberCount=memberCounts[c.id]||0});
+   await getProfiles(direct.map(other).concat(groupMemberIds));
+   var ids=conversations.map(function(c){return c.id});
+   if(ids.length){
+    var m=await sb.from('cv_direct_messages').select('conversation_id,id,body,sender_id,created_at,read_at')
+      .in('conversation_id',ids).order('created_at',{ascending:false}).limit(500);
+    if(m.error)console.warn('Could not load message previews',m.error);
+    else{
+     var latest={},unread={},groupIdsSet=new Set(groups.map(function(g){return g.id}));
+     var groupIncoming=(m.data||[]).filter(function(x){return groupIdsSet.has(x.conversation_id)&&x.sender_id!==user.id}).map(function(x){return x.id});
+     var groupRead=new Set();
+     if(groupIncoming.length){
+      var receipts=await sb.from('cv_message_receipts').select('message_id').eq('user_id',user.id)
+       .in('message_id',groupIncoming).not('read_at','is',null);
+      if(!receipts.error)(receipts.data||[]).forEach(function(x){groupRead.add(x.message_id)});
+     }
+     (m.data||[]).forEach(function(x){
+      if(!latest[x.conversation_id])latest[x.conversation_id]=x;
+      var isGroup=groupIdsSet.has(x.conversation_id);
+      var isUnread=x.sender_id!==user.id&&(isGroup?!groupRead.has(x.id):!x.read_at);
+      if(isUnread)unread[x.conversation_id]=(unread[x.conversation_id]||0)+1;
+     });
+     conversations.forEach(function(c){c._last=latest[c.id]||null;c._unread=unread[c.id]||0});
+    }
+   }
+   renderConversations()
+  })
+}
+function renderHeader(){
+ if(!active)return;
+ var isGroup=active.is_group===true,peerId=other(active),p=profiles[peerId]||{},box=$('chat-person');
+ box.textContent='';
+ if(isGroup){
+  box.append(groupAvatar(active),el('div',{},[
+   nameNode({full_name:active.group_name||'Group chat'}),
+   el('small',{text:(active._memberCount||0)+' members'})
+  ]));
+  $('chat-report').hidden=true;
+  return
+ }
+ box.append(avatar(p,online(p.id)),el('div',{},[
+  nameNode(p),el('small',{text:online(p.id)?'Online now':'Checking last seen…'})
+ ]));
+ $('chat-report').hidden=false;
+ if(!online(peerId)){
+  var selected=active.id;
+  sb.rpc('cv_get_chat_last_seen',{p_user_id:peerId}).then(function(r){
+   if(!active||active.id!==selected||online(peerId))return;
+   var d=r.data?new Date(r.data):null,label='Offline';
+   if(d&&!isNaN(d.getTime())){
+    var mins=Math.floor((Date.now()-d.getTime())/60000);
+    label=mins<1?'Last seen just now':mins<60?'Last seen '+mins+'m ago':mins<1440?'Last seen '+Math.floor(mins/60)+'h ago':'Last seen '+Math.floor(mins/1440)+'d ago'
+   }
+   var small=box.querySelector('small');if(small)small.textContent=label
+  }).catch(function(){var small=box.querySelector('small');if(small)small.textContent='Offline'})
+ }
+}
 function showChat(on){$('chat-empty').hidden=!!on;$('chat-active').hidden=!on;root.classList.toggle('is-chat-open',!!on)}
 function report(type,id,reportedUser,excerpt){var reason=prompt('Why are you reporting this '+type+'? Choose a short reason.');if(!reason)return;sb.from('cv_content_reports').insert({reporter_id:user.id,report_type:type,target_id:id,reported_user_id:reportedUser,reason:reason.slice(0,80),context_excerpt:(excerpt||'').slice(0,500)}).then(function(r){if(r.error)alert('Report could not be submitted: '+r.error.message);else alert('Thank you. Your report has been sent to the CreatorVerse moderation team.')})}
 
@@ -98,14 +209,29 @@ function mineMessage(m){return m.sender_id===user.id}
 
 function applyChatTheme(cid){var saved={};try{saved=JSON.parse(localStorage.getItem('cv-chat-theme-'+cid)||'{}')}catch(e){}function paint(w,m){chatWallpaper=w||'#09251b';chatMine=m||'#1b6545';var thread=$('chat-thread'),chat=$('chat-active');if(thread)thread.style.background=chatWallpaper;if(chat)chat.style.setProperty('--cv-chat-mine',chatMine)}paint(saved.wallpaper,saved.mine);sb.from('cv_chat_preferences').select('wallpaper_color,outgoing_bubble_color').eq('user_id',user.id).eq('conversation_id',cid).maybeSingle().then(function(r){if(!r.error&&r.data&&!$('chat-theme-panel')){paint(r.data.wallpaper_color,r.data.outgoing_bubble_color);localStorage.setItem('cv-chat-theme-'+cid,JSON.stringify({wallpaper:chatWallpaper,mine:chatMine}))}}).catch(function(){})}
 function openChatThemePicker(){if(!active)return;var old=$('chat-theme-panel');if(old)old.remove();var panel=el('div',{id:'chat-theme-panel',class:'msg-theme-panel'}),title=el('strong',{text:'Chat appearance'}),sub=el('small',{text:'Choose your chat wallpaper'}),wall=el('div',{class:'msg-theme-swatches'}),mine=el('div',{class:'msg-theme-swatches'});['#09251b','#071b2b','#17142b','#202020','#292016','#102d35'].forEach(function(color){var b=el('button',{type:'button',class:'msg-theme-swatch',title:'Wallpaper'});b.style.background=color;b.onclick=function(){chatWallpaper=color;$('chat-thread').style.background=color;};wall.appendChild(b)});['#1b6545','#184d70','#553a78','#76502c','#343f4d'].forEach(function(color){var b=el('button',{type:'button',class:'msg-theme-swatch',title:'Message bubble'});b.style.background=color;b.onclick=function(){chatMine=color;$('chat-active').style.setProperty('--cv-chat-mine',color);};mine.appendChild(b)});var save=el('button',{type:'button',class:'msg-theme-save',text:'Save appearance'});save.onclick=function(){var cid=active.id,values={wallpaper:chatWallpaper,mine:chatMine};localStorage.setItem('cv-chat-theme-'+cid,JSON.stringify(values));sb.from('cv_chat_preferences').upsert({user_id:user.id,conversation_id:cid,wallpaper_color:chatWallpaper,outgoing_bubble_color:chatMine,updated_at:new Date().toISOString()},{onConflict:'user_id,conversation_id'}).then(function(r){if(r.error)alert('Theme saved on this device, but could not sync to your other devices: '+errorText(r.error))});panel.remove()};panel.append(title,sub,wall,el('small',{text:'Your message bubble'}),mine,save);$('chat-active').appendChild(panel)}
-function markRead(cid){sb.from('cv_direct_messages').update({read_at:new Date().toISOString()}).eq('conversation_id',cid).neq('sender_id',user.id).is('read_at',null).then(function(r){if(r.error)console.warn('Read receipt update failed',r.error)})}
+function markRead(cid){
+ var conversation=conversations.find(function(c){return c.id===cid});
+ if(conversation&&conversation.is_group){
+  sb.from('cv_direct_messages').select('id').eq('conversation_id',cid).neq('sender_id',user.id).limit(100)
+   .then(function(r){
+    if(r.error){console.warn('Group read receipt lookup failed',r.error);return}
+    var now=new Date().toISOString(),rows=(r.data||[]).map(function(m){return {message_id:m.id,user_id:user.id,delivered_at:now,read_at:now}});
+    if(rows.length)sb.from('cv_message_receipts').upsert(rows,{onConflict:'message_id,user_id'})
+     .then(function(x){if(x.error)console.warn('Group read receipt update failed',x.error)});
+   });
+  return
+ }
+ sb.from('cv_direct_messages').update({read_at:new Date().toISOString()})
+  .eq('conversation_id',cid).neq('sender_id',user.id).is('read_at',null)
+  .then(function(r){if(r.error)console.warn('Read receipt update failed',r.error)})
+}
 function setTyping(activeTyping){if(!messageChannel||!active)return;messageChannel.send({type:'broadcast',event:'typing',payload:{user_id:user.id,typing:!!activeTyping}})}
 
 function openConversation(c){active=c;c._unread=0;showChat(true);renderHeader();renderConversations();var thread=$('chat-thread');thread.textContent='';thread.appendChild(el('div',{class:'msg-loading',text:'Opening conversation…'}));if(messageChannel){sb.removeChannel(messageChannel);messageChannel=null}applyChatTheme(c.id);var selected=c.id,realtimeDuringLoad=[],historyLoaded=false;
 messageChannel=sb.channel('cv:dm:'+selected,{config:{private:true}})
 .on('postgres_changes',{event:'INSERT',schema:'public',table:'cv_direct_messages',filter:'conversation_id=eq.'+selected},function(p){if(active&&active.id===selected){if(!historyLoaded)realtimeDuringLoad.push(p.new);reconcileMessage(p.new);if(p.new.sender_id!==user.id)markRead(selected)}var x=conversations.find(function(z){return z.id===selected});if(x){x._last=p.new;x.last_message_at=p.new.created_at;conversations.sort(function(a,b){return new Date(b.last_message_at)-new Date(a.last_message_at)});renderConversations()}})
 .on('postgres_changes',{event:'UPDATE',schema:'public',table:'cv_direct_messages',filter:'conversation_id=eq.'+selected},function(p){if(active&&active.id===selected){if(p.new.deleted_at||p.new.edited_at){var old=$('chat-thread').querySelector('[data-message-id="'+p.new.id+'"]');if(old)old.replaceWith(renderMessage(p.new))}setMessageStatus(p.new.id,p.new.read_at)}})
-.on('broadcast',{event:'typing'},function(p){if(p.payload&&p.payload.user_id!==user.id){$('typing-indicator').textContent=p.payload.typing?(name(profiles[other(active)]||{})+' is typing…'):'';if(typingHide)clearTimeout(typingHide);if(p.payload.typing)typingHide=setTimeout(function(){$('typing-indicator').textContent=''},2600)}})
+.on('broadcast',{event:'typing'},function(p){if(p.payload&&p.payload.user_id!==user.id){$('typing-indicator').textContent=p.payload.typing?((active.is_group?name(profiles[p.payload.user_id]||{full_name:'A member'}):name(profiles[other(active)]||{}))+' is typing…'):'';if(typingHide)clearTimeout(typingHide);if(p.payload.typing)typingHide=setTimeout(function(){$('typing-indicator').textContent=''},2600)}})
 .subscribe(function(state){if(state==='CHANNEL_ERROR'||state==='TIMED_OUT')$('chat-thread').prepend(el('div',{class:'msg-thread-status',text:'Live connection interrupted. Reconnecting…'}))});
 sb.from('cv_direct_messages').select('*').eq('conversation_id',selected).order('created_at',{ascending:true}).limit(100).then(function(r){if(!active||active.id!==selected)return;var t=$('chat-thread');t.textContent='';if(r.error){t.appendChild(el('div',{class:'msg-thread-status',text:'Could not load messages: '+r.error.message}));return}var rows=r.data||[];var merged={};rows.concat(realtimeDuringLoad).forEach(function(m){merged[m.id]=m});rows=Object.keys(merged).map(function(k){return merged[k]}).sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at)});historyLoaded=true;if(!rows.length)t.appendChild(el('div',{class:'msg-thread-empty',text:'This is the beginning of your conversation. Say hello.'}));rows.forEach(function(m){appendMessage(m)});scrollLatest(true);markRead(selected)})}
 function startConversation(p){if(!p||p.id===user.id||isBlocked(p.id))return;var pair=[user.id,p.id].sort();sb.from('cv_conversations').select('*').eq('user_a',pair[0]).eq('user_b',pair[1]).maybeSingle().then(function(r){if(r.error)throw r.error;if(r.data)return r.data;return sb.from('cv_conversations').insert({user_a:pair[0],user_b:pair[1],created_by:user.id}).select('*').single().then(function(x){if(x.error&&x.error.code==='23505')return sb.from('cv_conversations').select('*').eq('user_a',pair[0]).eq('user_b',pair[1]).single().then(function(y){if(y.error)throw y.error;return y.data});if(x.error)throw x.error;return x.data})}).then(async function(c){profiles[p.id]=p;if(!conversations.some(function(x){return x.id===c.id}))conversations.unshift(c);await loadConversations();openConversation(c);$('people-results').hidden=true;$('people-search').value=''}).catch(function(e){alert('Could not open this conversation: '+errorText(e))})}
