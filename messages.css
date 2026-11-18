@@ -350,3 +350,10 @@ body[data-page="messages"] .msg-online-dot{background:#20b887}
  body[data-page="messages"] .cv-messages-page{padding:88px 10px 48px}
  body[data-page="messages"] .msg-welcome{padding:19px;border-radius:16px}
 }
+
+/* WhatsApp-style private replies to viewed status updates. */
+body[data-page="messages"] .msg-story-reply-form{display:flex;gap:8px;align-items:center;margin-top:12px}
+body[data-page="messages"] .msg-story-reply-form input{flex:1;min-width:0;border:1px solid rgba(32,184,135,.24);border-radius:22px;background:#08130f;color:#edf2ff;padding:11px 14px;font:inherit}
+body[data-page="messages"] .msg-story-reply-form button{border:1px solid #20b887;border-radius:22px;background:#16865f;color:#fff;padding:10px 17px;font-weight:700;cursor:pointer}
+body[data-page="messages"] .msg-story-reply-form button:disabled{opacity:.55;cursor:wait}
+body[data-page="messages"] .msg-story-reply-status{display:block;min-height:17px;margin-top:6px;color:#9db5aa;font-size:12px}
