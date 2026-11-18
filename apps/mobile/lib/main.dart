@@ -4084,6 +4084,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     final replied=replyId.isEmpty||!_rows.any((x)=>x['id'].toString()==replyId)?null:_rows.firstWhere((x)=>x['id'].toString()==replyId);
     final replyQuote=replied==null?null:Container(width:double.infinity,margin:const EdgeInsets.only(bottom:6),padding:const EdgeInsets.all(7),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.18),borderRadius:BorderRadius.circular(7),border:const Border(left:BorderSide(color:gold,width:3))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Replying to ${(replied['sender_id']==db.auth.currentUser?.id)?'your message':'message'}',style:const TextStyle(color:gold,fontSize:9,fontWeight:FontWeight.w700)),Text((replied['body']??replied['attachment_name']??'Message').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:11))]));
     final isMissedCall=m['message_type']=='missed_call';
+    final sharedPostUrl=RegExp(r'https://creatorverse-ai\\.vercel\\.app/community\\.html#post-[A-Za-z0-9-]+').firstMatch(body)?.group(0);
     final senderName=_senderNames[(m['sender_id']??'').toString()]??'Group member';
     final metadata=Row(mainAxisSize:MainAxisSize.min,children:[
       Text(time==null?'':TimeOfDay.fromDateTime(time.toLocal()).format(context),
@@ -4113,6 +4114,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),
               decoration:BoxDecoration(color:mine?_myBubble:_theirBubble,borderRadius:BorderRadius.circular(12)),
               child:Text(m['deleted_at']!=null?'This message was deleted':body,style:TextStyle(height:1.25,fontStyle:m['deleted_at']!=null?FontStyle.italic:FontStyle.normal,color:m['deleted_at']!=null?Colors.white60:null))),
+            if(sharedPostUrl!=null)TextButton.icon(onPressed:()=>launchUrl(Uri.parse(sharedPostUrl),mode:LaunchMode.externalApplication),icon:const Icon(Icons.open_in_new,size:14),label:const Text('View shared post',style:TextStyle(fontSize:11,color:emerald))),
             Container(constraints:const BoxConstraints(maxWidth:310),
               margin:const EdgeInsets.symmetric(vertical:3),
               child:MessageAttachmentPreview(path:path,mime:mime,
@@ -4133,6 +4135,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           if(isMissedCall)Align(alignment:Alignment.centerLeft,child:Row(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.phone_missed,color:Colors.redAccent,size:17),const SizedBox(width:6),Text(body,style:const TextStyle(color:Colors.redAccent,fontWeight:FontWeight.w700,fontSize:12)),TextButton(onPressed:()=>_startCall(video:body.toLowerCase().contains('video')),child:const Text('Call back',style:TextStyle(fontSize:11,color:emerald)))])),
           if(body.isNotEmpty&&!isAudio&&!isMissedCall)Align(alignment:Alignment.centerLeft,
             child:Text(body,style:const TextStyle(height:1.25))),
+          if(sharedPostUrl!=null)Align(alignment:Alignment.centerLeft,child:TextButton.icon(onPressed:()=>launchUrl(Uri.parse(sharedPostUrl),mode:LaunchMode.externalApplication),icon:const Icon(Icons.open_in_new,size:14),label:const Text('View shared post',style:TextStyle(fontSize:11,color:emerald)))),
           if(hasAttachment&&isAudio)VoiceMessagePlayer(key:ValueKey(m['id']),path:path),
           const SizedBox(height:4),
           Row(mainAxisSize:MainAxisSize.min,children:[metadata,_messageActions(m)]),
