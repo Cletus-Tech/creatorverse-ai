@@ -63,3 +63,6 @@
  .profile-edit-actions{flex-direction:column-reverse}
  .profile-edit-actions button{width:100%}
 }
+
+.profile-post-video video{width:100%;height:190px;object-fit:cover;display:block;background:#050b18}
+@media(max-width:760px){.profile-post-video video{height:145px}}
