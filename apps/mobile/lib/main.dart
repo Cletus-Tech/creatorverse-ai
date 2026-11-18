@@ -2456,6 +2456,22 @@ class _CommunityTabState extends State<CommunityTab> {
       builder: (_) => CommentsSheet(post: post));
     if (mounted) await refresh();
   }
+  Future<void> sharePost(Map<String, dynamic> post) async {
+    final id = (post['id'] ?? '').toString();
+    if (id.isEmpty) return;
+    final title = (post['title'] ?? '').toString().trim();
+    final description = (post['description'] ?? '').toString().trim();
+    final url = 'https://creatorverse-ai.vercel.app/community.html#post-$id';
+    final message = [if (title.isNotEmpty) title, if (description.isNotEmpty) description, url].join('\n\n');
+    try {
+      await Clipboard.setData(ClipboardData(text: message));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post link copied. You can now share it in a chat or another app.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not prepare the post link: $e')));
+    }
+  }
   @override
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
     future: feed, builder: (context, snapshot) {
@@ -2551,7 +2567,7 @@ class _CommunityTabState extends State<CommunityTab> {
             ? 'Follow members to see their updates here, or share your own post.'
             : 'Be the first to share an update.',
             textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post)),
+        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post)),
       ]));
     });
 }
@@ -2653,8 +2669,8 @@ class CommunityMediaViewer extends StatelessWidget {
 }
 
 class CommunityPostCard extends StatelessWidget {
-  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onReport, onEdit, onDelete; final bool isMine;
-  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onReport, required this.onEdit, required this.onDelete, required this.isMine});
+  final Map<String, dynamic> post; final VoidCallback onLike, onComments, onSave, onShare, onReport, onEdit, onDelete; final bool isMine;
+  const CommunityPostCard({super.key, required this.post, required this.onLike, required this.onComments, required this.onSave, required this.onShare, required this.onReport, required this.onEdit, required this.onDelete, required this.isMine});
   @override
   Widget build(BuildContext context) {
     final author = Map<String, dynamic>.from(post['author'] as Map? ?? {});
@@ -2709,6 +2725,8 @@ class CommunityPostCard extends StatelessWidget {
             color: post['liked'] == true ? Colors.pinkAccent : muted, size: 18), label: const Text('Like', style: TextStyle(color: muted)))),
           Expanded(child: TextButton.icon(onPressed: onComments, icon: const Icon(Icons.mode_comment_outlined, color: muted, size: 18),
             label: const Text('Comment', style: TextStyle(color: muted)))),
+          Expanded(child: TextButton.icon(onPressed: onShare, icon: const Icon(Icons.share_outlined,color:muted,size:18),
+            label: const Text('Share',style:TextStyle(color:muted)))),
           Expanded(child: TextButton.icon(onPressed: onSave, icon: Icon(post['saved']==true?Icons.bookmark:Icons.bookmark_border,color:post['saved']==true?gold:muted,size:18),
             label:Text(post['saved']==true?'Saved':'Save',style:const TextStyle(color:muted)))),
         ]),
