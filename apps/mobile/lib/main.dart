@@ -2572,23 +2572,115 @@ class _CommunityTabState extends State<CommunityTab> {
     if (mounted) await refresh();
   }
   Future<void> sharePost(Map<String, dynamic> post) async {
-    final id = (post['id'] ?? '').toString();
-    if (id.isEmpty) return;
-    final title = (post['title'] ?? '').toString().trim();
-    final description = (post['description'] ?? '').toString().trim();
-    final url = 'https://creatorverse-ai.vercel.app/community.html#post-$id';
-    final message = [if (title.isNotEmpty) title, if (description.isNotEmpty) description, url].join('\n\n');
-    try {
-      await Clipboard.setData(ClipboardData(text: message));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post link copied. You can now share it in a chat or another app.')));
+    final id=(post['id']??'').toString();
+    final me=db.auth.currentUser?.id;
+    if(id.isEmpty||me==null){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('Sign in to share a community post.')));
+      return;
+    }
+    final title=(post['title']??'').toString().trim();
+    final description=(post['description']??'').toString().trim();
+    final url='https://creatorverse-ai.vercel.app/community.html#post-$id';
+    final message=[
+      'Shared a post from CreatorVerse',
+      if(title.isNotEmpty)title,
+      if(description.isNotEmpty)description,
+      url,
+    ].join('\n\n');
+    try{
+      final directRaw=await db.from('cv_conversations')
+        .select('id,user_a,user_b,is_group,group_name,last_message_at')
+        .or('user_a.eq.$me,user_b.eq.$me').eq('is_group',false)
+        .order('last_message_at',ascending:false).limit(100);
+      final direct=List<Map<String,dynamic>>.from(directRaw);
+      final membership=await db.from('cv_conversation_members')
+        .select('conversation_id').eq('user_id',me);
+      final groupIds=List<Map<String,dynamic>>.from(membership)
+        .map((row)=>row['conversation_id'].toString()).toSet().toList();
+      final groups=groupIds.isEmpty?<Map<String,dynamic>>[]:
+        List<Map<String,dynamic>>.from(await db.from('cv_conversations')
+          .select('id,user_a,user_b,is_group,group_name,last_message_at')
+          .inFilter('id',groupIds).eq('is_group',true));
+      final all=[...direct,...groups];
+      final peerIds=direct.map((row)=>(row['user_a']==me?row['user_b']:row['user_a']).toString())
+        .where((value)=>value.isNotEmpty&&value!='null').toSet().toList();
+      final profileRows=peerIds.isEmpty?<Map<String,dynamic>>[]:
+        List<Map<String,dynamic>>.from(await db.from('public_profiles')
+          .select('id,full_name,username,avatar_url').inFilter('id',peerIds));
+      final people={for(final row in profileRows)row['id'].toString():row};
+      final targets=all.map((row){
+        final isGroup=row['is_group']==true;
+        final peerId=(row['user_a']==me?row['user_b']:row['user_a'])?.toString()??'';
+        final person=people[peerId]??{};
+        return <String,dynamic>{
+          'id':row['id'].toString(),
+          'label':isGroup?(row['group_name']??'CreatorVerse group').toString():
+            (person['full_name']??person['username']??'CreatorVerse member').toString(),
+          'subtitle':isGroup?'Group conversation':
+            (person['username']==null?'Direct conversation':'@'+person['username'].toString()),
+          'is_group':isGroup,
+        };
+      }).toList();
+      if(!mounted)return;
+      if(targets.isEmpty){
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('You do not have a conversation to share this post with yet.')));
+        return;
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not prepare the post link: $e')));
-      }
+      final search=TextEditingController();
+      String? sendingId;
+      await showModalBottomSheet<void>(
+        context:context,isScrollControlled:true,backgroundColor:panel,
+        builder:(sheetContext)=>StatefulBuilder(builder:(sheetContext,setSheetState){
+          final term=search.text.trim().toLowerCase();
+          final visible=targets.where((row)=>
+            row['label'].toString().toLowerCase().contains(term)||
+            row['subtitle'].toString().toLowerCase().contains(term)).toList();
+          return SafeArea(child:SizedBox(height:MediaQuery.of(sheetContext).size.height*.72,
+            child:Padding(padding:const EdgeInsets.fromLTRB(16,16,16,8),
+              child:Column(children:[
+                Row(children:[const Expanded(child:Text('Share to a chat',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+                  IconButton(onPressed:()=>material_widgets_ui.Navigator.pop(sheetContext),icon:const Icon(Icons.close))]),
+                TextField(controller:search,onChanged:(_)=>setSheetState((){}),
+                  decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search people and groups')),
+                const SizedBox(height:10),
+                Expanded(child:visible.isEmpty?const Center(child:Text('No matching conversations',style:TextStyle(color:muted))):
+                  ListView.separated(itemCount:visible.length,separatorBuilder:(_,__)=>const Divider(height:1,color:Colors.white10),
+                    itemBuilder:(context,index){
+                      final row=visible[index],targetId=row['id'].toString();
+                      final busy=sendingId==targetId;
+                      return ListTile(
+                        leading:CircleAvatar(backgroundColor:emerald.withValues(alpha:.15),
+                          child:Icon(row['is_group']==true?Icons.groups_outlined:Icons.person_outline,color:emerald)),
+                        title:Text(row['label'].toString(),maxLines:1,overflow:TextOverflow.ellipsis),
+                        subtitle:Text(row['subtitle'].toString(),style:const TextStyle(color:muted,fontSize:11)),
+                        trailing:busy?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:emerald)):const Icon(Icons.send_outlined,color:emerald),
+                        onTap:sendingId!=null?null:()async{
+                          setSheetState(()=>sendingId=targetId);
+                          try{
+                            final sent=await db.from('cv_direct_messages').insert({
+                              'conversation_id':targetId,'sender_id':me,'body':message,
+                            }).select('id').single();
+                            if(sent['id']==null)throw Exception('The message was not confirmed by the server.');
+                            if(sheetContext.mounted)material_widgets_ui.Navigator.pop(sheetContext);
+                            if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content:Text('Post shared with '+row['label'].toString()+'.')));
+                          }catch(error){
+                            setSheetState(()=>sendingId=null);
+                            if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content:Text('Could not share this post: '+error.toString())));
+                          }
+                        },
+                      );
+                    })),
+              ]))));
+        }),
+      );
+      search.dispose();
+    }catch(error){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Could not load conversations for sharing: '+error.toString())));
     }
   }
   @override
@@ -4376,7 +4468,7 @@ class CreatorVerseCallScreen extends StatefulWidget{
 class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with SingleTickerProviderStateMixin{
   final db=Supabase.instance.client;
   late final Room _room;
-  bool _connecting=false,_connectStarted=false,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false;
+  bool _connecting=false,_connectStarted=false,_muted=false,_cameraEnabled=false,_speakerEnabled=true,_ending=false,_localFinishing=false,_allowPop=false;
   String? _error,_callStatus;
   Timer? _callTimeoutTimer,_terminalStatusTimer;
   RealtimeChannel? _callStatusChannel;
@@ -4401,7 +4493,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   void _onRoomChanged(){if(mounted)setState((){});if(_room.remoteParticipants.isNotEmpty)unawaited(_stopOutgoingCallTone());}
   Future<void> _syncOutgoingCallTone() async{
     if(!widget.isCaller)return;
-    final shouldRing=_callStatus=='ringing'&&!_ending&&_room.remoteParticipants.isEmpty;
+    final shouldRing=['calling','ringing'].contains(_callStatus)&&!_ending&&_room.remoteParticipants.isEmpty;
     try{await _callRingtoneChannel.invokeMethod(shouldRing?'start_outgoing':'stop_outgoing');}
     catch(error){debugPrint('CreatorVerse outgoing ringback tone failed: $error');}
   }
@@ -4428,8 +4520,14 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
       _callTimeoutTimer?.cancel();
       if(widget.isCaller)unawaited(_connect());
     }else if(['missed','declined','cancelled','ended'].contains(status)){
-      _callTimeoutTimer?.cancel();unawaited(_stopOutgoingCallTone());
-      if(!_ending&&mounted){_terminalStatusTimer?.cancel();_terminalStatusTimer=Timer(const Duration(milliseconds:2200),(){if(mounted)material_widgets_ui.Navigator.maybePop(context);});}
+      _callTimeoutTimer?.cancel();
+      unawaited(_stopOutgoingCallTone());
+      if(!_ending&&mounted){
+        _terminalStatusTimer?.cancel();
+        final delay=status=='ended'||status=='cancelled'
+          ?Duration.zero:const Duration(milliseconds:1500);
+        _terminalStatusTimer=Timer(delay,(){if(mounted)unawaited(_finishCallLocally());});
+      }
     }
   }
   Future<void> _expireCallAsMissed() async{
@@ -4506,17 +4604,40 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
   Future<void> _endCall() async{
     if(_ending)return;
     _ending=true;
-    await _stopOutgoingCallTone();
+    _callTimeoutTimer?.cancel();
+    _terminalStatusTimer?.cancel();
+    String? updateError;
     try{
       if(!['declined','cancelled','ended','missed'].contains(_callStatus??'')){
         final status=widget.isCaller&&_callStatus!='accepted'?'cancelled':'ended';
         await db.rpc('cv_set_call_invite_status',params:{
           'p_call_id':widget.callId,'p_status':status
-        });
+        }).timeout(const Duration(seconds:5));
       }
-    }catch(_){}
-    try{await _room.disconnect();}catch(_){}
-    if(mounted)material_widgets_ui.Navigator.pop(context);
+    }catch(error){
+      updateError=error.toString();
+    }
+    await _finishCallLocally();
+    if(updateError!=null&&mounted){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:Text('The call ended on this device, but the other device may not have received the end signal: '+updateError)));
+    }
+  }
+  Future<void> _finishCallLocally() async{
+    if(_localFinishing)return;
+    _localFinishing=true;
+    _ending=true;
+    _callTimeoutTimer?.cancel();
+    _terminalStatusTimer?.cancel();
+    await _stopOutgoingCallTone();
+    try{await _room.disconnect().timeout(const Duration(seconds:3));}catch(_){}
+    if(!mounted)return;
+    setState(()=>_allowPop=true);
+    WidgetsBinding.instance.addPostFrameCallback((_){
+      if(mounted&&material_widgets_ui.Navigator.of(context).canPop()){
+        material_widgets_ui.Navigator.of(context).pop();
+      }
+    });
   }
   Future<void> _disposeLiveKitRoom() async{await _room.dispose();}
   @override void dispose(){
@@ -4532,7 +4653,10 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     final remote=_remoteVideoTrack();
     final local=_localVideoTrack();
     final participantCount=_room.remoteParticipants.length;
-    return Scaffold(
+    return PopScope<Object?>(
+      canPop:_allowPop,
+      onPopInvokedWithResult:(didPop,result){if(!didPop)unawaited(_endCall());},
+      child:Scaffold(
       backgroundColor:const Color(0xFF06130C),
       appBar:AppBar(title:Text(widget.mode=='video'?'Video call':'Audio call')),
       body:SafeArea(child:Stack(children:[
@@ -4583,7 +4707,7 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
             const SizedBox(width:18),
             _callControl(Icons.call_end,'End call',_endCall,color:Colors.redAccent),
           ])),
-      ])));
+      ]))));
   }
   Widget _callControl(IconData icon,String label,VoidCallback action,{Color color=panel})=>
     Column(mainAxisSize:MainAxisSize.min,children:[
