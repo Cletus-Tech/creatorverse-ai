@@ -6223,8 +6223,8 @@ class _ProfileTabState extends State<ProfileTab> {
     final following=await db.from('community_follows').select('following_id')
       .eq('follower_id',user.id).count(CountOption.exact);
     return {...Map<String,dynamic>.from(row),
-      'followers_count':followers.count??0,
-      'following_count':following.count??0,
+      'followers_count':followers.count,
+      'following_count':following.count,
     };
   }
   Future<void> refresh() async => setState(() => profile = loadProfile());
