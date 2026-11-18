@@ -2641,7 +2641,7 @@ class _CommunityTabState extends State<CommunityTab> {
             child:Padding(padding:const EdgeInsets.fromLTRB(16,16,16,8),
               child:Column(children:[
                 Row(children:[const Expanded(child:Text('Share to a chat',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
-                  IconButton(onPressed:()=>material_widgets_ui.Navigator.pop(sheetContext),icon:const Icon(Icons.close))]),
+                  IconButton(onPressed:sendingId==null?()=>material_widgets_ui.Navigator.pop(sheetContext):null,icon:const Icon(Icons.close))]),
                 TextField(controller:search,onChanged:(_)=>setSheetState((){}),
                   decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search people and groups')),
                 const SizedBox(height:10),
@@ -2667,7 +2667,7 @@ class _CommunityTabState extends State<CommunityTab> {
                             if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
                               SnackBar(content:Text('Post shared with '+row['label'].toString()+'.')));
                           }catch(error){
-                            setSheetState(()=>sendingId=null);
+                            if(sheetContext.mounted)setSheetState(()=>sendingId=null);
                             if(mounted)ScaffoldMessenger.of(this.context).showSnackBar(
                               SnackBar(content:Text('Could not share this post: '+error.toString())));
                           }
