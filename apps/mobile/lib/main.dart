@@ -2319,6 +2319,8 @@ class _CommunityTabState extends State<CommunityTab> {
       }
     }
     var index=0;
+    final storyReplyController=TextEditingController();
+    var sendingStoryReply=false;
     await recordView(entries[index]);
     if(!mounted)return;
     await showDialog<void>(
@@ -2344,6 +2346,46 @@ class _CommunityTabState extends State<CommunityTab> {
         if(rawBackground.length==6){
           final parsed=int.tryParse(rawBackground,radix:16);
           if(parsed!=null)storyBackground=Color(0xFF000000|parsed);
+        }
+        Future<void> sendStoryReply() async {
+          final reply=storyReplyController.text.trim();
+          final other=(story['user_id']??author['id']??'').toString();
+          if(reply.isEmpty||other.isEmpty||me==null||sendingStoryReply)return;
+          setStoryState(()=>sendingStoryReply=true);
+          try{
+            final pair=<String>[me,other]..sort();
+            final existing=await db.from('cv_conversations').select('id')
+              .eq('user_a',pair[0]).eq('user_b',pair[1]).maybeSingle();
+            String conversationId;
+            if(existing!=null){
+              conversationId=existing['id'].toString();
+            }else{
+              try{
+                final created=await db.from('cv_conversations').insert({
+                  'user_a':pair[0],'user_b':pair[1],'created_by':me,
+                }).select('id').single();
+                conversationId=created['id'].toString();
+              }catch(_){
+                final retry=await db.from('cv_conversations').select('id')
+                  .eq('user_a',pair[0]).eq('user_b',pair[1]).single();
+                conversationId=retry['id'].toString();
+              }
+            }
+            await db.from('cv_direct_messages').insert({
+              'conversation_id':conversationId,'sender_id':me,'body':reply,
+            });
+            storyReplyController.clear();
+            if(dialogContext.mounted)material_widgets_ui.Navigator.of(dialogContext).pop();
+            if(mounted){
+              final person=Map<String,dynamic>.from(author)..['id']=other;
+              await material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+                builder:(_)=>MessageThreadScreen(conversationId:conversationId,person:person)));
+            }
+          }catch(error){
+            if(dialogContext.mounted)setStoryState(()=>sendingStoryReply=false);
+            if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content:Text('Could not send status reply: $error')));
+          }
         }
         return Dialog.fullscreen(
           backgroundColor:Colors.black,
@@ -2394,11 +2436,29 @@ class _CommunityTabState extends State<CommunityTab> {
                     icon:const Icon(Icons.close,color:Colors.white),tooltip:'Close status'),
                 ])),
                 if(content.isNotEmpty&&!textOnly)
-                  Positioned(left:18,right:18,bottom:22,child:Container(
+                  Positioned(left:18,right:18,bottom:me!=null&&story['user_id']!=me?88:22,child:Container(
                     padding:const EdgeInsets.symmetric(horizontal:14,vertical:10),
                     decoration:BoxDecoration(color:Colors.black.withValues(alpha:.48),borderRadius:BorderRadius.circular(14)),
                     child:Text(content,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontSize:15,height:1.35)))),
-                Positioned(left:0,right:0,top:72,bottom:0,child:Row(children:[
+                if(me!=null&&story['user_id']!=me)
+                  Positioned(left:14,right:14,bottom:12,child:Row(children:[
+                    Expanded(child:TextField(controller:storyReplyController,
+                      style:const TextStyle(color:Colors.white,fontSize:14),
+                      textInputAction:TextInputAction.send,onSubmitted:(_)=>sendStoryReply(),
+                      decoration:InputDecoration(hintText:'Reply to status',
+                        hintStyle:const TextStyle(color:Colors.white70),
+                        filled:true,fillColor:const Color(0xDD17251F),
+                        contentPadding:const EdgeInsets.symmetric(horizontal:15,vertical:11),
+                        border:OutlineInputBorder(borderRadius:BorderRadius.circular(24),
+                          borderSide:BorderSide(color:Colors.white.withValues(alpha:.25)))))),
+                    const SizedBox(width:8),
+                    IconButton(onPressed:sendingStoryReply?null:sendStoryReply,
+                      style:IconButton.styleFrom(backgroundColor:emerald,foregroundColor:Colors.white),
+                      icon:sendingStoryReply?const SizedBox(width:18,height:18,
+                        child:CircularProgressIndicator(strokeWidth:2,color:Colors.white))
+                        :const Icon(Icons.send),tooltip:'Send private status reply'),
+                  ])),
+                Positioned(left:0,right:0,top:72,bottom:me!=null&&story['user_id']!=me?82:0,child:Row(children:[
                   Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:false))),
                   const Expanded(child:SizedBox.expand()),
                   Expanded(child:GestureDetector(behavior:HitTestBehavior.translucent,onTap:()=>advance(forward:true))),
@@ -2409,6 +2469,7 @@ class _CommunityTabState extends State<CommunityTab> {
         );
       }),
     );
+    storyReplyController.dispose();
   }
   Future<void> createPost() async {
     final body = TextEditingController();XFile? media;bool video=false;
