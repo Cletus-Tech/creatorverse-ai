@@ -176,3 +176,27 @@ body[data-page="community"] .community-composer-actions button span{margin-right
  body[data-page="community"] .community-composer{margin:10px 0 14px;padding:12px;gap:9px}
  body[data-page="community"] .community-composer-actions button{font-size:11px}
 }
+
+
+/* In-app post sharing: searchable Supabase direct and group conversations. */
+.cv-share-dialog{width:min(520px,calc(100vw - 28px));max-width:520px;max-height:min(76dvh,720px);padding:0;border:1px solid rgba(32,184,135,.28);border-radius:19px;background:#0d1916;color:#edf2ff;box-shadow:0 28px 90px rgba(0,0,0,.55)}
+.cv-share-dialog::backdrop{background:rgba(2,7,13,.78);backdrop-filter:blur(5px)}
+.cv-share-panel{display:flex;flex-direction:column;max-height:min(76dvh,720px);padding:18px}
+.cv-share-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.cv-share-head h2{margin:0;color:#f1f6ff;font-size:18px}
+.cv-share-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.1);border-radius:50%;background:#17251f;color:#dfece5;font-size:23px;cursor:pointer}
+.cv-share-search{width:100%;margin:15px 0 8px;padding:12px 14px;border:1px solid rgba(32,184,135,.2);border-radius:11px;background:#08130f;color:#edf2ff;font:inherit;outline:none}
+.cv-share-search:focus{border-color:#20b887;box-shadow:0 0 0 3px rgba(32,184,135,.1)}
+.cv-share-status{margin:3px 0 10px;color:#9db5aa;font-size:12px}
+.cv-share-list{display:flex;flex-direction:column;gap:5px;overflow:auto;min-height:90px;max-height:48dvh}
+.cv-share-target{display:flex;align-items:center;gap:11px;width:100%;padding:10px;border:1px solid transparent;border-radius:12px;background:#12211b;color:#edf2ff;text-align:left;cursor:pointer}
+.cv-share-target:hover{border-color:rgba(32,184,135,.28);background:#172b22}
+.cv-share-target:disabled{opacity:.65;cursor:wait}
+.cv-share-avatar{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:50%;background:linear-gradient(135deg,#145c43,#20b887);color:white;font-size:11px;font-weight:800}
+.cv-share-target-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.cv-share-target-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.cv-share-target-copy small{color:#93aa9e;font-size:10px}
+.cv-share-send{color:#5bd8ad;font-size:11px;font-weight:800}
+.cv-share-footer{display:flex;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.cv-share-copy{padding:9px 13px;border:1px solid rgba(232,196,107,.3);border-radius:9px;background:rgba(232,196,107,.08);color:#e8c46b;font-size:11px;font-weight:700;cursor:pointer}
+@media(max-width:600px){.cv-share-dialog{width:calc(100vw - 18px);max-height:82dvh}.cv-share-panel{max-height:82dvh;padding:14px}.cv-share-list{max-height:56dvh}}
