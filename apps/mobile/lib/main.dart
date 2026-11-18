@@ -6314,7 +6314,7 @@ class _ProfileTabState extends State<ProfileTab> {
     final user = db.auth.currentUser;
     if (user == null) throw Exception('You are signed out.');
     final row = await db.from('profiles')
-      .select('id,full_name,email,avatar_url,username,bio,cover_url,location,website_url,skills,status_text,verified_badge,role,created_at,updated_at')
+      .select('id,full_name,email,avatar_url,avatar_is_public,username,bio,cover_url,location,website_url,skills,status_text,verified_badge,role,created_at,updated_at')
       .eq('id', user.id).maybeSingle();
     if (row == null) {
       return {'id': user.id, 'full_name': user.userMetadata?['full_name'] ?? '', 'email': user.email ?? '', 'role': 'student'};
@@ -6341,6 +6341,9 @@ class _ProfileTabState extends State<ProfileTab> {
     final website = TextEditingController(text: (current['website_url'] ?? '').toString());
     final skills = TextEditingController(text: current['skills'] is List ? (current['skills'] as List).join(', ') : (current['skills'] ?? '').toString());
     final status = TextEditingController(text: (current['status_text'] ?? '').toString());
+    XFile? avatarFile;
+    XFile? coverFile;
+    bool avatarIsPublic = current['avatar_is_public'] == true;
     bool saving = false;
     try {
       await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) =>
@@ -6353,19 +6356,60 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(height: 10), TextField(controller: website, decoration: const InputDecoration(labelText: 'Website URL')),
             const SizedBox(height: 10), TextField(controller: skills, decoration: const InputDecoration(labelText: 'Skills')),
             const SizedBox(height: 10), TextField(controller: status, decoration: const InputDecoration(labelText: 'Status')),
+            const SizedBox(height: 12),
+            Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+              onPressed: saving ? null : () async {
+                final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1800);
+                if (picked != null) setDialogState(() => avatarFile = picked);
+              },
+              icon: const Icon(Icons.account_circle_outlined),
+              label: Text(avatarFile == null ? 'Choose profile photo' : 'Profile photo selected: ${avatarFile!.name}'))),
+            Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+              onPressed: saving ? null : () async {
+                final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 2200);
+                if (picked != null) setDialogState(() => coverFile = picked);
+              },
+              icon: const Icon(Icons.panorama_outlined),
+              label: Text(coverFile == null ? 'Choose cover photo' : 'Cover photo selected: ${coverFile!.name}'))),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: avatarIsPublic,
+              onChanged: saving ? null : (value) => setDialogState(() => avatarIsPublic = value),
+              title: const Text('Show my profile photo publicly'),
+              subtitle: const Text('When off, other members will not see your profile photo.'),
+            ),
           ]))),
           actions: [
             TextButton(onPressed: saving ? null : () => material_widgets_ui.Navigator.pop(dialogContext), child: const Text('Cancel')),
             FilledButton(onPressed: saving ? null : () async {
               setDialogState(() => saving = true);
               try {
-                await db.from('profiles').update({
+                final userId = db.auth.currentUser!.id;
+                final updates = <String, dynamic>{
                   'full_name': name.text.trim(), 'username': username.text.trim(),
                   'bio': bio.text.trim(), 'location': location.text.trim(),
                   'website_url': website.text.trim(),
                   'skills': parseSkillsInput(skills.text),
-                  'status_text': status.text.trim(), 'updated_at': DateTime.now().toIso8601String(),
-                }).eq('id', db.auth.currentUser!.id);
+                  'status_text': status.text.trim(),
+                  'avatar_is_public': avatarIsPublic,
+                  'updated_at': DateTime.now().toUtc().toIso8601String(),
+                };
+                Future<String> uploadProfilePhoto(XFile file, String kind) async {
+                  final bytes = await file.readAsBytes();
+                  if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+                    throw Exception('Choose an image smaller than 5 MB.');
+                  }
+                  final ext = file.name.split('.').last.toLowerCase();
+                  final safeExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+                  final mime = safeExt == 'png' ? 'image/png' : safeExt == 'webp' ? 'image/webp' : 'image/jpeg';
+                  final objectPath = '$userId/${kind}_${DateTime.now().microsecondsSinceEpoch}.$safeExt';
+                  await db.storage.from('profile-avatars').uploadBinary(objectPath, bytes,
+                    fileOptions: FileOptions(contentType: mime, upsert: false));
+                  return db.storage.from('profile-avatars').getPublicUrl(objectPath);
+                }
+                if (avatarFile != null) updates['avatar_url'] = await uploadProfilePhoto(avatarFile!, 'avatar');
+                if (coverFile != null) updates['cover_url'] = await uploadProfilePhoto(coverFile!, 'cover');
+                await db.from('profiles').update(updates).eq('id', userId);
                 if (!dialogContext.mounted) return;
                 material_widgets_ui.Navigator.pop(dialogContext);
                 await refresh();
