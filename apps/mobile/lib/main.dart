@@ -2375,16 +2375,16 @@ class _CommunityTabState extends State<CommunityTab> {
               'conversation_id':conversationId,'sender_id':me,'body':reply,
             });
             storyReplyController.clear();
-            if(dialogContext.mounted)material_widgets_ui.Navigator.of(dialogContext).pop();
+            if(dialogContext.mounted){material_widgets_ui.Navigator.of(dialogContext).pop();}
             if(mounted){
               final person=Map<String,dynamic>.from(author)..['id']=other;
               await material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
                 builder:(_)=>MessageThreadScreen(conversationId:conversationId,person:person)));
             }
           }catch(error){
-            if(dialogContext.mounted)setStoryState(()=>sendingStoryReply=false);
-            if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content:Text('Could not send status reply: $error')));
+            if(dialogContext.mounted){setStoryState(()=>sendingStoryReply=false);}
+            if(mounted){ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content:Text('Could not send status reply: $error')));}
           }
         }
         return Dialog.fullscreen(
