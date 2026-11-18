@@ -13,7 +13,7 @@ function online(id){return !!presence[id]}
 function ago(d){var n=Date.now()-new Date(d).getTime();if(n<60000)return'now';if(n<3600000)return Math.floor(n/60000)+'m';if(n<86400000)return Math.floor(n/3600000)+'h';return new Date(d).toLocaleDateString([],{month:'short',day:'numeric'})}
 function errorText(e){return e&&e.message?e.message:'Something went wrong. Please try again.'}
 function status(t){$('online-count').textContent=t}
-function getProfiles(ids){ids=Array.from(new Set(ids.filter(Boolean))).filter(function(id){return !profiles[id]});if(!ids.length)return Promise.resolve([]);return sb.from('public_profiles').select('id,full_name,username,avatar_url,bio,verified_badge').in('id',ids).then(function(r){if(r.error)throw r.error;(r.data||[]).forEach(function(p){profiles[p.id]=p});return r.data||[]})}
+function getProfiles(ids){ids=Array.from(new Set(ids.filter(Boolean))).filter(function(id){return !profiles[id]});if(!ids.length)return Promise.resolve([]);return sb.from('public_profiles').select('id,full_name,username,avatar_url,bio,cover_url,location,website_url,skills,status_text,verified_badge').in('id',ids).then(function(r){if(r.error)throw r.error;(r.data||[]).forEach(function(p){profiles[p.id]=p});return r.data||[]})}
 function isBlocked(id){return !!blocked[id]}
 function loadBlocks(){return sb.from('community_blocks').select('blocker_id,blocked_id').or('blocker_id.eq.'+user.id+',blocked_id.eq.'+user.id).then(function(r){if(r.error)throw r.error;blocked={};(r.data||[]).forEach(function(x){blocked[x.blocker_id===user.id?x.blocked_id:x.blocker_id]=true})})}
 function renderPresence(){var state=presenceChannel&&presenceChannel.presenceState?presenceChannel.presenceState():{};presence={};Object.keys(state||{}).forEach(function(k){(state[k]||[]).forEach(function(x){if(x.user_id)presence[x.user_id]=x})});var n=Object.keys(presence).filter(function(id){return id!==user.id}).length;status(n+' creators online now');renderConversations();if(active)renderHeader()}
@@ -114,9 +114,9 @@ function renderHeader(){
   $('chat-report').hidden=true;
   return
  }
- box.append(avatar(p,online(p.id)),el('div',{},[
-  nameNode(p),el('small',{text:online(p.id)?'Online now':'Checking last seen…'})
- ]));
+ var profileLink=el('a',{href:'profile.html?u='+encodeURIComponent(p.username||peerId),class:'msg-profile-link'});
+ profileLink.append(nameNode(p),el('small',{text:online(p.id)?'Online now':'Checking last seen…'}));
+ box.append(avatar(p,online(p.id)),profileLink);
  $('chat-report').hidden=false;
  if(!online(peerId)){
   var selected=active.id;
