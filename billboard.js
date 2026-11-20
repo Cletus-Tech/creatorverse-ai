@@ -2,11 +2,10 @@
 var host=document.getElementById('cv-billboard');if(!host)return;
 var sb=window.CV_SB,items=[],index=0,timer=null,channel=null;
 function node(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n}
-function track(id){if(sb)sb.rpc('record_billboard_click',{p_item_id:id}).then(function(r){if(r.error)console.warn('Billboard click tracking:',r.error.message)})}
 function active(){var now=Date.now();return items.filter(function(x){return x.is_published&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>now)})}
 function draw(){var a=active();if(!a.length){host.hidden=true;clearTimeout(timer);var upcoming=items.filter(function(x){return x.is_published&&x.starts_at&&new Date(x.starts_at).getTime()>Date.now()}).sort(function(p,q){return new Date(p.starts_at)-new Date(q.starts_at)})[0];if(upcoming)timer=setTimeout(draw,Math.max(1000,new Date(upcoming.starts_at).getTime()-Date.now()+250));return}host.hidden=false;if(index>=a.length)index=0;var x=a[index];host.textContent='';host.classList.remove('bb-enter');void host.offsetWidth;host.classList.add('bb-enter');
 var inner=node('div','bb-display-inner'),copy=node('div','bb-copy'),tag=node('span','bb-live-tag','CREATORVERSE · PRE-UNIVERSITY');copy.appendChild(tag);copy.appendChild(node('h2','',x.title));if(x.message)copy.appendChild(node('p','',x.message));
-if(x.button_label&&x.button_url){var cta=node('a','bb-cta',x.button_label);cta.href=x.button_url;cta.addEventListener('click',function(){track(x.id)});if(/^https?:\/\//i.test(x.button_url)){cta.target='_blank';cta.rel='noopener noreferrer'}copy.appendChild(cta)}
+if(x.button_label&&x.button_url){var cta=node('a','bb-cta',x.button_label);cta.href=x.button_url;if(/^https?:\/\//i.test(x.button_url)){cta.target='_blank';cta.rel='noopener noreferrer'}copy.appendChild(cta)}
 inner.appendChild(copy);
 if(x.media_url&&x.media_type==='image'){var img=node('img','bb-media');img.src=x.media_url;img.alt=x.title;img.loading='lazy';inner.insertBefore(img,copy)}
 if(x.media_url&&x.media_type==='video'){var video=node('video','bb-media');video.src=x.media_url;video.autoplay=true;video.muted=true;video.loop=false;video.playsInline=true;video.addEventListener('ended',function(){next()},{once:true});inner.insertBefore(video,copy)}
