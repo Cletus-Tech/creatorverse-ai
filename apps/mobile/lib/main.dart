@@ -907,7 +907,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final end=DateTime.tryParse((s['ends_at']??'').toString());
     return s['is_published']==true && (start==null || !start.isAfter(now)) && (end==null || end.isAfter(now));
   }).toList();
-  Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1)];
+  Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1).toInt()];
   Future<void> load() async {
     try {
       final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,background_color,accent_color,button_color').eq('is_published',true).order('display_order');
@@ -927,7 +927,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     rotation?.cancel();
     if(active.length<2)return;
     final secs=((current?['duration_seconds'] as num?)?.toInt()??10).clamp(3,120);
-    rotation=Timer(Duration(seconds:secs),next);
+    rotation=Timer(Duration(seconds:secs.toInt()),next);
   }
   void next() {
     if(!mounted || active.isEmpty)return;
@@ -984,7 +984,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
       DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,Color.lerp(bg,ink,.6)!],begin:Alignment.topLeft,end:Alignment.bottomRight))),
       if(type=='image' && hasMedia) Image.network(url,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
       if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:BoxFit.contain,child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
-      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:hasMedia?.84:.3),Colors.transparent]))),
+      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:hasMedia ? .84 : .3),Colors.transparent]))),
       Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
         Row(children:[Container(width:7,height:7,decoration:BoxDecoration(color:accent,shape:BoxShape.circle)),const SizedBox(width:7),const Text('CREATORVERSE  •  LIVE UPDATES',style:TextStyle(color:Colors.white,fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),const Spacer(),if(active.length>1)Text('\${index+1}/\${active.length}',style:const TextStyle(color:Colors.white70,fontSize:10))]),
         const Spacer(),
