@@ -5460,11 +5460,6 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     }),
   );
 }
-class _BillboardStat extends StatelessWidget {
-  final String label,value;
-  const _BillboardStat({required this.label,required this.value});
-  @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:9),decoration:BoxDecoration(color:Colors.black26,borderRadius:BorderRadius.circular(10)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(value,style:const TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.w900)),Text(label,style:const TextStyle(color:Colors.white70,fontSize:10))]));
-}
 class _BillboardCreativeCard extends StatelessWidget {
   final Map<String,dynamic> item;final int index;final VoidCallback onEdit,onDelete,onToggle;
   const _BillboardCreativeCard({required this.item,required this.index,required this.onEdit,required this.onDelete,required this.onToggle});
