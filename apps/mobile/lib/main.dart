@@ -5418,7 +5418,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
               OutlinedButton(onPressed:busy?null:()=>respondToInvitation(inv,'reschedule_requested'),child:const Text('Request reschedule')),
               if(inv['status']=='scheduled')FilledButton(onPressed:busy?null:()=>respondToInvitation(inv,'confirmed'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Confirm attendance')),
             ]),
-            if(inv['interview_type']=='live')FilledButton.icon(onPressed:busy?null:()=>openAcademyWebPage(context,'/academy-live-room.html?interview=${inv['interview_id']}'),
+            if(inv['interview_type']=='live')FilledButton.icon(onPressed:busy?null:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:inv['interview_id'].toString()))),
               style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure in-app interview room')),
             if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:busy?null:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:inv['interview_id'].toString()))),
               icon:const Icon(Icons.mic_outlined),label:const Text('Open in-app response studio')),
@@ -5565,6 +5565,81 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
 }
 
 
+class NativeAcademyLiveRoomScreen extends StatefulWidget {
+  final String interviewId;
+  const NativeAcademyLiveRoomScreen({super.key,required this.interviewId});
+  @override State<NativeAcademyLiveRoomScreen> createState()=>_NativeAcademyLiveRoomScreenState();
+}
+class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScreen> {
+  final db=Supabase.instance.client;
+  late final Room room;
+  bool connecting=false,connected=false,muted=false,cameraEnabled=false,ending=false,interviewer=false;
+  String? error,topic;
+  @override void initState(){super.initState();room=Room(roomOptions:const RoomOptions(adaptiveStream:true,dynacast:true));room.addListener(onRoomChanged);load();}
+  Future<void> load() async {
+    try{
+      final access=await db.rpc('can_access_academy_interview',params:{'p_interview_id':widget.interviewId});
+      if(access!=true)throw Exception('You are not authorised to enter this interview.');
+      final r=await db.from('academy_interviews').select('id,interview_type,reviewer_id,topic').eq('id',widget.interviewId).maybeSingle();
+      if(r==null||r['interview_type']!='live')throw Exception('This live interview is unavailable.');
+      final profile=await db.from('profiles').select('role').eq('id',db.auth.currentUser!.id).maybeSingle();
+      interviewer=r['reviewer_id']==db.auth.currentUser!.id||['admin','super_admin'].contains(profile?['role']);
+      if(mounted)setState(()=>topic=(r['topic']??'Academy live interview').toString());
+    }catch(e){if(mounted)setState(()=>error=e.toString());}
+  }
+  void onRoomChanged(){if(!mounted)return;final hasRemote=room.remoteParticipants.isNotEmpty;if(hasRemote&&!connected)setState(()=>connected=true);}
+  Future<void> join() async {
+    if(connecting||connected||error!=null)return;
+    setState(()=>connecting=true);
+    try{
+      final mic=await Permission.microphone.request();
+      final cam=await Permission.camera.request();
+      if(!mic.isGranted||!cam.isGranted)throw Exception('Allow camera and microphone access to join the interview.');
+      final response=await db.functions.invoke('livekit-token',body:{'interview_id':widget.interviewId});
+      if(response.status<200||response.status>=300)throw Exception('Secure interview service returned status '+response.status.toString()+'.');
+      final data=Map<String,dynamic>.from(response.data as Map);
+      final url=(data['url']??'').toString(),token=(data['token']??'').toString();
+      if(url.isEmpty||token.isEmpty)throw Exception('The secure room service did not return connection credentials.');
+      if(interviewer){await db.rpc('mark_academy_live_interview_started',params:{'p_interview_id':widget.interviewId});}
+      await room.connect(url,token);
+      await room.localParticipant?.setMicrophoneEnabled(true);
+      await room.localParticipant?.setCameraEnabled(true);
+      await AudioManager.instance.setSpeakerOutputPreferred(true);
+      if(mounted)setState(()=>{connected=true,cameraEnabled=true,connecting=false});
+    }catch(e){if(mounted)setState(()=>{connecting=false,error=e.toString()});}
+  }
+  Future<void> toggleMic() async {try{await room.localParticipant?.setMicrophoneEnabled(muted);if(mounted)setState(()=>muted=!muted);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Microphone control failed: '+e.toString())));}}
+  Future<void> toggleCamera() async {try{await room.localParticipant?.setCameraEnabled(!cameraEnabled);if(mounted)setState(()=>cameraEnabled=!cameraEnabled);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Camera control failed: '+e.toString())));}}
+  VideoTrack? remoteVideo(){for(final p in room.remoteParticipants.values){for(final pub in p.videoTrackPublications){final t=pub.track;if(pub.subscribed&&!pub.muted&&t is VideoTrack)return t;}}return null;}
+  VideoTrack? localVideo(){for(final pub in room.localParticipant?.videoTrackPublications??[]){final t=pub.track;if(!pub.muted&&t is VideoTrack)return t;}return null;}
+  Future<void> leave() async {if(ending)return;ending=true;try{await room.disconnect().timeout(const Duration(seconds:4));}catch(_){}if(mounted){setState(()=>connected=false);Navigator.of(context).maybePop();}}
+  @override void dispose(){room.removeListener(onRoomChanged);unawaited(room.disconnect());unawaited(room.dispose());super.dispose();}
+  @override Widget build(BuildContext context){
+    final remote=remoteVideo(),local=localVideo();
+    return PopScope<Object?>(canPop:!connected,onPopInvokedWithResult:(didPop,result){if(!didPop)unawaited(leave());},
+      child:Scaffold(backgroundColor:const Color(0xFF06130C),appBar:AppBar(title:const Text('Academy live interview')),
+        body:SafeArea(child:Stack(children:[
+          Positioned.fill(child:remote!=null?VideoTrackRenderer(remote,fit:VideoViewFit.cover):Container(color:const Color(0xFF102329),child:Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
+            const Icon(Icons.video_call_outlined,color:emerald,size:68),const SizedBox(height:12),
+            Text(topic??'Academy interview',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
+            const SizedBox(height:8),Text(error??(connecting?'Connecting securely…':connected?'Waiting for the other participant…':'Join when you are ready.'),textAlign:TextAlign.center,style:const TextStyle(color:muted)),
+            if(error!=null)Padding(padding:const EdgeInsets.all(18),child:Text(error!,textAlign:TextAlign.center,style:const TextStyle(color:Colors.redAccent)))
+          ])))),
+          if(local!=null)Positioned(right:16,top:16,width:112,height:160,child:ClipRRect(borderRadius:BorderRadius.circular(16),child:VideoTrackRenderer(local,fit:VideoViewFit.cover))),
+          if(!connected)Positioned(left:24,right:24,bottom:32,child:FilledButton.icon(onPressed:connecting||error!=null?null:join,style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call),label:Text(connecting?'Joining…':'Join with camera & microphone'))),
+          if(connected)Positioned(left:0,right:0,bottom:28,child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+            _control(muted?Icons.mic_off:Icons.mic,muted?'Unmute':'Mute',toggleMic),
+            const SizedBox(width:18),_control(cameraEnabled?Icons.videocam:Icons.videocam_off,'Camera',toggleCamera),
+            const SizedBox(width:18),_control(Icons.call_end,'Leave',leave,color:Colors.redAccent)
+          ]))
+        ]))));
+  }
+  Widget _control(IconData icon,String label,VoidCallback action,{Color color=panel})=>Column(mainAxisSize:MainAxisSize.min,children:[
+    Material(color:color,shape:const CircleBorder(),child:IconButton(onPressed:action,color:Colors.white,icon:Icon(icon))),
+    const SizedBox(height:5),Text(label,style:const TextStyle(color:Colors.white70,fontSize:10))
+  ]);
+}
+
 class NativeAcademyInterviewerScreen extends StatefulWidget {
   final String? interviewId;
   const NativeAcademyInterviewerScreen({super.key,this.interviewId});
@@ -5650,7 +5725,7 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
           if(video!=null&&video!.value.isInitialized)AspectRatio(aspectRatio:video!.value.aspectRatio,child:VideoPlayer(video!)),
           if(signedUrl!=null&&selected!['interview_type']=='recorded_audio')FilledButton.icon(onPressed:()async{await audio.setUrl(signedUrl!);await audio.play();},icon:const Icon(Icons.play_arrow),label:const Text('Play private audio recording')),
           if(signedUrl!=null)const Text('Private media link expires after 15 minutes.',style:TextStyle(color:muted,fontSize:11)),
-          if(selected!['interview_type']=='live')FilledButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-live-room.html?interview='+selected!['interview_id'].toString()),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure live interview room')),
+          if(selected!['interview_type']=='live')FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:selected!['interview_id'].toString()))),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure live interview room')),
           const SizedBox(height:16),const Text('Assessment & review',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
           TextField(controller:score,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Score (0–100)')),
           const SizedBox(height:10),TextField(controller:notes,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Reviewer evaluation and recommendations')),
@@ -6561,7 +6636,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if(interviewId.isNotEmpty)await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:interviewId)));
       return;
     }
-    if(path.endsWith('/academy-live-room.html')||path.endsWith('/academy-interviewer.html')){await openAcademyWebPage(context,targetPath);return;}
+    if(path.endsWith('/academy-live-room.html')){final interviewId=uri.queryParameters['interview']??'';if(interviewId.isNotEmpty)await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:interviewId)));return;}
+    if(path.endsWith('/academy-interviewer.html')){final interviewId=uri.queryParameters['interview'];await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewerScreen(interviewId:interviewId)));return;}
     if (path.endsWith('/profile.html') || path == '/profile') {
       final target = (uri.queryParameters['u'] ?? uri.queryParameters['id'] ?? '').trim();
       if (target.isNotEmpty) await openMemberFromNotification(target);
