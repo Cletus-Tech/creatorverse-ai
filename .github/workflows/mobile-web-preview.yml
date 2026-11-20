@@ -1,4 +1,4 @@
-name: CreatorVerse iOS and Android Web Preview
+name: CreatorVerse Interactive Mobile Web Preview
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
-      name: github-pages
+      name: creatorverse-mobile-web-preview
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out CreatorVerse
