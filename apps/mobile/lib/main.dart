@@ -906,9 +906,9 @@ class _BillboardAnimatedTitleState extends State<BillboardAnimatedTitle> {
       duration:const Duration(milliseconds:520),
       curve:Curves.easeOutCubic,
       builder:(context,value,child){
-        final dx=widget.transition=='slide'?.12*(1-value):0.0;
-        final dy=widget.animation=='rise'?.2*(1-value):0.0;
-        final scale=widget.transition=='zoom'?.94+.06*value:1.0;
+        final dx=widget.transition=='slide' ? .12*(1-value) : 0.0;
+        final dy=widget.animation=='rise' ? .2*(1-value) : 0.0;
+        final scale=widget.transition=='zoom' ? .94+.06*value : 1.0;
         return Opacity(opacity:value,child:Transform.translate(offset:Offset(dx*42,dy*42),child:Transform.scale(scale:scale,child:child)));
       },
       child:child,
@@ -5181,7 +5181,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
   Color _color(String s,[Color fallback=Colors.white]){final v=s.replaceAll('#','');final n=v.length==6?int.tryParse(v,radix:16):null;return n==null?fallback:Color(0xFF000000|n);}
   Future<DateTime?> _date(BuildContext c,DateTime? value) async {
     final now=DateTime.now();final d=await showDatePicker(context:c,initialDate:value??now,firstDate:DateTime(now.year-1),lastDate:DateTime(now.year+8));
-    if(d==null)return null;final t=await showTimePicker(context:c,initialTime:TimeOfDay.fromDateTime(value??now));
+    if(d==null||!c.mounted)return null;final t=await showTimePicker(context:c,initialTime:TimeOfDay.fromDateTime(value??now));
     return DateTime(d.year,d.month,d.day,t?.hour??0,t?.minute??0);
   }
   Future<void> _edit([Map<String,dynamic>? old]) async {
@@ -5287,7 +5287,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               'title_animation':anim,'transition_effect':transition,'media_fit':fit,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
             };
             if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
-            if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
+            if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
           }catch(e){setD(()=>saving=false);if(mounted)ScaffoldMessenger.of(page).showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
         },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Save creative')),
       ],
