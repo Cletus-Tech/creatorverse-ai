@@ -5288,7 +5288,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
             };
             if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
             if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
-          }catch(e){setD(()=>saving=false);if(mounted)ScaffoldMessenger.of(page).showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
+          }catch(e){if(dc.mounted)setD(()=>saving=false);if(page.mounted)ScaffoldMessenger.of(page).showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
         },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Save creative')),
       ],
     )));
