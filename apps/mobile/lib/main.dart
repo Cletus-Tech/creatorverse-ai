@@ -879,6 +879,34 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
 }
+class BillboardAnimatedTitle extends StatefulWidget {
+  final String text,animation,transition;
+  final Color color;
+  const BillboardAnimatedTitle({super.key,required this.text,required this.animation,required this.transition,required this.color});
+  @override State<BillboardAnimatedTitle> createState()=>_BillboardAnimatedTitleState();
+}
+class _BillboardAnimatedTitleState extends State<BillboardAnimatedTitle> {
+  Timer? _typing;
+  int _visible=0;
+  @override void initState(){super.initState();_start();}
+  @override void didUpdateWidget(covariant BillboardAnimatedTitle oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.text!=widget.text||oldWidget.animation!=widget.animation){_typing?.cancel();_start();}}
+  void _start(){
+    _visible=widget.animation=='typewriter'?0:widget.text.runes.length;
+    if(widget.animation=='typewriter'){
+      _typing=Timer.periodic(const Duration(milliseconds:34),(t){if(!mounted){t.cancel();return;}if(_visible>=widget.text.runes.length){t.cancel();return;}setState(()=>_visible++);});
+    }
+  }
+  @override void dispose(){_typing?.cancel();super.dispose();}
+  @override Widget build(BuildContext context){
+    final text=widget.animation=='typewriter'?String.fromCharCodes(widget.text.runes.take(_visible)):widget.text;
+    final style=TextStyle(color:widget.color,fontSize:20,height:1.08,fontWeight:FontWeight.w900,shadows:const [Shadow(color:Colors.black87,blurRadius:10)]);
+    final child=Text(text,maxLines:2,overflow:TextOverflow.ellipsis,style:style);
+    if(widget.animation=='fade')return AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:550),child:child);
+    if(widget.animation=='rise')return AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:500),child:child);
+    return child;
+  }
+}
+
 class CreatorVerseBillboard extends StatefulWidget {
   const CreatorVerseBillboard({super.key});
   @override State<CreatorVerseBillboard> createState() => _CreatorVerseBillboardState();
@@ -910,7 +938,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1).toInt()];
   Future<void> load() async {
     try {
-      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,background_color,accent_color,button_color').eq('is_published',true).order('display_order');
+      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,background_color,background_end_color,accent_color,button_color,text_color,title_animation,transition_effect,media_fit,overlay_opacity,kicker_text').eq('is_published',true).order('display_order');
       final old=current?['id']?.toString();
       if(!mounted)return;
       setState(() {
@@ -989,15 +1017,15 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final accent=color(s['accent_color'],emerald);
     final p=player;
     return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Stack(fit:StackFit.expand,children:[
-      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,Color.lerp(bg,ink,.6)!],begin:Alignment.topLeft,end:Alignment.bottomRight))),
-      if(type=='image' && hasMedia) Image.network(url,fit:BoxFit.contain,alignment:Alignment.center,filterQuality:FilterQuality.high,gaplessPlayback:true,loadingBuilder:(context,child,progress)=>progress==null?child:const Center(child:CircularProgressIndicator(color:Colors.white70)),errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
-      if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:BoxFit.contain,child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
-      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:hasMedia ? .84 : .3),Colors.transparent]))),
+      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,color(s['background_end_color'],Color.lerp(bg,ink,.6)!)],begin:Alignment.topLeft,end:Alignment.bottomRight))),
+      if(type=='image' && hasMedia) Image.network(url,fit:(s['media_fit']=='contain'?BoxFit.contain:BoxFit.cover),alignment:Alignment.center,filterQuality:FilterQuality.high,gaplessPlayback:true,loadingBuilder:(context,child,progress)=>progress==null?child:const Center(child:CircularProgressIndicator(color:Colors.white70)),errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
+      if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:(s['media_fit']=='contain'?BoxFit.contain:BoxFit.cover),child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
+      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:((s['overlay_opacity'] as num?)?.toDouble()??.58).clamp(0,0.95)),Colors.transparent]))),
       Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
-        Row(children:[Container(width:7,height:7,decoration:BoxDecoration(color:accent,shape:BoxShape.circle)),const SizedBox(width:7),const Text('CREATORVERSE  •  LIVE UPDATES',style:TextStyle(color:Colors.white,fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),const Spacer(),if(active.length>1)Text('\${index+1}/\${active.length}',style:const TextStyle(color:Colors.white70,fontSize:10))]),
+        Row(children:[Container(width:7,height:7,decoration:BoxDecoration(color:accent,shape:BoxShape.circle)),const SizedBox(width:7),Text((s['kicker_text']??'CREATORVERSE • LIVE UPDATES').toString(),style:TextStyle(color:color(s['accent_color'],emerald),fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),const Spacer(),if(active.length>1)Text('\${index+1}/\${active.length}',style:const TextStyle(color:Colors.white70,fontSize:10))]),
         const Spacer(),
-        Text((s['title']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:20,height:1.08,fontWeight:FontWeight.w900,shadows:[Shadow(color:Colors.black87,blurRadius:10)])),
-        if((s['message']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:5),child:Text(s['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:12,shadows:[Shadow(color:Colors.black87,blurRadius:8)]))),
+        BillboardAnimatedTitle(text:(s['title']??'').toString(),animation:(s['title_animation']??'typewriter').toString(),color:color(s['text_color'],Colors.white),transition:(s['transition_effect']??'slide').toString()),
+        if((s['message']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:5),child:Text(s['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:color(s['text_color'],Colors.white).withValues(alpha:.88),fontSize:12,shadows:const [Shadow(color:Colors.black87,blurRadius:8)]))),
         if(type=='countdown')Padding(padding:const EdgeInsets.only(top:8),child:countdown(s)),
         if((s['button_label']??'').toString().isNotEmpty && (s['button_url']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Align(alignment:Alignment.centerLeft,child:FilledButton(onPressed:()=>action(s['button_url'].toString()),style:FilledButton.styleFrom(backgroundColor:color(s['button_color'],emerald),foregroundColor:Colors.white,minimumSize:const Size(0,34),padding:const EdgeInsets.symmetric(horizontal:15,vertical:8)),child:Text(s['button_label'].toString(),style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))))),
       ])),
