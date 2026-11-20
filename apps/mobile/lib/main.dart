@@ -5420,7 +5420,7 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
             ]),
             if(inv['interview_type']=='live')FilledButton.icon(onPressed:busy?null:()=>openAcademyWebPage(context,'/academy-live-room.html?interview=${inv['interview_id']}'),
               style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure in-app interview room')),
-            if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:busy?null:()=>openAcademyWebPage(context,'/academy-interview.html?interview=${inv['interview_id']}'),
+            if(['recorded_video','recorded_audio'].contains(inv['interview_type']))OutlinedButton.icon(onPressed:busy?null:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:inv['interview_id'].toString()))),
               icon:const Icon(Icons.mic_outlined),label:const Text('Open in-app response studio')),
             if((inv['meeting_join_url']??'').toString().startsWith('https://')&&inv['interview_type']!='live')TextButton(onPressed:()=>launchUrl(Uri.parse(inv['meeting_join_url'].toString()),mode:LaunchMode.externalApplication),child:const Text('Open additional meeting link')),
           ]))),
@@ -5428,6 +5428,138 @@ class _MyAcademyApplicationsScreenState extends State<MyAcademyApplicationsScree
         if(applications.isEmpty&&offers.isEmpty&&invitations.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:22),child:Text('No applications or invitations yet. Ordinary course learners can continue directly through Learn.',style:TextStyle(color:muted,height:1.5))),
       ]));
     }));
+}
+
+
+class NativeAcademyInterviewScreen extends StatefulWidget {
+  final String interviewId;
+  const NativeAcademyInterviewScreen({super.key, required this.interviewId});
+  @override State<NativeAcademyInterviewScreen> createState()=>_NativeAcademyInterviewScreenState();
+}
+class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScreen> {
+  final db=Supabase.instance.client;
+  final recorder=AudioRecorder();
+  final player=AudioPlayer();
+  Map<String,dynamic>? interview, invitation;
+  VideoPlayerController? video;
+  String? audioPath, videoPath, error;
+  Duration duration=Duration.zero;
+  bool loading=true, recording=false, uploading=false, consent=false, submitted=false;
+  DateTime? started;
+  bool get isVideo=>interview?['interview_type']=='recorded_video';
+  int get maxSeconds=>(interview?['max_duration_seconds'] as num?)?.toInt()??600;
+  @override void initState(){super.initState();load();}
+  Future<void> load() async {
+    try{
+      final r=await db.rpc('get_my_academy_interview_details',params:{'p_interview_id':widget.interviewId});
+      if(r is! Map||r['interview']==null||r['invitation']==null)throw Exception('This interview is unavailable or is not assigned to your account.');
+      final i=Map<String,dynamic>.from(r['interview'] as Map);
+      final v=Map<String,dynamic>.from(r['invitation'] as Map);
+      if(!['recorded_audio','recorded_video'].contains(i['interview_type']))throw Exception('This interview does not accept a recorded response.');
+      if(mounted)setState(()=>{interview=i,invitation=v,submitted=['submitted','completed'].contains(i['status']),loading=false});
+    }catch(e){if(mounted)setState(()=>{error=e.toString(),loading=false});}
+  }
+  Future<void> startAudio() async {
+    try{
+      if(!await recorder.hasPermission())throw Exception('Microphone permission was not granted.');
+      final p=Directory.systemTemp.path+'/creatorverse-interview-'+DateTime.now().millisecondsSinceEpoch.toString()+'.m4a';
+      await recorder.start(const RecordConfig(encoder:AudioEncoder.aacLc,bitRate:128000,sampleRate:44100),path:p);
+      if(mounted)setState(()=>{audioPath=null,videoPath=null,started=DateTime.now(),recording=true,duration=Duration.zero});
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not start recording: '+e.toString())));}
+  }
+  Future<void> stopAudio() async {
+    if(!recording)return;
+    try{
+      final p=await recorder.stop();
+      final d=DateTime.now().difference(started??DateTime.now());
+      if(p==null||d.inSeconds<1||d.inSeconds>maxSeconds)throw Exception('Recording must be between 1 and '+maxSeconds.toString()+' seconds.');
+      if(mounted)setState(()=>{audioPath=p,recording=false,duration=d});
+    }catch(e){if(mounted){setState(()=>recording=false);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}}
+  }
+  Future<void> captureVideo() async {
+    try{
+      final cam=await Permission.camera.request();final mic=await Permission.microphone.request();
+      if(!cam.isGranted||!mic.isGranted)throw Exception('Camera and microphone permissions are required.');
+      final f=await ImagePicker().pickVideo(source:ImageSource.camera,maxDuration:Duration(seconds:maxSeconds),preferredCameraDevice:CameraDevice.front);
+      if(f==null)return;
+      final c=VideoPlayerController.file(File(f.path));await c.initialize();
+      final d=c.value.duration;
+      if(d.inSeconds<1||d.inSeconds>maxSeconds){await c.dispose();throw Exception('Video must be between 1 and '+maxSeconds.toString()+' seconds.');}
+      await video?.dispose();
+      if(mounted)setState(()=>{videoPath=f.path,audioPath=null,video=c,duration=d});
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not capture video: '+e.toString())));}
+  }
+  bool inWindow(){
+    final now=DateTime.now().toUtc();
+    final a=DateTime.tryParse((invitation?['starts_at']??'').toString())?.toUtc();
+    final b=DateTime.tryParse((invitation?['ends_at']??'').toString())?.toUtc();
+    return (a==null||!now.isBefore(a))&&(b==null||!now.isAfter(b));
+  }
+  Future<void> submit() async {
+    final p=isVideo?videoPath:audioPath;
+    if(p==null||!consent||!inWindow())return;
+    setState(()=>uploading=true);
+    String? objectPath;
+    try{
+      final user=db.auth.currentUser;if(user==null)throw Exception('Sign in to continue.');
+      final file=File(p);if(!await file.exists())throw Exception('Recording file is missing. Please record again.');
+      if(await file.length()>100*1024*1024)throw Exception('Recording exceeds the 100 MB upload limit.');
+      objectPath=widget.interviewId+'/'+user.id+'/'+DateTime.now().millisecondsSinceEpoch.toString()+(isVideo?'.mp4':'.m4a');
+      await db.storage.from('academy-interviews').upload(objectPath,file,fileOptions:FileOptions(contentType:isVideo?'video/mp4':'audio/mp4',upsert:false));
+      await db.rpc('submit_academy_interview_response',params:{
+        'p_interview_id':widget.interviewId,'p_media_path':objectPath,
+        'p_duration_seconds':duration.inSeconds.clamp(1,maxSeconds),'p_consent':true
+      });
+      if(mounted)setState(()=>submitted=true);
+    }catch(e){
+      if(objectPath!=null){try{await db.storage.from('academy-interviews').remove([objectPath]);}catch(_){}}
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Submission failed: '+e.toString())));
+    }finally{if(mounted)setState(()=>uploading=false);}
+  }
+  @override void dispose(){unawaited(recorder.dispose());unawaited(player.dispose());unawaited(video?.dispose());super.dispose();}
+  @override Widget build(BuildContext context){
+    if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:emerald)));
+    if(error!=null)return Scaffold(appBar:AppBar(title:const Text('Academy interview')),body:Center(child:Padding(padding:const EdgeInsets.all(24),child:Text(error!,textAlign:TextAlign.center))));
+    final i=interview!;
+    return Scaffold(appBar:AppBar(title:Text(isVideo?'Video response':'Audio response')),body:SafeArea(child:ListView(padding:const EdgeInsets.all(18),children:[
+      Text((i['topic']??'Academy interview').toString(),style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800)),
+      const SizedBox(height:8),Text((i['instructions']??invitation?['learner_instructions']??'Follow your interviewer instructions.').toString(),style:const TextStyle(color:muted,height:1.5)),
+      const SizedBox(height:12),Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('Round '+(i['round_number']??1).toString()+' · Maximum '+maxSeconds.toString()+' seconds',style:const TextStyle(color:gold,fontWeight:FontWeight.w700)),
+        if(i['assessment_criteria'] is List)for(final c in i['assessment_criteria'])Padding(padding:const EdgeInsets.only(top:6),child:Text('• '+c.toString(),style:const TextStyle(color:muted))),
+        const SizedBox(height:8),Text('Submission window: '+(invitation?['starts_at']??'').toString()+' – '+(invitation?['ends_at']??'').toString(),style:const TextStyle(color:muted,fontSize:11))
+      ]))),
+      const SizedBox(height:16),
+      if(submitted)const Card(color:panel,child:Padding(padding:EdgeInsets.all(18),child:Column(children:[Icon(Icons.check_circle_outline,color:emerald,size:42),SizedBox(height:10),Text('Response submitted',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),SizedBox(height:6),Text('Your private recording has been received for interviewer review.',textAlign:TextAlign.center,style:TextStyle(color:muted))])))
+      else Card(color:panel,child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
+        Icon(isVideo?Icons.videocam_outlined:Icons.mic_none_outlined,color:emerald,size:38),
+        const SizedBox(height:10),Text(isVideo?'Record a video defence':'Record an audio defence',style:const TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
+        const SizedBox(height:12),
+        if(!isVideo)...[
+          if(recording)Text('Recording… '+duration.inSeconds.toString()+'s',style:const TextStyle(color:gold)),
+          if(!recording&&audioPath==null)FilledButton.icon(onPressed:uploading?null:startAudio,icon:const Icon(Icons.fiber_manual_record),label:const Text('Start recording')),
+          if(recording)FilledButton.icon(onPressed:stopAudio,icon:const Icon(Icons.stop),label:const Text('Stop recording')),
+          if(audioPath!=null)Wrap(alignment:WrapAlignment.center,children:[
+            const Text('Audio ready to review'),IconButton(onPressed:()async{await player.setFilePath(audioPath!);await player.play();},icon:const Icon(Icons.play_circle_outline)),
+            IconButton(onPressed:()=>setState(()=>audioPath=null),icon:const Icon(Icons.delete_outline))
+          ])
+        ]else...[
+          if(video!=null&&video!.value.isInitialized)AspectRatio(aspectRatio:video!.value.aspectRatio,child:VideoPlayer(video!)),
+          if(videoPath==null)FilledButton.icon(onPressed:uploading?null:captureVideo,icon:const Icon(Icons.videocam),label:const Text('Record video response')),
+          if(videoPath!=null)Wrap(alignment:WrapAlignment.center,children:[
+            Text('Video ready · '+duration.inSeconds.toString()+'s'),
+            IconButton(onPressed:()async{await video?.seekTo(Duration.zero);await video?.play();setState((){});},icon:const Icon(Icons.play_circle_outline)),
+            IconButton(onPressed:()async{await video?.dispose();setState(()=>{video=null,videoPath=null});},icon:const Icon(Icons.delete_outline))
+          ])
+        ],
+        CheckboxListTile(value:consent,activeColor:emerald,contentPadding:EdgeInsets.zero,onChanged:uploading?null:(v)=>setState(()=>consent=v==true),
+          title:const Text('I consent to recording and submitting this response for Academy assessment. It will be stored privately and reviewed by authorised Academy staff.',style:TextStyle(fontSize:12,height:1.4))),
+        SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:uploading||recording||((isVideo?videoPath:audioPath)==null)||!consent?null:submit,
+          style:FilledButton.styleFrom(backgroundColor:emerald),icon:uploading?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.cloud_upload_outlined),
+          label:Text(uploading?'Uploading securely…':'Submit defence')))
+      ]))),
+    ])));
+  }
 }
 
 class MyCertificatesScreen extends StatefulWidget {
@@ -6326,11 +6458,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
       return;
     }
-    if (path.endsWith('/academy-live-room.html') || path.endsWith('/academy-interviewer.html') ||
-        path.endsWith('/academy-interview.html')) {
-      await openAcademyWebPage(context, targetPath);
+    if(path.endsWith('/academy-interview.html')){
+      final interviewId=uri.queryParameters['interview']??uri.queryParameters['id']??'';
+      if(interviewId.isNotEmpty)await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:interviewId)));
       return;
     }
+    if(path.endsWith('/academy-live-room.html')||path.endsWith('/academy-interviewer.html')){await openAcademyWebPage(context,targetPath);return;}
     if (path.endsWith('/profile.html') || path == '/profile') {
       final target = (uri.queryParameters['u'] ?? uri.queryParameters['id'] ?? '').trim();
       if (target.isNotEmpty) await openMemberFromNotification(target);
