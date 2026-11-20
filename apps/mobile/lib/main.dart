@@ -5243,6 +5243,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     final title=TextEditingController(text:(old?['title']??'').toString());
     final message=TextEditingController(text:(old?['message']??'').toString());
     XFile? file;
+    var removeExistingMedia=false;
     var mediaType=(old?['media_type']??'text').toString();
     var audience=(old?['target_audience']??'whole_platform').toString();
     var theme=(old?['theme_key']??'gold').toString();
@@ -5302,7 +5303,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                   if(ctx.mounted)ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content:Text('Choose an image or video file.')));
                   return;
                 }
-                setD(()=>{file=picked;mediaType=['mp4','mov','webm'].contains(ext)?'video':'image';});
+                setD(() {file=picked;removeExistingMedia=false;mediaType=['mp4','mov','webm'].contains(ext)?'video':'image';});
               },
               icon:const Icon(Icons.attach_file),
               label:Text(file?.name??((old?['media_url']??'').toString().isEmpty?'Attach a document or media file':'Replace attached media')),
@@ -5311,7 +5312,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               Padding(padding:const EdgeInsets.only(top:5),child:Row(children:[
                 const Icon(Icons.check_circle,color:emerald,size:16),const SizedBox(width:6),
                 Expanded(child:Text(file?.name??'Media already attached',style:const TextStyle(color:muted,fontSize:11))),
-                TextButton(onPressed:()=>setD(()=>{file=null;mediaType='text';}),child:const Text('Remove')),
+                TextButton(onPressed:()=>setD(() {file=null;removeExistingMedia=true;mediaType='text';}),child:const Text('Remove')),
               ])),
             const SizedBox(height:4),
             const Text('Images and videos are fitted automatically to the billboard display.',style:TextStyle(color:muted,fontSize:11)),
@@ -5345,13 +5346,13 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               if(message.text.trim().isEmpty&&file==null&&(old?['media_url']??'').toString().isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Add a message or attach media.')));return;}
               setD(()=>saving=true);
               try{
-                String? mediaUrl=(old?['media_url']??'').toString().isEmpty?null:old!['media_url'].toString();
+                String? mediaUrl=removeExistingMedia?null:((old?['media_url']??'').toString().isEmpty?null:old!['media_url'].toString());
                 if(file!=null){
                   final bytes=await file!.readAsBytes();
                   if(bytes.isEmpty||bytes.length>50*1024*1024)throw Exception('Maximum media size is 50 MB.');
                   final ext=file!.name.split('.').last.toLowerCase();
                   final mime=ext=='png'?'image/png':ext=='webp'?'image/webp':ext=='gif'?'image/gif':ext=='webm'?'video/webm':ext=='mov'?'video/quicktime':ext=='mp4'?'video/mp4':'image/jpeg';
-                  final path='billboard/'+db.auth.currentUser!.id+'/'+DateTime.now().microsecondsSinceEpoch.toString()+'.'+ext;
+                  final path=db.auth.currentUser!.id+'/'+DateTime.now().microsecondsSinceEpoch.toString()+'.'+ext;
                   await db.storage.from('billboard-media').uploadBinary(path,bytes,fileOptions:FileOptions(contentType:mime,upsert:false));
                   mediaUrl=db.storage.from('billboard-media').getPublicUrl(path);
                 }
@@ -5383,14 +5384,14 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                 };
                 if(old==null){
                   data['created_by']=db.auth.currentUser!.id;
-                  await db.from('billboard_items').insert(data);
+                  final inserted=await db.from('billboard_items').insert(data).select('id').single();
+                  data['_saved_id']=inserted['id'];
                 }else{
                   await db.from('billboard_items').update(data).eq('id',old['id']);
+                  data['_saved_id']=old['id'];
                 }
-                final saved=old==null
-                  ? await db.from('billboard_items').select('id').eq('title',headline).order('created_at',ascending:false).limit(1).maybeSingle()
-                  : {'id':old['id']};
-                final savedId=saved?['id'];
+                final savedId=data['_saved_id'];
+                data.remove('_saved_id');
                 if(notify&&savedId!=null){
                   await db.rpc('notify_billboard_audience',params:{'p_billboard_id':savedId});
                 }
