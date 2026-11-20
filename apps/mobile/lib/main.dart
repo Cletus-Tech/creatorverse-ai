@@ -6537,10 +6537,14 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
 }
 
 void openFeature(BuildContext context, String path) {
-  if(path.startsWith('/profile.html?u=')){
-    material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-      builder:(_)=>AuthenticatedAcademyWebScreen(path:path)));
-    return;
+  final parsedPath = Uri.tryParse(path);
+  if (parsedPath?.path == '/profile.html') {
+    final userId = parsedPath?.queryParameters['u']?.trim() ?? '';
+    if (userId.isNotEmpty) {
+      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NativePublicProfileRouteScreen(userId: userId)));
+      return;
+    }
   }
   if (path == '/certificates') {
     material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
@@ -6605,6 +6609,65 @@ void openFeature(BuildContext context, String path) {
   }
   material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
     appBar: AppBar(title: Text(title)), body: destination!)));
+}
+
+
+class NativePublicProfileRouteScreen extends StatefulWidget {
+  final String userId;
+  const NativePublicProfileRouteScreen({super.key, required this.userId});
+  @override
+  State<NativePublicProfileRouteScreen> createState() => _NativePublicProfileRouteScreenState();
+}
+
+class _NativePublicProfileRouteScreenState extends State<NativePublicProfileRouteScreen> {
+  late Future<Map<String, dynamic>?> profile;
+  @override
+  void initState() {
+    super.initState();
+    profile = _loadProfile();
+  }
+  Future<Map<String, dynamic>?> _loadProfile() async {
+    final row = await Supabase.instance.client
+      .from('public_profiles')
+      .select('id,full_name,username,avatar_url,bio,location,verified_badge')
+      .eq('id', widget.userId)
+      .maybeSingle();
+    return row == null ? null : Map<String, dynamic>.from(row);
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Member profile')),
+    body: FutureBuilder<Map<String, dynamic>?>(
+      future: profile,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: emerald));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.cloud_off_outlined, color: muted, size: 42),
+              const SizedBox(height: 12),
+              const Text('Could not load this profile', style: TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(snapshot.error.toString(), textAlign: TextAlign.center,
+                style: const TextStyle(color: muted)),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => profile = _loadProfile()),
+                icon: const Icon(Icons.refresh), label: const Text('Try again')),
+            ]),
+          ));
+        }
+        final data = snapshot.data;
+        if (data == null) {
+          return const Center(child: Text('This profile is unavailable.'));
+        }
+        return PublicMemberProfileScreen(profile: data);
+      },
+    ),
+  );
 }
 
 class NativeSpaceScreen extends StatelessWidget {
