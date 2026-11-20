@@ -974,7 +974,15 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     return Wrap(spacing:7,children:[for(final v in values)Container(padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:Colors.black45,borderRadius:BorderRadius.circular(9)),child:Text(v,style:const TextStyle(color:Colors.white,fontSize:19,fontWeight:FontWeight.w900)))]);
   }
   @override Widget build(BuildContext context) {
-    final s=current;if(s==null)return const SizedBox.shrink();
+    final s=current;
+    if(s==null) return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Container(
+      decoration:const BoxDecoration(gradient:LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)],begin:Alignment.topLeft,end:Alignment.bottomRight),border:Border.fromBorderSide(BorderSide(color:Color(0x5530B58A)))),
+      padding:const EdgeInsets.all(22),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
+        const Text('YOUR NEXT CHAPTER STARTS HERE',style:TextStyle(color:gold,fontSize:11,letterSpacing:1.1,fontWeight:FontWeight.w900)),
+        const SizedBox(height:12),Text('Hello, ${(Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'Creator').toString()}.',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+        const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,fontSize:14,height:1.35)),
+        const SizedBox(height:14),FilledButton(onPressed:()=>openFeature(context,'/digital-skills.html'),style:FilledButton.styleFrom(backgroundColor:emerald,foregroundColor:ink),child:const Text('Explore CreatorVerse')),
+      ]))));
     final type=(s['media_type']??'text').toString(),url=(s['media_url']??'').toString();
     final hasMedia=url.isNotEmpty && (type=='image'||type=='video');
     final bg=color(s['background_color'],const Color(0xFF102C2B));
@@ -5219,6 +5227,10 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
             const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
           ]),
           const SizedBox(height: 12),
+          FilledButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const NativeBillboardAdminScreen())),
+            icon: const Icon(Icons.view_carousel_outlined), label: const Text('Manage Dynamic Billboard'),
+            style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
+          const SizedBox(height: 10),
           FilledButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
               appBar: AppBar(title: const Text('Payment review')), body: const AdminPaymentReviewScreen()))),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('Review payment requests'),
@@ -7084,7 +7096,7 @@ class _ProfileTabState extends State<ProfileTab> {
         if ((p['website_url'] ?? '').toString().isNotEmpty) ListTile(leading: const Icon(Icons.language, color: emerald), title: Text(p['website_url'].toString()), dense: true),
         if (p['skills'] is List && (p['skills'] as List).isNotEmpty) ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: emerald), title: Text((p['skills'] as List).join(', ')), subtitle: const Text('Skills', style: TextStyle(color: muted)), dense: true),
         const SizedBox(height: 12),
-        if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Administrative tools for your account.', path: '/admin.html'),
+        if (isAdmin) FeatureTile(icon: Icons.admin_panel_settings_outlined, title: 'Admin workspace', detail: 'Native CreatorVerse administration tools.', path: '/admin.html'),
         FeatureTile(icon: Icons.people_outline, title: 'Find members', detail: 'Discover people using CreatorVerse.', path: '/members'),
         FeatureTile(icon: Icons.settings_outlined, title: 'Account settings', detail: 'Review your account details.', path: '/settings'),
         const SizedBox(height: 12),
@@ -7198,12 +7210,8 @@ void openFeature(BuildContext context, String path) {
     case '/settings':
       destination = const AccountSettingsScreen(); title = 'Account settings'; break;
     case '/admin.html':
-      // Reuse the complete, role-protected website admin portal in an
-      // authenticated WebView until every admin feature has a native screen.
       material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => const AuthenticatedAcademyWebScreen(
-          path: '/admin.html',
-        )));
+        builder: (_) => const AdminWorkspaceScreen()));
       return;
     default:
       destination = NativeSpaceScreen(title: path.contains('marketplace') ? 'Marketplace' : 'Academic',
