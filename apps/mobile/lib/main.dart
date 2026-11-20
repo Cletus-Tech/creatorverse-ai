@@ -5152,40 +5152,195 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     ]);
 }
 
+
 class NativeBillboardAdminScreen extends StatefulWidget {
   const NativeBillboardAdminScreen({super.key});
   @override State<NativeBillboardAdminScreen> createState()=>_NativeBillboardAdminScreenState();
 }
 class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen> {
+  final db=Supabase.instance.client;
   late Future<List<Map<String,dynamic>>> items;
-  @override void initState(){super.initState();items=loadItems();}
-  Future<List<Map<String,dynamic>>> loadItems() async {
-    final db=Supabase.instance.client; final user=db.auth.currentUser;
-    if(user==null)throw StateError('Sign in to manage the billboard.');
-    final p=await db.from('profiles').select('role').eq('id',user.id).single();
-    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access is required.');
-    final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,is_published,display_order,duration_seconds').order('display_order');
-    return List<Map<String,dynamic>>.from(rows);
+  @override void initState(){super.initState();items=_load();}
+  Future<List<Map<String,dynamic>>> _load() async {
+    final u=db.auth.currentUser;if(u==null)throw StateError('Sign in required.');
+    final p=await db.from('profiles').select('role').eq('id',u.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access required.');
+    final r=await db.from('billboard_items').select('*').order('display_order').order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(r);
   }
-  Future<void> refresh() async {final f=loadItems();setState(()=>items=f);await f;}
+  Future<void> _refresh() async {final f=_load();setState(()=>items=f);await f;}
+  Color _color(String s,[Color fallback=Colors.white]){final v=s.replaceAll('#','');final n=v.length==6?int.tryParse(v,radix:16):null;return n==null?fallback:Color(0xFF000000|n);}
+  Future<DateTime?> _date(BuildContext c,DateTime? value) async {
+    final now=DateTime.now();final d=await showDatePicker(context:c,initialDate:value??now,firstDate:DateTime(now.year-1),lastDate:DateTime(now.year+8));
+    if(d==null)return null;final t=await showTimePicker(context:c,initialTime:TimeOfDay.fromDateTime(value??now));
+    return DateTime(d.year,d.month,d.day,t?.hour??0,t?.minute??0);
+  }
+  Future<void> _edit([Map<String,dynamic>? old]) async {
+    final title=TextEditingController(text:(old?['title']??'').toString());
+    final message=TextEditingController(text:(old?['message']??'').toString());
+    final kicker=TextEditingController(text:(old?['kicker_text']??'CREATORVERSE • LIVE UPDATES').toString());
+    final cta=TextEditingController(text:(old?['button_label']??'').toString());
+    final url=TextEditingController(text:(old?['button_url']??'').toString());
+    final order=TextEditingController(text:(old?['display_order']??0).toString());
+    final duration=TextEditingController(text:(old?['duration_seconds']??10).toString());
+    final done=TextEditingController(text:(old?['countdown_complete_label']??'EVENT STARTED').toString());
+    final bg=TextEditingController(text:(old?['background_color']??'#071426').toString());
+    final bg2=TextEditingController(text:(old?['background_end_color']??'#102329').toString());
+    final accent=TextEditingController(text:(old?['accent_color']??'#12A984').toString());
+    final fg=TextEditingController(text:(old?['text_color']??'#F4F7FB').toString());
+    final btn=TextEditingController(text:(old?['button_color']??'#247BE9').toString());
+    final opacity=TextEditingController(text:(old?['overlay_opacity']??.58).toString());
+    XFile? file;var kind=(old?['media_type']??'text').toString();
+    var anim=(old?['title_animation']??'typewriter').toString();
+    var transition=(old?['transition_effect']??'slide').toString();
+    var fit=(old?['media_fit']??'cover').toString();
+    var publish=old?['is_published']==true;
+    DateTime? start=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
+    DateTime? end=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
+    DateTime? target=DateTime.tryParse((old?['countdown_target_at']??'').toString())?.toLocal();
+    var saving=false;final page=context;
+    await showDialog<void>(context:page,builder:(dc)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+      backgroundColor:panel,title:Text(old==null?'Create billboard creative':'Edit billboard creative'),
+      content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('CONTENT',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        TextField(controller:title,decoration:const InputDecoration(labelText:'Headline')),
+        TextField(controller:message,maxLines:3,decoration:const InputDecoration(labelText:'Supporting text')),
+        TextField(controller:kicker,decoration:const InputDecoration(labelText:'Small label / eyebrow')),
+        const SizedBox(height:10),
+        DropdownButtonFormField<String>(value:kind,decoration:const InputDecoration(labelText:'Creative format'),items:const [
+          DropdownMenuItem(value:'text',child:Text('Text announcement')),DropdownMenuItem(value:'image',child:Text('Image advertisement')),DropdownMenuItem(value:'video',child:Text('Video advertisement')),DropdownMenuItem(value:'countdown',child:Text('Event countdown'))
+        ],onChanged:(v)=>setD(()=>kind=v??'text')),
+        OutlinedButton.icon(onPressed:() async {final x=await ImagePicker().pickMedia();if(x!=null){final ext=x.name.split('.').last.toLowerCase();setD((){file=x;kind=['mp4','webm','mov'].contains(ext)?'video':'image';});}},icon:const Icon(Icons.cloud_upload_outlined),label:Text(file?.name??((old?['media_url']??'').toString().isEmpty?'Upload image or video':'Replace media file'))),
+        const SizedBox(height:10),const Text('CALL TO ACTION',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        TextField(controller:cta,decoration:const InputDecoration(labelText:'Button label (optional)')),
+        TextField(controller:url,decoration:const InputDecoration(labelText:'Button URL or in-app path')),
+        const SizedBox(height:10),const Text('PLAYLIST & SCHEDULING',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        TextField(controller:order,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Playlist order (lower first)')),
+        TextField(controller:duration,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Slide duration (3–120 seconds)')),
+        OutlinedButton(onPressed:() async {final d=await _date(ctx,start);if(d!=null)setD(()=>start=d);},child:Text('Starts: '+(start?.toLocal().toString().substring(0,16)??'Immediately'))),
+        OutlinedButton(onPressed:() async {final d=await _date(ctx,end);if(d!=null)setD(()=>end=d);},child:Text('Ends: '+(end?.toLocal().toString().substring(0,16)??'No end date'))),
+        if(kind=='countdown')...[
+          OutlinedButton(onPressed:() async {final d=await _date(ctx,target);if(d!=null)setD(()=>target=d);},child:Text('Countdown target: '+(target?.toLocal().toString().substring(0,16)??'Choose date and time'))),
+          TextField(controller:done,decoration:const InputDecoration(labelText:'Text after countdown ends')),
+        ],
+        SwitchListTile(contentPadding:EdgeInsets.zero,value:publish,onChanged:(v)=>setD(()=>publish=v),title:const Text('Publish this creative')),
+        const SizedBox(height:10),const Text('ANIMATION & MEDIA',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        DropdownButtonFormField<String>(value:anim,decoration:const InputDecoration(labelText:'Headline animation'),items:const [
+          DropdownMenuItem(value:'none',child:Text('Static')),DropdownMenuItem(value:'typewriter',child:Text('Typing / typewriter')),DropdownMenuItem(value:'fade',child:Text('Fade in')),DropdownMenuItem(value:'rise',child:Text('Rise in'))
+        ],onChanged:(v)=>setD(()=>anim=v??'typewriter')),
+        DropdownButtonFormField<String>(value:transition,decoration:const InputDecoration(labelText:'Slide transition'),items:const [
+          DropdownMenuItem(value:'slide',child:Text('Horizontal slide')),DropdownMenuItem(value:'fade',child:Text('Fade')),DropdownMenuItem(value:'zoom',child:Text('Zoom'))
+        ],onChanged:(v)=>setD(()=>transition=v??'slide')),
+        DropdownButtonFormField<String>(value:fit,decoration:const InputDecoration(labelText:'Media fit'),items:const [
+          DropdownMenuItem(value:'cover',child:Text('Cover / fill frame')),DropdownMenuItem(value:'contain',child:Text('Contain / show full media'))
+        ],onChanged:(v)=>setD(()=>fit=v??'cover')),
+        const SizedBox(height:10),const Text('COLORS — HEX VALUES',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        for(final e in <MapEntry<String,TextEditingController>>[MapEntry('Background start',bg),MapEntry('Background end',bg2),MapEntry('Accent',accent),MapEntry('Text',fg),MapEntry('Button',btn)])
+          Padding(padding:const EdgeInsets.only(top:6),child:Row(children:[Expanded(child:Text(e.key,style:const TextStyle(color:muted,fontSize:12))),SizedBox(width:112,child:TextField(controller:e.value,decoration:const InputDecoration(hintText:'#12A984',isDense:true),onChanged:(_)=>setD((){}))),Container(width:23,height:23,decoration:BoxDecoration(color:_color(e.value.text),borderRadius:BorderRadius.circular(6)))])),
+        TextField(controller:opacity,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Media overlay darkness (0–0.95)')),
+        const SizedBox(height:10),Container(height:72,padding:const EdgeInsets.all(10),decoration:BoxDecoration(borderRadius:BorderRadius.circular(10),gradient:LinearGradient(colors:[_color(bg.text,const Color(0xFF071426)),_color(bg2.text,const Color(0xFF102329))])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(kicker.text,style:TextStyle(color:_color(accent.text,emerald),fontSize:9)),Text(title.text.isEmpty?'Billboard preview':title.text,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:_color(fg.text),fontSize:17,fontWeight:FontWeight.w900))])),
+      ]))),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(dc),child:const Text('Cancel')),
+        FilledButton(onPressed:saving?null:() async {
+          final h=title.text.trim(),label=cta.text.trim(),dest=url.text.trim();
+          final colors=[bg.text,bg2.text,accent.text,fg.text,btn.text];
+          if(h.length<2){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Enter a headline with at least two characters.')));return;}
+          if(label.isNotEmpty!=dest.isNotEmpty){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Enter both button label and destination, or leave both blank.')));return;}
+          if(colors.any((v)=>!RegExp(r'^#?[0-9a-fA-F]{6}$').hasMatch(v.trim()))){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Use six-digit HEX colors, e.g. #12A984.')));return;}
+          if(start!=null&&end!=null&&!end!.isAfter(start!)){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('End date must be later than start date.')));return;}
+          if(kind=='countdown'&&target==null){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Choose a countdown target.')));return;}
+          if((kind=='image'||kind=='video')&&file==null&&(old?['media_url']??'').toString().isEmpty){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Upload media for this creative.')));return;}
+          final op=double.tryParse(opacity.text)??.58;if(op<0||op>.95){ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Overlay darkness must be between 0 and 0.95.')));return;}
+          setD(()=>saving=true);
+          try {
+            String? mediaUrl=(old?['media_url']??'').toString().isEmpty?null:old!['media_url'].toString();
+            if(file!=null){
+              final bytes=await file!.readAsBytes();if(bytes.isEmpty||bytes.length>100*1024*1024)throw Exception('Media must be smaller than 100 MB.');
+              final ext=file!.name.split('.').last.toLowerCase();const images=['jpg','jpeg','png','webp','gif'];const videos=['mp4','webm','mov'];
+              if(kind=='image'&&!images.contains(ext))throw Exception('Image must be JPG, PNG, WebP or GIF.');
+              if(kind=='video'&&!videos.contains(ext))throw Exception('Video must be MP4, WebM or MOV.');
+              if(kind!='image'&&kind!='video')throw Exception('Choose image or video format for uploaded media.');
+              final mime=ext=='png'?'image/png':ext=='webp'?'image/webp':ext=='gif'?'image/gif':ext=='webm'?'video/webm':ext=='mov'?'video/quicktime':ext=='mp4'?'video/mp4':'image/jpeg';
+              final path=db.auth.currentUser!.id+'/'+DateTime.now().microsecondsSinceEpoch.toString()+'.'+ext;
+              await db.storage.from('billboard-media').uploadBinary(path,bytes,fileOptions:FileOptions(contentType:mime,upsert:false));
+              mediaUrl=db.storage.from('billboard-media').getPublicUrl(path);
+            }
+            if(kind!='image'&&kind!='video')mediaUrl=null;
+            String hex(String v)=>v.trim().startsWith('#')?v.trim():'#'+v.trim();
+            final data=<String,dynamic>{
+              'title':h,'message':message.text.trim(),'kicker_text':kicker.text.trim(),'media_type':kind,'media_url':mediaUrl,
+              'button_label':label.isEmpty?null:label,'button_url':dest.isEmpty?null:dest,
+              'starts_at':start?.toUtc().toIso8601String(),'ends_at':end?.toUtc().toIso8601String(),
+              'duration_seconds':(int.tryParse(duration.text)??10).clamp(3,120),'display_order':(int.tryParse(order.text)??0).clamp(0,100000),
+              'countdown_target_at':kind=='countdown'?target?.toUtc().toIso8601String():null,'countdown_timezone':'Africa/Lagos','countdown_complete_label':done.text.trim().isEmpty?'EVENT STARTED':done.text.trim(),
+              'background_color':hex(bg.text),'background_end_color':hex(bg2.text),'accent_color':hex(accent.text),'text_color':hex(fg.text),'button_color':hex(btn.text),
+              'title_animation':anim,'transition_effect':transition,'media_fit':fit,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
+            };
+            if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
+            if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();ScaffoldMessenger.of(page).showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
+          }catch(e){setD(()=>saving=false);if(mounted)ScaffoldMessenger.of(page).showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
+        },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Save creative')),
+      ],
+    )));
+    for(final c in [title,message,kicker,cta,url,order,duration,done,bg,bg2,accent,fg,btn,opacity]){c.dispose();}
+  }
+  Future<void> _toggle(Map<String,dynamic> x) async {try{await db.from('billboard_items').update({'is_published':x['is_published']!=true,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',x['id']);await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Update failed: '+e.toString())));}}
+  Future<void> _delete(Map<String,dynamic> x) async {
+    final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(backgroundColor:panel,title:const Text('Delete billboard creative?'),content:Text((x['title']??'').toString()),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))]));
+    if(yes!=true)return;try{await db.from('billboard_items').delete().eq('id',x['id']);await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Delete failed: '+e.toString())));}
+  }
+  Future<void> _move(int i,int delta,List<Map<String,dynamic>> rows) async {
+    final j=i+delta;if(j<0||j>=rows.length)return;
+    try{final a=rows[i],b=rows[j];final av=a['display_order'] as int? ?? i,bv=b['display_order'] as int? ?? j;
+      await db.from('billboard_items').update({'display_order':bv}).eq('id',a['id']);await db.from('billboard_items').update({'display_order':av}).eq('id',b['id']);await _refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Reorder failed: '+e.toString())));}
+  }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Dynamic Billboard'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    appBar:AppBar(title:const Text('Dynamic Billboard Studio'),actions:[IconButton(onPressed:_refresh,icon:const Icon(Icons.refresh))]),
+    floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(),backgroundColor:emerald,foregroundColor:ink,icon:const Icon(Icons.add),label:const Text('Create creative')),
     body:FutureBuilder<List<Map<String,dynamic>>>(future:items,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
-      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(24),child:Text('Billboard management unavailable: ${s.error}',textAlign:TextAlign.center)));
-      final rows=s.data??[];
-      if(rows.isEmpty)return const Center(child:Text('No billboard slides have been created yet.'));
-      return RefreshIndicator(onRefresh:refresh,color:emerald,child:ListView(padding:const EdgeInsets.all(16),children:[
-        const Text('Published slides appear in the dashboard billboard. Content is shared through Supabase.',style:TextStyle(color:muted)),
-        for(final row in rows) Card(color:panel,child:ListTile(
-          leading:Icon(row['media_type']=='video'?Icons.videocam_outlined:row['media_type']=='image'?Icons.image_outlined:Icons.campaign_outlined,color:emerald),
-          title:Text((row['title']??'Untitled').toString()),
-          subtitle:Text('${row['media_type']} · ${row['is_published']==true?'Published':'Draft'} · ${row['duration_seconds']}s',style:const TextStyle(color:muted)),
-        )),
+      if(s.hasError)return Center(child:Text('Billboard unavailable: '+s.error.toString()));
+      final rows=s.data??[];final live=rows.where((x)=>x['is_published']==true).length;
+      return RefreshIndicator(onRefresh:_refresh,color:emerald,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),children:[
+        Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('CREATORVERSE MEDIA NETWORK',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w900)),
+          const SizedBox(height:8),const Text('Billboard Studio',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+          const SizedBox(height:5),const Text('Create ads, announcements and event creatives. Control content, media, colors, animation, scheduling and playlist order.',style:TextStyle(color:Colors.white70,fontSize:12,height:1.4)),
+          const SizedBox(height:12),Wrap(spacing:8,children:[_BillboardStat(label:'Creatives',value:rows.length.toString()),_BillboardStat(label:'Published',value:live.toString()),_BillboardStat(label:'Drafts',value:(rows.length-live).toString())]),
+        ])),
+        const SizedBox(height:18),const Text('PLAYLIST MANAGEMENT',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w900,letterSpacing:1.2)),
+        const SizedBox(height:10),
+        if(rows.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Text('No creatives yet. Create your first advertisement or announcement.',textAlign:TextAlign.center,style:TextStyle(color:muted))),
+        for(var i=0;i<rows.length;i++)_BillboardCreativeCard(item:rows[i],index:i,onEdit:()=>_edit(rows[i]),onDelete:()=>_delete(rows[i]),onToggle:()=>_toggle(rows[i]),onUp:()=>_move(i,-1,rows),onDown:()=>_move(i,1,rows)),
       ]));
     }),
   );
 }
+class _BillboardStat extends StatelessWidget {
+  final String label,value;
+  const _BillboardStat({required this.label,required this.value});
+  @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:9),decoration:BoxDecoration(color:Colors.black26,borderRadius:BorderRadius.circular(10)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(value,style:const TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.w900)),Text(label,style:const TextStyle(color:Colors.white70,fontSize:10))]));
+}
+class _BillboardCreativeCard extends StatelessWidget {
+  final Map<String,dynamic> item;final int index;final VoidCallback onEdit,onDelete,onToggle,onUp,onDown;
+  const _BillboardCreativeCard({required this.item,required this.index,required this.onEdit,required this.onDelete,required this.onToggle,required this.onUp,required this.onDown});
+  @override Widget build(BuildContext context){
+    final type=(item['media_type']??'text').toString(),media=(item['media_url']??'').toString(),live=item['is_published']==true;
+    return Card(color:panel,margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Row(children:[Icon(type=='video'?Icons.videocam_outlined:type=='image'?Icons.image_outlined:type=='countdown'?Icons.timer_outlined:Icons.campaign_outlined,color:emerald),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((item['title']??'Untitled').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800)),Text(type.toUpperCase()+' • ORDER '+(item['display_order']??index).toString(),style:const TextStyle(color:muted,fontSize:10))])),Text(live?'LIVE':'DRAFT',style:TextStyle(color:live?emerald:muted,fontWeight:FontWeight.w900,fontSize:10))]),
+      if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
+      if((item['message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:7),child:Text(item['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11))),
+      const SizedBox(height:8),Wrap(spacing:5,runSpacing:4,children:[
+        OutlinedButton(onPressed:onUp,child:const Icon(Icons.arrow_upward,size:16)),OutlinedButton(onPressed:onDown,child:const Icon(Icons.arrow_downward,size:16)),
+        OutlinedButton(onPressed:onEdit,child:const Text('Edit')),OutlinedButton(onPressed:onToggle,child:Text(live?'Pause':'Publish')),
+        OutlinedButton(onPressed:onDelete,style:OutlinedButton.styleFrom(foregroundColor:Colors.redAccent),child:const Text('Delete')),
+      ]),
+    ])));
+  }
+}
+
 class AdminWorkspaceScreen extends StatefulWidget {
   const AdminWorkspaceScreen({super.key});
   @override
