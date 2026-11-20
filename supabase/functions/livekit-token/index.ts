@@ -33,25 +33,47 @@ Deno.serve(async (request: Request) => {
     if (authError || !authData.user) return json({ error: "Your session is invalid. Sign in again." }, 401);
 
     const body = await request.json();
+    const interviewId = String(body.interview_id ?? "");
     const callId = String(body.call_id ?? "");
-    const requestedMode = String(body.mode ?? "");
-    if (!/^[0-9a-f-]{36}$/i.test(callId) || !["audio", "video"].includes(requestedMode)) {
-      return json({ error: "Invalid call request." }, 400);
-    }
+    let roomName = "";
+    let mode = "";
 
-    // This RLS-protected RPC returns an invite only to its caller or invited participant.
-    const { data: invite, error: inviteError } = await supabase.rpc("cv_get_call_invite", {
-      p_call_id: callId,
-    });
-    if (inviteError || !invite) return json({ error: "Call invite not found or access denied." }, 403);
-    if (![invite.caller_id, invite.callee_id].includes(authData.user.id)) {
-      return json({ error: "You are not a participant in this call." }, 403);
-    }
-    if (invite.mode !== requestedMode || !["ringing", "accepted"].includes(invite.status)) {
-      return json({ error: "This call is no longer available." }, 410);
-    }
-    if (new Date(invite.expires_at).getTime() < Date.now()) {
-      return json({ error: "This call invitation has expired." }, 410);
+    if (interviewId) {
+      if (!/^[0-9a-f-]{36}$/i.test(interviewId)) return json({ error: "Invalid interview request." }, 400);
+      const { data: canAccess, error: accessError } = await supabase.rpc("can_access_academy_interview", {
+        p_interview_id: interviewId,
+      });
+      if (accessError || canAccess !== true) return json({ error: "You are not authorised to enter this interview." }, 403);
+      const { data: interview, error: interviewError } = await supabase
+        .from("academy_interviews")
+        .select("id,interview_type")
+        .eq("id", interviewId)
+        .maybeSingle();
+      if (interviewError || !interview || interview.interview_type !== "live") {
+        return json({ error: "This live interview is unavailable." }, 404);
+      }
+      roomName = `cvacademy_${interviewId}`;
+      mode = "academy_live";
+    } else {
+      const requestedMode = String(body.mode ?? "");
+      if (!/^[0-9a-f-]{36}$/i.test(callId) || !["audio", "video"].includes(requestedMode)) {
+        return json({ error: "Invalid call request." }, 400);
+      }
+      const { data: invite, error: inviteError } = await supabase.rpc("cv_get_call_invite", {
+        p_call_id: callId,
+      });
+      if (inviteError || !invite) return json({ error: "Call invite not found or access denied." }, 403);
+      if (![invite.caller_id, invite.callee_id].includes(authData.user.id)) {
+        return json({ error: "You are not a participant in this call." }, 403);
+      }
+      if (invite.mode !== requestedMode || !["ringing", "accepted"].includes(invite.status)) {
+        return json({ error: "This call is no longer available." }, 410);
+      }
+      if (new Date(invite.expires_at).getTime() < Date.now()) {
+        return json({ error: "This call invitation has expired." }, 410);
+      }
+      roomName = `cvcall_${callId}`;
+      mode = invite.mode;
     }
 
     const configuredLivekitUrl = Deno.env.get("LIVEKIT_URL");
@@ -64,7 +86,6 @@ Deno.serve(async (request: Request) => {
     const livekitUrl = configuredLivekitUrl.trim().replace(/^https:/i, "wss:").replace(/^http:/i, "ws:").replace(/\/+$/, "");
     if (!/^wss?:\/\//i.test(livekitUrl)) return json({ error: "LIVEKIT_URL must be the WebSocket URL from the same LiveKit project as the API key." }, 503);
 
-    const roomName = `cvcall_${callId}`;
     const livekitApiHost = livekitUrl.replace(/^wss:/i, "https:").replace(/^ws:/i, "http:");
     try {
       // Validate the key/secret pair against the selected LiveKit project before issuing a participant token.
@@ -75,7 +96,7 @@ Deno.serve(async (request: Request) => {
     }
     const token = new AccessToken(livekitApiKey, livekitApiSecret, {
       identity: authData.user.id,
-      name: "CreatorVerse member",
+      name: mode === "academy_live" ? "CreatorVerse Academy participant" : "CreatorVerse member",
       ttl: "10m",
     });
     token.addGrant({
@@ -86,7 +107,7 @@ Deno.serve(async (request: Request) => {
       canPublishData: true,
     });
 
-    return json({ url: livekitUrl, token: await token.toJwt(), room_name: roomName, mode: invite.mode });
+    return json({ url: livekitUrl, token: await token.toJwt(), room_name: roomName, mode });
   } catch (error) {
     console.error("LiveKit token request failed:", error);
     return json({ error: "Could not prepare this call. Please try again." }, 500);
