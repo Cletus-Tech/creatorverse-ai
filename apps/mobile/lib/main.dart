@@ -5589,7 +5589,7 @@ class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScree
   }
   void onRoomChanged(){if(!mounted)return;final hasRemote=room.remoteParticipants.isNotEmpty;if(hasRemote&&!connected)setState(()=>connected=true);}
   Future<void> join() async {
-    if(connecting||connected||error!=null)return;
+    if(connecting||connected)return;
     setState(()=>connecting=true);
     try{
       final mic=await Permission.microphone.request();
@@ -5605,8 +5605,8 @@ class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScree
       await room.localParticipant?.setMicrophoneEnabled(true);
       await room.localParticipant?.setCameraEnabled(true);
       await AudioManager.instance.setSpeakerOutputPreferred(true);
-      if(mounted)setState(()=>{connected=true,cameraEnabled=true,connecting=false});
-    }catch(e){if(mounted)setState(()=>{connecting=false,error=e.toString()});}
+      if(mounted)setState(() { connected=true; cameraEnabled=true; connecting=false; });
+    }catch(e){if(mounted)setState(() { connecting=false; error=e.toString(); });}
   }
   Future<void> toggleMic() async {try{await room.localParticipant?.setMicrophoneEnabled(muted);if(mounted)setState(()=>muted=!muted);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Microphone control failed: '+e.toString())));}}
   Future<void> toggleCamera() async {try{await room.localParticipant?.setCameraEnabled(!cameraEnabled);if(mounted)setState(()=>cameraEnabled=!cameraEnabled);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Camera control failed: '+e.toString())));}}
@@ -5626,7 +5626,7 @@ class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScree
             if(error!=null)Padding(padding:const EdgeInsets.all(18),child:Text(error!,textAlign:TextAlign.center,style:const TextStyle(color:Colors.redAccent)))
           ])))),
           if(local!=null)Positioned(right:16,top:16,width:112,height:160,child:ClipRRect(borderRadius:BorderRadius.circular(16),child:VideoTrackRenderer(local,fit:VideoViewFit.cover))),
-          if(!connected)Positioned(left:24,right:24,bottom:32,child:FilledButton.icon(onPressed:connecting||error!=null?null:join,style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call),label:Text(connecting?'Joining…':'Join with camera & microphone'))),
+          if(!connected)Positioned(left:24,right:24,bottom:32,child:FilledButton.icon(onPressed:connecting?null:join,style:FilledButton.styleFrom(backgroundColor:emerald),icon:const Icon(Icons.video_call),label:Text(connecting?'Joining…':'Join with camera & microphone'))),
           if(connected)Positioned(left:0,right:0,bottom:28,child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[
             _control(muted?Icons.mic_off:Icons.mic,muted?'Unmute':'Mute',toggleMic),
             const SizedBox(width:18),_control(cameraEnabled?Icons.videocam:Icons.videocam_off,'Camera',toggleCamera),
