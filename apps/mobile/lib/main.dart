@@ -5439,20 +5439,37 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     body:FutureBuilder<List<Map<String,dynamic>>>(future:items,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(s.hasError)return Center(child:Text('Billboard unavailable: '+s.error.toString()));
-      final rows=s.data??[];final now=DateTime.now().toUtc();final live=rows.where((x)=>x['is_published']==true&&(DateTime.tryParse((x['starts_at']??'').toString())==null||!DateTime.parse(x['starts_at'].toString()).isAfter(now))&&(DateTime.tryParse((x['ends_at']??'').toString())==null||DateTime.parse(x['ends_at'].toString()).isAfter(now))).length;final expired=rows.where((x){final e=DateTime.tryParse((x['ends_at']??'').toString());return e!=null&&!e.isAfter(now);}).length;final scheduled=rows.where((x){final start=DateTime.tryParse((x['starts_at']??'').toString());return x['is_published']==true&&start!=null&&start.isAfter(now);}).length;final drafts=rows.where((x)=>x['is_published']!=true).length;
-      return RefreshIndicator(onRefresh:_refresh,color:emerald,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),children:[
-        const CreatorVerseBillboard(),
-        Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          const Text('CREATORVERSE MEDIA NETWORK',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w900)),
-          const SizedBox(height:8),const Text('Billboard Studio',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
-          const SizedBox(height:5),const Text('Create ads, announcements and event creatives. Control content, media, colors, animation, scheduling and playlist order.',style:TextStyle(color:Colors.white70,fontSize:12,height:1.4)),
-          const SizedBox(height:12),Wrap(spacing:8,children:[_BillboardStat(label:'Creatives',value:rows.length.toString()),_BillboardStat(label:'Live',value:live.toString()),_BillboardStat(label:'Scheduled',value:scheduled.toString()),_BillboardStat(label:'Drafts',value:drafts.toString()),_BillboardStat(label:'Expired',value:expired.toString())]),
-        ])),
-        const SizedBox(height:18),const Text('PLAYLIST MANAGEMENT',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w900,letterSpacing:1.2)),
-        const SizedBox(height:10),
-        if(rows.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Text('No creatives yet. Create your first advertisement or announcement.',textAlign:TextAlign.center,style:TextStyle(color:muted))),
-        for(var i=0;i<rows.length;i++)_BillboardCreativeCard(item:rows[i],index:i,onEdit:()=>_edit(rows[i]),onDelete:()=>_delete(rows[i]),onToggle:()=>_toggle(rows[i]),onUp:()=>_move(i,-1,rows),onDown:()=>_move(i,1,rows)),
-      ]));
+      final rows=s.data??[];
+      return RefreshIndicator(
+        onRefresh:_refresh,
+        color:emerald,
+        child:ListView(padding:const EdgeInsets.fromLTRB(16,18,16,100),children:[
+          const Text('Publish a new dashboard post',style:TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),
+          const SizedBox(height:7),
+          const Text('Publish to the whole platform or choose who should see it. Posts automatically leave the active billboard when they expire.',style:TextStyle(color:muted,fontSize:13,height:1.45)),
+          const SizedBox(height:16),
+          FilledButton.icon(
+            onPressed:()=>_edit(),
+            icon:const Icon(Icons.campaign_outlined),
+            label:const Text('Publish dashboard update'),
+            style:FilledButton.styleFrom(backgroundColor:emerald,foregroundColor:ink,padding:const EdgeInsets.symmetric(vertical:15)),
+          ),
+          if(rows.isNotEmpty)...[
+            const SizedBox(height:24),
+            const Text('Existing dashboard posts',style:TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.w800)),
+            const SizedBox(height:9),
+            for(var i=0;i<rows.length;i++)
+              _BillboardCreativeCard(
+                item:rows[i],index:i,
+                onEdit:()=>_edit(rows[i]),
+                onDelete:()=>_delete(rows[i]),
+                onToggle:()=>_toggle(rows[i]),
+                onUp:()=>_move(i,-1,rows),
+                onDown:()=>_move(i,1,rows),
+              ),
+          ],
+        ]),
+      );
     }),
   );
 }
