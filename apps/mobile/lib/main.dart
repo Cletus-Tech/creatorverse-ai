@@ -900,15 +900,16 @@ class _BillboardAnimatedTitleState extends State<BillboardAnimatedTitle> {
   @override Widget build(BuildContext context){
     final text=widget.animation=='typewriter'?String.fromCharCodes(widget.text.runes.take(_visible)):widget.text;
     final style=TextStyle(color:widget.color,fontSize:20,height:1.08,fontWeight:FontWeight.w900,shadows:const [Shadow(color:Colors.black87,blurRadius:10)]);
-    final child=Text(text,maxLines:2,overflow:TextOverflow.ellipsis,style:style,key:ValueKey(widget.text));
-    if(widget.animation=='typewriter')return child;
-    return AnimatedSwitcher(
+    final child=Text(text,maxLines:2,overflow:TextOverflow.ellipsis,style:style);
+    return TweenAnimationBuilder<double>(
+      tween:Tween<double>(begin:0,end:1),
       duration:const Duration(milliseconds:520),
-      transitionBuilder:(child,animation){
-        if(widget.animation=='fade'||widget.transition=='fade')return FadeTransition(opacity:animation,child:child);
-        if(widget.animation=='rise')return SlideTransition(position:Tween<Offset>(begin:const Offset(0,.22),end:Offset.zero).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
-        if(widget.transition=='zoom')return ScaleTransition(scale:Tween<double>(begin:.94,end:1).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
-        return SlideTransition(position:Tween<Offset>(begin:const Offset(.12,0),end:Offset.zero).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
+      curve:Curves.easeOutCubic,
+      builder:(context,value,child){
+        final dx=widget.transition=='slide'?.12*(1-value):0.0;
+        final dy=widget.animation=='rise'?.2*(1-value):0.0;
+        final scale=widget.transition=='zoom'?.94+.06*value:1.0;
+        return Opacity(opacity:value,child:Transform.translate(offset:Offset(dx*42,dy*42),child:Transform.scale(scale:scale,child:child)));
       },
       child:child,
     );
@@ -1032,7 +1033,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
       Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
         Row(children:[Container(width:7,height:7,decoration:BoxDecoration(color:accent,shape:BoxShape.circle)),const SizedBox(width:7),Text((s['kicker_text']??'CREATORVERSE • LIVE UPDATES').toString(),style:TextStyle(color:color(s['accent_color'],emerald),fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),const Spacer(),if(active.length>1)Text('\${index+1}/\${active.length}',style:const TextStyle(color:Colors.white70,fontSize:10))]),
         const Spacer(),
-        BillboardAnimatedTitle(text:(s['title']??'').toString(),animation:(s['title_animation']??'typewriter').toString(),color:color(s['text_color'],Colors.white),transition:(s['transition_effect']??'slide').toString()),
+        BillboardAnimatedTitle(key:ValueKey(s['id']),text:(s['title']??'').toString(),animation:(s['title_animation']??'typewriter').toString(),color:color(s['text_color'],Colors.white),transition:(s['transition_effect']??'slide').toString()),
         if((s['message']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:5),child:Text(s['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:color(s['text_color'],Colors.white).withValues(alpha:.88),fontSize:12,shadows:const [Shadow(color:Colors.black87,blurRadius:8)]))),
         if(type=='countdown')Padding(padding:const EdgeInsets.only(top:8),child:countdown(s)),
         if((s['button_label']??'').toString().isNotEmpty && (s['button_url']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Align(alignment:Alignment.centerLeft,child:FilledButton(onPressed:()=>action(s['button_url'].toString()),style:FilledButton.styleFrom(backgroundColor:color(s['button_color'],emerald),foregroundColor:Colors.white,minimumSize:const Size(0,34),padding:const EdgeInsets.symmetric(horizontal:15,vertical:8)),child:Text(s['button_label'].toString(),style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))))),
