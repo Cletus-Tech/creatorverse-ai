@@ -916,6 +916,33 @@ class _BillboardAnimatedTitleState extends State<BillboardAnimatedTitle> {
   }
 }
 
+const Map<String,List<String>> billboardThemePresets = {
+  'gold': ['#55330D','#C18B2C','#F5D27A','#FFF8E8','#6A4214'],
+  'ocean_blue': ['#082B4C','#087EBD','#70D6FF','#F1FAFF','#075985'],
+  'forest_green': ['#102D20','#246B45','#9AD7A5','#F1FFF4','#1F6B3A'],
+  'violet': ['#27134D','#6941A5','#C7A5FF','#FBF7FF','#56308F'],
+  'teal': ['#073B3A','#087F80','#65E0D2','#EFFFFC','#086B70'],
+  'sunset': ['#51221E','#C75B36','#FFC078','#FFF6ED','#A63F2B'],
+  'emerald': ['#063D30','#087F5B','#55E6A5','#F0FFF8','#087F5B'],
+  'midnight': ['#090E25','#202B55','#91A7FF','#F4F5FF','#354A9A'],
+  'neon_night': ['#100B27','#351A59','#E879F9','#FFF5FF','#6D28D9'],
+  'aurora': ['#092C36','#176B73','#A7F3D0','#F0FFFC','#0F766E'],
+  'royal_purple': ['#251044','#4C1D95','#D8B4FE','#FCF7FF','#6B21A8'],
+  'coral': ['#54251F','#C94F55','#FFAAA5','#FFF6F4','#B93845'],
+  'rose_glow': ['#4B172D','#A83262','#FFB4D0','#FFF5FA','#9D174D'],
+  'gold_luxe': ['#30200B','#8B6420','#F2D58B','#FFFAED','#765016'],
+};
+String billboardThemeLabel(String key) {
+  const labels = {
+    'gold':'Gold','ocean_blue':'Ocean Blue','forest_green':'Forest Green',
+    'violet':'Violet','teal':'Teal','sunset':'Sunset','emerald':'Emerald',
+    'midnight':'Midnight','neon_night':'Neon Night','aurora':'Aurora',
+    'royal_purple':'Royal Purple','coral':'Coral','rose_glow':'Rose Glow',
+    'gold_luxe':'Gold Luxe',
+  };
+  return labels[key] ?? 'Custom';
+}
+
 class CreatorVerseBillboard extends StatefulWidget {
   const CreatorVerseBillboard({super.key});
   @override State<CreatorVerseBillboard> createState() => _CreatorVerseBillboardState();
@@ -964,7 +991,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   void schedule() {
     rotation?.cancel();
     if(rotationPaused || active.length<2)return;
-    final secs=((current?['duration_seconds'] as num?)?.toInt()??10).clamp(3,120);
+    final secs=((current?['duration_seconds'] as num?)?.toInt()??8).clamp(3,120);
     rotation=Timer(Duration(seconds:secs.toInt()),next);
   }
   void next() {
@@ -996,7 +1023,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final p=VideoPlayerController.networkUrl(Uri.parse(s!['media_url'].toString()));
     player=p;
     try {
-      await p.initialize();await p.setVolume(0);await p.setLooping(false);await p.play();
+      await p.initialize();await p.setVolume(0);await p.setLooping(true);await p.play();
       p.addListener(() {if(p.value.isInitialized && p.value.duration>Duration.zero && p.value.position>=p.value.duration && mounted && playerId==id && !rotationPaused)next();});
       if(mounted)setState((){});
     } catch (_) {if(mounted)setState((){});}
@@ -5210,7 +5237,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     final cta=TextEditingController(text:(old?['button_label']??'').toString());
     final url=TextEditingController(text:(old?['button_url']??'').toString());
     final order=TextEditingController(text:(old?['display_order']??0).toString());
-    final duration=TextEditingController(text:(old?['duration_seconds']??10).toString());
+    final duration=TextEditingController(text:(old?['duration_seconds']??8).toString());
     final done=TextEditingController(text:(old?['countdown_complete_label']??'EVENT STARTED').toString());
     final bg=TextEditingController(text:(old?['background_color']??'#071426').toString());
     final bg2=TextEditingController(text:(old?['background_end_color']??'#102329').toString());
@@ -5221,7 +5248,8 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     XFile? file;var kind=(old?['media_type']??'text').toString();
     var anim=(old?['title_animation']??'typewriter').toString();
     var transition=(old?['transition_effect']??'slide').toString();
-    var fit=(old?['media_fit']??'contain').toString();
+    var fit=(old?['media_fit']??'cover').toString();
+    var theme=(old?['theme_key']??'gold').toString();
     var publish=old?['is_published']==true;
     DateTime? start=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
     DateTime? end=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
@@ -5274,10 +5302,13 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
         DropdownButtonFormField<String>(value:transition,decoration:const InputDecoration(labelText:'Slide transition'),items:const [
           DropdownMenuItem(value:'slide',child:Text('Horizontal slide')),DropdownMenuItem(value:'fade',child:Text('Fade')),DropdownMenuItem(value:'zoom',child:Text('Zoom'))
         ],onChanged:(v)=>setD(()=>transition=v??'slide')),
+        DropdownButtonFormField<String>(value:billboardThemePresets.containsKey(theme)?theme:'gold',decoration:const InputDecoration(labelText:'14 visual themes'),items:[
+          for(final entry in billboardThemePresets.entries) DropdownMenuItem(value:entry.key,child:Row(children:[Container(width:17,height:17,decoration:BoxDecoration(color:_color(entry.value[2]),shape:BoxShape.circle)),const SizedBox(width:9),Text(billboardThemeLabel(entry.key))])),
+        ],onChanged:(v){if(v==null)return;setD(()=>{theme=v;final colors=billboardThemePresets[v]!;bg.text=colors[0];bg2.text=colors[1];accent.text=colors[2];fg.text=colors[3];btn.text=colors[4];});}),
         DropdownButtonFormField<String>(value:fit,decoration:const InputDecoration(labelText:'Media fit'),items:const [
           DropdownMenuItem(value:'cover',child:Text('Cover / fill frame')),DropdownMenuItem(value:'contain',child:Text('Contain / show full media'))
         ],onChanged:(v)=>setD(()=>fit=v??'cover')),
-        const SizedBox(height:10),const Text('COLORS — HEX VALUES',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
+        const SizedBox(height:10),const Text('COLORS — HEX VALUES (CUSTOM OVERRIDES)',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
         for(final e in <MapEntry<String,TextEditingController>>[MapEntry('Background start',bg),MapEntry('Background end',bg2),MapEntry('Accent',accent),MapEntry('Text',fg),MapEntry('Button',btn)])
           Padding(padding:const EdgeInsets.only(top:6),child:Row(children:[Expanded(child:Text(e.key,style:const TextStyle(color:muted,fontSize:12))),SizedBox(width:112,child:TextField(controller:e.value,decoration:const InputDecoration(hintText:'#12A984',isDense:true),onChanged:(_)=>setD((){}))),Container(width:23,height:23,decoration:BoxDecoration(color:_color(e.value.text),borderRadius:BorderRadius.circular(6)))])),
         TextField(controller:opacity,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Media overlay darkness (0–0.95)')),
@@ -5318,7 +5349,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               'duration_seconds':(int.tryParse(duration.text)??10).clamp(3,120),'display_order':(int.tryParse(order.text)??0).clamp(0,100000),
               'countdown_target_at':kind=='countdown'?target?.toUtc().toIso8601String():null,'countdown_timezone':'Africa/Lagos','countdown_complete_label':done.text.trim().isEmpty?'EVENT STARTED':done.text.trim(),
               'background_color':hex(bg.text),'background_end_color':hex(bg2.text),'accent_color':hex(accent.text),'text_color':hex(fg.text),'button_color':hex(btn.text),
-              'title_animation':anim,'transition_effect':transition,'media_fit':fit,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
+              'title_animation':anim,'transition_effect':transition,'media_fit':fit,'theme_key':theme,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
             };
             if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
             if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;messenger.showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
@@ -5329,9 +5360,19 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     for(final c in [title,message,kicker,cta,url,order,duration,done,bg,bg2,accent,fg,btn,opacity]){c.dispose();}
   }
   Future<void> _toggle(Map<String,dynamic> x) async {try{await db.from('billboard_items').update({'is_published':x['is_published']!=true,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',x['id']);await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Update failed: '+e.toString())));}}
+  String? _billboardStoragePath(dynamic raw) {
+    final value=(raw??'').toString();
+    final uri=Uri.tryParse(value);
+    if(uri==null)return null;
+    const marker='/storage/v1/object/public/billboard-media/';
+    final path=uri.path;
+    final at=path.indexOf(marker);
+    if(at<0)return null;
+    return Uri.decodeComponent(path.substring(at+marker.length));
+  }
   Future<void> _delete(Map<String,dynamic> x) async {
     final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(backgroundColor:panel,title:const Text('Delete billboard creative?'),content:Text((x['title']??'').toString()),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))]));
-    if(yes!=true)return;try{await db.from('billboard_items').delete().eq('id',x['id']);await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Delete failed: '+e.toString())));}
+    if(yes!=true)return;try{await db.from('billboard_items').delete().eq('id',x['id']);final path=_billboardStoragePath(x['media_url']);if(path!=null){try{await db.storage.from('billboard-media').remove([path]);}catch(_){}}await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Delete failed: '+e.toString())));}
   }
   Future<void> _move(int i,int delta,List<Map<String,dynamic>> rows) async {
     final j=i+delta;if(j<0||j>=rows.length)return;
@@ -5370,10 +5411,19 @@ class _BillboardStat extends StatelessWidget {
 class _BillboardCreativeCard extends StatelessWidget {
   final Map<String,dynamic> item;final int index;final VoidCallback onEdit,onDelete,onToggle,onUp,onDown;
   const _BillboardCreativeCard({required this.item,required this.index,required this.onEdit,required this.onDelete,required this.onToggle,required this.onUp,required this.onDown});
+  String _status(Map<String,dynamic> item){
+    final now=DateTime.now().toUtc();
+    final start=DateTime.tryParse((item['starts_at']??'').toString());
+    final end=DateTime.tryParse((item['ends_at']??'').toString());
+    if(end!=null&&!end.isAfter(now))return 'EXPIRED';
+    if(item['is_published']!=true)return 'DRAFT';
+    if(start!=null&&start.isAfter(now))return 'SCHEDULED';
+    return 'LIVE';
+  }
   @override Widget build(BuildContext context){
     final type=(item['media_type']??'text').toString(),media=(item['media_url']??'').toString(),live=item['is_published']==true;
     return Card(color:panel,margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Row(children:[Icon(type=='video'?Icons.videocam_outlined:type=='image'?Icons.image_outlined:type=='countdown'?Icons.timer_outlined:Icons.campaign_outlined,color:emerald),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((item['title']??'Untitled').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800)),Text(type.toUpperCase()+' • ORDER '+(item['display_order']??index).toString(),style:const TextStyle(color:muted,fontSize:10))])),Text(live?'LIVE':'DRAFT',style:TextStyle(color:live?emerald:muted,fontWeight:FontWeight.w900,fontSize:10))]),
+      Row(children:[Icon(type=='video'?Icons.videocam_outlined:type=='image'?Icons.image_outlined:type=='countdown'?Icons.timer_outlined:Icons.campaign_outlined,color:emerald),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((item['title']??'Untitled').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800)),Text(type.toUpperCase()+' • ORDER '+(item['display_order']??index).toString(),style:const TextStyle(color:muted,fontSize:10))])),Text(_status(item),style:TextStyle(color:_status(item)=='LIVE'?emerald:_status(item)=='EXPIRED'?Colors.orangeAccent:muted,fontWeight:FontWeight.w900,fontSize:10))]),
       if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
       if((item['message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:7),child:Text(item['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11))),
       const SizedBox(height:8),Wrap(spacing:5,runSpacing:4,children:[
