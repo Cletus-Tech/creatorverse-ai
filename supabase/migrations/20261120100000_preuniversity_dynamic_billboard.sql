@@ -74,3 +74,16 @@ create policy "Admins update billboard media" on storage.objects
 drop policy if exists "Admins delete billboard media" on storage.objects;
 create policy "Admins delete billboard media" on storage.objects
   for delete to authenticated using (bucket_id='billboard-media' and public.is_admin());
+
+-- Keep embedded and standalone displays in sync when administrators publish changes.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime'
+      and schemaname='public'
+      and tablename='billboard_items'
+  ) then
+    alter publication supabase_realtime add table public.billboard_items;
+  end if;
+end $$;
