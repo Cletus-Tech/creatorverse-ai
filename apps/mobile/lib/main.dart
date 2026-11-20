@@ -5446,6 +5446,7 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
   Duration duration=Duration.zero;
   bool loading=true, recording=false, uploading=false, consent=false, submitted=false;
   DateTime? started;
+  Timer? recordingTicker;
   bool get isVideo=>interview?['interview_type']=='recorded_video';
   int get maxSeconds=>(interview?['max_duration_seconds'] as num?)?.toInt()??600;
   @override void initState(){super.initState();load();}
@@ -5456,24 +5457,25 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
       final i=Map<String,dynamic>.from(r['interview'] as Map);
       final v=Map<String,dynamic>.from(r['invitation'] as Map);
       if(!['recorded_audio','recorded_video'].contains(i['interview_type']))throw Exception('This interview does not accept a recorded response.');
-      if(mounted)setState(()=>{interview=i,invitation=v,submitted=['submitted','completed'].contains(i['status']),loading=false});
-    }catch(e){if(mounted)setState(()=>{error=e.toString(),loading=false});}
+      if(mounted)setState(() { interview=i; invitation=v; submitted=['submitted','completed'].contains(i['status']); loading=false; });
+    }catch(e){if(mounted)setState(() { error=e.toString(); loading=false; });}
   }
   Future<void> startAudio() async {
     try{
       if(!await recorder.hasPermission())throw Exception('Microphone permission was not granted.');
       final p=Directory.systemTemp.path+'/creatorverse-interview-'+DateTime.now().millisecondsSinceEpoch.toString()+'.m4a';
       await recorder.start(const RecordConfig(encoder:AudioEncoder.aacLc,bitRate:128000,sampleRate:44100),path:p);
-      if(mounted)setState(()=>{audioPath=null,videoPath=null,started=DateTime.now(),recording=true,duration=Duration.zero});
+      if(mounted){setState(() { audioPath=null; videoPath=null; started=DateTime.now(); recording=true; duration=Duration.zero; }); recordingTicker?.cancel(); recordingTicker=Timer.periodic(const Duration(seconds:1),(t){if(!mounted||!recording){t.cancel();return;}final elapsed=DateTime.now().difference(started??DateTime.now());setState(()=>duration=elapsed);if(elapsed.inSeconds>=maxSeconds)unawaited(stopAudio());});}
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not start recording: '+e.toString())));}
   }
   Future<void> stopAudio() async {
     if(!recording)return;
+    recordingTicker?.cancel();
     try{
       final p=await recorder.stop();
       final d=DateTime.now().difference(started??DateTime.now());
       if(p==null||d.inSeconds<1||d.inSeconds>maxSeconds)throw Exception('Recording must be between 1 and '+maxSeconds.toString()+' seconds.');
-      if(mounted)setState(()=>{audioPath=p,recording=false,duration=d});
+      if(mounted)setState(() { audioPath=p; recording=false; duration=d; });
     }catch(e){if(mounted){setState(()=>recording=false);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}}
   }
   Future<void> captureVideo() async {
@@ -5486,7 +5488,7 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
       final d=c.value.duration;
       if(d.inSeconds<1||d.inSeconds>maxSeconds){await c.dispose();throw Exception('Video must be between 1 and '+maxSeconds.toString()+' seconds.');}
       await video?.dispose();
-      if(mounted)setState(()=>{videoPath=f.path,audioPath=null,video=c,duration=d});
+      if(mounted)setState(() { videoPath=f.path; audioPath=null; video=c; duration=d; });
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not capture video: '+e.toString())));}
   }
   bool inWindow(){
@@ -5516,7 +5518,7 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Submission failed: '+e.toString())));
     }finally{if(mounted)setState(()=>uploading=false);}
   }
-  @override void dispose(){unawaited(recorder.dispose());unawaited(player.dispose());unawaited(video?.dispose());super.dispose();}
+  @override void dispose(){recordingTicker?.cancel();unawaited(recorder.dispose());unawaited(player.dispose());unawaited(video?.dispose());super.dispose();}
   @override Widget build(BuildContext context){
     if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:emerald)));
     if(error!=null)return Scaffold(appBar:AppBar(title:const Text('Academy interview')),body:Center(child:Padding(padding:const EdgeInsets.all(24),child:Text(error!,textAlign:TextAlign.center))));
@@ -5549,7 +5551,7 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
           if(videoPath!=null)Wrap(alignment:WrapAlignment.center,children:[
             Text('Video ready · '+duration.inSeconds.toString()+'s'),
             IconButton(onPressed:()async{await video?.seekTo(Duration.zero);await video?.play();setState((){});},icon:const Icon(Icons.play_circle_outline)),
-            IconButton(onPressed:()async{await video?.dispose();setState(()=>{video=null,videoPath=null});},icon:const Icon(Icons.delete_outline))
+            IconButton(onPressed:()async{await video?.dispose();setState(() { video=null; videoPath=null; });},icon:const Icon(Icons.delete_outline))
           ])
         ],
         CheckboxListTile(value:consent,activeColor:emerald,contentPadding:EdgeInsets.zero,onChanged:uploading?null:(v)=>setState(()=>consent=v==true),
