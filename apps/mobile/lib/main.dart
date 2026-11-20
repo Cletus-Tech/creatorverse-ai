@@ -879,6 +879,124 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
 }
+class CreatorVerseBillboard extends StatefulWidget {
+  const CreatorVerseBillboard({super.key});
+  @override State<CreatorVerseBillboard> createState() => _CreatorVerseBillboardState();
+}
+class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
+  final db = Supabase.instance.client;
+  List<Map<String,dynamic>> slides = [];
+  int index = 0;
+  RealtimeChannel? channel;
+  Timer? rotation, refresh, clock;
+  VideoPlayerController? player;
+  String? playerId;
+  @override void initState() {
+    super.initState();
+    load();
+    channel = db.channel('creatorverse-mobile-billboard')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'billboard_items',callback:(_) => load()).subscribe();
+    refresh = Timer.periodic(const Duration(seconds:45),(_) => load());
+    clock = Timer.periodic(const Duration(seconds:1),(_) {
+      if(mounted && current?['media_type']=='countdown') setState(() {});
+    });
+  }
+  List<Map<String,dynamic>> get active => slides.where((s) {
+    final now=DateTime.now().toUtc();
+    final start=DateTime.tryParse((s['starts_at']??'').toString());
+    final end=DateTime.tryParse((s['ends_at']??'').toString());
+    return s['is_published']==true && (start==null || !start.isAfter(now)) && (end==null || end.isAfter(now));
+  }).toList();
+  Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1)];
+  Future<void> load() async {
+    try {
+      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,background_color,accent_color,button_color').eq('is_published',true).order('display_order');
+      final old=current?['id']?.toString();
+      if(!mounted)return;
+      setState(() {
+        slides=List<Map<String,dynamic>>.from(rows);
+        final a=active;
+        final keep=a.indexWhere((x)=>x['id']?.toString()==old);
+        index=a.isEmpty?0:(keep>=0?keep:index%a.length);
+      });
+      schedule();
+      syncPlayer();
+    } catch (_) {}
+  }
+  void schedule() {
+    rotation?.cancel();
+    if(active.length<2)return;
+    final secs=((current?['duration_seconds'] as num?)?.toInt()??10).clamp(3,120);
+    rotation=Timer(Duration(seconds:secs),next);
+  }
+  void next() {
+    if(!mounted || active.isEmpty)return;
+    setState(()=>index=(index+1)%active.length);
+    schedule();
+    syncPlayer();
+  }
+  Future<void> syncPlayer() async {
+    final s=current;
+    final id=s?['id']?.toString();
+    if(s?['media_type']!='video' || (s?['media_url']??'').toString().isEmpty) {
+      final old=player;player=null;playerId=null;await old?.dispose();if(mounted)setState((){});return;
+    }
+    if(playerId==id)return;
+    final old=player;player=null;await old?.dispose();playerId=id;
+    final p=VideoPlayerController.networkUrl(Uri.parse(s!['media_url'].toString()));
+    player=p;
+    try {
+      await p.initialize();await p.setVolume(0);await p.setLooping(false);await p.play();
+      p.addListener(() {if(p.value.isInitialized && p.value.duration>Duration.zero && p.value.position>=p.value.duration && mounted && playerId==id)next();});
+      if(mounted)setState((){});
+    } catch (_) {if(mounted)setState((){});}
+  }
+  @override void dispose() {
+    rotation?.cancel();refresh?.cancel();clock?.cancel();
+    final c=channel;if(c!=null)unawaited(c.unsubscribe());
+    player?.dispose();super.dispose();
+  }
+  Color color(dynamic value,Color fallback) {
+    final raw=(value??'').toString().replaceAll('#','');
+    final n=raw.length==6?int.tryParse(raw,radix:16):null;
+    return n==null?fallback:Color(0xFF000000|n);
+  }
+  void action(String path) {
+    final p=path.trim();if(p.isEmpty)return;
+    if(p.startsWith('/') || p.endsWith('.html') || !p.startsWith('http')) openFeature(context,p.startsWith('/')?p:'/$p');
+    else launchUrl(Uri.parse(p),mode:LaunchMode.externalApplication);
+  }
+  Widget countdown(Map<String,dynamic> s) {
+    final target=DateTime.tryParse((s['countdown_target_at']??'').toString());
+    final d=target==null?Duration.zero:target.toUtc().difference(DateTime.now().toUtc());
+    if(d<=Duration.zero)return Text((s['countdown_complete_label']??'EVENT STARTED').toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900));
+    final values=[d.inDays.toString(),(d.inHours%24).toString().padLeft(2,'0'),(d.inMinutes%60).toString().padLeft(2,'0'),(d.inSeconds%60).toString().padLeft(2,'0')];
+    return Wrap(spacing:7,children:[for(final v in values)Container(padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:Colors.black45,borderRadius:BorderRadius.circular(9)),child:Text(v,style:const TextStyle(color:Colors.white,fontSize:19,fontWeight:FontWeight.w900)))]);
+  }
+  @override Widget build(BuildContext context) {
+    final s=current;if(s==null)return const SizedBox.shrink();
+    final type=(s['media_type']??'text').toString(),url=(s['media_url']??'').toString();
+    final hasMedia=url.isNotEmpty && (type=='image'||type=='video');
+    final bg=color(s['background_color'],const Color(0xFF102C2B));
+    final accent=color(s['accent_color'],emerald);
+    final p=player;
+    return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Stack(fit:StackFit.expand,children:[
+      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,Color.lerp(bg,ink,.6)!],begin:Alignment.topLeft,end:Alignment.bottomRight))),
+      if(type=='image' && hasMedia) Image.network(url,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
+      if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:BoxFit.contain,child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
+      DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:hasMedia?.84:.3),Colors.transparent]))),
+      Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
+        Row(children:[Container(width:7,height:7,decoration:BoxDecoration(color:accent,shape:BoxShape.circle)),const SizedBox(width:7),const Text('CREATORVERSE  •  LIVE UPDATES',style:TextStyle(color:Colors.white,fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),const Spacer(),if(active.length>1)Text('\${index+1}/\${active.length}',style:const TextStyle(color:Colors.white70,fontSize:10))]),
+        const Spacer(),
+        Text((s['title']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:20,height:1.08,fontWeight:FontWeight.w900,shadows:[Shadow(color:Colors.black87,blurRadius:10)])),
+        if((s['message']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:5),child:Text(s['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:12,shadows:[Shadow(color:Colors.black87,blurRadius:8)]))),
+        if(type=='countdown')Padding(padding:const EdgeInsets.only(top:8),child:countdown(s)),
+        if((s['button_label']??'').toString().isNotEmpty && (s['button_url']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Align(alignment:Alignment.centerLeft,child:FilledButton(onPressed:()=>action(s['button_url'].toString()),style:FilledButton.styleFrom(backgroundColor:color(s['button_color'],emerald),foregroundColor:Colors.white,minimumSize:const Size(0,34),padding:const EdgeInsets.symmetric(horizontal:15,vertical:8)),child:Text(s['button_label'].toString(),style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))))),
+      ])),
+    ]))));
+  }
+}
+
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
   @override State<HomeTab> createState()=>_HomeTabState();
@@ -925,16 +1043,8 @@ class _HomeTabState extends State<HomeTab>{
     final data=snapshot.data??{};
     final name=(data['name']??Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'').toString();
     return ListView(padding:const EdgeInsets.all(20),children:[
-      Container(padding:const EdgeInsets.all(22),decoration:BoxDecoration(
-        borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[Color(0xFF123D35),panel]),
-        border:Border.all(color:emerald.withValues(alpha:.3))),
-        child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          const Text('YOUR NEXT CHAPTER STARTS HERE',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w800)),
-          const SizedBox(height:12),Text('Hello${name.isEmpty?'':', $name'}.',style:const TextStyle(fontSize:25,fontWeight:FontWeight.w800)),
-          const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,height:1.5)),
-          const SizedBox(height:16),FilledButton(onPressed:()=>openFeature(context,'/divisions.html'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Explore CreatorVerse')),
-        ])),
-      const SizedBox(height:16),
+      const CreatorVerseBillboard(),
+      const SizedBox(height:4),
       if(snapshot.connectionState==ConnectionState.waiting)const LinearProgressIndicator(color:emerald),
       if(snapshot.hasError)const Text('Your learning summary will appear when the connection is restored.',style:TextStyle(color:muted,fontSize:12)),
       if(snapshot.hasData)Row(children:[
@@ -5095,6 +5205,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           ]))));
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(
         padding: const EdgeInsets.all(18), children: [
+          const CreatorVerseBillboard(),
           Row(children: [
             const Expanded(child: Text('Operations overview', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
             Chip(label: Text((data['role'] ?? 'admin').toString().toUpperCase())),
