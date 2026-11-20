@@ -5207,7 +5207,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     DateTime? start=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
     DateTime? end=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
     DateTime? target=DateTime.tryParse((old?['countdown_target_at']??'').toString())?.toLocal();
-    var saving=false;final page=context;
+    var saving=false;final page=context;final messenger=ScaffoldMessenger.of(context);
     await showDialog<void>(context:page,builder:(dc)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
       backgroundColor:panel,title:Text(old==null?'Create billboard creative':'Edit billboard creative'),
       content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -5287,8 +5287,8 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               'title_animation':anim,'transition_effect':transition,'media_fit':fit,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
             };
             if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
-            if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
-          }catch(e){if(dc.mounted)setD(()=>saving=false);if(page.mounted)ScaffoldMessenger.of(page).showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
+            if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;messenger.showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
+          }catch(e){if(dc.mounted)setD(()=>saving=false);if(page.mounted)messenger.showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
         },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Save creative')),
       ],
     )));
