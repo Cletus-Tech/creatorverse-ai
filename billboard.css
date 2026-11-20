@@ -4,7 +4,7 @@
 
 /* Dynamic creative controls shared with the native Billboard Studio */
 .bb-display{color:var(--bb-text,#f2f7ff);background:radial-gradient(ellipse at 88% 10%,color-mix(in srgb,var(--bb-button,#247be9) 36%,transparent),transparent 42%),linear-gradient(120deg,var(--bb-background,#071426),var(--bb-end,#15214a))}
-.bb-display-inner:before{background:linear-gradient(90deg,color-mix(in srgb,var(--bb-background,#071426) calc(var(--bb-overlay,.58)*100%),transparent) 0%,color-mix(in srgb,var(--bb-background,#071426) calc(var(--bb-overlay,.58)*78%),transparent) 58%,transparent 100%)}
+.bb-display-inner:before{background:linear-gradient(90deg,#061326 0%,#07172a 58%,transparent 100%);opacity:var(--bb-overlay,.58)}
 .bb-copy h2,.bb-copy p{color:var(--bb-text,#f2f7ff)}
 .bb-title-fade{animation:bb-title-fade .65s ease both}
 .bb-title-rise{animation:bb-title-rise .55s cubic-bezier(.2,.75,.25,1) both}
