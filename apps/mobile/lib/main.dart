@@ -997,7 +997,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     player=p;
     try {
       await p.initialize();await p.setVolume(0);await p.setLooping(false);await p.play();
-      p.addListener(() {if(p.value.isInitialized && p.value.duration>Duration.zero && p.value.position>=p.value.duration && mounted && playerId==id)next();});
+      p.addListener(() {if(p.value.isInitialized && p.value.duration>Duration.zero && p.value.position>=p.value.duration && mounted && playerId==id && !rotationPaused)next();});
       if(mounted)setState((){});
     } catch (_) {if(mounted)setState((){});}
   }
@@ -5221,7 +5221,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     XFile? file;var kind=(old?['media_type']??'text').toString();
     var anim=(old?['title_animation']??'typewriter').toString();
     var transition=(old?['transition_effect']??'slide').toString();
-    var fit=(old?['media_fit']??'cover').toString();
+    var fit=(old?['media_fit']??'contain').toString();
     var publish=old?['is_published']==true;
     DateTime? start=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
     DateTime? end=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
