@@ -17,3 +17,5 @@
 @keyframes bb-slide{from{opacity:.25;transform:translateX(26px)}to{opacity:1;transform:none}}
 @keyframes bb-zoom{from{opacity:.2;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.bb-title-fade,.bb-title-rise,.bb-display[data-transition].bb-enter{animation:none}}
+
+.bb-title-typewriter:after{content:'';display:inline-block;height:.9em;margin-left:4px;border-right:2px solid var(--bb-accent,#73dfc0);vertical-align:-.06em;animation:bb-caret .8s steps(2,start) infinite}@keyframes bb-caret{to{visibility:hidden}}@media(prefers-reduced-motion:reduce){.bb-title-typewriter:after{animation:none}}
