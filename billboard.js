@@ -19,7 +19,7 @@ function draw(){
 function next(){var a=active();if(!a.length){draw();return}index=(index+1)%a.length;draw()}
 function refresh(){
  if(!sb||loading)return;loading=true;var current=active()[index],currentId=current&&current.id;
- sb.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds').eq('is_published',true).order('display_order',{ascending:true}).then(function(r){
+ sb.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_timezone,countdown_complete_label').eq('is_published',true).order('display_order',{ascending:true}).then(function(r){
   if(r.error){console.warn('Billboard unavailable:',r.error.message);if(!items.length)host.hidden=true;return}
   items=r.data||[];var a=active(),keep=a.findIndex(function(x){return x.id===currentId});index=keep>=0?keep:Math.min(index,Math.max(0,a.length-1));draw();
  }).catch(function(e){console.warn('Billboard refresh failed:',e)}).finally(function(){loading=false})
