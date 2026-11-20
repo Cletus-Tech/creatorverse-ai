@@ -982,7 +982,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final p=player;
     return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Stack(fit:StackFit.expand,children:[
       DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,Color.lerp(bg,ink,.6)!],begin:Alignment.topLeft,end:Alignment.bottomRight))),
-      if(type=='image' && hasMedia) Image.network(url,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
+      if(type=='image' && hasMedia) Image.network(url,fit:BoxFit.contain,alignment:Alignment.center,filterQuality:FilterQuality.high,gaplessPlayback:true,loadingBuilder:(context,child,progress)=>progress==null?child:const Center(child:CircularProgressIndicator(color:Colors.white70)),errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
       if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:BoxFit.contain,child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
       DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:hasMedia ? .84 : .3),Colors.transparent]))),
       Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
