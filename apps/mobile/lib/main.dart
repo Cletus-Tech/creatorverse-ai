@@ -5612,8 +5612,8 @@ class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScree
   }
   Future<void> toggleMic() async {try{await room.localParticipant?.setMicrophoneEnabled(micMuted);if(mounted)setState(()=>micMuted=!micMuted);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Microphone control failed: '+e.toString())));}}
   Future<void> toggleCamera() async {try{await room.localParticipant?.setCameraEnabled(!cameraEnabled);if(mounted)setState(()=>cameraEnabled=!cameraEnabled);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Camera control failed: '+e.toString())));}}
-  VideoTrack? remoteVideo(){for(final p in room.remoteParticipants.values){for(final pub in p.videoTrackPublications){final t=pub.track;if(pub.subscribed&&!pub.micMuted&&t is VideoTrack)return t;}}return null;}
-  VideoTrack? localVideo(){for(final pub in room.localParticipant?.videoTrackPublications??[]){final t=pub.track;if(!pub.micMuted&&t is VideoTrack)return t;}return null;}
+  VideoTrack? remoteVideo(){for(final p in room.remoteParticipants.values){for(final pub in p.videoTrackPublications){final t=pub.track;if(pub.subscribed&&!pub.muted&&t is VideoTrack)return t;}}return null;}
+  VideoTrack? localVideo(){for(final pub in room.localParticipant?.videoTrackPublications??[]){final t=pub.track;if(!pub.muted&&t is VideoTrack)return t;}return null;}
   Future<void> leave() async {if(ending)return;ending=true;try{await room.disconnect().timeout(const Duration(seconds:4));}catch(_){}if(mounted){setState(()=>connected=false);Navigator.of(context).maybePop();}}
   @override void dispose(){room.removeListener(onRoomChanged);unawaited(room.disconnect());unawaited(room.dispose());super.dispose();}
   @override Widget build(BuildContext context){
@@ -5624,7 +5624,7 @@ class _NativeAcademyLiveRoomScreenState extends State<NativeAcademyLiveRoomScree
           Positioned.fill(child:remote!=null?VideoTrackRenderer(remote,fit:VideoViewFit.cover):Container(color:const Color(0xFF102329),child:Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
             const Icon(Icons.video_call_outlined,color:emerald,size:68),const SizedBox(height:12),
             Text(topic??'Academy interview',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
-            const SizedBox(height:8),Text(error??(connecting?'Connecting securely…':connected?'Waiting for the other participant…':'Join when you are ready.'),textAlign:TextAlign.center,style:const TextStyle(color:micMuted)),
+            const SizedBox(height:8),Text(error??(connecting?'Connecting securely…':connected?'Waiting for the other participant…':'Join when you are ready.'),textAlign:TextAlign.center,style:const TextStyle(color:muted)),
             if(error!=null)Padding(padding:const EdgeInsets.all(18),child:Text(error!,textAlign:TextAlign.center,style:const TextStyle(color:Colors.redAccent)))
           ])))),
           if(local!=null)Positioned(right:16,top:16,width:112,height:160,child:ClipRRect(borderRadius:BorderRadius.circular(16),child:VideoTrackRenderer(local,fit:VideoViewFit.cover))),
