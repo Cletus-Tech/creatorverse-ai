@@ -5506,8 +5506,10 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
       final user=db.auth.currentUser;if(user==null)throw Exception('Sign in to continue.');
       final file=File(p);if(!await file.exists())throw Exception('Recording file is missing. Please record again.');
       if(await file.length()>100*1024*1024)throw Exception('Recording exceeds the 100 MB upload limit.');
-      objectPath=widget.interviewId+'/'+user.id+'/'+DateTime.now().millisecondsSinceEpoch.toString()+(isVideo?'.mp4':'.m4a');
-      await db.storage.from('academy-interviews').upload(objectPath,file,fileOptions:FileOptions(contentType:isVideo?'video/mp4':'audio/mp4',upsert:false));
+      final extension=isVideo?(p.toLowerCase().endsWith('.mov')?'mov':'mp4'):'m4a';
+      final mime=isVideo?(extension=='mov'?'video/quicktime':'video/mp4'):'audio/mp4';
+      objectPath=widget.interviewId+'/'+user.id+'/'+DateTime.now().millisecondsSinceEpoch.toString()+'.'+extension;
+      await db.storage.from('academy-interviews').upload(objectPath,file,fileOptions:FileOptions(contentType:mime,upsert:false));
       await db.rpc('submit_academy_interview_response',params:{
         'p_interview_id':widget.interviewId,'p_media_path':objectPath,
         'p_duration_seconds':duration.inSeconds.clamp(1,maxSeconds),'p_consent':true
@@ -5669,7 +5671,7 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
   Future<void> open(Map<String,dynamic> row) async {
     await video?.dispose();video=null;await audio.stop();
     if(!mounted)return;
-    setState((){selected=row;signedUrl=null;error=null;mediaLoading=row['media_object_path']!=null;});
+    setState((){selected=row;signedUrl=null;error=null;mediaLoading=(row['media_object_path']??'').toString().isNotEmpty;});
     score.text=(row['score']??'').toString();notes.text=(row['reviewer_notes']??'').toString();
     final path=(row['media_object_path']??'').toString();
     if(path.isEmpty)return;
@@ -5684,6 +5686,14 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
         setState(() { video=controller; signedUrl=url; mediaLoading=false; error=null; });
       }else if(mounted)setState(() { signedUrl=url; mediaLoading=false; error=null; });
     }catch(e){if(mounted)setState(() { error='Could not open the private recording: '+e.toString(); mediaLoading=false; });}
+  }
+  Future<void> ringApplicant() async {
+    final row=selected;if(row==null)return;
+    try{
+      final result=await db.rpc('ring_academy_live_interview',params:{'p_interview_id':row['interview_id']});
+      final already=result is Map&&result['already_ringing']==true;
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(already?'The applicant is already being rung.':'The applicant has been notified of the live interview call.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not ring applicant: '+e.toString())));}
   }
   Future<void> saveReview() async {
     final row=selected;if(row==null)return;
@@ -5725,7 +5735,7 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
           if(video!=null&&video!.value.isInitialized)AspectRatio(aspectRatio:video!.value.aspectRatio,child:VideoPlayer(video!)),
           if(signedUrl!=null&&selected!['interview_type']=='recorded_audio')FilledButton.icon(onPressed:()async{await audio.setUrl(signedUrl!);await audio.play();},icon:const Icon(Icons.play_arrow),label:const Text('Play private audio recording')),
           if(signedUrl!=null)const Text('Private media link expires after 15 minutes.',style:TextStyle(color:muted,fontSize:11)),
-          if(selected!['interview_type']=='live')FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:selected!['interview_id'].toString()))),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure live interview room')),
+          if(selected!['interview_type']=='live')Wrap(spacing:8,children:[OutlinedButton.icon(onPressed:ringApplicant,icon:const Icon(Icons.notifications_active_outlined),label:const Text('Ring applicant')),FilledButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:selected!['interview_id'].toString()))),icon:const Icon(Icons.video_call_outlined),label:const Text('Join live room'))]),
           const SizedBox(height:16),const Text('Assessment & review',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
           TextField(controller:score,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Score (0–100)')),
           const SizedBox(height:10),TextField(controller:notes,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Reviewer evaluation and recommendations')),
@@ -5865,7 +5875,7 @@ class _AdminCreatorApplicationsScreenState extends State<AdminCreatorApplication
       final items=snap.data??[];
       if(items.isEmpty)return const Center(child:Text('No creator or instructor applications yet.',style:TextStyle(color:muted)));
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
-        OutlinedButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-interviewer.html'),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
+        OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>const NativeAcademyInterviewerScreen())),icon:const Icon(Icons.video_call_outlined),label:const Text('Open interview workspace')),
         const SizedBox(height:8),
         for(final app in items)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('${app['application_no']} · ${app['application_type']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w800)),
