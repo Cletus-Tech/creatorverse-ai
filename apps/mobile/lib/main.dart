@@ -5247,9 +5247,10 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     final opacity=TextEditingController(text:(old?['overlay_opacity']??.58).toString());
     XFile? file;var kind=(old?['media_type']??'text').toString();
     var anim=(old?['title_animation']??'typewriter').toString();
-    var transition=(old?['transition_effect']??'slide').toString();
+    var transition=(old?['transition_effect']??'fade').toString();
     var fit=(old?['media_fit']??'cover').toString();
     var theme=(old?['theme_key']??'gold').toString();
+    if(old==null){final preset=billboardThemePresets['gold']!;bg.text=preset[0];bg2.text=preset[1];accent.text=preset[2];fg.text=preset[3];btn.text=preset[4];}
     var publish=old?['is_published']==true;
     DateTime? start=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
     DateTime? end=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
@@ -5304,7 +5305,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
         ],onChanged:(v)=>setD(()=>transition=v??'slide')),
         DropdownButtonFormField<String>(value:billboardThemePresets.containsKey(theme)?theme:'gold',decoration:const InputDecoration(labelText:'14 visual themes'),items:[
           for(final entry in billboardThemePresets.entries) DropdownMenuItem(value:entry.key,child:Row(children:[Container(width:17,height:17,decoration:BoxDecoration(color:_color(entry.value[2]),shape:BoxShape.circle)),const SizedBox(width:9),Text(billboardThemeLabel(entry.key))])),
-        ],onChanged:(v){if(v==null)return;setD(()=>{theme=v;final colors=billboardThemePresets[v]!;bg.text=colors[0];bg2.text=colors[1];accent.text=colors[2];fg.text=colors[3];btn.text=colors[4];});}),
+        ],onChanged:(v){if(v==null)return;setD(() {theme=v;final colors=billboardThemePresets[v]!;bg.text=colors[0];bg2.text=colors[1];accent.text=colors[2];fg.text=colors[3];btn.text=colors[4];});}),
         DropdownButtonFormField<String>(value:fit,decoration:const InputDecoration(labelText:'Media fit'),items:const [
           DropdownMenuItem(value:'cover',child:Text('Cover / fill frame')),DropdownMenuItem(value:'contain',child:Text('Contain / show full media'))
         ],onChanged:(v)=>setD(()=>fit=v??'cover')),
@@ -5346,12 +5347,14 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               'title':h,'message':message.text.trim(),'kicker_text':kicker.text.trim(),'media_type':kind,'media_url':mediaUrl,
               'button_label':label.isEmpty?null:label,'button_url':dest.isEmpty?null:dest,
               'starts_at':start?.toUtc().toIso8601String(),'ends_at':end?.toUtc().toIso8601String(),
-              'duration_seconds':(int.tryParse(duration.text)??10).clamp(3,120),'display_order':(int.tryParse(order.text)??0).clamp(0,100000),
+              'duration_seconds':(int.tryParse(duration.text)??8).clamp(3,120),'display_order':(int.tryParse(order.text)??0).clamp(0,100000),
               'countdown_target_at':kind=='countdown'?target?.toUtc().toIso8601String():null,'countdown_timezone':'Africa/Lagos','countdown_complete_label':done.text.trim().isEmpty?'EVENT STARTED':done.text.trim(),
               'background_color':hex(bg.text),'background_end_color':hex(bg2.text),'accent_color':hex(accent.text),'text_color':hex(fg.text),'button_color':hex(btn.text),
               'title_animation':anim,'transition_effect':transition,'media_fit':fit,'theme_key':theme,'overlay_opacity':op,'is_published':publish,'updated_at':DateTime.now().toUtc().toIso8601String(),
             };
             if(old==null){data['created_by']=db.auth.currentUser!.id;await db.from('billboard_items').insert(data);}else{await db.from('billboard_items').update(data).eq('id',old['id']);}
+            final previousPath=_billboardStoragePath(old?['media_url']);
+            if(previousPath!=null && mediaUrl!=old?['media_url']){try{await db.storage.from('billboard-media').remove([previousPath]);}catch(_){}}
             if(dc.mounted)Navigator.pop(dc);if(mounted){await _refresh();if(!mounted)return;messenger.showSnackBar(const SnackBar(content:Text('Billboard creative saved.')));}
           }catch(e){if(dc.mounted)setD(()=>saving=false);if(page.mounted)messenger.showSnackBar(SnackBar(content:Text('Save failed: '+e.toString())));}
         },child:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Text('Save creative')),
@@ -5386,7 +5389,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     body:FutureBuilder<List<Map<String,dynamic>>>(future:items,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(s.hasError)return Center(child:Text('Billboard unavailable: '+s.error.toString()));
-      final rows=s.data??[];final live=rows.where((x)=>x['is_published']==true).length;
+      final rows=s.data??[];final now=DateTime.now().toUtc();final live=rows.where((x)=>x['is_published']==true&&(DateTime.tryParse((x['starts_at']??'').toString())==null||!DateTime.parse(x['starts_at'].toString()).isAfter(now))&&(DateTime.tryParse((x['ends_at']??'').toString())==null||DateTime.parse(x['ends_at'].toString()).isAfter(now))).length;
       return RefreshIndicator(onRefresh:_refresh,color:emerald,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),children:[
         const CreatorVerseBillboard(),
         Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -5421,7 +5424,7 @@ class _BillboardCreativeCard extends StatelessWidget {
     return 'LIVE';
   }
   @override Widget build(BuildContext context){
-    final type=(item['media_type']??'text').toString(),media=(item['media_url']??'').toString(),live=item['is_published']==true;
+    final type=(item['media_type']??'text').toString(),media=(item['media_url']??'').toString();
     return Card(color:panel,margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[Icon(type=='video'?Icons.videocam_outlined:type=='image'?Icons.image_outlined:type=='countdown'?Icons.timer_outlined:Icons.campaign_outlined,color:emerald),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((item['title']??'Untitled').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800)),Text(type.toUpperCase()+' • ORDER '+(item['display_order']??index).toString(),style:const TextStyle(color:muted,fontSize:10))])),Text(_status(item),style:TextStyle(color:_status(item)=='LIVE'?emerald:_status(item)=='EXPIRED'?Colors.orangeAccent:muted,fontWeight:FontWeight.w900,fontSize:10))]),
       if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
