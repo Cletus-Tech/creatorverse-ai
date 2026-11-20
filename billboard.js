@@ -16,7 +16,7 @@ function draw(){
  clearTimeout(timer);timer=setTimeout(next,Math.max(3,Math.min(120,Number(x.duration_seconds)||10))*1000);
  if(video){var play=video.play();if(play&&play.catch)play.catch(function(){/* muted autoplay may be restricted; slide timer remains */})}
 }
-function next(){var a=active();if(!a.length){draw();return}index=(index+1)%a.length;draw()}
+function next(){clearTimeout(timer);var a=active();if(!a.length){draw();return}index=(index+1)%a.length;draw()}
 function refresh(){
  if(!sb||loading)return;loading=true;var current=active()[index],currentId=current&&current.id;
  sb.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_timezone,countdown_complete_label,background_color,accent_color,button_color').eq('is_published',true).order('display_order',{ascending:true}).then(function(r){
