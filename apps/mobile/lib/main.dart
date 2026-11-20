@@ -982,7 +982,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
         const SizedBox(height:12),Text('Hello, ${(Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'Creator').toString()}.',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
         const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,fontSize:14,height:1.35)),
         const SizedBox(height:14),FilledButton(onPressed:()=>openFeature(context,'/digital-skills.html'),style:FilledButton.styleFrom(backgroundColor:emerald,foregroundColor:ink),child:const Text('Explore CreatorVerse')),
-      ]))));
+      ])))));
     final type=(s['media_type']??'text').toString(),url=(s['media_url']??'').toString();
     final hasMedia=url.isNotEmpty && (type=='image'||type=='video');
     final bg=color(s['background_color'],const Color(0xFF102C2B));
