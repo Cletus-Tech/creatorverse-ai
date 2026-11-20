@@ -5124,6 +5124,40 @@ class _CreatorVerseCallScreenState extends State<CreatorVerseCallScreen> with Si
     ]);
 }
 
+class NativeBillboardAdminScreen extends StatefulWidget {
+  const NativeBillboardAdminScreen({super.key});
+  @override State<NativeBillboardAdminScreen> createState()=>_NativeBillboardAdminScreenState();
+}
+class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen> {
+  late Future<List<Map<String,dynamic>>> items;
+  @override void initState(){super.initState();items=loadItems();}
+  Future<List<Map<String,dynamic>>> loadItems() async {
+    final db=Supabase.instance.client; final user=db.auth.currentUser;
+    if(user==null)throw StateError('Sign in to manage the billboard.');
+    final p=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access is required.');
+    final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,is_published,display_order,duration_seconds').order('display_order');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  Future<void> refresh() async {final f=loadItems();setState(()=>items=f);await f;}
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('Dynamic Billboard'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:items,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(24),child:Text('Billboard management unavailable: ${s.error}',textAlign:TextAlign.center)));
+      final rows=s.data??[];
+      if(rows.isEmpty)return const Center(child:Text('No billboard slides have been created yet.'));
+      return RefreshIndicator(onRefresh:refresh,color:emerald,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Text('Published slides appear in the dashboard billboard. Content is shared through Supabase.',style:TextStyle(color:muted)),
+        for(final row in rows) Card(color:panel,child:ListTile(
+          leading:Icon(row['media_type']=='video'?Icons.videocam_outlined:row['media_type']=='image'?Icons.image_outlined:Icons.campaign_outlined,color:emerald),
+          title:Text((row['title']??'Untitled').toString()),
+          subtitle:Text('${row['media_type']} · ${row['is_published']==true?'Published':'Draft'} · ${row['duration_seconds']}s',style:const TextStyle(color:muted)),
+        )),
+      ]));
+    }),
+  );
+}
 class AdminWorkspaceScreen extends StatefulWidget {
   const AdminWorkspaceScreen({super.key});
   @override
