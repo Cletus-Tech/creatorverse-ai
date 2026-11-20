@@ -1041,7 +1041,6 @@ class _HomeTabState extends State<HomeTab>{
   }
   @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:summary,builder:(context,snapshot){
     final data=snapshot.data??{};
-    final name=(data['name']??Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'').toString();
     return ListView(padding:const EdgeInsets.all(20),children:[
       const CreatorVerseBillboard(),
       const SizedBox(height:4),
