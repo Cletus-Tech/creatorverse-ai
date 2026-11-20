@@ -900,10 +900,18 @@ class _BillboardAnimatedTitleState extends State<BillboardAnimatedTitle> {
   @override Widget build(BuildContext context){
     final text=widget.animation=='typewriter'?String.fromCharCodes(widget.text.runes.take(_visible)):widget.text;
     final style=TextStyle(color:widget.color,fontSize:20,height:1.08,fontWeight:FontWeight.w900,shadows:const [Shadow(color:Colors.black87,blurRadius:10)]);
-    final child=Text(text,maxLines:2,overflow:TextOverflow.ellipsis,style:style);
-    if(widget.animation=='fade')return AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:550),child:child);
-    if(widget.animation=='rise')return AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:500),child:child);
-    return child;
+    final child=Text(text,maxLines:2,overflow:TextOverflow.ellipsis,style:style,key:ValueKey(widget.text));
+    if(widget.animation=='typewriter')return child;
+    return AnimatedSwitcher(
+      duration:const Duration(milliseconds:520),
+      transitionBuilder:(child,animation){
+        if(widget.animation=='fade'||widget.transition=='fade')return FadeTransition(opacity:animation,child:child);
+        if(widget.animation=='rise')return SlideTransition(position:Tween<Offset>(begin:const Offset(0,.22),end:Offset.zero).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
+        if(widget.transition=='zoom')return ScaleTransition(scale:Tween<double>(begin:.94,end:1).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
+        return SlideTransition(position:Tween<Offset>(begin:const Offset(.12,0),end:Offset.zero).animate(CurvedAnimation(parent:animation,curve:Curves.easeOutCubic)),child:FadeTransition(opacity:animation,child:child));
+      },
+      child:child,
+    );
   }
 }
 
