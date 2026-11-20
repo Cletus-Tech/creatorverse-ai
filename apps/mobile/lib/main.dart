@@ -5234,11 +5234,6 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
   }
   Future<void> _refresh() async {final f=_load();setState(()=>items=f);await f;}
   Color _color(String s,[Color fallback=Colors.white]){final v=s.replaceAll('#','');final n=v.length==6?int.tryParse(v,radix:16):null;return n==null?fallback:Color(0xFF000000|n);}
-  Future<DateTime?> _date(BuildContext c,DateTime? value) async {
-    final now=DateTime.now();final d=await showDatePicker(context:c,initialDate:value??now,firstDate:DateTime(now.year-1),lastDate:DateTime(now.year+8));
-    if(d==null||!c.mounted)return null;final t=await showTimePicker(context:c,initialTime:TimeOfDay.fromDateTime(value??now));
-    return DateTime(d.year,d.month,d.day,t?.hour??0,t?.minute??0);
-  }
   Future<void> _edit([Map<String,dynamic>? old]) async {
     final title=TextEditingController(text:(old?['title']??'').toString());
     final message=TextEditingController(text:(old?['message']??'').toString());
