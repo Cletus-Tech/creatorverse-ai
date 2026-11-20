@@ -924,6 +924,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   final db = Supabase.instance.client;
   List<Map<String,dynamic>> slides = [];
   int index = 0;
+  bool rotationPaused = false;
   RealtimeChannel? channel;
   Timer? rotation, refresh, clock;
   VideoPlayerController? player;
@@ -962,13 +963,25 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   }
   void schedule() {
     rotation?.cancel();
-    if(active.length<2)return;
+    if(rotationPaused || active.length<2)return;
     final secs=((current?['duration_seconds'] as num?)?.toInt()??10).clamp(3,120);
     rotation=Timer(Duration(seconds:secs.toInt()),next);
   }
   void next() {
     if(!mounted || active.isEmpty)return;
     setState(()=>index=(index+1)%active.length);
+    schedule();
+    syncPlayer();
+  }
+  void previous() {
+    if(!mounted || active.isEmpty)return;
+    setState(()=>index=(index-1+active.length)%active.length);
+    schedule();
+    syncPlayer();
+  }
+  void jumpTo(int value) {
+    if(!mounted || value<0 || value>=active.length)return;
+    setState(()=>index=value);
     schedule();
     syncPlayer();
   }
@@ -1037,6 +1050,12 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
         if((s['message']??'').toString().trim().isNotEmpty)Padding(padding:const EdgeInsets.only(top:5),child:Text(s['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:color(s['text_color'],Colors.white).withValues(alpha:.88),fontSize:12,shadows:const [Shadow(color:Colors.black87,blurRadius:8)]))),
         if(type=='countdown')Padding(padding:const EdgeInsets.only(top:8),child:countdown(s)),
         if((s['button_label']??'').toString().isNotEmpty && (s['button_url']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Align(alignment:Alignment.centerLeft,child:FilledButton(onPressed:()=>action(s['button_url'].toString()),style:FilledButton.styleFrom(backgroundColor:color(s['button_color'],emerald),foregroundColor:Colors.white,minimumSize:const Size(0,34),padding:const EdgeInsets.symmetric(horizontal:15,vertical:8)),child:Text(s['button_label'].toString(),style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))))),
+        if(active.length>1)Padding(padding:const EdgeInsets.only(top:7),child:Row(children:[
+          IconButton(visualDensity:VisualDensity.compact,padding:EdgeInsets.zero,constraints:const BoxConstraints.tightFor(width:30,height:30),onPressed:previous,icon:const Icon(Icons.chevron_left,color:Colors.white,size:24)),
+          Expanded(child:Center(child:Wrap(spacing:5,children:[for(var i=0;i<active.length;i++)GestureDetector(onTap:()=>jumpTo(i),child:AnimatedContainer(duration:const Duration(milliseconds:220),width:i==index?18:6,height:6,decoration:BoxDecoration(color:i==index?accent:Colors.white54,borderRadius:BorderRadius.circular(9))))]))),
+          IconButton(visualDensity:VisualDensity.compact,padding:EdgeInsets.zero,constraints:const BoxConstraints.tightFor(width:30,height:30),onPressed:next,icon:const Icon(Icons.chevron_right,color:Colors.white,size:24)),
+          IconButton(visualDensity:VisualDensity.compact,padding:EdgeInsets.zero,constraints:const BoxConstraints.tightFor(width:30,height:30),onPressed:(){setState(()=>rotationPaused=!rotationPaused);schedule();},icon:Icon(rotationPaused?Icons.play_arrow:Icons.pause,color:Colors.white,size:18)),
+        ])),
       ])),
     ])))));
   }
@@ -5212,14 +5231,29 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
       backgroundColor:panel,title:Text(old==null?'Create billboard creative':'Edit billboard creative'),
       content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('CONTENT',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
-        TextField(controller:title,decoration:const InputDecoration(labelText:'Headline')),
-        TextField(controller:message,maxLines:3,decoration:const InputDecoration(labelText:'Supporting text')),
-        TextField(controller:kicker,decoration:const InputDecoration(labelText:'Small label / eyebrow')),
+        TextField(controller:title,onChanged:(_)=>setD((){}),maxLength:90,decoration:const InputDecoration(labelText:'Headline',counterText:'')),
+        TextField(controller:message,onChanged:(_)=>setD((){}),maxLines:3,maxLength:1200,decoration:const InputDecoration(labelText:'Supporting text',counterText:'')),
+        TextField(controller:kicker,onChanged:(_)=>setD((){}),decoration:const InputDecoration(labelText:'Small label / eyebrow')),
         const SizedBox(height:10),
         DropdownButtonFormField<String>(value:kind,decoration:const InputDecoration(labelText:'Creative format'),items:const [
           DropdownMenuItem(value:'text',child:Text('Text announcement')),DropdownMenuItem(value:'image',child:Text('Image advertisement')),DropdownMenuItem(value:'video',child:Text('Video advertisement')),DropdownMenuItem(value:'countdown',child:Text('Event countdown'))
         ],onChanged:(v)=>setD(()=>kind=v??'text')),
         OutlinedButton.icon(onPressed:() async {final x=await ImagePicker().pickMedia();if(x!=null){final ext=x.name.split('.').last.toLowerCase();setD((){file=x;kind=['mp4','webm','mov'].contains(ext)?'video':'image';});}},icon:const Icon(Icons.cloud_upload_outlined),label:Text(file?.name??((old?['media_url']??'').toString().isEmpty?'Upload image or video':'Replace media file'))),
+        const SizedBox(height:12),
+        const Text('LIVE 16:9 PREVIEW',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11,letterSpacing:1)),
+        const SizedBox(height:7),
+        AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(13),child:Stack(fit:StackFit.expand,children:[
+          DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[_color(bg.text,const Color(0xFF071426)),_color(bg2.text,const Color(0xFF102329))]))),
+          if(file!=null&&kind=='image')FutureBuilder(future:file!.readAsBytes(),builder:(context,snapshot)=>snapshot.hasData?Image.memory(snapshot.data!,fit:fit=='contain'?BoxFit.contain:BoxFit.cover):const Center(child:Icon(Icons.image_outlined,color:Colors.white54,size:34))),
+          if(file==null&&kind=='image'&&(old?['media_url']??'').toString().isNotEmpty)Image.network(old!['media_url'].toString(),fit:fit=='contain'?BoxFit.contain:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),
+          if(kind=='video')const Center(child:Icon(Icons.play_circle_outline,color:Colors.white70,size:54)),
+          DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[Colors.black.withValues(alpha:(double.tryParse(opacity.text)??.58).clamp(0,.95)),Colors.transparent]))),
+          Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
+            Text(kicker.text,style:TextStyle(color:_color(accent.text,emerald),fontSize:9,fontWeight:FontWeight.w900)),
+            Text(title.text.isEmpty?'Your billboard headline':title.text,maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:_color(fg.text),fontSize:18,fontWeight:FontWeight.w900)),
+            if(message.text.trim().isNotEmpty)Text(message.text,maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:_color(fg.text).withValues(alpha:.9),fontSize:10)),
+          ])),
+        ]))),
         const SizedBox(height:10),const Text('CALL TO ACTION',style:TextStyle(color:emerald,fontWeight:FontWeight.w900,fontSize:11)),
         TextField(controller:cta,decoration:const InputDecoration(labelText:'Button label (optional)')),
         TextField(controller:url,decoration:const InputDecoration(labelText:'Button URL or in-app path')),
@@ -5313,6 +5347,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
       if(s.hasError)return Center(child:Text('Billboard unavailable: '+s.error.toString()));
       final rows=s.data??[];final live=rows.where((x)=>x['is_published']==true).length;
       return RefreshIndicator(onRefresh:_refresh,color:emerald,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),children:[
+        const CreatorVerseBillboard(),
         Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           const Text('CREATORVERSE MEDIA NETWORK',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w900)),
           const SizedBox(height:8),const Text('Billboard Studio',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
