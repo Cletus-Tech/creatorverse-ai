@@ -1556,6 +1556,100 @@ class _CourseCheckoutScreenState extends State<CourseCheckoutScreen> {
   }
 }
 
+
+class SecondaryExamHubScreen extends StatelessWidget {
+  const SecondaryExamHubScreen({super.key});
+  static const exams = <Map<String, String>>[
+    {'code':'WAEC','name':'West African Senior School Certificate Examination'},
+    {'code':'NECO','name':'National Examinations Council'},
+    {'code':'JAMB','name':'Unified Tertiary Matriculation Examination'},
+    {'code':'GCE','name':'General Certificate of Education'},
+    {'code':'OTHER','name':'Other examination pathways'},
+  ];
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Secondary School')),
+    body: ListView(padding: const EdgeInsets.all(18), children: [
+      const Text('Choose your examination', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      const Text('Select an examination pathway. Verified subjects, topics and practice resources will appear here when they are published.', style: TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 16),
+      for (final exam in exams)
+        Card(color: panel, child: ListTile(
+          leading: CircleAvatar(backgroundColor: emerald.withValues(alpha: .14),
+            child: Text(exam['code'] == 'OTHER' ? '＋' : exam['code']!.substring(0,1),
+              style: const TextStyle(color: emerald, fontWeight: FontWeight.w800))),
+          title: Text(exam['code']!, style: const TextStyle(fontWeight: FontWeight.w800)),
+          subtitle: Text(exam['name']!, style: const TextStyle(color: muted)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => SecondaryExamPathwayScreen(code: exam['code']!, name: exam['name']!))),
+        )),
+    ]),
+  );
+}
+
+class SecondaryExamPathwayScreen extends StatelessWidget {
+  final String code, name;
+  const SecondaryExamPathwayScreen({super.key, required this.code, required this.name});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(code)),
+    body: Center(child: Padding(padding: const EdgeInsets.all(26), child: Column(
+      mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.menu_book_outlined, color: emerald, size: 52),
+        const SizedBox(height: 16),
+        Text(name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        const Text('The examination pathway is available, but its verified subject catalogue, curriculum topics and practice materials have not yet been published. CreatorVerse will show them here when they are ready.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.55)),
+        const SizedBox(height: 18),
+        OutlinedButton.icon(onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back), label: const Text('Back to examinations')),
+      ],
+    ))),
+  );
+}
+
+class TertiaryInstitutionHubScreen extends StatefulWidget {
+  const TertiaryInstitutionHubScreen({super.key});
+  @override State<TertiaryInstitutionHubScreen> createState() => _TertiaryInstitutionHubScreenState();
+}
+class _TertiaryInstitutionHubScreenState extends State<TertiaryInstitutionHubScreen> {
+  final search = TextEditingController();
+  String filter = 'all';
+  @override void dispose() { search.dispose(); super.dispose(); }
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Tertiary Academic Hub')),
+    body: ListView(padding: const EdgeInsets.all(18), children: [
+      const Text('Find your institution', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      const Text('Choose your university, polytechnic or college. Academic structures will follow each institution’s verified published setup.', style: TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 16),
+      TextField(controller: search, onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search institutions')),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, children: [
+        for (final item in ['all','university','polytechnic','college'])
+          ChoiceChip(label: Text(item == 'all' ? 'All' : item[0].toUpperCase()+item.substring(1)),
+            selected: filter == item, onSelected: (_) => setState(() => filter = item)),
+      ]),
+      const SizedBox(height: 28),
+      const Icon(Icons.account_balance_outlined, color: emerald, size: 48),
+      const SizedBox(height: 12),
+      const Text('Verified institution directory is being prepared',
+        textAlign: TextAlign.center, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      Text(search.text.trim().isEmpty
+        ? 'No institution records have been published yet. We will not display guessed institution names or academic structures.'
+        : 'No published institution matches “${search.text.trim()}”. Try another search when the verified directory is available.',
+        textAlign: TextAlign.center, style: const TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 16),
+      const Text('Each institution will define its own faculty, department, programme, level, semester and course structure.',
+        textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
+    ]),
+  );
+}
+
 class AcademicHubScreen extends StatelessWidget {
   const AcademicHubScreen({super.key});
   @override
@@ -6654,9 +6748,12 @@ void openFeature(BuildContext context, String path) {
     case '/academic.html':
       destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
     case '/academic-secondary.html':
+      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => const SecondaryExamHubScreen()));
+      return;
     case '/academic-tertiary.html':
       material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => AuthenticatedAcademyWebScreen(path: path)));
+        builder: (_) => const TertiaryInstitutionHubScreen()));
       return;
     case '/campus.html':
     case '/campus-life.html':
