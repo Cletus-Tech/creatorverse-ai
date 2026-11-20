@@ -5586,16 +5586,15 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
       final r=await db.rpc('get_my_academy_interview_assignments');
       final list=List<Map<String,dynamic>>.from((r as List).map((x)=>Map<String,dynamic>.from(x as Map)));
       if(!mounted)return;
-      setState(()=>{});
-      rows=list;loading=false;
+      setState(() { rows=list; loading=false; });
       if(widget.interviewId!=null){final found=list.where((x)=>x['interview_id'].toString()==widget.interviewId).toList();if(found.isNotEmpty)await open(found.first);}
-      if(mounted)setState(()=>{});
+      if(mounted)setState(() {});
     }catch(e){if(mounted)setState((){error=e.toString();loading=false;});}
   }
   Future<void> open(Map<String,dynamic> row) async {
     await video?.dispose();video=null;await audio.stop();
     if(!mounted)return;
-    setState((){selected=row;signedUrl=null;mediaLoading=row['media_object_path']!=null;});
+    setState((){selected=row;signedUrl=null;error=null;mediaLoading=row['media_object_path']!=null;});
     score.text=(row['score']??'').toString();notes.text=(row['reviewer_notes']??'').toString();
     final path=(row['media_object_path']??'').toString();
     if(path.isEmpty)return;
@@ -5607,9 +5606,9 @@ class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewe
         final controller=VideoPlayerController.networkUrl(Uri.parse(url));
         await controller.initialize();
         if(!mounted){await controller.dispose();return;}
-        setState(()=>{video=controller,signedUrl=url,mediaLoading=false});
-      }else if(mounted)setState(()=>{signedUrl=url,mediaLoading=false});
-    }catch(e){if(mounted)setState(()=>{error='Could not open the private recording: '+e.toString(),mediaLoading=false});}
+        setState(() { video=controller; signedUrl=url; mediaLoading=false; error=null; });
+      }else if(mounted)setState(() { signedUrl=url; mediaLoading=false; error=null; });
+    }catch(e){if(mounted)setState(() { error='Could not open the private recording: '+e.toString(); mediaLoading=false; });}
   }
   Future<void> saveReview() async {
     final row=selected;if(row==null)return;
