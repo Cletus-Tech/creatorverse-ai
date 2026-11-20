@@ -5427,12 +5427,6 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(backgroundColor:panel,title:const Text('Delete billboard creative?'),content:Text((x['title']??'').toString()),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))]));
     if(yes!=true)return;try{await db.from('billboard_items').delete().eq('id',x['id']);final path=_billboardStoragePath(x['media_url']);if(path!=null){try{await db.storage.from('billboard-media').remove([path]);}catch(_){}}await _refresh();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Delete failed: '+e.toString())));}
   }
-  Future<void> _move(int i,int delta,List<Map<String,dynamic>> rows) async {
-    final j=i+delta;if(j<0||j>=rows.length)return;
-    try{final a=rows[i],b=rows[j];final av=a['display_order'] as int? ?? i,bv=b['display_order'] as int? ?? j;
-      await db.from('billboard_items').update({'display_order':bv}).eq('id',a['id']);await db.from('billboard_items').update({'display_order':av}).eq('id',b['id']);await _refresh();
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Reorder failed: '+e.toString())));}
-  }
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('Dashboard management'),actions:[IconButton(onPressed:_refresh,icon:const Icon(Icons.refresh))]),
     floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(),backgroundColor:emerald,foregroundColor:ink,icon:const Icon(Icons.add),label:const Text('Publish dashboard update')),
@@ -5464,8 +5458,6 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                 onEdit:()=>_edit(rows[i]),
                 onDelete:()=>_delete(rows[i]),
                 onToggle:()=>_toggle(rows[i]),
-                onUp:()=>_move(i,-1,rows),
-                onDown:()=>_move(i,1,rows),
               ),
           ],
         ]),
@@ -5479,8 +5471,8 @@ class _BillboardStat extends StatelessWidget {
   @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:9),decoration:BoxDecoration(color:Colors.black26,borderRadius:BorderRadius.circular(10)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(value,style:const TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.w900)),Text(label,style:const TextStyle(color:Colors.white70,fontSize:10))]));
 }
 class _BillboardCreativeCard extends StatelessWidget {
-  final Map<String,dynamic> item;final int index;final VoidCallback onEdit,onDelete,onToggle,onUp,onDown;
-  const _BillboardCreativeCard({required this.item,required this.index,required this.onEdit,required this.onDelete,required this.onToggle,required this.onUp,required this.onDown});
+  final Map<String,dynamic> item;final int index;final VoidCallback onEdit,onDelete,onToggle;
+  const _BillboardCreativeCard({required this.item,required this.index,required this.onEdit,required this.onDelete,required this.onToggle});
   String _status(Map<String,dynamic> item){
     final now=DateTime.now().toUtc();
     final start=DateTime.tryParse((item['starts_at']??'').toString());
@@ -5497,7 +5489,6 @@ class _BillboardCreativeCard extends StatelessWidget {
       if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
       if((item['message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:7),child:Text(item['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11))),
       const SizedBox(height:8),Wrap(spacing:5,runSpacing:4,children:[
-        OutlinedButton(onPressed:onUp,child:const Icon(Icons.arrow_upward,size:16)),OutlinedButton(onPressed:onDown,child:const Icon(Icons.arrow_downward,size:16)),
         OutlinedButton(onPressed:onEdit,child:const Text('Edit')),OutlinedButton(onPressed:onToggle,child:Text(item['is_published']==true?'Pause':'Publish')),
         OutlinedButton(onPressed:onDelete,style:OutlinedButton.styleFrom(foregroundColor:Colors.redAccent),child:const Text('Delete')),
       ]),
