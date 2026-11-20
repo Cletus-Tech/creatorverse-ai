@@ -1,0 +1,69 @@
+name: CreatorVerse iOS and Android Web Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/lib/**'
+      - 'apps/mobile/assets/**'
+      - 'apps/mobile/pubspec.yaml'
+      - 'apps/mobile/pubspec.lock'
+      - '.github/workflows/mobile-web-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: creatorverse-mobile-web-preview
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out CreatorVerse
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          cache: true
+
+      - name: Generate Flutter web platform files
+        working-directory: apps/mobile
+        run: flutter create --platforms=web --org com.cletustech --project-name creatorverse_mobile .
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Analyze mobile app
+        working-directory: apps/mobile
+        run: flutter analyze
+
+      - name: Build CreatorVerse web preview
+        working-directory: apps/mobile
+        run: flutter build web --release --base-href "/creatorverse-ai/"
+
+      - name: Upload web preview
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/mobile/build/web
+
+      - name: Publish iOS and Android browser preview
+        id: deployment
+        uses: actions/deploy-pages@v4
