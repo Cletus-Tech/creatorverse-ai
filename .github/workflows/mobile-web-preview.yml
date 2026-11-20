@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
-      name: creatorverse-mobile-web-preview
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out CreatorVerse
@@ -62,8 +62,11 @@ jobs:
       - name: Upload web preview
         uses: actions/upload-pages-artifact@v3
         with:
+          name: cv-mobile-preview
           path: apps/mobile/build/web
 
       - name: Publish iOS and Android browser preview
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: cv-mobile-preview
