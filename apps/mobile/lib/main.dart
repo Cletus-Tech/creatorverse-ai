@@ -105,6 +105,86 @@ pw.Widget _receiptPdfRow(String label,String value)=>pw.Padding(
     pw.SizedBox(width:145,child:pw.Text(label,style:const pw.TextStyle(fontSize:10,color:PdfColors.grey700))),
     pw.Expanded(child:pw.Text(value.isEmpty?'Not recorded':value,style:pw.TextStyle(fontSize:10,fontWeight:pw.FontWeight.bold))),
   ]));
+Future<Uint8List> buildCourseCertificatePdf(Map<String,dynamic> certificate) async {
+  final doc = pw.Document();
+  final issued = DateTime.tryParse((certificate['issued_at'] ?? '').toString());
+  doc.addPage(pw.Page(
+    pageFormat: PdfPageFormat.a4.landscape,
+    margin: const pw.EdgeInsets.all(34),
+    build: (_) => pw.Container(
+      padding: const pw.EdgeInsets.all(28),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.blueGrey800, width: 2),
+      ),
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(24),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.amber700, width: 1),
+        ),
+        child: pw.Column(
+          mainAxisAlignment: pw.MainAxisAlignment.center,
+          children: [
+            pw.Text('CREATORVERSE', style: pw.TextStyle(
+              fontSize: 17, fontWeight: pw.FontWeight.bold, letterSpacing: 3,
+              color: PdfColors.blueGrey900)),
+            pw.SizedBox(height: 22),
+            pw.Text('CERTIFICATE OF COMPLETION', style: pw.TextStyle(
+              fontSize: 25, fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey900)),
+            pw.SizedBox(height: 24),
+            pw.Text('This certificate is proudly presented to', style: const pw.TextStyle(fontSize: 12)),
+            pw.SizedBox(height: 12),
+            pw.Text((certificate['student_name'] ?? 'CreatorVerse Learner').toString(),
+              textAlign: pw.TextAlign.center,
+              style: pw.TextStyle(fontSize: 27, fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blueGrey900)),
+            pw.SizedBox(height: 12),
+            pw.Text('for successfully completing', style: const pw.TextStyle(fontSize: 12)),
+            pw.SizedBox(height: 8),
+            pw.Text((certificate['course_title'] ?? 'CreatorVerse Course').toString(),
+              textAlign: pw.TextAlign.center,
+              style: pw.TextStyle(fontSize: 19, fontWeight: pw.FontWeight.bold,
+                color: PdfColors.amber900)),
+            pw.Spacer(),
+            pw.Divider(color: PdfColors.blueGrey300),
+            pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('CERTIFICATE NUMBER', style: const pw.TextStyle(fontSize: 8)),
+                pw.Text((certificate['certificate_no'] ?? '').toString(),
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              ]),
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+                pw.Text('DATE ISSUED', style: const pw.TextStyle(fontSize: 8)),
+                pw.Text(issued?.toLocal().toString().split(' ').first ?? 'Not available',
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              ]),
+            ]),
+          ],
+        ),
+      ),
+    ),
+  ));
+  return doc.save();
+}
+
+Future<void> printCourseCertificate(BuildContext context, Map<String,dynamic> certificate) async {
+  if (certificate['revoked'] == true) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('This certificate has been revoked.')));
+    return;
+  }
+  try {
+    await Printing.layoutPdf(
+      onLayout: (_) => buildCourseCertificatePdf(certificate),
+      name: 'CreatorVerse-${certificate['certificate_no'] ?? 'Certificate'}.pdf');
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open certificate: $error')));
+    }
+  }
+}
+
 Future<void> printPaymentReceipt(BuildContext context,Map<String,dynamic> order) async {
   if(order['status']!='confirmed'||(order['receipt_number']??'').toString().isEmpty){
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('A receipt is available only after payment confirmation.')));return;
@@ -5281,7 +5361,7 @@ class _MyCertificatesScreenState extends State<MyCertificatesScreen>{
           leading:Icon(item['revoked']==true?Icons.cancel_outlined:Icons.workspace_premium_outlined,color:item['revoked']==true?Colors.red:gold,size:30),
           title:Text((item['course_title']??'Course certificate').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           subtitle:Text('${item['certificate_no']}\nIssued: ${item['issued_at']}\n${item['revoked']==true?'Revoked':'Verified record'}',style:const TextStyle(color:muted,height:1.5)),
-          onTap:item['revoked']==true?null:()=>launchUrl(Uri.parse('https://creatorverse-ai.vercel.app/certificate.html?n=${Uri.encodeComponent(item['certificate_no'].toString())}'),mode:LaunchMode.externalApplication),
+          onTap:item['revoked']==true?null:()=>printCourseCertificate(context,item),
         )),
       ]));
     }));
