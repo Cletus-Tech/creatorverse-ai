@@ -5564,6 +5564,103 @@ class _NativeAcademyInterviewScreenState extends State<NativeAcademyInterviewScr
   }
 }
 
+
+class NativeAcademyInterviewerScreen extends StatefulWidget {
+  final String? interviewId;
+  const NativeAcademyInterviewerScreen({super.key,this.interviewId});
+  @override State<NativeAcademyInterviewerScreen> createState()=>_NativeAcademyInterviewerScreenState();
+}
+class _NativeAcademyInterviewerScreenState extends State<NativeAcademyInterviewerScreen> {
+  final db=Supabase.instance.client;
+  final score=TextEditingController();
+  final notes=TextEditingController();
+  final audio=AudioPlayer();
+  List<Map<String,dynamic>> rows=[];
+  Map<String,dynamic>? selected;
+  VideoPlayerController? video;
+  String? signedUrl,error;
+  bool loading=true,mediaLoading=false,saving=false;
+  @override void initState(){super.initState();load();}
+  Future<void> load() async {
+    try{
+      final r=await db.rpc('get_my_academy_interview_assignments');
+      final list=List<Map<String,dynamic>>.from((r as List).map((x)=>Map<String,dynamic>.from(x as Map)));
+      if(!mounted)return;
+      setState(()=>{});
+      rows=list;loading=false;
+      if(widget.interviewId!=null){final found=list.where((x)=>x['interview_id'].toString()==widget.interviewId).toList();if(found.isNotEmpty)await open(found.first);}
+      if(mounted)setState(()=>{});
+    }catch(e){if(mounted)setState((){error=e.toString();loading=false;});}
+  }
+  Future<void> open(Map<String,dynamic> row) async {
+    await video?.dispose();video=null;await audio.stop();
+    if(!mounted)return;
+    setState((){selected=row;signedUrl=null;mediaLoading=row['media_object_path']!=null;});
+    score.text=(row['score']??'').toString();notes.text=(row['reviewer_notes']??'').toString();
+    final path=(row['media_object_path']??'').toString();
+    if(path.isEmpty)return;
+    try{
+      final result=await db.storage.from('academy-interviews').createSignedUrl(path,900);
+      if(result.isEmpty)throw Exception('The private recording link was not created.');
+      final url=result;
+      if(row['interview_type']=='recorded_video'){
+        final controller=VideoPlayerController.networkUrl(Uri.parse(url));
+        await controller.initialize();
+        if(!mounted){await controller.dispose();return;}
+        setState(()=>{video=controller,signedUrl=url,mediaLoading=false});
+      }else if(mounted)setState(()=>{signedUrl=url,mediaLoading=false});
+    }catch(e){if(mounted)setState(()=>{error='Could not open the private recording: '+e.toString(),mediaLoading=false});}
+  }
+  Future<void> saveReview() async {
+    final row=selected;if(row==null)return;
+    final type=(row['interview_type']??'').toString();
+    if(type!='live'&&(row['media_object_path']??'').toString().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('The applicant must submit a recording before assessment.')));return;}
+    if(type=='live'&&row['interview_status']!='in_progress'){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Start the live interview room before completing its assessment.')));return;}
+    final value=double.tryParse(score.text.trim());
+    if(value==null||value<0||value>100){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter an assessment score from 0 to 100.')));return;}
+    setState(()=>saving=true);
+    try{
+      await db.rpc('submit_academy_interview_review',params:{
+        'p_interview_id':row['interview_id'],'p_score':value,'p_reviewer_notes':notes.text.trim(),'p_completed':true
+      });
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Assessment saved.')));await load();}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not save assessment: '+e.toString())));}
+    finally{if(mounted)setState(()=>saving=false);}
+  }
+  @override void dispose(){score.dispose();notes.dispose();unawaited(audio.dispose());unawaited(video?.dispose());super.dispose();}
+  @override Widget build(BuildContext context){
+    if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:emerald)));
+    if(error!=null&&rows.isEmpty)return Scaffold(appBar:AppBar(title:const Text('Interviewer workspace')),body:Center(child:Padding(padding:const EdgeInsets.all(20),child:Text(error!,textAlign:TextAlign.center))));
+    return Scaffold(appBar:AppBar(title:const Text('Interviewer workspace'),actions:[IconButton(onPressed:load,icon:const Icon(Icons.refresh))]),
+      body:RefreshIndicator(color:emerald,onRefresh:load,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Text('Assigned interviews',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
+        const SizedBox(height:5),const Text('Only interviews assigned to your account are shown. Recordings are delivered through expiring private links.',style:TextStyle(color:muted,height:1.4)),
+        if(rows.isEmpty)const Padding(padding:EdgeInsets.all(20),child:Text('No interviews have been assigned to this account.',style:TextStyle(color:muted))),
+        for(final row in rows)Card(color:panel,child:ListTile(selected:selected?['interview_id']==row['interview_id'],leading:const Icon(Icons.assignment_ind_outlined,color:emerald),
+          title:Text((row['applicant_name']??'Applicant').toString()),subtitle:Text((row['application_no']??'')+' · '+(row['interview_type']??'').toString().replaceAll('_',' ')+' · '+(row['interview_status']??'').toString(),style:const TextStyle(color:muted,fontSize:11)),
+          trailing:const Icon(Icons.chevron_right),onTap:()=>open(row))),
+        if(selected!=null)...[
+          const Divider(height:28),Text((selected!['applicant_name']??'Applicant').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
+          Text((selected!['application_no']??'').toString()+' · Round '+(selected!['round_number']??1).toString(),style:const TextStyle(color:gold)),
+          const SizedBox(height:10),Text((selected!['topic']??'Interview topic').toString(),style:const TextStyle(fontWeight:FontWeight.w800,fontSize:16)),
+          Text((selected!['instructions']??'No additional instructions.').toString(),style:const TextStyle(color:muted,height:1.5)),
+          if(selected!['assessment_criteria'] is List)for(final c in selected!['assessment_criteria'])Padding(padding:const EdgeInsets.only(top:5),child:Text('• '+c.toString(),style:const TextStyle(color:muted))),
+          const SizedBox(height:12),const Text('Applicant recording',style:TextStyle(fontWeight:FontWeight.w800)),
+          if(mediaLoading)const Padding(padding:EdgeInsets.all(20),child:Center(child:CircularProgressIndicator(color:emerald))),
+          if(selected!['media_object_path']==null||selected!['media_object_path'].toString().isEmpty)const Text('No recording has been submitted yet.',style:TextStyle(color:muted)),
+          if(video!=null&&video!.value.isInitialized)AspectRatio(aspectRatio:video!.value.aspectRatio,child:VideoPlayer(video!)),
+          if(signedUrl!=null&&selected!['interview_type']=='recorded_audio')FilledButton.icon(onPressed:()async{await audio.setUrl(signedUrl!);await audio.play();},icon:const Icon(Icons.play_arrow),label:const Text('Play private audio recording')),
+          if(signedUrl!=null)const Text('Private media link expires after 15 minutes.',style:TextStyle(color:muted,fontSize:11)),
+          if(selected!['interview_type']=='live')FilledButton.icon(onPressed:()=>openAcademyWebPage(context,'/academy-live-room.html?interview='+selected!['interview_id'].toString()),icon:const Icon(Icons.video_call_outlined),label:const Text('Join secure live interview room')),
+          const SizedBox(height:16),const Text('Assessment & review',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+          TextField(controller:score,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Score (0–100)')),
+          const SizedBox(height:10),TextField(controller:notes,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Reviewer evaluation and recommendations')),
+          const SizedBox(height:12),SizedBox(width:double.infinity,child:FilledButton(onPressed:saving?null:saveReview,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(saving?'Saving…':'Save assessment')))
+        ]
+      ])));
+  }
+}
+
 class MyCertificatesScreen extends StatefulWidget {
   const MyCertificatesScreen({super.key});
   @override State<MyCertificatesScreen> createState()=>_MyCertificatesScreenState();
@@ -6859,6 +6956,7 @@ void openFeature(BuildContext context, String path) {
     material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
     return;
   }
+  if (path == '/academy-interviewer.html' || path == '/academy-interviewer') { material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>const NativeAcademyInterviewerScreen())); return; }
   if (path == '/academy-applications') {
     material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
     return;
