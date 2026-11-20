@@ -5389,14 +5389,14 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     body:FutureBuilder<List<Map<String,dynamic>>>(future:items,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(s.hasError)return Center(child:Text('Billboard unavailable: '+s.error.toString()));
-      final rows=s.data??[];final now=DateTime.now().toUtc();final live=rows.where((x)=>x['is_published']==true&&(DateTime.tryParse((x['starts_at']??'').toString())==null||!DateTime.parse(x['starts_at'].toString()).isAfter(now))&&(DateTime.tryParse((x['ends_at']??'').toString())==null||DateTime.parse(x['ends_at'].toString()).isAfter(now))).length;
+      final rows=s.data??[];final now=DateTime.now().toUtc();final live=rows.where((x)=>x['is_published']==true&&(DateTime.tryParse((x['starts_at']??'').toString())==null||!DateTime.parse(x['starts_at'].toString()).isAfter(now))&&(DateTime.tryParse((x['ends_at']??'').toString())==null||DateTime.parse(x['ends_at'].toString()).isAfter(now))).length;final expired=rows.where((x){final e=DateTime.tryParse((x['ends_at']??'').toString());return e!=null&&!e.isAfter(now);}).length;final scheduled=rows.where((x){final start=DateTime.tryParse((x['starts_at']??'').toString());return x['is_published']==true&&start!=null&&start.isAfter(now);}).length;final drafts=rows.where((x)=>x['is_published']!=true).length;
       return RefreshIndicator(onRefresh:_refresh,color:emerald,child:ListView(padding:const EdgeInsets.fromLTRB(16,16,16,100),children:[
         const CreatorVerseBillboard(),
         Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)])),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           const Text('CREATORVERSE MEDIA NETWORK',style:TextStyle(color:gold,fontSize:10,letterSpacing:1.2,fontWeight:FontWeight.w900)),
           const SizedBox(height:8),const Text('Billboard Studio',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
           const SizedBox(height:5),const Text('Create ads, announcements and event creatives. Control content, media, colors, animation, scheduling and playlist order.',style:TextStyle(color:Colors.white70,fontSize:12,height:1.4)),
-          const SizedBox(height:12),Wrap(spacing:8,children:[_BillboardStat(label:'Creatives',value:rows.length.toString()),_BillboardStat(label:'Published',value:live.toString()),_BillboardStat(label:'Drafts',value:(rows.length-live).toString())]),
+          const SizedBox(height:12),Wrap(spacing:8,children:[_BillboardStat(label:'Creatives',value:rows.length.toString()),_BillboardStat(label:'Live',value:live.toString()),_BillboardStat(label:'Scheduled',value:scheduled.toString()),_BillboardStat(label:'Drafts',value:drafts.toString()),_BillboardStat(label:'Expired',value:expired.toString())]),
         ])),
         const SizedBox(height:18),const Text('PLAYLIST MANAGEMENT',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w900,letterSpacing:1.2)),
         const SizedBox(height:10),
@@ -5427,11 +5427,11 @@ class _BillboardCreativeCard extends StatelessWidget {
     final type=(item['media_type']??'text').toString(),media=(item['media_url']??'').toString();
     return Card(color:panel,margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[Icon(type=='video'?Icons.videocam_outlined:type=='image'?Icons.image_outlined:type=='countdown'?Icons.timer_outlined:Icons.campaign_outlined,color:emerald),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((item['title']??'Untitled').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800)),Text(type.toUpperCase()+' • ORDER '+(item['display_order']??index).toString(),style:const TextStyle(color:muted,fontSize:10))])),Text(_status(item),style:TextStyle(color:_status(item)=='LIVE'?emerald:_status(item)=='EXPIRED'?Colors.orangeAccent:muted,fontWeight:FontWeight.w900,fontSize:10))]),
-      if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.contain,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
+      if(media.isNotEmpty&&type=='image')Padding(padding:const EdgeInsets.only(top:9),child:ClipRRect(borderRadius:BorderRadius.circular(9),child:AspectRatio(aspectRatio:16/9,child:Image.network(media,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:muted)))))),
       if((item['message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:7),child:Text(item['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11))),
       const SizedBox(height:8),Wrap(spacing:5,runSpacing:4,children:[
         OutlinedButton(onPressed:onUp,child:const Icon(Icons.arrow_upward,size:16)),OutlinedButton(onPressed:onDown,child:const Icon(Icons.arrow_downward,size:16)),
-        OutlinedButton(onPressed:onEdit,child:const Text('Edit')),OutlinedButton(onPressed:onToggle,child:Text(live?'Pause':'Publish')),
+        OutlinedButton(onPressed:onEdit,child:const Text('Edit')),OutlinedButton(onPressed:onToggle,child:Text(item['is_published']==true?'Pause':'Publish')),
         OutlinedButton(onPressed:onDelete,style:OutlinedButton.styleFrom(foregroundColor:Colors.redAccent),child:const Text('Delete')),
       ]),
     ])));
