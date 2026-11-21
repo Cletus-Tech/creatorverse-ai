@@ -5375,8 +5375,9 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                 if(!v){setD(()=>countdownTarget=null);return;}
                 final now=DateTime.now();
                 final date=await showDatePicker(context:ctx,initialDate:countdownTarget??now.add(const Duration(days:1)),firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));
-                if(date==null)return;
+                if(!ctx.mounted||date==null)return;
                 final time=await showTimePicker(context:ctx,initialTime:TimeOfDay.fromDateTime(countdownTarget??DateTime(date.year,date.month,date.day,9)));
+                if(!ctx.mounted)return;
                 if(time!=null)setD(()=>countdownTarget=DateTime(date.year,date.month,date.day,time.hour,time.minute));
               },
               title:const Text('Show a countdown ticker below the billboard',style:TextStyle(fontSize:13,fontWeight:FontWeight.w700)),
