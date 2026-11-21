@@ -19,3 +19,15 @@
 @media(prefers-reduced-motion:reduce){.bb-title-fade,.bb-title-rise,.bb-display[data-transition].bb-enter{animation:none}}
 
 .bb-title-typewriter:after{content:'';display:inline-block;height:.9em;margin-left:4px;border-right:2px solid var(--bb-accent,#73dfc0);vertical-align:-.06em;animation:bb-caret .8s steps(2,start) infinite}@keyframes bb-caret{to{visibility:hidden}}@media(prefers-reduced-motion:reduce){.bb-title-typewriter:after{animation:none}}
+
+/* Live countdown ticker beneath the billboard, styled like a TV news ticker */
+.bb-news-ticker{height:48px;display:flex;align-items:center;overflow:hidden;margin-top:10px;border:1px solid color-mix(in srgb,var(--bb-accent,#12a984) 65%,transparent);border-radius:12px;background:linear-gradient(100deg,var(--bb-background,#071426),var(--bb-end,#15214a));box-shadow:0 10px 28px #0004;color:var(--bb-text,#f2f7ff)}
+.bb-news-badge{height:100%;display:flex;align-items:center;flex:0 0 auto;padding:0 15px;background:var(--bb-accent,#12a984);color:#fff;font-size:10px;font-weight:900;letter-spacing:.12em}
+.bb-news-track{min-width:0;overflow:hidden;flex:1}
+.bb-news-line{width:max-content;display:flex;align-items:center;gap:18px;padding-left:100%;white-space:nowrap;animation:bb-news-scroll 22s linear infinite}
+.bb-news-title{font-size:12px;letter-spacing:.06em;font-weight:900}
+.bb-news-separator{color:var(--bb-accent,#12a984);font-size:18px}
+.bb-news-time{font-size:13px;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:var(--bb-accent,#12a984);font-weight:900}
+@keyframes bb-news-scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@media(prefers-reduced-motion:reduce){.bb-news-line{animation:none;padding-left:14px}}
+@media(max-width:600px){.bb-news-ticker{height:42px}.bb-news-badge{padding:0 10px;font-size:9px}.bb-news-title{font-size:10px}.bb-news-time{font-size:11px}}
