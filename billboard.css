@@ -31,3 +31,5 @@
 @keyframes bb-news-scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media(prefers-reduced-motion:reduce){.bb-news-line{animation:none;padding-left:14px}}
 @media(max-width:600px){.bb-news-ticker{height:42px}.bb-news-badge{padding:0 10px;font-size:9px}.bb-news-title{font-size:10px}.bb-news-time{font-size:11px}}
+
+.bb-display:has(.bb-news-ticker) .bb-counter{bottom:68px}
