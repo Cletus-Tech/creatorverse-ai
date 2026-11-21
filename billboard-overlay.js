@@ -7,10 +7,10 @@
  function audienceOk(x,role){var a=x.target_audience||'whole_platform';return a==='whole_platform'||a==='students'&&role==='student'||a==='creators'&&role==='creator'||a==='administrators'&&['admin','super_admin'].indexOf(role)>=0}
  function alreadyShown(id,page){try{return sessionStorage.getItem('cv-bb-overlay:'+id+':'+page)==='1'}catch(e){return false}}
  function markShown(id,page){try{sessionStorage.setItem('cv-bb-overlay:'+id+':'+page,'1')}catch(e){}}
- function remove(){if(timer)clearTimeout(timer);timer=null;shown=false;if(root){root.classList.remove('cv-bb-overlay-visible');setTimeout(function(){if(root&&root.parentNode)root.remove();root=null},260)}}
+ function remove(){if(timer)clearTimeout(timer);timer=null;shown=false;if(root){var oldRoot=root;oldRoot.classList.remove('cv-bb-overlay-visible');setTimeout(function(){if(oldRoot.parentNode)oldRoot.remove();if(root===oldRoot)root=null},260)}}
  function show(x){
   if(shown)return;shown=true;var page=pageKey();markShown(x.id,page);
-  root=node('aside','cv-bb-overlay');root.setAttribute('role','dialog');root.setAttribute('aria-label','CreatorVerse announcement');
+  root=node('aside','cv-bb-overlay');root.dataset.itemId=x.id;root.setAttribute('role','dialog');root.setAttribute('aria-label','CreatorVerse announcement');
   var card=node('div','cv-bb-overlay-card');card.style.setProperty('--cv-bb-bg',x.background_color||'#071426');card.style.setProperty('--cv-bb-accent',x.accent_color||'#12a984');card.style.setProperty('--cv-bb-text',x.text_color||'#f2f7ff');
   var close=node('button','cv-bb-overlay-close','×');close.type='button';close.setAttribute('aria-label','Dismiss announcement');close.addEventListener('click',remove);
   if(x.media_url&&x.media_type==='image'){var img=node('img','cv-bb-overlay-media');img.src=x.media_url;img.alt=x.title||'Announcement';card.appendChild(img)}
@@ -27,8 +27,8 @@
   return Promise.all([sb.auth.getSession(),sb.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,target_audience,background_color,accent_color,text_color,kicker_text,overlay_enabled,overlay_pages,overlay_duration_seconds').eq('is_published',true).eq('overlay_enabled',true).order('display_order',{ascending:true})]).then(function(results){
    var session=results[0].data&&results[0].data.session,rows=results[1].data||[],page=pageKey();return roleFor(session).then(function(role){
     var now=Date.now(),candidate=rows.find(function(x){var pages=x.overlay_pages||['all'];return audienceOk(x,role)&&(pages.indexOf('all')>=0||pages.indexOf(page)>=0)&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>now)&&!alreadyShown(x.id,page)});
+    if(shown&&root&&!rows.some(function(x){return x.id===root.dataset.itemId&&x.is_published&&x.overlay_enabled&&audienceOk(x,role)&&(x.overlay_pages||['all']).some(function(k){return k==='all'||k===page})}))remove();
     if(candidate&&!shown)show(candidate);
-    if(!candidate&&shown&&root&&root.dataset.itemId!==candidate?.id)return;
    });
   }).catch(function(e){console.warn('CreatorVerse page billboard overlay unavailable:',e)});
  }
