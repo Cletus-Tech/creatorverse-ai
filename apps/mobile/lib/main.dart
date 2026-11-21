@@ -7358,7 +7358,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
     if (path.endsWith('/academy-status.html')) {
-      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+      await _pushBillboardRoute(context,'academic',MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
       return;
     }
     if(path.endsWith('/academy-interview.html')){
@@ -7383,7 +7383,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     if (path == '/messages.html' || path == '/messages') {
-      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+      await _pushBillboardRoute(context,'messages',MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     } else {
       openFeature(context, path);
     }
@@ -7747,24 +7747,38 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
   }
 }
 
+String _billboardPageForPath(String path){
+  final p=path.toLowerCase();
+  if(p.contains('profile')||p.contains('member')||p.contains('settings'))return 'profiles';
+  if(p.contains('message')||p.contains('notification'))return 'messages';
+  if(p.contains('campus'))return 'campus';
+  if(p.contains('marketplace')||p.contains('housing')||p.contains('delivery'))return 'marketplace';
+  if(p.contains('academic')||p.contains('academy')||p.contains('exam'))return 'academic';
+  if(p.contains('course')||p.contains('learn')||p.contains('certificate')||p.contains('quiz'))return 'learning';
+  if(p.contains('dashboard')||p.contains('admin'))return 'dashboards';
+  if(p.contains('community'))return 'community';
+  return 'landing';
+}
+void _pushBillboardRoute(BuildContext context,String page,Route<dynamic> route){
+  final previous=cvBillboardActivePage.value;
+  cvBillboardActivePage.value=page;
+  material_widgets_ui.Navigator.of(context).push(route).whenComplete(()=>cvBillboardActivePage.value=previous);
+}
 void openFeature(BuildContext context, String path) {
   final parsedPath = Uri.tryParse(path);
   if (parsedPath?.path == '/profile.html') {
     final userId = parsedPath?.queryParameters['u']?.trim() ?? '';
     if (userId.isNotEmpty) {
-      final previousPage=cvBillboardActivePage.value;
-      cvBillboardActivePage.value='profiles';
-      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => NativePublicProfileRouteScreen(userId: userId)))
-        .whenComplete(()=>cvBillboardActivePage.value=previousPage);
+      _pushBillboardRoute(context,'profiles',MaterialPageRoute(
+        builder: (_) => NativePublicProfileRouteScreen(userId: userId)));
       return;
     }
   }
   if (path == '/certificates') {
-    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
+    _pushBillboardRoute(context,'learning',MaterialPageRoute(builder: (_) => const MyCertificatesScreen()));
     return;
   }
-  if (path == '/academy-interviewer.html' || path == '/academy-interviewer') { material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>const NativeAcademyInterviewerScreen())); return; }
+  if (path == '/academy-interviewer.html' || path == '/academy-interviewer') { _pushBillboardRoute(context,'academic',MaterialPageRoute(builder:(_)=>const NativeAcademyInterviewerScreen())); return; }
   if (path == '/academy-applications') {
     material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
     return;
@@ -7774,7 +7788,7 @@ void openFeature(BuildContext context, String path) {
     return;
   }
   if (path == '/notifications.html' || path == '/notifications') {
-    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+    _pushBillboardRoute(context,'messages',MaterialPageRoute(builder: (_) => Scaffold(
       appBar: AppBar(title: const Text('Notifications')), body: const NotificationsScreen())));
     return;
   }
@@ -7789,11 +7803,11 @@ void openFeature(BuildContext context, String path) {
     case '/academic.html':
       destination = const AcademicHubScreen(); title = 'Academic Learning'; break;
     case '/academic-secondary.html':
-      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+      _pushBillboardRoute(context,'academic',MaterialPageRoute(
         builder: (_) => const SecondaryExamHubScreen()));
       return;
     case '/academic-tertiary.html':
-      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+      _pushBillboardRoute(context,'academic',MaterialPageRoute(
         builder: (_) => const TertiaryInstitutionHubScreen()));
       return;
     case '/campus.html':
@@ -7812,7 +7826,7 @@ void openFeature(BuildContext context, String path) {
     case '/settings':
       destination = const AccountSettingsScreen(); title = 'Account settings'; break;
     case '/admin.html':
-      material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
+      _pushBillboardRoute(context,'dashboards',MaterialPageRoute(
         builder: (_) => const AdminWorkspaceScreen()));
       return;
     default:
@@ -7821,7 +7835,7 @@ void openFeature(BuildContext context, String path) {
         icon: path.contains('marketplace') ? Icons.storefront_outlined : Icons.school_outlined);
       title = path.contains('marketplace') ? 'Marketplace' : 'Academic';
   }
-  material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(
+  _pushBillboardRoute(context,_billboardPageForPath(path),MaterialPageRoute(builder: (_) => Scaffold(
     appBar: AppBar(title: Text(title)), body: destination!)));
 }
 
