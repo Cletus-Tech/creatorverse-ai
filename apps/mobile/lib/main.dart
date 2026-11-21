@@ -1096,7 +1096,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
       final visible=List<Map<String,dynamic>>.from(rows).where((item){
         final target=(item['target_audience']??'whole_platform').toString();
         final pages=List<String>.from((item['dashboard_pages'] as List?)??const ['explore','campus','learning','academic']);
-        return (pages.contains('all')||pages.contains(widget.placement))&&(target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role));
+        return (pages.contains('all')||pages.contains(widget.placement))&&(target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role)));
       }).toList();
       final old=current?['id']?.toString();
       if(!mounted)return;
