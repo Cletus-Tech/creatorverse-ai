@@ -33,3 +33,6 @@
 @media(max-width:600px){.bb-news-ticker{height:42px}.bb-news-badge{padding:0 10px;font-size:9px}.bb-news-title{font-size:10px}.bb-news-time{font-size:11px}}
 
 .bb-display:has(.bb-news-ticker) .bb-counter{bottom:68px}
+
+.bb-has-pinned-countdown .bb-standalone{height:calc(100vh - 58px);height:calc(100svh - 58px);min-height:calc(100svh - 58px)}
+.bb-pinned-countdown{margin:10px 12px 0}
