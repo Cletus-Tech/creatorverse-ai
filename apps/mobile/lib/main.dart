@@ -2800,23 +2800,28 @@ class _CommunityTabState extends State<CommunityTab> {
     // feel as if it was loading each part one after another.
     final results = await Future.wait<dynamic>([
       db.from('public_profiles').select('id,full_name,username,avatar_url,verified_badge').inFilter('id', users),
-      db.from('community_likes').select('post_id,user_id').inFilter('post_id', ids).limit(2500),
+      db.from('community_reactions').select('post_id,user_id,reaction_type').inFilter('post_id', ids).limit(2500),
       db.from('community_comments').select('post_id').inFilter('post_id', ids).limit(2500),
       me == null
         ? Future.value(<Map<String,dynamic>>[])
         : db.from('community_saves').select('post_id').eq('user_id',me).inFilter('post_id',ids),
     ]);
     final profiles = {for (final p in List<Map<String, dynamic>>.from(results[0])) p['id'].toString(): p};
-    final likes = List<Map<String, dynamic>>.from(results[1]);
+    final reactions = List<Map<String, dynamic>>.from(results[1]);
     final comments = List<Map<String, dynamic>>.from(results[2]);
     final savesRaw = List<Map<String,dynamic>>.from(results[3]);
     final savedIds=savesRaw.map((r)=>r['post_id'].toString()).toSet();
     for (final post in posts) {
       final id = post['id'].toString();
       post['author'] = profiles[post['user_id'].toString()] ?? {};
-      final postLikes = likes.where((l) => l['post_id'].toString() == id).toList();
-      post['like_count'] = postLikes.length;
-      post['liked'] = postLikes.any((l) => l['user_id'] == me);
+      final postReactions = reactions.where((r) => r['post_id'].toString() == id).toList();
+      post['like_count'] = postReactions.length;
+      post['liked'] = postReactions.any((r) => r['user_id'] == me);
+      post['reaction_type'] = postReactions.where((r) => r['user_id'] == me).map((r) => r['reaction_type'].toString()).firstOrNull;
+      post['reaction_counts'] = <String,int>{
+        for (final type in ['like','love','care','haha','wow','sad','angry'])
+          type: postReactions.where((r) => r['reaction_type'] == type).length,
+      };
       post['comment_count'] = comments.where((c) => c['post_id'].toString() == id).length;
       post['saved'] = savedIds.contains(id);
     }
@@ -3124,13 +3129,56 @@ class _CommunityTabState extends State<CommunityTab> {
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not delete post: $e')));}
   }
   Future<void> toggleLike(Map<String, dynamic> post) async {
-    final me = db.auth.currentUser!.id, id = post['id'].toString();
-    final liked = post['liked'] == true;
-    setState(() { post['liked'] = !liked; post['like_count'] = ((post['like_count'] as int?) ?? 0) + (liked ? -1 : 1); });
+    final me = db.auth.currentUser?.id;
+    if (me == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to react to a post.')));
+      return;
+    }
+    const options = <Map<String,String>>[
+      {'type':'like','label':'Like','symbol':'👍'},
+      {'type':'love','label':'Love','symbol':'❤️'},
+      {'type':'care','label':'Care','symbol':'🤗'},
+      {'type':'haha','label':'Haha','symbol':'😂'},
+      {'type':'wow','label':'Wow','symbol':'😮'},
+      {'type':'sad','label':'Sad','symbol':'😢'},
+      {'type':'angry','label':'Angry','symbol':'😡'},
+    ];
+    final selected = await showModalBottomSheet<String>(
+      context: context, backgroundColor: panel, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Choose your reaction', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 14),
+          Wrap(spacing: 9, runSpacing: 9, children: options.map((option) => ActionChip(
+            avatar: Text(option['symbol']!, style: const TextStyle(fontSize: 18)),
+            label: Text(option['label']!),
+            onPressed: () => material_widgets_ui.Navigator.pop(sheetContext, option['type']),
+            backgroundColor: post['reaction_type'] == option['type'] ? emerald.withValues(alpha: .2) : const Color(0xFF172235),
+            side: BorderSide(color: post['reaction_type'] == option['type'] ? emerald : Colors.white12),
+            labelStyle: const TextStyle(color: Colors.white),
+          )).toList()),
+          if (post['reaction_type'] != null) Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(onPressed: () => material_widgets_ui.Navigator.pop(sheetContext, 'remove'), child: const Text('Remove reaction')),
+          ),
+        ]),
+      )),
+    );
+    if (selected == null) return;
+    final id = post['id'].toString();
     try {
-      if (liked) { await db.from('community_likes').delete().eq('post_id', id).eq('user_id', me); }
-      else { await db.from('community_likes').insert({'post_id': id, 'user_id': me}); }
-    } catch (_) { if (mounted) await refresh(); }
+      if (selected == 'remove') {
+        await db.from('community_reactions').delete().eq('post_id', id).eq('user_id', me);
+      } else {
+        await db.from('community_reactions').upsert({
+          'post_id': id, 'user_id': me, 'reaction_type': selected,
+        }, onConflict: 'post_id,user_id');
+      }
+      await refresh();
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save reaction: $error')));
+    }
   }
   Future<void> toggleSave(Map<String,dynamic> post) async {
     final me=db.auth.currentUser!.id,id=post['id'].toString();
@@ -3605,12 +3653,15 @@ class CommunityPostCard extends StatelessWidget {
                 ),
           ),
         Padding(padding: const EdgeInsets.fromLTRB(10, 8, 10, 8), child: Row(children: [
-          Text('${post['like_count'] ?? 0} likes', style: const TextStyle(color: muted, fontSize: 11)),
+          Text('${post['like_count'] ?? 0} reactions', style: const TextStyle(color: muted, fontSize: 11)),
           const Spacer(), Text('${post['comment_count'] ?? 0} comments', style: const TextStyle(color: muted, fontSize: 11))])),
         const Divider(height: 1, color: Colors.white10),
         Row(children: [
-          Expanded(child: TextButton.icon(onPressed: onLike, icon: Icon(post['liked'] == true ? Icons.favorite : Icons.favorite_border,
-            color: post['liked'] == true ? Colors.pinkAccent : muted, size: 18), label: const Text('Like', style: TextStyle(color: muted)))),
+          Expanded(child: TextButton.icon(onPressed: onLike, icon: Text(
+            _communityReactionSymbol(post['reaction_type']?.toString() ?? 'like'),
+            style: const TextStyle(fontSize: 17),
+          ), label: Text(post['reaction_type'] == null ? 'React' : _communityReactionLabel(post['reaction_type'].toString()),
+            style: const TextStyle(color: muted, fontSize: 11)))),
           Expanded(child: TextButton.icon(onPressed: onComments, icon: const Icon(Icons.mode_comment_outlined, color: muted, size: 18),
             label: const Text('Comment', style: TextStyle(color: muted)))),
           Expanded(child: TextButton.icon(onPressed: onShare, icon: const Icon(Icons.share_outlined,color:muted,size:18),
@@ -3621,6 +3672,12 @@ class CommunityPostCard extends StatelessWidget {
       ]));
   }
 }
+String _communityReactionSymbol(String type) => const {
+  'like':'👍','love':'❤️','care':'🤗','haha':'😂','wow':'😮','sad':'😢','angry':'😡',
+}[type] ?? '👍';
+String _communityReactionLabel(String type) => const {
+  'like':'Like','love':'Love','care':'Care','haha':'Haha','wow':'Wow','sad':'Sad','angry':'Angry',
+}[type] ?? 'React';
 String _timeAgo(String? raw) {
   final date = DateTime.tryParse(raw ?? '')?.toLocal(); if (date == null) return '';
   final delta = DateTime.now().difference(date);
