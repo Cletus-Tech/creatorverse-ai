@@ -2714,7 +2714,7 @@ class _CommunityTabState extends State<CommunityTab> {
   String _searchQuery = '';
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
-  String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode' + '_$_communitySection';
+  String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode' '_$_communitySection';
 
   Future<List<Map<String,dynamic>>> _initialFeed() async {
     try {
