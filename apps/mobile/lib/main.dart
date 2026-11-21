@@ -3753,6 +3753,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
         'post_id': widget.post['id'], 'user_id': userId,
         'body': body, 'parent_id': replyingTo,
       });
+      if (!mounted) return;
       input.clear();
       FocusScope.of(context).requestFocus(inputFocus);
       setState(() {
