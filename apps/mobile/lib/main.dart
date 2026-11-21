@@ -26,6 +26,7 @@ import 'package:printing/printing.dart';
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://xgdngnekihhnkzurhvpe.supabase.co');
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: 'sb_publishable_RS7zMUhSXPJGooi8lQmMIQ_NyS4pS-h');
 const ink = Color(0xFF07151A), panel = Color(0xFF102329), emerald = Color(0xFF18A878), gold = Color(0xFFE6BC55), muted = Color(0xFF9BAEAA);
+final ValueNotifier<String> cvBillboardActivePage = ValueNotifier<String>('community');
 const MethodChannel _callRingtoneChannel = MethodChannel('creatorverse/call_ringtone');
 const MethodChannel _mediaSaverChannel = MethodChannel('creatorverse/media_saver');
 
@@ -236,6 +237,7 @@ class CreatorVerseApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white12)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: emerald)))),
+    builder:(context,child)=>Stack(fit:StackFit.expand,children:[child??const SizedBox.shrink(),const GlobalBillboardOverlay()]),
     home: const CreatorVerseLaunchGate());
 }
 
@@ -523,6 +525,7 @@ class _MainShellState extends State<MainShell> {
 
   void _selectTab(int tab) {
     if (tab < 0 || tab >= labels.length) return;
+    cvBillboardActivePage.value=['community','learning','landing','campus','profiles'][tab];
     setState(() {
       index = tab;
       // Build each tab only when first visited. Keep it in the IndexedStack
@@ -879,6 +882,95 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile')]));
   }
 }
+class GlobalBillboardOverlay extends StatefulWidget {
+  const GlobalBillboardOverlay({super.key});
+  @override State<GlobalBillboardOverlay> createState()=>_GlobalBillboardOverlayState();
+}
+class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
+  final db=Supabase.instance.client;
+  Map<String,dynamic>? item;
+  Timer? expiry,refresh;
+  RealtimeChannel? channel;
+  VideoPlayerController? video;
+  String page='community';
+  final Set<String> seen=<String>{};
+  bool loading=false;
+  @override void initState(){
+    super.initState();
+    page=cvBillboardActivePage.value;
+    cvBillboardActivePage.addListener(_pageChanged);
+    _load();
+    refresh=Timer.periodic(const Duration(seconds:30),(_)=>_load());
+    channel=db.channel('cv-app-global-billboard-overlay')
+      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'billboard_items',callback:(_)=>_load()).subscribe();
+  }
+  void _pageChanged(){final next=cvBillboardActivePage.value;if(next==page)return;page=next;_load();}
+  Future<void> _load() async{
+    if(loading)return;loading=true;
+    try{
+      final rows=await db.from('billboard_items')
+        .select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,target_audience,overlay_enabled,overlay_pages,overlay_duration_seconds,background_color,accent_color,text_color,kicker_text')
+        .eq('is_published',true).eq('overlay_enabled',true).order('display_order');
+      var role='';
+      final user=db.auth.currentUser;
+      if(user!=null){try{final p=await db.from('profiles').select('role').eq('id',user.id).maybeSingle();role=(p?['role']??'').toString();}catch(_){}}
+      final now=DateTime.now().toUtc();
+      final match=List<Map<String,dynamic>>.from(rows).where((x){
+        final pages=List<String>.from((x['overlay_pages'] as List?)??const ['all']);
+        final target=(x['target_audience']??'whole_platform').toString();
+        final start=DateTime.tryParse((x['starts_at']??'').toString());
+        final end=DateTime.tryParse((x['ends_at']??'').toString());
+        final audience=target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role));
+        return audience&&(pages.contains('all')||pages.contains(page))&&(start==null||!start.isAfter(now))&&(end==null||end.isAfter(now))&&!seen.contains('${x['id']}:$page');
+      }).toList();
+      if(match.isNotEmpty&&mounted&&item==null) _show(match.first);
+      if(match.isEmpty&&item!=null){_dismiss();}
+    }catch(e){debugPrint('Global billboard overlay load failed: $e');}
+    finally{loading=false;}
+  }
+  Future<void> _show(Map<String,dynamic> next) async{
+    expiry?.cancel();final old=video;video=null;await old?.dispose();
+    if(!mounted)return;
+    setState(()=>item=next);
+    seen.add('${next['id']}:$page');
+    if(next['media_type']=='video'&&(next['media_url']??'').toString().isNotEmpty){
+      final controller=VideoPlayerController.networkUrl(Uri.parse(next['media_url'].toString()));
+      video=controller;
+      try{await controller.initialize();await controller.setVolume(0);await controller.setLooping(true);await controller.play();if(mounted)setState((){});}catch(_){}
+    }
+    final seconds=((next['overlay_duration_seconds'] as num?)?.toInt()??8).clamp(3,120);
+    expiry=Timer(Duration(seconds:seconds),_dismiss);
+  }
+  void _dismiss(){expiry?.cancel();final old=video;video=null;old?.dispose();if(mounted)setState(()=>item=null);}
+  Color _color(dynamic value,Color fallback){final raw=(value??'').toString().replaceAll('#','');final n=raw.length==6?int.tryParse(raw,radix:16):null;return n==null?fallback:Color(0xFF000000|n);}
+  @override void dispose(){
+    expiry?.cancel();refresh?.cancel();cvBillboardActivePage.removeListener(_pageChanged);
+    final c=channel;if(c!=null)unawaited(c.unsubscribe());video?.dispose();super.dispose();
+  }
+  @override Widget build(BuildContext context){
+    final x=item;if(x==null)return const SizedBox.shrink();
+    final accent=_color(x['accent_color'],emerald),background=_color(x['background_color'],panel),textColor=_color(x['text_color'],Colors.white);
+    final media=(x['media_url']??'').toString(),type=(x['media_type']??'').toString();
+    final player=video;
+    return Positioned(left:12,right:12,bottom:MediaQuery.of(context).padding.bottom+88,
+      child:SafeArea(top:false,bottom:false,child:Material(color:Colors.transparent,child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:260),child:AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:260),child:Container(
+        height:150,clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:background,borderRadius:BorderRadius.circular(18),border:Border.all(color:accent.withValues(alpha:.7)),boxShadow:const [BoxShadow(color:Colors.black54,blurRadius:24,offset:Offset(0,8))]),
+        child:Stack(fit:StackFit.expand,children:[
+          if(media.isNotEmpty&&type=='image')Image.network(media,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),
+          if(media.isNotEmpty&&type=='video'&&player!=null&&player.value.isInitialized)FittedBox(fit:BoxFit.cover,child:SizedBox(width:player.value.size.width,height:player.value.size.height,child:VideoPlayer(player))),
+          DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.centerLeft,end:Alignment.centerRight,colors:[background.withValues(alpha:.96),background.withValues(alpha:.72),background.withValues(alpha:.2)]))),
+          Padding(padding:const EdgeInsets.fromLTRB(16,14,50,14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
+            if((x['kicker_text']??'').toString().isNotEmpty)Text(x['kicker_text'].toString().toUpperCase(),maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:accent,fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),
+            const SizedBox(height:5),Text((x['title']??'CreatorVerse update').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:textColor,fontSize:17,fontWeight:FontWeight.w900)),
+            if((x['message']??'').toString().isNotEmpty)Padding(padding:const EdgeInsets.only(top:4),child:Text(x['message'].toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:textColor.withValues(alpha:.86),fontSize:11))),
+            if((x['button_label']??'').toString().isNotEmpty&&(x['button_url']??'').toString().isNotEmpty)Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:(){final url=x['button_url'].toString();final uri=Uri.tryParse(url);if(uri!=null)launchUrl(uri,mode:url.startsWith('http')?LaunchMode.externalApplication:LaunchMode.platformDefault);},style:TextButton.styleFrom(foregroundColor:accent,padding:EdgeInsets.zero,visualDensity:VisualDensity.compact),child:Text(x['button_label'].toString(),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:11)))),
+          ])),
+          Positioned(right:7,top:7,child:IconButton(visualDensity:VisualDensity.compact,onPressed:_dismiss,style:IconButton.styleFrom(backgroundColor:Colors.black54,foregroundColor:Colors.white),icon:const Icon(Icons.close,size:17))),
+        ]),
+      ))))))));
+  }
+}
+
 class BillboardAnimatedTitle extends StatefulWidget {
   final String text,animation,transition;
   final Color color;
