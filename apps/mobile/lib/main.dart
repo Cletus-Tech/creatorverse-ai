@@ -5396,6 +5396,10 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     var audience=(old?['target_audience']??'whole_platform').toString();
     var theme=(old?['theme_key']??'gold').toString();
     var notify=old?['send_notification']==true;
+    var pinned=old?['is_countdown_pinned']==true;
+    var overlayEnabled=old?['overlay_enabled']==true;
+    var overlayPages=(old?['overlay_pages'] as List?)?.map((e)=>e.toString()).toList()??<String>['all'];
+    var overlayDuration=(old?['overlay_duration_seconds'] as num?)?.toInt()??8;
     DateTime? countdownTarget=DateTime.tryParse((old?['countdown_target_at']??'').toString())?.toLocal();
     var countdownComplete=(old?['countdown_complete_label']??'EVENT STARTED').toString();
     DateTime? expiry=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
@@ -5471,7 +5475,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               contentPadding:EdgeInsets.zero,
               value:countdownTarget!=null,
               onChanged:(v) async {
-                if(!v){setD(()=>countdownTarget=null);return;}
+                if(!v){setD(()=>{countdownTarget=null;pinned=false;});return;}
                 final now=DateTime.now();
                 final date=await showDatePicker(context:ctx,initialDate:countdownTarget??now.add(const Duration(days:1)),firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));
                 if(!ctx.mounted||date==null)return;
@@ -5486,8 +5490,52 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               Text('Countdown to: ${countdownTarget!.day.toString().padLeft(2,'0')}/${countdownTarget!.month.toString().padLeft(2,'0')}/${countdownTarget!.year}  ${TimeOfDay.fromDateTime(countdownTarget!).format(ctx)}',style:const TextStyle(color:emerald,fontSize:12,fontWeight:FontWeight.w700)),
               TextFormField(initialValue:countdownComplete,decoration:const InputDecoration(labelText:'Message when countdown ends'),onChanged:(v)=>countdownComplete=v),
             ],
-            const SizedBox(height:12),
-            InkWell(
+            const SizedBox(height:8),
+            SwitchListTile(
+              contentPadding:EdgeInsets.zero,
+              value:pinned&&countdownTarget!=null,
+              onChanged:countdownTarget==null?null:(v)=>setD(()=>pinned=v),
+              title:const Text('Pin this countdown',style:TextStyle(fontSize:13,fontWeight:FontWeight.w800)),
+              subtitle:const Text('Keep it visible below the billboard while advertisements change.',style:TextStyle(color:muted,fontSize:11)),
+            ),
+            const Divider(height:18),
+            SwitchListTile(
+              contentPadding:EdgeInsets.zero,
+              value:overlayEnabled,
+              onChanged:(v)=>setD(()=>overlayEnabled=v),
+              title:const Text('Show this update as a temporary overlay',style:TextStyle(fontSize:13,fontWeight:FontWeight.w800)),
+              subtitle:const Text('It floats over selected pages and disappears automatically. It does not reserve space on the page.',style:TextStyle(color:muted,fontSize:11)),
+            ),
+            if(overlayEnabled)...[
+              const SizedBox(height:5),
+              const Text('Where should it appear?',style:TextStyle(color:muted,fontSize:12,fontWeight:FontWeight.w700)),
+              const SizedBox(height:7),
+              Wrap(spacing:7,runSpacing:6,children:[
+                for(final pageOption in const <String,String>{
+                  'all':'All pages','landing':'Landing','community':'Community','profiles':'Profiles','dashboards':'Dashboards','campus':'Campus','learning':'Learning','messages':'Messages','marketplace':'Marketplace','academic':'Academic',
+                }.entries)
+                  FilterChip(
+                    label:Text(pageOption.value,style:const TextStyle(fontSize:11)),
+                    selected:overlayPages.contains(pageOption.key),
+                    onSelected:(selected)=>setD((){
+                      if(pageOption.key=='all'){overlayPages=selected?<String>['all']:<String>[];}
+                      else{
+                        overlayPages.remove('all');
+                        if(selected){if(!overlayPages.contains(pageOption.key))overlayPages.add(pageOption.key);}
+                        else{overlayPages.remove(pageOption.key);}
+                      }
+                    }),
+                  ),
+              ]),
+              const SizedBox(height:8),
+              DropdownButtonFormField<int>(
+                value:[5,8,10,15,20,30,45,60].contains(overlayDuration)?overlayDuration:8,
+                decoration:const InputDecoration(labelText:'How long should the overlay stay visible?'),
+                items:const [5,8,10,15,20,30,45,60].map((v)=>DropdownMenuItem(value:v,child:Text('$v seconds'))).toList(),
+                onChanged:(v)=>setD(()=>overlayDuration=v??8),
+              ),
+            ],
+            const SizedBox(height:12),            InkWell(
               onTap:() async {
                 final now=DateTime.now();
                 final picked=await showDatePicker(context:ctx,initialDate:expiry??now,firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));
@@ -5514,6 +5562,8 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               final headline=title.text.trim();
               if(headline.isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Enter a headline.')));return;}
               if(message.text.trim().isEmpty&&file==null&&(old?['media_url']??'').toString().isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Add a message or attach media.')));return;}
+              if(pinned&&countdownTarget==null){messenger.showSnackBar(const SnackBar(content:Text('Choose a countdown date before pinning it.')));return;}
+              if(overlayEnabled&&overlayPages.isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Choose at least one page for the overlay.')));return;}
               setD(()=>saving=true);
               try{
                 String? mediaUrl=removeExistingMedia?null:((old?['media_url']??'').toString().isEmpty?null:old!['media_url'].toString());
@@ -5549,12 +5599,21 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                   'countdown_target_at':countdownTarget?.toUtc().toIso8601String(),
                   'countdown_timezone':DateTime.now().timeZoneName,
                   'countdown_complete_label':countdownComplete.trim().isEmpty?'EVENT STARTED':countdownComplete.trim(),
+                  'is_countdown_pinned':pinned&&countdownTarget!=null,
+                  'overlay_enabled':overlayEnabled,
+                  'overlay_pages':overlayPages,
+                  'overlay_duration_seconds':overlayDuration,
                   'display_order':old?['display_order']??0,
                   'starts_at':old?['starts_at'],
                   'ends_at':expiry?.toUtc().toIso8601String(),
                   'is_published':true,
                   'updated_at':DateTime.now().toUtc().toIso8601String(),
                 };
+                if(pinned&&countdownTarget!=null){
+                  var unpin=db.from('billboard_items').update({'is_countdown_pinned':false}).eq('is_countdown_pinned',true);
+                  if(old!=null)unpin=unpin.neq('id',old['id']);
+                  await unpin;
+                }
                 if(old==null){
                   data['created_by']=db.auth.currentUser!.id;
                   final inserted=await db.from('billboard_items').insert(data).select('id').single();
