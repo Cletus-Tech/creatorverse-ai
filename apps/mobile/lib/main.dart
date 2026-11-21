@@ -1,3 +1,4 @@
+// Billboard audience filtering: keep page and role eligibility aligned.
 // ignore_for_file: deprecated_member_use, prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'dart:async';
 import 'dart:convert';
