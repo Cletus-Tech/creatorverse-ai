@@ -5515,7 +5515,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               const SizedBox(height:7),
               Wrap(spacing:7,runSpacing:6,children:[
                 for(final pageOption in const <String,String>{
-                  'all':'All pages','landing':'Landing','community':'Community','profiles':'Profiles','dashboards':'Dashboards','campus':'Campus','learning':'Learning','messages':'Messages','marketplace':'Marketplace','academic':'Academic',
+                  'all':'All pages','landing':'Landing','community':'Community','profiles':'Profiles','dashboards':'Dashboards','campus':'Campus','learning':'Learning','messages':'Messages','marketplace':'Marketplace','academic':'Academic','other':'Other pages',
                 }.entries)
                   FilterChip(
                     label:Text(pageOption.value,style:const TextStyle(fontSize:11)),
@@ -7760,7 +7760,7 @@ String _billboardPageForPath(String path){
   if(p.contains('course')||p.contains('learn')||p.contains('certificate')||p.contains('quiz'))return 'learning';
   if(p.contains('dashboard')||p.contains('admin'))return 'dashboards';
   if(p.contains('community'))return 'community';
-  return 'landing';
+  return 'other';
 }
 void _pushBillboardRoute(BuildContext context,String page,Route<dynamic> route){
   final previous=cvBillboardActivePage.value;
