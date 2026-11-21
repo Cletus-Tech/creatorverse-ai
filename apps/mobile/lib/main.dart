@@ -953,12 +953,12 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
     final media=(x['media_url']??'').toString(),type=(x['media_type']??'').toString();
     final player=video;
     return Positioned(left:12,right:12,bottom:MediaQuery.of(context).padding.bottom+88,
-      child:SafeArea(top:false,bottom:false,child:Material(color:Colors.transparent,child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:260),child:AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:260),child:Container(
-        height:150,clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:background,borderRadius:BorderRadius.circular(18),border:Border.all(color:accent.withValues(alpha:.7)),boxShadow:const [BoxShadow(color:Colors.black54,blurRadius:24,offset:Offset(0,8))]),
+      child:SafeArea(top:false,bottom:false,child:Material(color:Colors.transparent,child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:260),child:AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:260),child:AspectRatio(aspectRatio:16/9,child:Container(
+        clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:background,borderRadius:BorderRadius.circular(18),border:Border.all(color:accent.withValues(alpha:.7)),boxShadow:const [BoxShadow(color:Colors.black54,blurRadius:24,offset:Offset(0,8))]),
         child:Stack(fit:StackFit.expand,children:[
           if(media.isNotEmpty&&type=='image')Image.network(media,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),
           if(media.isNotEmpty&&type=='video'&&player!=null&&player.value.isInitialized)FittedBox(fit:BoxFit.cover,child:SizedBox(width:player.value.size.width,height:player.value.size.height,child:VideoPlayer(player))),
-          DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.centerLeft,end:Alignment.centerRight,colors:[background.withValues(alpha:.96),background.withValues(alpha:.72),background.withValues(alpha:.2)]))),
+          DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.bottomCenter,end:Alignment.topCenter,colors:[background.withValues(alpha:.96),background.withValues(alpha:.68),background.withValues(alpha:.08)]))),
           Padding(padding:const EdgeInsets.fromLTRB(16,14,50,14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
             if((x['kicker_text']??'').toString().isNotEmpty)Text(x['kicker_text'].toString().toUpperCase(),maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:accent,fontSize:9,letterSpacing:1,fontWeight:FontWeight.w900)),
             const SizedBox(height:5),Text((x['title']??'CreatorVerse update').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:TextStyle(color:textColor,fontSize:17,fontWeight:FontWeight.w900)),
@@ -967,7 +967,7 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
           ])),
           Positioned(right:7,top:7,child:IconButton(visualDensity:VisualDensity.compact,onPressed:_dismiss,style:IconButton.styleFrom(backgroundColor:Colors.black54,foregroundColor:Colors.white),icon:const Icon(Icons.close,size:17))),
         ]),
-      ))))))));
+      )))))))));
   }
 }
 
