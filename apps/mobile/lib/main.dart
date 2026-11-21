@@ -2710,9 +2710,11 @@ class _CommunityTabState extends State<CommunityTab> {
   late Future<List<Map<String, dynamic>>> stories;
   final db = Supabase.instance.client;
   String _feedMode = 'for_you';
+  String _communitySection = 'timeline';
+  String _searchQuery = '';
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
-  String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode';
+  String _feedCacheKey() => 'cv_community_feed_${db.auth.currentUser?.id ?? 'guest'}_$_feedMode' + '_$_communitySection';
 
   Future<List<Map<String,dynamic>>> _initialFeed() async {
     try {
@@ -2777,13 +2779,17 @@ class _CommunityTabState extends State<CommunityTab> {
         ...List<Map<String, dynamic>>.from(followsRaw)
           .map((row) => row['following_id'].toString()),
       }.toList();
-      final raw = await db.from('community_posts').select(columns)
-        .eq('status', 'published').inFilter('user_id', visibleAuthors)
-        .order('created_at', ascending: false).limit(40);
+      var query = db.from('community_posts').select(columns)
+        .eq('status', 'published').inFilter('user_id', visibleAuthors);
+      if (_communitySection == 'reels') query = query.eq('media_type', 'video');
+      if (_communitySection == 'showcase') query = query.not('destination_url', 'is', null);
+      final raw = await query.order('created_at', ascending: false).limit(40);
       posts = List<Map<String, dynamic>>.from(raw);
     } else {
-      final raw = await db.from('community_posts').select(columns)
-        .eq('status', 'published').order('created_at', ascending: false).limit(40);
+      var query = db.from('community_posts').select(columns).eq('status', 'published');
+      if (_communitySection == 'reels') query = query.eq('media_type', 'video');
+      if (_communitySection == 'showcase') query = query.not('destination_url', 'is', null);
+      final raw = await query.order('created_at', ascending: false).limit(40);
       posts = List<Map<String, dynamic>>.from(raw);
     }
     if (posts.isEmpty) return posts;
@@ -2852,6 +2858,18 @@ class _CommunityTabState extends State<CommunityTab> {
     final next = _initialFeed();
     setState(() => feed = next);
     await next;
+  }
+  Future<void> selectCommunitySection(String section) async {
+    if (_communitySection == section || !mounted) return;
+    setState(() => _communitySection = section);
+    final next = _initialFeed();
+    setState(() => feed = next);
+    await next;
+  }
+  void openCommunityGroups() {
+    material_widgets_ui.Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MessageInboxScreen()),
+    );
   }
   Future<void> createStory() async {
     final input=TextEditingController();XFile? media;bool video=false;
@@ -3261,6 +3279,17 @@ class _CommunityTabState extends State<CommunityTab> {
         SnackBar(content:Text('Could not load conversations for sharing: $error')));}
     }
   }
+  Widget _communityNavChip(String label, String section, IconData icon) {
+    final selected = _communitySection == section;
+    return ActionChip(
+      avatar: Icon(icon, size: 16, color: selected ? Colors.white : emerald),
+      label: Text(label),
+      onPressed: () => selectCommunitySection(section),
+      backgroundColor: selected ? const Color(0xFF176A54) : panel,
+      side: BorderSide(color: selected ? emerald.withValues(alpha: .55) : Colors.white.withValues(alpha: .09)),
+      labelStyle: TextStyle(color: selected ? Colors.white : Colors.white70, fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+    );
+  }
   @override
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
     future: feed, builder: (context, snapshot) {
@@ -3272,11 +3301,78 @@ class _CommunityTabState extends State<CommunityTab> {
           OutlinedButton(onPressed: () => setState(() => feed = loadFeed()), child: const Text('Try again'))])));
       }
       final posts = snapshot.data ?? [];
+      final query = _searchQuery.trim().toLowerCase();
+      final visiblePosts = posts.where((post) {
+        if (query.isEmpty) return true;
+        final author = Map<String,dynamic>.from(post['author'] as Map? ?? {});
+        final haystack = [
+          post['title'], post['description'], post['category'],
+          author['full_name'], author['username'], post['tags'],
+        ].map((value) => value?.toString() ?? '').join(' ').toLowerCase();
+        return haystack.contains(query);
+      }).toList();
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
-        const Text('Community', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: -.4)),
-        const SizedBox(height: 3),
-        const Text('Connect, share and learn together.', style: TextStyle(color: muted, fontSize: 12)),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF142B42), Color(0xFF101B30), Color(0xFF102B2B)],
+            ),
+            border: Border.all(color: emerald.withValues(alpha: .20)),
+          ),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('CREATORVERSE COMMUNITY', style: TextStyle(color: emerald, fontSize: 9, letterSpacing: 1.7, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 7),
+              const Text('Create. Connect. Grow.', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+              const SizedBox(height: 5),
+              Text('A space for creators to share work and build together.', style: TextStyle(color: Colors.white.withValues(alpha: .72), fontSize: 11, height: 1.35)),
+            ])),
+            const SizedBox(width: 8),
+            Container(width: 48, height: 48, decoration: BoxDecoration(
+              shape: BoxShape.circle, color: emerald.withValues(alpha: .12),
+              border: Border.all(color: emerald.withValues(alpha: .4)),
+            ), child: const Icon(Icons.hub_outlined, color: emerald, size: 25)),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          onChanged: (value) => setState(() => _searchQuery = value),
+          style: const TextStyle(fontSize: 13),
+          decoration: InputDecoration(
+            hintText: 'Search creators, posts and topics',
+            prefixIcon: const Icon(Icons.search, color: muted),
+            suffixIcon: _searchQuery.isEmpty ? null : IconButton(
+              tooltip: 'Clear search',
+              onPressed: () => setState(() => _searchQuery = ''),
+              icon: const Icon(Icons.close, size: 18),
+            ),
+            filled: true, fillColor: panel,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.white.withValues(alpha: .08))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.white.withValues(alpha: .08))),
+          ),
+        ),
         const SizedBox(height: 12),
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+          _communityNavChip('Timeline', 'timeline', Icons.dynamic_feed_outlined),
+          const SizedBox(width: 7),
+          _communityNavChip('Reels', 'reels', Icons.play_circle_outline),
+          const SizedBox(width: 7),
+          ActionChip(
+            avatar: const Icon(Icons.groups_outlined, size: 16, color: emerald),
+            label: const Text('Groups'),
+            onPressed: openCommunityGroups,
+            backgroundColor: panel,
+            side: BorderSide(color: Colors.white.withValues(alpha: .09)),
+            labelStyle: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(width: 7),
+          _communityNavChip('Showcase', 'showcase', Icons.auto_awesome_outlined),
+        ])),
+        const SizedBox(height: 10),
         Row(children: [
           ChoiceChip(label: const Text('For you'), selected: _feedMode == 'for_you',
             onSelected: (_) => selectFeedMode('for_you')),
@@ -3347,16 +3443,16 @@ class _CommunityTabState extends State<CommunityTab> {
           ),
         ),
         const SizedBox(height: 14),
-        if (posts.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
-          const Icon(Icons.forum_outlined, color: emerald, size: 44), const SizedBox(height: 12),
-          Text(_feedMode == 'following' ? 'Your Following feed is quiet' : 'Your community starts here',
+        if (visiblePosts.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 50), child: material_widgets_ui.Column(children: [
+          Icon(_communitySection == 'reels' ? Icons.play_circle_outline : Icons.forum_outlined, color: emerald, size: 44), const SizedBox(height: 12),
+          Text(query.isNotEmpty ? 'No matching posts' : _communitySection == 'reels' ? 'No Reels yet' : _communitySection == 'showcase' ? 'No showcases yet' : _feedMode == 'following' ? 'Your Following feed is quiet' : 'Your community starts here',
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          Text(_feedMode == 'following'
+          Text(query.isNotEmpty ? 'Try another creator name, topic or keyword.' : _communitySection == 'reels' ? 'Video posts from the community will appear here.' : _communitySection == 'showcase' ? 'Share a post with a project link to feature your work here.' : _feedMode == 'following'
             ? 'Follow members to see their updates here, or share your own post.'
             : 'Be the first to share an update.',
             textAlign: TextAlign.center, style: const TextStyle(color: muted))])),
-        for (final post in posts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post), onAuthorTap: () { final author=Map<String,dynamic>.from(post['author'] as Map? ?? {}); final key=(author['username']??post['user_id']??'').toString(); if(key.isNotEmpty){openFeature(context,'/profile.html?u=${Uri.encodeComponent(key)}');} }),
+        for (final post in visiblePosts) CommunityPostCard(post: post, isMine: post['user_id']==db.auth.currentUser?.id, onLike: () => toggleLike(post), onComments: () => showComments(post), onSave: () => toggleSave(post), onShare: () => sharePost(post), onReport: () => reportPost(post), onEdit: () => editPost(post), onDelete: () => deletePost(post), onAuthorTap: () { final author=Map<String,dynamic>.from(post['author'] as Map? ?? {}); final key=(author['username']??post['user_id']??'').toString(); if(key.isNotEmpty){openFeature(context,'/profile.html?u=${Uri.encodeComponent(key)}');} }),
       ]));
     });
 }
