@@ -1066,8 +1066,11 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   }).toList();
   Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1).toInt()];
   Map<String,dynamic>? get pinnedCountdown {
+    final now=DateTime.now().toUtc();
     for(final item in slides){
-      if(item['is_published']==true&&item['is_countdown_pinned']==true&&(item['countdown_target_at']??'').toString().isNotEmpty)return item;
+      final start=DateTime.tryParse((item['starts_at']??'').toString());
+      final end=DateTime.tryParse((item['ends_at']??'').toString());
+      if(item['is_published']==true&&item['is_countdown_pinned']==true&&(item['countdown_target_at']??'').toString().isNotEmpty&&(start==null||!start.isAfter(now))&&(end==null||end.isAfter(now)))return item;
     }
     return null;
   }
@@ -5826,7 +5829,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
             const SizedBox(width: 8), metric('Applications', data['applications'], Icons.assignment_outlined),
           ]),
           const SizedBox(height: 12),
-          FilledButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const NativeBillboardAdminScreen())),
+          FilledButton.icon(onPressed: () => _pushBillboardRoute(context,'dashboards',MaterialPageRoute(builder: (_) => const NativeBillboardAdminScreen())),
             icon: const Icon(Icons.view_carousel_outlined), label: const Text('Manage Dynamic Billboard'),
             style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(46))),
           const SizedBox(height: 10),
