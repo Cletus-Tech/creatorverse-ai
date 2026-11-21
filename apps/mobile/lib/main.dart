@@ -7693,8 +7693,11 @@ void openFeature(BuildContext context, String path) {
   if (parsedPath?.path == '/profile.html') {
     final userId = parsedPath?.queryParameters['u']?.trim() ?? '';
     if (userId.isNotEmpty) {
+      final previousPage=cvBillboardActivePage.value;
+      cvBillboardActivePage.value='profiles';
       material_widgets_ui.Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => NativePublicProfileRouteScreen(userId: userId)));
+        builder: (_) => NativePublicProfileRouteScreen(userId: userId)))
+        .whenComplete(()=>cvBillboardActivePage.value=previousPage);
       return;
     }
   }
