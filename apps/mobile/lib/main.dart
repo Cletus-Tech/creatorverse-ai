@@ -1300,7 +1300,7 @@ class _HomeTabState extends State<HomeTab>{
   @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:summary,builder:(context,snapshot){
     final data=snapshot.data??{};
     return ListView(padding:const EdgeInsets.all(20),children:[
-      const CreatorVerseBillboard(),
+      const CreatorVerseBillboard(placement:'explore'),
       const SizedBox(height:4),
       if(snapshot.connectionState==ConnectionState.waiting)const LinearProgressIndicator(color:emerald),
       if(snapshot.hasError)const Text('Your learning summary will appear when the connection is restored.',style:TextStyle(color:muted,fontSize:12)),
@@ -2038,7 +2038,7 @@ class CampusTab extends StatelessWidget {
   const CampusTab({super.key});
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [
-    const CreatorVerseBillboard(),
+    const CreatorVerseBillboard(placement:'campus'),
     const SizedBox(height: 4),
     Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(20),
@@ -5506,15 +5506,24 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               subtitle:const Text('Keep it visible below the billboard while advertisements change.',style:TextStyle(color:muted,fontSize:11)),
             ),
             const Divider(height:18),
-            SwitchListTile(
-              contentPadding:EdgeInsets.zero,
-              value:overlayEnabled,
+            const Text('Permanent dashboard placement',style:TextStyle(color:muted,fontSize:12,fontWeight:FontWeight.w800)),
+            SwitchListTile(contentPadding:EdgeInsets.zero,value:dashboardEnabled,onChanged:(v)=>setD(()=>dashboardEnabled=v),title:const Text('Keep this announcement in dashboard areas'),subtitle:const Text('Permanent placement is separate from temporary pop-up overlays.',style:TextStyle(color:muted,fontSize:11))),
+            if(dashboardEnabled)Wrap(spacing:6,children:[for(final entry in const <String,String>{'explore':'Explore','campus':'Campus','learning':'Learning','academic':'Academic'}.entries)FilterChip(label:Text(entry.value),selected:dashboardPages.contains(entry.key),onSelected:(v)=>setD((){if(v){if(!dashboardPages.contains(entry.key))dashboardPages.add(entry.key);}else{dashboardPages.remove(entry.key);}}))]),
+            const SizedBox(height:8),
+            InkWell(onTap:() async {final now=DateTime.now();final date=await showDatePicker(context:ctx,initialDate:startsAt??now,firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));if(!ctx.mounted||date==null)return;final time=await showTimePicker(context:ctx,initialTime:TimeOfDay.fromDateTime(startsAt??now));if(!ctx.mounted)return;if(time!=null)setD(()=>startsAt=DateTime(date.year,date.month,date.day,time.hour,time.minute));},child:InputDecorator(decoration:const InputDecoration(labelText:'Temporary overlay show time',suffixIcon:Icon(Icons.schedule)),child:Text(startsAt==null?'Show immediately':'Starts '+startsAt!.day.toString().padLeft(2,'0')+'/'+startsAt!.month.toString().padLeft(2,'0')+'/'+startsAt!.year.toString()+'  '+TimeOfDay.fromDateTime(startsAt!).format(ctx)))),
+            Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>setD(()=>startsAt=null),child:const Text('Clear show time / show immediately'))),
+            const Divider(height:18),
+            SwitchListTile(contentPadding:EdgeInsets.zero,value:overlayEnabled,
               onChanged:(v)=>setD(()=>overlayEnabled=v),
               title:const Text('Show this update as a temporary overlay',style:TextStyle(fontSize:13,fontWeight:FontWeight.w800)),
               subtitle:const Text('It floats over selected pages and disappears automatically. It does not reserve space on the page.',style:TextStyle(color:muted,fontSize:11)),
             ),
             if(overlayEnabled)...[
               const SizedBox(height:5),
+              DropdownButtonFormField<String>(value:['top_left','top_center','top_right','bottom_left','bottom_center','bottom_right'].contains(overlayPosition)?overlayPosition:'bottom_center',decoration:const InputDecoration(labelText:'Overlay position'),items:const [DropdownMenuItem(value:'top_left',child:Text('Top left')),DropdownMenuItem(value:'top_center',child:Text('Top centre')),DropdownMenuItem(value:'top_right',child:Text('Top right')),DropdownMenuItem(value:'bottom_left',child:Text('Bottom left')),DropdownMenuItem(value:'bottom_center',child:Text('Bottom centre')),DropdownMenuItem(value:'bottom_right',child:Text('Bottom right'))],onChanged:(v)=>setD(()=>overlayPosition=v??'bottom_center')),
+              const SizedBox(height:8),
+              DropdownButtonFormField<String>(value:['small','medium','large'].contains(overlaySize)?overlaySize:'medium',decoration:const InputDecoration(labelText:'Overlay size'),items:const [DropdownMenuItem(value:'small',child:Text('Small')),DropdownMenuItem(value:'medium',child:Text('Medium')),DropdownMenuItem(value:'large',child:Text('Large'))],onChanged:(v)=>setD(()=>overlaySize=v??'medium')),
+              const SizedBox(height:8),
               const Text('Where should it appear?',style:TextStyle(color:muted,fontSize:12,fontWeight:FontWeight.w700)),
               const SizedBox(height:7),
               Wrap(spacing:7,runSpacing:6,children:[
@@ -5571,6 +5580,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               if(message.text.trim().isEmpty&&file==null&&(old?['media_url']??'').toString().isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Add a message or attach media.')));return;}
               if(pinned&&countdownTarget==null){messenger.showSnackBar(const SnackBar(content:Text('Choose a countdown date before pinning it.')));return;}
               if(overlayEnabled&&overlayPages.isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Choose at least one page for the overlay.')));return;}
+              if(dashboardEnabled&&dashboardPages.isEmpty){messenger.showSnackBar(const SnackBar(content:Text('Choose at least one permanent dashboard area.')));return;}
               setD(()=>saving=true);
               try{
                 String? mediaUrl=removeExistingMedia?null:((old?['media_url']??'').toString().isEmpty?null:old!['media_url'].toString());
@@ -5818,7 +5828,7 @@ class _AdminWorkspaceScreenState extends State<AdminWorkspaceScreen> {
           ]))));
       return RefreshIndicator(color: emerald, onRefresh: refresh, child: ListView(
         padding: const EdgeInsets.all(18), children: [
-          const CreatorVerseBillboard(),
+          const CreatorVerseBillboard(placement:'explore'),
           Row(children: [
             const Expanded(child: Text('Operations overview', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
             Chip(label: Text((data['role'] ?? 'admin').toString().toUpperCase())),
