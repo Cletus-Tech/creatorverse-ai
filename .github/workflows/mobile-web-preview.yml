@@ -3,12 +3,6 @@ name: CreatorVerse Interactive Mobile Web Preview
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/mobile/lib/**'
-      - 'apps/mobile/assets/**'
-      - 'apps/mobile/pubspec.yaml'
-      - 'apps/mobile/pubspec.lock'
-      - '.github/workflows/mobile-web-preview.yml'
   workflow_dispatch:
 
 permissions:
