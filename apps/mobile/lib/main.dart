@@ -909,7 +909,7 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
     if(loading)return;loading=true;
     try{
       final rows=await db.from('billboard_items')
-        .select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,target_audience,overlay_enabled,overlay_pages,overlay_duration_seconds,background_color,accent_color,text_color,kicker_text')
+        .select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,target_audience,overlay_enabled,overlay_pages,overlay_duration_seconds,overlay_position,overlay_size,background_color,accent_color,text_color,kicker_text')
         .eq('is_published',true).eq('overlay_enabled',true).order('display_order');
       var role='';
       final user=db.auth.currentUser;
@@ -955,8 +955,15 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
     final accent=_color(x['accent_color'],emerald),background=_color(x['background_color'],panel),textColor=_color(x['text_color'],Colors.white);
     final media=(x['media_url']??'').toString(),type=(x['media_type']??'').toString();
     final player=video;
-    return Positioned(left:12,right:12,bottom:MediaQuery.of(context).padding.bottom+88,
-      child:SafeArea(top:false,bottom:false,child:Material(color:Colors.transparent,child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:260),child:AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:260),child:AspectRatio(aspectRatio:16/9,child:Container(
+    final position=(x['overlay_position']??'bottom_center').toString();
+    final size=(x['overlay_size']??'medium').toString();
+    final maxWidth=size=='small'?360.0:size=='large'?900.0:600.0;
+    final bottom=position.startsWith('bottom')?MediaQuery.of(context).padding.bottom+88.0:null;
+    final top=position.startsWith('top')?MediaQuery.of(context).padding.top+18.0:null;
+    final left=position.endsWith('left')?12.0:(position.endsWith('center')?12.0:null);
+    final right=position.endsWith('right')?12.0:(position.endsWith('center')?12.0:null);
+    return Positioned(left:left,right:right,top:top,bottom:bottom,
+      child:SafeArea(top:false,bottom:false,child:Material(color:Colors.transparent,child:Center(child:ConstrainedBox(constraints:BoxConstraints(maxWidth:maxWidth),child:AnimatedSlide(offset:Offset.zero,duration:const Duration(milliseconds:260),child:AnimatedOpacity(opacity:1,duration:const Duration(milliseconds:260),child:AspectRatio(aspectRatio:16/9,child:Container(
         clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:background,borderRadius:BorderRadius.circular(18),border:Border.all(color:accent.withValues(alpha:.7)),boxShadow:const [BoxShadow(color:Colors.black54,blurRadius:24,offset:Offset(0,8))]),
         child:Stack(fit:StackFit.expand,children:[
           if(media.isNotEmpty&&type=='image')Image.network(media,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()),
@@ -1039,7 +1046,8 @@ String billboardThemeLabel(String key) {
 }
 
 class CreatorVerseBillboard extends StatefulWidget {
-  const CreatorVerseBillboard({super.key});
+  final String placement;
+  const CreatorVerseBillboard({super.key,this.placement='explore'});
   @override State<CreatorVerseBillboard> createState() => _CreatorVerseBillboardState();
 }
 class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
@@ -1079,7 +1087,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   }
   Future<void> load() async {
     try {
-      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,is_countdown_pinned,overlay_enabled,overlay_pages,overlay_duration_seconds,background_color,background_end_color,accent_color,button_color,text_color,title_animation,transition_effect,media_fit,overlay_opacity,kicker_text,target_audience').eq('is_published',true).order('display_order');
+      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,is_countdown_pinned,overlay_enabled,overlay_pages,overlay_duration_seconds,background_color,background_end_color,accent_color,button_color,text_color,title_animation,transition_effect,media_fit,overlay_opacity,kicker_text,target_audience,dashboard_enabled,dashboard_pages').eq('is_published',true).eq('dashboard_enabled',true).order('display_order');
       String role='';
       final user=db.auth.currentUser;
       if(user!=null){
@@ -1087,7 +1095,8 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
       }
       final visible=List<Map<String,dynamic>>.from(rows).where((item){
         final target=(item['target_audience']??'whole_platform').toString();
-        return target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role));
+        final pages=List<String>.from((item['dashboard_pages'] as List?)??const ['explore','campus','learning','academic']);
+        return (pages.contains('all')||pages.contains(widget.placement))&&(target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role));
       }).toList();
       final old=current?['id']?.toString();
       if(!mounted)return;
@@ -5407,6 +5416,11 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     var overlayEnabled=old?['overlay_enabled']==true;
     var overlayPages=(old?['overlay_pages'] as List?)?.map((e)=>e.toString()).toList()??<String>['all'];
     var overlayDuration=(old?['overlay_duration_seconds'] as num?)?.toInt()??8;
+    var overlayPosition=(old?['overlay_position']??'bottom_center').toString();
+    var overlaySize=(old?['overlay_size']??'medium').toString();
+    var dashboardEnabled=old?['dashboard_enabled']!=false;
+    var dashboardPages=(old?['dashboard_pages'] as List?)?.map((e)=>e.toString()).toList()??<String>['explore','campus','learning','academic'];
+    DateTime? startsAt=DateTime.tryParse((old?['starts_at']??'').toString())?.toLocal();
     DateTime? countdownTarget=DateTime.tryParse((old?['countdown_target_at']??'').toString())?.toLocal();
     var countdownComplete=(old?['countdown_complete_label']??'EVENT STARTED').toString();
     DateTime? expiry=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
@@ -5620,8 +5634,12 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                   'overlay_enabled':overlayEnabled,
                   'overlay_pages':overlayPages,
                   'overlay_duration_seconds':overlayDuration,
+                  'overlay_position':overlayPosition,
+                  'overlay_size':overlaySize,
+                  'dashboard_enabled':dashboardEnabled,
+                  'dashboard_pages':dashboardPages,
                   'display_order':old?['display_order']??0,
-                  'starts_at':old?['starts_at'],
+                  'starts_at':startsAt?.toUtc().toIso8601String(),
                   'ends_at':expiry?.toUtc().toIso8601String(),
                   'is_published':true,
                   'updated_at':DateTime.now().toUtc().toIso8601String(),
