@@ -7361,7 +7361,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
     if (path.endsWith('/academy-status.html')) {
-      await _pushBillboardRoute(context,'academic',MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+      _pushBillboardRoute(context,'academic',MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
       return;
     }
     if(path.endsWith('/academy-interview.html')){
@@ -7386,7 +7386,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     if (path == '/messages.html' || path == '/messages') {
-      await _pushBillboardRoute(context,'messages',MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+      _pushBillboardRoute(context,'messages',MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     } else {
       openFeature(context, path);
     }
