@@ -1880,6 +1880,8 @@ class CampusTab extends StatelessWidget {
   const CampusTab({super.key});
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [
+    const CreatorVerseBillboard(),
+    const SizedBox(height: 4),
     Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(20),
       gradient: const LinearGradient(colors: [Color(0xFF123D35), panel]),
