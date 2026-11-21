@@ -3693,57 +3693,348 @@ class CommentsSheet extends StatefulWidget {
   @override
   State<CommentsSheet> createState() => _CommentsSheetState();
 }
+
 class _CommentsSheetState extends State<CommentsSheet> {
-  final db = Supabase.instance.client; final input = TextEditingController();
+  final db = Supabase.instance.client;
+  final input = TextEditingController();
+  final inputFocus = FocusNode();
   late Future<List<Map<String, dynamic>>> comments;
   bool sending = false;
   String? replyingTo, replyingToName;
+  final Set<String> expandedReplies = <String>{};
+
   @override
   void initState() { super.initState(); comments = load(); }
+
   @override
-  void dispose() { input.dispose(); super.dispose(); }
+  void dispose() {
+    input.dispose();
+    inputFocus.dispose();
+    super.dispose();
+  }
+
   Future<List<Map<String, dynamic>>> load() async {
-    final raw = await db.from('community_comments').select('id,user_id,body,created_at,parent_id')
-      .eq('post_id', widget.post['id']).order('created_at');
+    final raw = await db.from('community_comments')
+        .select('id,user_id,body,created_at,parent_id')
+        .eq('post_id', widget.post['id']).order('created_at');
     final rows = List<Map<String, dynamic>>.from(raw);
     if (rows.isEmpty) return rows;
     final ids = rows.map((r) => r['user_id'].toString()).toSet().toList();
-    final p = await db.from('public_profiles').select('id,full_name,username,avatar_url').inFilter('id', ids);
-    final profiles = {for (final x in List<Map<String, dynamic>>.from(p)) x['id'].toString(): x};
-    for (final row in rows) { row['author'] = profiles[row['user_id'].toString()] ?? {}; }
+    final profileRows = await db.from('public_profiles')
+        .select('id,full_name,username,avatar_url').inFilter('id', ids);
+    final profiles = {
+      for (final profile in List<Map<String, dynamic>>.from(profileRows))
+        profile['id'].toString(): profile
+    };
+    for (final row in rows) {
+      row['author'] = profiles[row['user_id'].toString()] ?? <String, dynamic>{};
+    }
     return rows;
   }
+
+  Future<void> refreshComments() async {
+    final next = load();
+    if (mounted) setState(() => comments = next);
+    await next;
+  }
+
   Future<void> send() async {
-    if (input.text.trim().isEmpty || sending) return;
+    final body = input.text.trim();
+    if (body.isEmpty || sending) return;
+    final userId = db.auth.currentUser?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to join the conversation.')));
+      return;
+    }
     setState(() => sending = true);
     try {
-      await db.from('community_comments').insert({'post_id': widget.post['id'], 'user_id': db.auth.currentUser!.id, 'body': input.text.trim(), 'parent_id': replyingTo});
-      input.clear(); setState(() { comments = load(); replyingTo = null; replyingToName = null; });
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Comment failed: $e'))); }
-    finally { if (mounted) setState(() => sending = false); }
+      await db.from('community_comments').insert({
+        'post_id': widget.post['id'], 'user_id': userId,
+        'body': body, 'parent_id': replyingTo,
+      });
+      input.clear();
+      FocusScope.of(context).requestFocus(inputFocus);
+      setState(() {
+        comments = load();
+        if (replyingTo != null) expandedReplies.add(replyingTo!);
+        replyingTo = null;
+        replyingToName = null;
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Comment failed: $e')));
+    } finally {
+      if (mounted) setState(() => sending = false);
+    }
   }
+
+  Map<String, dynamic> _author(Map<String, dynamic> row) =>
+      Map<String, dynamic>.from(row['author'] as Map? ?? const {});
+
+  String _authorName(Map<String, dynamic> row) {
+    final author = _author(row);
+    return (author['full_name'] ?? author['username'] ?? 'CreatorVerse member').toString();
+  }
+
+  String _commentTime(dynamic raw) {
+    final date = DateTime.tryParse(raw?.toString() ?? '')?.toLocal();
+    if (date == null) return '';
+    final difference = DateTime.now().difference(date);
+    if (difference.inMinutes < 1) return 'now';
+    if (difference.inHours < 1) return difference.inMinutes.toString() + 'm';
+    if (difference.inDays < 1) return difference.inHours.toString() + 'h';
+    if (difference.inDays < 7) return difference.inDays.toString() + 'd';
+    return date.day.toString() + '/' + date.month.toString() + '/' + date.year.toString();
+  }
+
+  Widget _avatar(Map<String, dynamic> row, {double radius = 18}) {
+    final url = (_author(row)['avatar_url'] ?? '').toString();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: emerald.withValues(alpha: .18),
+      backgroundImage: url.isEmpty ? null : CachedNetworkImageProvider(url),
+      child: url.isEmpty
+          ? Icon(Icons.person_outline, color: emerald, size: radius * 1.1)
+          : null,
+    );
+  }
+
+  Widget _commentTile(
+    Map<String, dynamic> row, {
+    required bool isReply,
+    required int replyCount,
+    required bool repliesExpanded,
+    required VoidCallback onReply,
+    required VoidCallback onToggleReplies,
+  }) {
+    final name = _authorName(row);
+    return Padding(
+      padding: EdgeInsets.only(top: isReply ? 5 : 10, bottom: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _avatar(row, radius: isReply ? 14 : 18),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF202A39),
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: const TextStyle(
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      // Unconstrained text height lets long comments wrap without clipping.
+                      Text((row['body'] ?? '').toString(), softWrap: true,
+                        style: const TextStyle(
+                          color: Colors.white70, fontSize: 13, height: 1.42)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 10, top: 2),
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 13,
+                    children: [
+                      Text(_commentTime(row['created_at']),
+                        style: const TextStyle(color: muted, fontSize: 10)),
+                      TextButton(
+                        onPressed: onReply,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                          minimumSize: const Size(0, 26),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                        child: const Text('Reply', style: TextStyle(
+                          color: emerald, fontSize: 11, fontWeight: FontWeight.w700)),
+                      ),
+                      if (!isReply && replyCount > 0)
+                        TextButton(
+                          onPressed: onToggleReplies,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                            minimumSize: const Size(0, 26),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          child: Text(
+                            repliesExpanded ? 'Hide replies' :
+                              'View ' + replyCount.toString() +
+                              (replyCount == 1 ? ' reply' : ' replies'),
+                            style: const TextStyle(color: Colors.white70,
+                              fontSize: 11, fontWeight: FontWeight.w600)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => SafeArea(child: Padding(padding: EdgeInsets.only(left: 18, right: 18, top: 18, bottom: MediaQuery.of(context).viewInsets.bottom + 18),
-    child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: material_widgets_ui.Column(children: [
-      const Text('Comments', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 12), Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(future: comments, builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-        if (snap.hasError) return const Center(child: Text('Could not load comments.', style: TextStyle(color: muted)));
-        final rows = snap.data ?? [];
-        if (rows.isEmpty) return const Center(child: Text('No comments yet. Start the conversation.', style: TextStyle(color: muted)));
-        return ListView(children: [for (final row in rows) Padding(padding: EdgeInsets.only(left:row['parent_id']==null?0:26,top:7,bottom:7), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          CircleAvatar(radius:row['parent_id']==null?15:12,backgroundColor:const Color(0x3320B887),child:Icon(row['parent_id']==null?Icons.person:Icons.subdirectory_arrow_right,size:row['parent_id']==null?16:14,color:emerald)),
-          const SizedBox(width:9),Expanded(child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text(((row['author'] as Map?)?['full_name']??(row['author'] as Map?)?['username']??'Member').toString(),style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12)),
-            const SizedBox(height:3),Text(row['body'].toString(),style:const TextStyle(color:Colors.white70,height:1.4)),
-            Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>setState((){replyingTo=(row['parent_id']??row['id']).toString();replyingToName=((row['author'] as Map?)?['full_name']??(row['author'] as Map?)?['username']??'member').toString();}),style:TextButton.styleFrom(padding:const EdgeInsets.symmetric(horizontal:4),minimumSize:const Size(0,28)),child:const Text('Reply',style:TextStyle(fontSize:11,color:emerald))))
-          ]))]))]);
-      })),
-      if(replyingTo!=null)Padding(padding:const EdgeInsets.only(bottom:8),child:Row(children:[Expanded(child:Text("Replying to ${replyingToName??'member'}",style:const TextStyle(color:emerald,fontSize:12))),IconButton(onPressed:()=>setState((){replyingTo=null;replyingToName=null;}),icon:const Icon(Icons.close,size:18))])),
-      const SizedBox(height: 10), Row(children: [Expanded(child: TextField(controller: input, minLines: 1, maxLines: 3, decoration: const InputDecoration(hintText: 'Write a comment...'))),
-        const SizedBox(width: 8), IconButton(onPressed: sending ? null : send, icon: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send, color: emerald))]),
-    ]))));
+  Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .88,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 12, 10),
+                child: Row(children: [
+                  const Expanded(child: Text('Comments',
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800))),
+                  IconButton(tooltip: 'Close comments',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: muted)),
+                ]),
+              ),
+              const Divider(height: 1, color: Colors.white10),
+              Expanded(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: comments,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: emerald));
+                    }
+                    if (snap.hasError) {
+                      return Center(child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('Could not load comments: ' + snap.error.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: muted))));
+                    }
+                    final rows = snap.data ?? <Map<String, dynamic>>[];
+                    if (rows.isEmpty) {
+                      return const Center(child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('No comments yet. Start the conversation.',
+                          textAlign: TextAlign.center, style: TextStyle(color: muted))));
+                    }
+                    final byId = {for (final row in rows) row['id'].toString(): row};
+                    final roots = rows.where((row) => row['parent_id'] == null ||
+                      !byId.containsKey(row['parent_id'].toString())).toList();
+                    final repliesByRoot = <String, List<Map<String, dynamic>>>{};
+                    for (final row in rows) {
+                      final parent = row['parent_id']?.toString();
+                      if (parent == null) continue;
+                      final rootId = byId[parent]?['parent_id']?.toString() ?? parent;
+                      repliesByRoot.putIfAbsent(rootId, () => []).add(row);
+                    }
+                    return RefreshIndicator(
+                      color: emerald, onRefresh: refreshComments,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                        itemCount: roots.length,
+                        itemBuilder: (context, index) {
+                          final root = roots[index];
+                          final rootId = root['id'].toString();
+                          final replies = repliesByRoot[rootId] ?? <Map<String, dynamic>>[];
+                          final expanded = expandedReplies.contains(rootId);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _commentTile(root, isReply: false,
+                                replyCount: replies.length, repliesExpanded: expanded,
+                                onReply: () => setState(() {
+                                  replyingTo = rootId;
+                                  replyingToName = _authorName(root);
+                                }),
+                                onToggleReplies: () => setState(() {
+                                  if (expanded) {
+                                    expandedReplies.remove(rootId);
+                                  } else {
+                                    expandedReplies.add(rootId);
+                                  }
+                                })),
+                              if (expanded && replies.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 24, top: 2),
+                                  child: Column(children: [
+                                    for (final reply in replies)
+                                      _commentTile(reply, isReply: true,
+                                        replyCount: 0, repliesExpanded: false,
+                                        onReply: () => setState(() {
+                                          replyingTo = rootId;
+                                          replyingToName = _authorName(reply);
+                                        }),
+                                        onToggleReplies: () {}),
+                                  ]),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const Divider(height: 1, color: Colors.white10),
+              if (replyingTo != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+                  child: Row(children: [
+                    Expanded(child: Text('Replying to ' + (replyingToName ?? 'member'),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: emerald, fontSize: 12))),
+                    IconButton(tooltip: 'Cancel reply',
+                      onPressed: () => setState(() {
+                        replyingTo = null; replyingToName = null;
+                      }),
+                      icon: const Icon(Icons.close, size: 18, color: muted)),
+                  ]),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 12, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: TextField(
+                      controller: input, focusNode: inputFocus,
+                      minLines: 1, maxLines: 5,
+                      textCapitalization: TextCapitalization.sentences,
+                      keyboardType: TextInputType.multiline,
+                      onSubmitted: (_) => send(),
+                      decoration: InputDecoration(
+                        hintText: replyingTo == null ? 'Write a comment...' : 'Write a reply...',
+                        filled: true, fillColor: const Color(0xFF202A39),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: BorderSide.none),
+                      ),
+                    )),
+                    const SizedBox(width: 8),
+                    IconButton(tooltip: 'Send comment',
+                      onPressed: sending ? null : send,
+                      icon: sending
+                        ? const SizedBox(width: 19, height: 19,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: emerald))
+                        : const Icon(Icons.send_rounded, color: emerald)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
 class MessageInboxScreen extends StatefulWidget {
   const MessageInboxScreen({super.key});
   @override
