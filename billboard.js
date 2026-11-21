@@ -12,7 +12,21 @@ function draw(){
  inner.appendChild(copy);
  if(x.media_url&&x.media_type==='image'){var img=node('img','bb-media');img.src=x.media_url;img.alt=x.title;img.loading='eager';img.style.objectFit=x.media_fit==='contain'?'contain':'cover';img.onerror=function(){img.remove()};inner.insertBefore(img,copy)}
  var video=null;if(x.media_url&&x.media_type==='video'){video=node('video','bb-media');video.src=x.media_url;video.autoplay=true;video.muted=true;video.playsInline=true;video.preload='metadata';video.style.objectFit=x.media_fit==='contain'?'contain':'cover';video.addEventListener('ended',next,{once:true});video.addEventListener('error',function(){console.warn('Billboard video could not load:',x.title)},{once:true});inner.insertBefore(video,copy)}
- host.appendChild(inner);host.appendChild(node('div','bb-counter',(index+1)+' / '+a.length));
+ host.appendChild(inner);
+ if(x.countdown_target_at){
+  var ticker=node('div','bb-news-ticker'),badge=node('span','bb-news-badge','COUNTDOWN'),track=node('div','bb-news-track'),line=node('div','bb-news-line'),tickerTitle=node('strong','bb-news-title',(x.title||'UPCOMING EVENT').toUpperCase()),tickerTime=node('strong','bb-news-time','');
+  var tickerTarget=new Date(x.countdown_target_at).getTime();
+  line.appendChild(tickerTitle);line.appendChild(node('span','bb-news-separator','•'));line.appendChild(tickerTime);
+  track.appendChild(line);ticker.appendChild(badge);ticker.appendChild(track);host.appendChild(ticker);
+  function tickerTick(){
+   var left=Math.max(0,tickerTarget-Date.now());
+   if(!isFinite(tickerTarget)){tickerTime.textContent=x.countdown_complete_label||'EVENT STARTED';return}
+   if(left<=0){tickerTime.textContent=x.countdown_complete_label||'EVENT STARTED';badge.textContent='NOTICE';return}
+   var days=Math.floor(left/86400000),hours=Math.floor(left%86400000/3600000),minutes=Math.floor(left%3600000/60000),seconds=Math.floor(left%60000/1000);
+   tickerTime.textContent=days+' DAYS  '+String(hours).padStart(2,'0')+' HRS  '+String(minutes).padStart(2,'0')+' MIN  '+String(seconds).padStart(2,'0')+' SEC LEFT';
+  }
+  tickerTick();countdownTimer=setInterval(tickerTick,1000);
+ }
  clearTimeout(timer);timer=setTimeout(next,Math.max(3,Math.min(120,Number(x.duration_seconds)||10))*1000);
  if(video){var play=video.play();if(play&&play.catch)play.catch(function(){/* muted autoplay may be restricted; slide timer remains */})}
 }
