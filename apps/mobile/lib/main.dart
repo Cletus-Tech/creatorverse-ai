@@ -970,12 +970,18 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final now=DateTime.now().toUtc();
     final start=DateTime.tryParse((s['starts_at']??'').toString());
     final end=DateTime.tryParse((s['ends_at']??'').toString());
-    return s['is_published']==true && (start==null || !start.isAfter(now)) && (end==null || end.isAfter(now));
+    return s['is_published']==true && s['is_countdown_pinned']!=true && (start==null || !start.isAfter(now)) && (end==null || end.isAfter(now));
   }).toList();
   Map<String,dynamic>? get current => active.isEmpty ? null : active[index.clamp(0,active.length-1).toInt()];
+  Map<String,dynamic>? get pinnedCountdown {
+    for(final item in slides){
+      if(item['is_published']==true&&item['is_countdown_pinned']==true&&(item['countdown_target_at']??'').toString().isNotEmpty)return item;
+    }
+    return null;
+  }
   Future<void> load() async {
     try {
-      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,background_color,background_end_color,accent_color,button_color,text_color,title_animation,transition_effect,media_fit,overlay_opacity,kicker_text,target_audience').eq('is_published',true).order('display_order');
+      final rows=await db.from('billboard_items').select('id,title,message,media_type,media_url,button_label,button_url,starts_at,ends_at,is_published,display_order,duration_seconds,countdown_target_at,countdown_complete_label,is_countdown_pinned,overlay_enabled,overlay_pages,overlay_duration_seconds,background_color,background_end_color,accent_color,button_color,text_color,title_animation,transition_effect,media_fit,overlay_opacity,kicker_text,target_audience').eq('is_published',true).order('display_order');
       String role='';
       final user=db.auth.currentUser;
       if(user!=null){
@@ -1061,14 +1067,14 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
   }
   @override Widget build(BuildContext context) {
     final s=current;
-    if(s==null) return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Container(
+    if(s==null) return Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Container(
       decoration:const BoxDecoration(gradient:LinearGradient(colors:[Color(0xFF123D35),Color(0xFF102329)],begin:Alignment.topLeft,end:Alignment.bottomRight),border:Border.fromBorderSide(BorderSide(color:Color(0x5530B58A)))),
       padding:const EdgeInsets.all(22),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
         const Text('YOUR NEXT CHAPTER STARTS HERE',style:TextStyle(color:gold,fontSize:11,letterSpacing:1.1,fontWeight:FontWeight.w900)),
         const SizedBox(height:12),Text('Hello, ${(Supabase.instance.client.auth.currentUser?.userMetadata?['full_name']??'Creator').toString()}.',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
         const SizedBox(height:8),const Text('Learn new skills, explore opportunities and find your community.',style:TextStyle(color:Colors.white70,fontSize:14,height:1.35)),
         const SizedBox(height:14),FilledButton(onPressed:()=>openFeature(context,'/digital-skills.html'),style:FilledButton.styleFrom(backgroundColor:emerald,foregroundColor:ink),child:const Text('Explore CreatorVerse')),
-      ])))));
+      ])))),if(pinnedCountdown!=null)Padding(padding:const EdgeInsets.only(bottom:16),child:BillboardCountdownTicker(headline:(pinnedCountdown!['title']??'UPCOMING EVENT').toString(),target:DateTime.tryParse(pinnedCountdown!['countdown_target_at'].toString())??DateTime.now(),completeLabel:(pinnedCountdown!['countdown_complete_label']??'EVENT STARTED').toString(),accent:color(pinnedCountdown!['accent_color'],emerald),background:color(pinnedCountdown!['background_color'],panel)))]);
     final type=(s['media_type']??'text').toString(),url=(s['media_url']??'').toString();
     final hasMedia=url.isNotEmpty && (type=='image'||type=='video');
     final bg=color(s['background_color'],const Color(0xFF102C2B));
@@ -1094,12 +1100,13 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
         ])),
       ])),
     ]))))),
-      if((s['countdown_target_at']??'').toString().isNotEmpty)
+      if(pinnedCountdown!=null)
         Padding(padding:const EdgeInsets.only(top:7,bottom:16),child:BillboardCountdownTicker(
-          headline:(s['title']??'UPCOMING EVENT').toString(),
-          target:DateTime.tryParse(s['countdown_target_at'].toString())??DateTime.now(),
-          completeLabel:(s['countdown_complete_label']??'EVENT STARTED').toString(),
-          accent:accent,background:bg,
+          headline:(pinnedCountdown!['title']??'UPCOMING EVENT').toString(),
+          target:DateTime.tryParse(pinnedCountdown!['countdown_target_at'].toString())??DateTime.now(),
+          completeLabel:(pinnedCountdown!['countdown_complete_label']??'EVENT STARTED').toString(),
+          accent:color(pinnedCountdown!['accent_color'],emerald),
+          background:color(pinnedCountdown!['background_color'],panel),
         ))
       else const SizedBox(height:16),
     ]);
