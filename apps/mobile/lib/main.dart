@@ -963,7 +963,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
       .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'billboard_items',callback:(_) => load()).subscribe();
     refresh = Timer.periodic(const Duration(seconds:45),(_) => load());
     clock = Timer.periodic(const Duration(seconds:1),(_) {
-      if(mounted && current?['media_type']=='countdown') setState(() {});
+      if(mounted && active.any((item)=>(item['countdown_target_at']??'').toString().isNotEmpty)) setState(() {});
     });
   }
   List<Map<String,dynamic>> get active => slides.where((s) {
@@ -1074,7 +1074,7 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
     final bg=color(s['background_color'],const Color(0xFF102C2B));
     final accent=color(s['accent_color'],emerald);
     final p=player;
-    return Padding(padding:const EdgeInsets.only(bottom:16),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:AnimatedSwitcher(duration:const Duration(milliseconds:620),transitionBuilder:(child,animation){final curved=CurvedAnimation(parent:animation,curve:Curves.easeOutCubic);final effect=(s['transition_effect']??'slide').toString();if(effect=='fade')return FadeTransition(opacity:curved,child:child);if(effect=='zoom')return ScaleTransition(scale:Tween<double>(begin:.94,end:1).animate(curved),child:FadeTransition(opacity:curved,child:child));return SlideTransition(position:Tween<Offset>(begin:const Offset(.18,0),end:Offset.zero).animate(curved),child:FadeTransition(opacity:curved,child:child));},child:Stack(key:ValueKey(s['id']),fit:StackFit.expand,children:[
+    return Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Padding(padding:const EdgeInsets.only(bottom:0),child:AspectRatio(aspectRatio:16/9,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:AnimatedSwitcher(duration:const Duration(milliseconds:620),transitionBuilder:(child,animation){final curved=CurvedAnimation(parent:animation,curve:Curves.easeOutCubic);final effect=(s['transition_effect']??'slide').toString();if(effect=='fade')return FadeTransition(opacity:curved,child:child);if(effect=='zoom')return ScaleTransition(scale:Tween<double>(begin:.94,end:1).animate(curved),child:FadeTransition(opacity:curved,child:child));return SlideTransition(position:Tween<Offset>(begin:const Offset(.18,0),end:Offset.zero).animate(curved),child:FadeTransition(opacity:curved,child:child));},child:Stack(key:ValueKey(s['id']),fit:StackFit.expand,children:[
       DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(colors:[bg,color(s['background_end_color'],Color.lerp(bg,ink,.6)!)],begin:Alignment.topLeft,end:Alignment.bottomRight))),
       if(type=='image' && hasMedia) Image.network(url,fit:(s['media_fit']=='contain'?BoxFit.contain:BoxFit.cover),alignment:Alignment.center,filterQuality:FilterQuality.high,gaplessPlayback:true,loadingBuilder:(context,child,progress)=>progress==null?child:const Center(child:CircularProgressIndicator(color:Colors.white70)),errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined,color:Colors.white54,size:36))),
       if(type=='video' && hasMedia) if(p!=null && p.value.isInitialized && !p.value.hasError) FittedBox(fit:(s['media_fit']=='contain'?BoxFit.contain:BoxFit.cover),child:SizedBox(width:p.value.size.width,height:p.value.size.height,child:VideoPlayer(p))) else const Center(child:CircularProgressIndicator(color:Colors.white70)),
@@ -1093,7 +1093,59 @@ class _CreatorVerseBillboardState extends State<CreatorVerseBillboard> {
           IconButton(visualDensity:VisualDensity.compact,padding:EdgeInsets.zero,constraints:const BoxConstraints.tightFor(width:30,height:30),onPressed:(){setState(()=>rotationPaused=!rotationPaused);schedule();},icon:Icon(rotationPaused?Icons.play_arrow:Icons.pause,color:Colors.white,size:18)),
         ])),
       ])),
-    ])))));
+    ]))))),
+      if((s['countdown_target_at']??'').toString().isNotEmpty)
+        Padding(padding:const EdgeInsets.only(top:7,bottom:16),child:BillboardCountdownTicker(
+          headline:(s['title']??'UPCOMING EVENT').toString(),
+          target:DateTime.tryParse(s['countdown_target_at'].toString())??DateTime.now(),
+          completeLabel:(s['countdown_complete_label']??'EVENT STARTED').toString(),
+          accent:accent,background:bg,
+        ))
+      else const SizedBox(height:16),
+    ]);
+  }
+}
+
+class BillboardCountdownTicker extends StatefulWidget {
+  final String headline,completeLabel;
+  final DateTime target;
+  final Color accent,background;
+  const BillboardCountdownTicker({super.key,required this.headline,required this.target,required this.completeLabel,required this.accent,required this.background});
+  @override State<BillboardCountdownTicker> createState()=>_BillboardCountdownTickerState();
+}
+class _BillboardCountdownTickerState extends State<BillboardCountdownTicker> with SingleTickerProviderStateMixin {
+  late final AnimationController _scroll;
+  Timer? _clock;
+  @override void initState(){
+    super.initState();
+    _scroll=AnimationController(vsync:this,duration:const Duration(seconds:18))..repeat();
+    _clock=Timer.periodic(const Duration(seconds:1),(_){if(mounted)setState((){});});
+  }
+  @override void dispose(){_clock?.cancel();_scroll.dispose();super.dispose();}
+  @override Widget build(BuildContext context){
+    final left=widget.target.toUtc().difference(DateTime.now().toUtc());
+    final ended=left<=Duration.zero;
+    final days=left.inDays.clamp(0,9999).toString().padLeft(2,'0');
+    final hours=(left.inHours%24).toString().padLeft(2,'0');
+    final mins=(left.inMinutes%60).toString().padLeft(2,'0');
+    final secs=(left.inSeconds%60).toString().padLeft(2,'0');
+    final label=widget.headline.trim().isEmpty?'UPCOMING EVENT':widget.headline.trim().toUpperCase();
+    final counter=ended?widget.completeLabel:'${days}D  :  ${hours}H  :  ${mins}M  :  ${secs}S LEFT';
+    return Container(height:48,decoration:BoxDecoration(color:widget.background,borderRadius:BorderRadius.circular(12),border:Border.all(color:widget.accent.withValues(alpha:.65))),clipBehavior:Clip.antiAlias,
+      child:Row(children:[
+        Container(width:42,height:48,color:widget.accent,child:const Icon(Icons.campaign_rounded,color:Colors.white,size:21)),
+        Expanded(child:ClipRect(child:LayoutBuilder(builder:(context,c){
+          final content=Row(mainAxisSize:MainAxisSize.min,children:[
+            Text('  $label  •  ',maxLines:1,style:const TextStyle(color:Colors.white,fontSize:12,fontWeight:FontWeight.w900,letterSpacing:.5)),
+            Text(counter,maxLines:1,style:TextStyle(color:widget.accent,fontSize:13,fontWeight:FontWeight.w900,letterSpacing:1)),
+            const SizedBox(width:52),
+            Text('  $label  •  ',maxLines:1,style:const TextStyle(color:Colors.white,fontSize:12,fontWeight:FontWeight.w900,letterSpacing:.5)),
+            Text(counter,maxLines:1,style:TextStyle(color:widget.accent,fontSize:13,fontWeight:FontWeight.w900,letterSpacing:1)),
+          ]);
+          return AnimatedBuilder(animation:_scroll,builder:(context,child)=>Transform.translate(offset:Offset(c.maxWidth-(c.maxWidth+520)*_scroll.value,0),child:child),child:content);
+        }))),
+      ]),
+    );
   }
 }
 
@@ -5245,6 +5297,8 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
     var audience=(old?['target_audience']??'whole_platform').toString();
     var theme=(old?['theme_key']??'gold').toString();
     var notify=old?['send_notification']==true;
+    DateTime? countdownTarget=DateTime.tryParse((old?['countdown_target_at']??'').toString())?.toLocal();
+    var countdownComplete=(old?['countdown_complete_label']??'EVENT STARTED').toString();
     DateTime? expiry=DateTime.tryParse((old?['ends_at']??'').toString())?.toLocal();
     var saving=false;
     final page=context;
@@ -5314,6 +5368,25 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
             const SizedBox(height:4),
             const Text('Images and videos are fitted automatically to the billboard display.',style:TextStyle(color:muted,fontSize:11)),
             const SizedBox(height:12),
+            SwitchListTile(
+              contentPadding:EdgeInsets.zero,
+              value:countdownTarget!=null,
+              onChanged:(v) async {
+                if(!v){setD(()=>countdownTarget=null);return;}
+                final now=DateTime.now();
+                final date=await showDatePicker(context:ctx,initialDate:countdownTarget??now.add(const Duration(days:1)),firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));
+                if(date==null)return;
+                final time=await showTimePicker(context:ctx,initialTime:TimeOfDay.fromDateTime(countdownTarget??DateTime(date.year,date.month,date.day,9)));
+                if(time!=null)setD(()=>countdownTarget=DateTime(date.year,date.month,date.day,time.hour,time.minute));
+              },
+              title:const Text('Show a countdown ticker below the billboard',style:TextStyle(fontSize:13,fontWeight:FontWeight.w700)),
+              subtitle:const Text('Scroll the event headline like a TV news ticker, with a live days / hours / minutes / seconds countdown.',style:TextStyle(color:muted,fontSize:11)),
+            ),
+            if(countdownTarget!=null)...[
+              Text('Countdown to: ${countdownTarget!.day.toString().padLeft(2,'0')}/${countdownTarget!.month.toString().padLeft(2,'0')}/${countdownTarget!.year}  ${TimeOfDay.fromDateTime(countdownTarget!).format(ctx)}',style:const TextStyle(color:emerald,fontSize:12,fontWeight:FontWeight.w700)),
+              TextFormField(initialValue:countdownComplete,decoration:const InputDecoration(labelText:'Message when countdown ends'),onChanged:(v)=>countdownComplete=v),
+            ],
+            const SizedBox(height:12),
             InkWell(
               onTap:() async {
                 final now=DateTime.now();
@@ -5373,6 +5446,9 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
                   'overlay_opacity':0.58,
                   'kicker_text':'CREATORVERSE • LIVE UPDATES',
                   'duration_seconds':8,
+                  'countdown_target_at':countdownTarget?.toUtc().toIso8601String(),
+                  'countdown_timezone':DateTime.now().timeZoneName,
+                  'countdown_complete_label':countdownComplete.trim().isEmpty?'EVENT STARTED':countdownComplete.trim(),
                   'display_order':old?['display_order']??0,
                   'starts_at':old?['starts_at'],
                   'ends_at':expiry?.toUtc().toIso8601String(),
