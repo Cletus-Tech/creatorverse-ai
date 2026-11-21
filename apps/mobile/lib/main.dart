@@ -685,7 +685,7 @@ class _MainShellState extends State<MainShell> {
       });
       final latest=await db.from('cv_call_invites').select('status').eq('id',callId).single();
       if(accept==true&&latest['status']=='accepted'&&mounted){
-        await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+        material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
           conversationId:conversationId,callId:callId,peerName:callerName,mode:mode,isCaller:false)));
       }
     }catch(e){
@@ -1574,7 +1574,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           return material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const ListTile(leading: Icon(Icons.lock_outline, color: gold), title: Text('Paid course'),
               subtitle: Text('Payment and administrator verification are required before course access.', style: TextStyle(color: muted))),
-            OutlinedButton.icon(onPressed: () async { await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
+            OutlinedButton.icon(onPressed: () async { material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => CourseCheckoutScreen(course: c))); if (mounted) refreshCourse(); },
               icon: const Icon(Icons.payments_outlined), label: const Text('Continue to payment')),
           ]);
         }),
@@ -3724,7 +3724,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                         if (!pickCtx.mounted) return;
                         material_widgets_ui.Navigator.pop(pickCtx);
                         if (!mounted) return;
-                        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
+                        material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MessageThreadScreen(conversationId: id, person: person)));
                         if (mounted) setState(() => inbox = loadInbox());
                       } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not start chat: $e'))); }
                     }),
@@ -3845,7 +3845,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
             if(!ctx.mounted)return;
             material_widgets_ui.Navigator.pop(ctx);
             if(!mounted)return;
-            await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MessageThreadScreen(
+            material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>MessageThreadScreen(
               conversationId:id,person:{'id':'','full_name':groupName,'username':'',
                 'is_group':true,'member_count':selected.length+1})));
             if(mounted)await refreshInbox();
@@ -3972,7 +3972,7 @@ class _MessageInboxScreenState extends State<MessageInboxScreen> {
                             ),
                           ]),
                         onTap: () async {
-                          await material_widgets_ui.Navigator.push(context, MaterialPageRoute(
+                          material_widgets_ui.Navigator.push(context, MaterialPageRoute(
                             builder: (_) => MessageThreadScreen(conversationId: c['id'].toString(), person: person)));
                           if (mounted) await refreshInbox();
                         },
@@ -4059,7 +4059,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       });
       final callId=created.toString();
       if(!mounted)return;
-      await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+      material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
         conversationId:widget.conversationId,callId:callId,
         peerName:(widget.person['full_name']??widget.person['username']??'CreatorVerse member').toString(),
         mode:mode,isCaller:true)));
@@ -4994,7 +4994,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
         'p_mode':row['mode']=='video'?'video':'audio'
       });
       if(!mounted)return;
-      await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
+      material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>CreatorVerseCallScreen(
         conversationId:conversationId,callId:created.toString(),peerName:peerName,
         mode:row['mode']=='video'?'video':'audio',isCaller:true)));
       if(mounted)setState(()=>calls=_load());
@@ -7370,11 +7370,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     if(path.endsWith('/academy-interview.html')){
       final interviewId=uri.queryParameters['interview']??uri.queryParameters['id']??'';
-      if(interviewId.isNotEmpty)await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:interviewId)));
+      if(interviewId.isNotEmpty)material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewScreen(interviewId:interviewId)));
       return;
     }
-    if(path.endsWith('/academy-live-room.html')){final interviewId=uri.queryParameters['interview']??'';if(interviewId.isNotEmpty)await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:interviewId)));return;}
-    if(path.endsWith('/academy-interviewer.html')){final interviewId=uri.queryParameters['interview'];await material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewerScreen(interviewId:interviewId)));return;}
+    if(path.endsWith('/academy-live-room.html')){final interviewId=uri.queryParameters['interview']??'';if(interviewId.isNotEmpty)material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyLiveRoomScreen(interviewId:interviewId)));return;}
+    if(path.endsWith('/academy-interviewer.html')){final interviewId=uri.queryParameters['interview'];material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>NativeAcademyInterviewerScreen(interviewId:interviewId)));return;}
     if (path.endsWith('/profile.html') || path == '/profile') {
       final target = (uri.queryParameters['u'] ?? uri.queryParameters['id'] ?? '').trim();
       if (target.isNotEmpty) await openMemberFromNotification(target);
@@ -7383,9 +7383,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (path.endsWith('/marketplace-enquiries.html') || path == '/marketplace-enquiries.html') {
       final enquiryId = uri.queryParameters['id'];
       if (enquiryId != null && enquiryId.isNotEmpty) {
-        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
+        material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: enquiryId)));
       } else {
-        await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
+        material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
       }
       return;
     }
@@ -7415,7 +7415,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           const SnackBar(content: Text('This member profile is no longer available.')));
         return;
       }
-      await material_widgets_ui.Navigator.push(context, MaterialPageRoute(
+      material_widgets_ui.Navigator.push(context, MaterialPageRoute(
         builder: (_) => PublicMemberProfileScreen(profile: Map<String, dynamic>.from(row!))));
     } catch (e) {
       if (mounted) {
@@ -7744,7 +7744,7 @@ Future<void> openDirectMessage(BuildContext context, Map<String, dynamic> person
       id = created['id'].toString();
     }
     if (!context.mounted) return;
-    await material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) =>
+    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) =>
       MessageThreadScreen(conversationId: id, person: person)));
   } catch (e) {
     if (context.mounted) {
