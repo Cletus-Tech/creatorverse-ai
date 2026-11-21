@@ -915,16 +915,19 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
       final user=db.auth.currentUser;
       if(user!=null){try{final p=await db.from('profiles').select('role').eq('id',user.id).maybeSingle();role=(p?['role']??'').toString();}catch(_){}}
       final now=DateTime.now().toUtc();
-      final match=List<Map<String,dynamic>>.from(rows).where((x){
+      bool eligible(Map<String,dynamic> x){
         final pages=List<String>.from((x['overlay_pages'] as List?)??const ['all']);
         final target=(x['target_audience']??'whole_platform').toString();
         final start=DateTime.tryParse((x['starts_at']??'').toString());
         final end=DateTime.tryParse((x['ends_at']??'').toString());
         final audience=target=='whole_platform'||(target=='students'&&role=='student')||(target=='creators'&&role=='creator')||(target=='administrators'&&['admin','super_admin'].contains(role));
-        return audience&&(pages.contains('all')||pages.contains(page))&&(start==null||!start.isAfter(now))&&(end==null||end.isAfter(now))&&!seen.contains('${x['id']}:$page');
-      }).toList();
-      if(match.isNotEmpty&&mounted&&item==null) _show(match.first);
-      if(match.isEmpty&&item!=null){_dismiss();}
+        return audience&&(pages.contains('all')||pages.contains(page))&&(start==null||!start.isAfter(now))&&(end==null||end.isAfter(now));
+      }
+      final match=List<Map<String,dynamic>>.from(rows).where((x)=>eligible(x)&&!seen.contains('${x['id']}:$page')).toList();
+      final currentId=item?['id'];
+      final currentStillEligible=currentId!=null&&rows.any((x)=>x['id']==currentId&&eligible(Map<String,dynamic>.from(x)));
+      if(item!=null&&!currentStillEligible)_dismiss();
+      if(match.isNotEmpty&&mounted&&item==null)_show(match.first);
     }catch(e){debugPrint('Global billboard overlay load failed: $e');}
     finally{loading=false;}
   }
@@ -941,7 +944,7 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
     final seconds=((next['overlay_duration_seconds'] as num?)?.toInt()??8).clamp(3,120);
     expiry=Timer(Duration(seconds:seconds),_dismiss);
   }
-  void _dismiss(){expiry?.cancel();final old=video;video=null;old?.dispose();if(mounted)setState(()=>item=null);}
+  void _dismiss(){expiry?.cancel();final old=video;video=null;old?.dispose();if(mounted)setState(()=>item=null);Future<void>.delayed(const Duration(milliseconds:280),()=>_load());}
   Color _color(dynamic value,Color fallback){final raw=(value??'').toString().replaceAll('#','');final n=raw.length==6?int.tryParse(raw,radix:16):null;return n==null?fallback:Color(0xFF000000|n);}
   @override void dispose(){
     expiry?.cancel();refresh?.cancel();cvBillboardActivePage.removeListener(_pageChanged);
