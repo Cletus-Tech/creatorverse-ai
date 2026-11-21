@@ -904,7 +904,7 @@ class _GlobalBillboardOverlayState extends State<GlobalBillboardOverlay> {
     channel=db.channel('cv-app-global-billboard-overlay')
       .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'billboard_items',callback:(_)=>_load()).subscribe();
   }
-  void _pageChanged(){final next=cvBillboardActivePage.value;if(next==page)return;page=next;_load();}
+  void _pageChanged(){final next=cvBillboardActivePage.value;if(next==page)return;page=next;_dismiss();_load();}
   Future<void> _load() async{
     if(loading)return;loading=true;
     try{
@@ -5475,7 +5475,7 @@ class _NativeBillboardAdminScreenState extends State<NativeBillboardAdminScreen>
               contentPadding:EdgeInsets.zero,
               value:countdownTarget!=null,
               onChanged:(v) async {
-                if(!v){setD(()=>{countdownTarget=null;pinned=false;});return;}
+                if(!v){setD(() {countdownTarget=null;pinned=false;});return;}
                 final now=DateTime.now();
                 final date=await showDatePicker(context:ctx,initialDate:countdownTarget??now.add(const Duration(days:1)),firstDate:DateTime(now.year,now.month,now.day),lastDate:DateTime(now.year+8));
                 if(!ctx.mounted||date==null)return;
