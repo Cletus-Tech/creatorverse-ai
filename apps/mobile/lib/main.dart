@@ -7783,11 +7783,11 @@ void openFeature(BuildContext context, String path) {
   }
   if (path == '/academy-interviewer.html' || path == '/academy-interviewer') { _pushBillboardRoute(context,'academic',MaterialPageRoute(builder:(_)=>const NativeAcademyInterviewerScreen())); return; }
   if (path == '/academy-applications') {
-    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
+    _pushBillboardRoute(context,'academic',MaterialPageRoute(builder: (_) => const MyAcademyApplicationsScreen()));
     return;
   }
   if (path == '/messages.html' || path == '/messages') {
-    material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
+    _pushBillboardRoute(context,'messages',MaterialPageRoute(builder: (_) => const MessageInboxScreen()));
     return;
   }
   if (path == '/notifications.html' || path == '/notifications') {
