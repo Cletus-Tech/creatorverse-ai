@@ -2302,7 +2302,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Discover items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 3),
-                  Text('\${rows.length} \${rows.length == 1 ? 'listing' : 'listings'} available',
+                  Text('${rows.length} ${rows.length == 1 ? 'listing' : 'listings'} available',
                     style: const TextStyle(color: muted, fontSize: 11)),
                 ])),
               Container(padding: const EdgeInsets.symmetric(horizontal: 10),
