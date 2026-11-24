@@ -162,16 +162,30 @@
   function renderCategoryLinks(){
     if(!categorySelect||!categoryHost)return;
     var options=Array.from(categorySelect.options).filter(function(option){return option.value;});
-    categoryHost.innerHTML=options.length?options.map(function(option){
-      return '<button type="button" class="market-category-link market-dynamic-category" data-market-category-id="'+option.value.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><span>•</span>'+option.textContent+'</button>';
-    }).join(''):'<small class="market-category-loading">Categories will appear when the catalogue is available.</small>';
-    categoryHost.querySelectorAll('[data-market-category-id]').forEach(function(button){
+    categoryHost.textContent='';
+    if(!options.length){
+      var empty=document.createElement('small');
+      empty.className='market-category-loading';
+      empty.textContent='Categories will appear when the catalogue is available.';
+      categoryHost.appendChild(empty);
+      return;
+    }
+    options.forEach(function(option){
+      var button=document.createElement('button');
+      var marker=document.createElement('span');
+      button.type='button';
+      button.className='market-category-link market-dynamic-category';
+      button.setAttribute('data-market-category-id',option.value);
+      marker.textContent='•';
+      button.appendChild(marker);
+      button.appendChild(document.createTextNode(option.textContent));
       button.addEventListener('click',function(){
-        categorySelect.value=button.getAttribute('data-market-category-id');
+        categorySelect.value=option.value;
         categorySelect.dispatchEvent(new Event('change',{bubbles:true}));
         document.querySelectorAll('.market-category-link').forEach(function(item){item.classList.toggle('is-active',item===button);});
         var target=document.getElementById('live-market');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
       });
+      categoryHost.appendChild(button);
     });
   }
   if(categorySelect&&categoryHost){
