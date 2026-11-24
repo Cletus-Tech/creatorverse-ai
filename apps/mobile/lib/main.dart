@@ -2740,54 +2740,119 @@ class MarketplaceCheckoutScreen extends StatefulWidget {
 class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
   final db=Supabase.instance.client;
   final name=TextEditingController(),phone=TextEditingController(),address=TextEditingController(),
-    city=TextEditingController(),stateName=TextEditingController(),note=TextEditingController();
-  String method='bank_transfer';bool submitting=false;
-  @override void dispose(){name.dispose();phone.dispose();address.dispose();city.dispose();stateName.dispose();note.dispose();super.dispose();}
+    note=TextEditingController(),customTownController=TextEditingController();
+  String method='bank_transfer';
+  String? selectedState,selectedLga,selectedTown;
+  bool submitting=false,locationsLoading=true,paymentSettingsLoading=true,customTown=false;
+  Map<String,dynamic> locationData={};
+  Map<String,dynamic>? paymentSettings;
+  @override void initState(){super.initState();loadLocations();loadPaymentSettings();}
+  @override void dispose(){name.dispose();phone.dispose();address.dispose();note.dispose();customTownController.dispose();super.dispose();}
+  Future<void> loadLocations()async{
+    try{final raw=await rootBundle.loadString('assets/data/nigeria_locations.json');
+      final parsed=jsonDecode(raw) as Map<String,dynamic>;
+      if(mounted)setState(()=>locationData=parsed);
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Location directory unavailable: ${e}')));}
+    finally{if(mounted)setState(()=>locationsLoading=false);}
+  }
+  Future<void> loadPaymentSettings()async{
+    try{
+      final row=await db.from('payment_settings').select(
+        'currency,payment_window_minutes,bank_transfer_enabled,ussd_enabled,bank_name,account_name,account_number,ussd_instructions'
+      ).eq('id',true).maybeSingle();
+      if(mounted){
+        final ready=row!=null&&row['bank_transfer_enabled']==true&&
+          ['bank_name','account_name','account_number'].every((k)=>(row[k]??'').toString().trim().isNotEmpty);
+        setState(()=>paymentSettings=row==null?null:Map<String,dynamic>.from(row));
+        if(!ready&&method=='bank_transfer')setState(()=>method='cash_on_delivery');
+      }
+    }catch(_){if(mounted&&method=='bank_transfer')setState(()=>method='cash_on_delivery');}
+    finally{if(mounted)setState(()=>paymentSettingsLoading=false);}
+  }
+  bool get bankReady=>paymentSettings?['bank_transfer_enabled']==true&&
+    ['bank_name','account_name','account_number'].every((k)=>(paymentSettings?[k]??'').toString().trim().isNotEmpty);
   Widget field(String label,TextEditingController c,{TextInputType? keyboard,int lines=1})=>
     Padding(padding:const EdgeInsets.only(bottom:11),child:TextField(controller:c,keyboardType:keyboard,
       minLines:lines,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true,fillColor:panel)));
   Future<void> placeOrder() async{
+    final town=customTown?customTownController.text.trim():(selectedTown??'').trim();
     if(submitting)return;
     if(name.text.trim().length<2||phone.text.trim().length<7||address.text.trim().length<5||
-      city.text.trim().length<2||stateName.text.trim().length<2){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Complete your name, phone and delivery address.')));return;
+      selectedState==null||selectedLga==null||town.length<2){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Complete your name, phone, street address, state, LGA and town / area.')));return;
     }
+    if(method=='bank_transfer'&&!bankReady){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Bank transfer is unavailable until the CreatorVerse account is configured.')));return;}
+    if(method=='ussd'&&paymentSettings?['ussd_enabled']!=true){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('USSD payment is not currently available.')));return;}
     setState(()=>submitting=true);
     try{
-      final id=await db.rpc('marketplace_place_order',params:{
+      final id=await db.rpc('marketplace_place_order_v2',params:{
         'p_recipient_name':name.text.trim(),'p_recipient_phone':phone.text.trim(),
-        'p_delivery_address':address.text.trim(),'p_delivery_city':city.text.trim(),
-        'p_delivery_state':stateName.text.trim(),'p_delivery_country':'Nigeria',
+        'p_delivery_address':address.text.trim(),'p_delivery_city':town,
+        'p_delivery_lga':selectedLga,'p_delivery_state':selectedState,
+        'p_delivery_country':'Nigeria',
         'p_buyer_note':note.text.trim().isEmpty?null:note.text.trim(),'p_payment_method':method,
       });
       if(!mounted)return;
       material_widgets_ui.Navigator.pushReplacement(context,MaterialPageRoute(
         builder:(_)=>MarketplaceOrderDetailScreen(orderId:id.toString())));
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not place order: $e')));}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not place order: ${e}')));}
     finally{if(mounted)setState(()=>submitting=false);}
   }
-  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Checkout')),
-    body:ListView(padding:const EdgeInsets.all(18),children:[
-      const Text('Delivery information',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
-      const SizedBox(height:12),
-      field('Recipient full name',name,keyboard:TextInputType.name),
-      field('Phone number',phone,keyboard:TextInputType.phone),
-      field('Delivery address',address,lines:2),
-      Row(children:[Expanded(child:field('City / town',city)),const SizedBox(width:9),Expanded(child:field('State',stateName))]),
-      field('Order note (optional)',note,lines:2),
-      const SizedBox(height:4),const Text('Payment method',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
-      RadioListTile<String>(value:'bank_transfer',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
-        title:const Text('Bank transfer'),subtitle:const Text('Awaiting administrator payment confirmation.')),
-      RadioListTile<String>(value:'ussd',groupValue:method,onChanged:(v)=>setState(()=>method=v!),title:const Text('USSD')),
-      RadioListTile<String>(value:'cash_on_delivery',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
-        title:const Text('Cash on delivery')),
-      const Text('CreatorVerse calculates the final item total from current listing prices and stock. Payment is not marked as received until confirmed.',
-        style:TextStyle(color:muted,fontSize:12,height:1.5)),
-      const SizedBox(height:14),SizedBox(width:double.infinity,child:FilledButton.icon(
-        onPressed:submitting?null:placeOrder,style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(53)),
-        icon:submitting?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.check_circle_outline),
-        label:Text(submitting?'Placing order…':'Place order'))),
-    ]));
+  @override Widget build(BuildContext context){
+    final states=List<String>.from(locationData['states']??const []);
+    final locations=Map<String,dynamic>.from(locationData['locations']??const {});
+    final stateInfo=selectedState==null?null:locations[selectedState] as Map<String,dynamic>?;
+    final lgas=stateInfo==null?const <String,dynamic>{}:Map<String,dynamic>.from(stateInfo['lgas']??const {});
+    final townOptions=selectedLga==null?const <String>[]:List<String>.from(lgas[selectedLga]??const []);
+    final bankReadyNow=bankReady;
+    return Scaffold(appBar:AppBar(title:const Text('Checkout')),
+      body:locationsLoading?const Center(child:CircularProgressIndicator(color:emerald)):
+      ListView(padding:const EdgeInsets.all(18),children:[
+        const Text('Delivery information',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
+        const SizedBox(height:12),
+        field('Recipient full name',name,keyboard:TextInputType.name),
+        field('Phone number',phone,keyboard:TextInputType.phone),
+        field('House number, street and delivery directions',address,lines:2),
+        DropdownButtonFormField<String>(value:selectedState,decoration:const InputDecoration(labelText:'State',filled:true),
+          isExpanded:true,items:[for(final v in states)DropdownMenuItem(value:v,child:Text(v))],
+          onChanged:(v)=>setState(()=>{selectedState=v,selectedLga=null,selectedTown=null,customTown=false,customTownController.clear()})),
+        const SizedBox(height:11),
+        DropdownButtonFormField<String>(value:selectedLga,decoration:const InputDecoration(labelText:'Local Government Area (LGA)',filled:true),
+          isExpanded:true,items:[for(final v in lgas.keys)DropdownMenuItem(value:v.toString(),child:Text(v.toString()))],
+          onChanged:(v)=>setState(()=>{selectedLga=v,selectedTown=null,customTown=false,customTownController.clear()})),
+        const SizedBox(height:11),
+        DropdownButtonFormField<String>(value:customTown?'__other__':selectedTown,
+          decoration:const InputDecoration(labelText:'Town / area',filled:true),
+          isExpanded:true,items:[
+            for(final v in townOptions)DropdownMenuItem(value:v,child:Text(v)),
+            const DropdownMenuItem(value:'__other__',child:Text('My town / area is not listed')),
+          ],onChanged:(v)=>setState(()=>{customTown=v=='__other__',selectedTown=v=='__other__'?null:v})),
+        if(customTown)Padding(padding:const EdgeInsets.only(top:10),child:TextField(controller:customTownController,
+          decoration:const InputDecoration(labelText:'Enter town / area',filled:true,fillColor:panel))),
+        const SizedBox(height:11),field('Order note (optional)',note,lines:2),
+        const SizedBox(height:4),const Text('Payment method',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
+        RadioListTile<String>(value:'bank_transfer',groupValue:method,onChanged:bankReadyNow?(v)=>setState(()=>method=v!):null,
+          title:const Text('Bank transfer'),subtitle:Text(bankReadyNow?'Pay into the official CreatorVerse receiving account.':'Temporarily unavailable — receiving account not configured.')),
+        if(method=='bank_transfer'&&bankReadyNow)Card(color:panel,child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('CreatorVerse official payment account',style:TextStyle(fontWeight:FontWeight.w900)),
+          const SizedBox(height:8),Text('Bank: ${paymentSettings?['bank_name']}'),
+          Text('Account name: ${paymentSettings?['account_name']}'),
+          Row(children:[Expanded(child:Text('Account number: ${paymentSettings?['account_number']}',style:const TextStyle(fontWeight:FontWeight.w900))),
+            IconButton(tooltip:'Copy account number',onPressed:()=>Clipboard.setData(ClipboardData(text:paymentSettings?['account_number'].toString()??'')),icon:const Icon(Icons.copy,color:emerald))]),
+          Text('Please confirm the account name before transferring. Your order remains awaiting payment confirmation until CreatorVerse verifies receipt.',style:const TextStyle(color:muted,fontSize:12)),
+        ]))),
+        if(paymentSettings?['ussd_enabled']==true)RadioListTile<String>(value:'ussd',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
+          title:const Text('USSD'),subtitle:Text((paymentSettings?['ussd_instructions']??'Follow the payment instructions shown after ordering.').toString())),
+        RadioListTile<String>(value:'cash_on_delivery',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
+          title:const Text('Cash on delivery')),
+        if(paymentSettingsLoading)const LinearProgressIndicator(minHeight:2),
+        const Text('All payments for marketplace orders are made to the official CreatorVerse receiving account. Seller payouts are handled separately by the marketplace.',style:TextStyle(color:muted,fontSize:12,height:1.5)),
+        const SizedBox(height:14),SizedBox(width:double.infinity,child:FilledButton.icon(
+          onPressed:submitting?null:placeOrder,style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(53)),
+          icon:submitting?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.check_circle_outline),
+          label:Text(submitting?'Placing order…':'Place order'))),
+      ]));
+  }
 }
 
 class MarketplaceOrdersScreen extends StatefulWidget{
