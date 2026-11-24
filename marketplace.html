@@ -1,31 +1,169 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Discover student listings, campus vendors, services and rentals on CreatorVerse Marketplace."><title>Marketplace | CreatorVerse</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="components.css"><link rel="stylesheet" href="pages.css"><link rel="stylesheet" href="responsive.css"><link rel="stylesheet" href="creatorverse-design-system.css?v=20261113-1"><link rel="stylesheet" href="marketplace.css?v=20261113-5"><link rel="stylesheet" href="site-shell-base.css?v=20261117-stable-shell-1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Shop products, discover trusted campus sellers and find useful services on CreatorVerse Market.">
+<meta name="theme-color" content="#f5f7f4">
+<title>CreatorVerse Market | Shop, discover and sell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="pages.css">
+<link rel="stylesheet" href="responsive.css">
+<link rel="stylesheet" href="creatorverse-design-system.css?v=20261113-1">
+<link rel="stylesheet" href="marketplace.css?v=20261124-market-home-1">
+<link rel="stylesheet" href="site-shell-base.css?v=20261117-stable-shell-1">
 <link rel="stylesheet" href="site-shell-finish.css?v=20261117-stable-shell-1">
 </head>
-<body data-page="marketplace"><div id="site-header"></div><main class="cv-marketplace page" id="content">
-<section class="market-hero"><div><span class="market-eyebrow">CREATORVERSE · CAMPUS COMMERCE</span><h1>Your campus. Your marketplace.</h1><p>Discover useful finds, trusted campus vendors, student services and rentals — all in one organised place.</p></div><div class="market-hero-art"><img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1000&q=85" alt="Campus shopping and everyday essentials" onerror="this.src='https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1000&q=85'"></div></section>
-<form class="market-search" id="market-search"><input id="market-query" type="search" placeholder="Search products, services, vendors…" aria-label="Search Marketplace"><button type="submit">Search marketplace</button></form>
-<div class="market-status" id="market-status" role="status"><strong>Marketplace:</strong> Connecting to the live catalogue when available. Checkout and orders are not enabled yet.</div>
-<section class="market-live-tools" aria-label="Marketplace actions"><div><h2>Start buying or selling</h2><p>Browse approved listings or apply to become a campus seller.</p></div><div class="market-live-actions"><a class="market-secondary" href="marketplace-enquiries.html">My enquiries</a><button class="market-action" id="seller-open" type="button">Become a seller</button></div></section>
-<section class="market-section" id="live-market"><div class="market-heading"><div><span class="market-eyebrow" style="color:#367454">LIVE CATALOGUE</span><h2>Recently listed</h2></div><p id="market-count">Approved listings appear here.</p></div><div class="market-live-filters"><input id="market-institution" type="search" placeholder="Filter by institution" aria-label="Filter by institution"><select id="market-category" aria-label="Filter by category"><option value="">All categories</option></select><select id="market-kind" aria-label="Filter by listing type"><option value="">All listing types</option><option value="product">Products</option><option value="service">Services</option><option value="rental">Rentals</option><option value="free">Free</option></select></div><div id="market-listings" class="market-listings"><div class="market-empty">Loading approved listings…</div></div></section>
-<section class="market-section" id="seller-workspace"><div class="market-heading"><div><span class="market-eyebrow" style="color:#367454">SELLER WORKSPACE</span><h2>Your shop</h2></div><p>Manage your applications and listings</p></div><div id="seller-workspace-content"><div class="market-empty">Sign in to view your seller workspace.</div></div></section>
-<dialog class="market-dialog" id="seller-dialog" aria-labelledby="seller-title"><form id="seller-form" method="dialog"><button class="market-dialog-close" type="button" id="seller-close" aria-label="Close">×</button><span class="market-eyebrow" style="color:#367454">SELL ON CREATORVERSE</span><h2 id="seller-title">Apply for a seller profile</h2><p>Your application is reviewed before selling is enabled. Never submit passwords or identity documents in this form.</p><label>Store or display name<input name="display_name" required minlength="2" maxlength="80" placeholder="e.g. Campus Finds"></label><label>Seller type<select name="seller_type"><option value="student">Student seller</option><option value="campus_vendor">Campus vendor</option><option value="service_provider">Service provider</option></select></label><label>Institution<input name="institution" maxlength="120" placeholder="Your institution"></label><label>Campus / area<input name="campus" maxlength="120" placeholder="Campus or area"></label><label>Short description<textarea name="bio" maxlength="500" rows="3" placeholder="What do you sell or offer?"></textarea></label><button class="market-action" type="submit">Submit seller application</button><div id="seller-feedback" role="status" aria-live="polite"></div></form></dialog>
-<section class="market-section"><div class="market-heading"><div><span class="market-eyebrow" style="color:#367454">DISCOVER</span><h2>Explore marketplace</h2></div><p>Different needs, one campus marketplace.</p></div>
-<div class="market-categories">
-<div class="market-category"><span class="market-category-icon">▣</span><div><strong>Buy & Sell</strong><small>New and pre-loved finds</small></div></div>
-<div class="market-category"><span class="market-category-icon">⌂</span><div><strong>Campus Vendors</strong><small>Shops, food and brands</small></div></div>
-<div class="market-category"><span class="market-category-icon">✳</span><div><strong>Student Services</strong><small>Skills and local services</small></div></div>
-<div class="market-category"><span class="market-category-icon">↗</span><div><strong>Rentals</strong><small>Items to borrow or hire</small></div></div>
-</div></section>
-<section class="market-section"><div class="market-heading"><div><span class="market-eyebrow" style="color:#367454">MARKETPLACE SPACES</span><h2>What you’ll find here</h2></div></div>
-<div class="market-feature-grid">
-<article class="market-feature"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80" alt="Coffee and food items"><div><h3>Food & Everyday Essentials</h3><p>Discover campus food vendors, groceries, personal care and daily necessities.</p><span>Campus vendors</span></div></article>
-<article class="market-feature"><img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=900&q=80" alt="Books and study materials"><div><h3>Books & Study Materials</h3><p>Find textbooks, calculators, learning tools and pre-loved academic resources.</p><span>Buy & sell</span></div></article>
-<article class="market-feature"><img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80" alt="Creative team working together"><div><h3>Student Services</h3><p>Connect with photographers, designers, repairers, printers and other service providers.</p><span>Services</span></div></article>
-</div></section>
-<section class="market-section"><div class="market-heading"><div><span class="market-eyebrow" style="color:#367454">BUILT ON TRUST</span><h2>Commerce with student safety in mind</h2></div></div>
-<div class="market-trust"><article><strong>Verified seller profiles</strong><p>School-aware verification, clear seller identity and public ratings without exposing private identity documents.</p></article><article><strong>Clear prices and terms</strong><p>Show item condition, total price, delivery charges and rental terms before a buyer commits.</p></article><article><strong>Reports and support</strong><p>Listing moderation, buyer/seller reporting, dispute handling and transaction records are part of the planned platform.</p></article></div></section>
-</main><div id="site-footer"></div><script src="layout.js?v=20261121-global-billboard-overlay-1"></script><script src="nav.js?v=20261113-global-cache-fix"></script><script src="config.js"></script><script src="cv-data.js"></script><script src="auth.js"></script><script src="site.js"></script><script src="marketplace.js?v=20261113-4"></script>
-</body></html>
+<body data-page="marketplace">
+<div id="site-header"></div>
+<main class="cv-marketplace page market-home" id="content">
+  <section class="market-topline" aria-label="Marketplace information">
+    <span>CREATORVERSE MARKET</span>
+    <span>Discover. Shop. Create opportunities.</span>
+    <a href="#seller-workspace">Sell on CreatorVerse</a>
+  </section>
+
+  <section class="market-shopbar" aria-label="Shop navigation">
+    <a class="market-wordmark" href="marketplace.html" aria-label="CreatorVerse Market home">
+      <span class="market-mark">C</span>
+      <span><strong>CreatorVerse</strong><small>MARKET</small></span>
+    </a>
+    <form class="market-search" id="market-search" role="search">
+      <label class="market-search-field">
+        <span aria-hidden="true">⌕</span>
+        <input id="market-query" type="search" placeholder="Search for products, brands and services" aria-label="Search products, brands and services">
+      </label>
+      <button type="submit">Search</button>
+    </form>
+    <div class="market-shop-actions">
+      <a href="marketplace-enquiries.html"><span aria-hidden="true">▤</span><span>My enquiries</span></a>
+      <button type="button" id="seller-open"><span aria-hidden="true">＋</span><span>Sell</span></button>
+    </div>
+  </section>
+
+  <div class="market-delivery-strip">
+    <span aria-hidden="true">⌖</span>
+    <span><small>SHOPPING ON CREATORVERSE</small><strong>Explore trusted listings from campus communities and beyond</strong></span>
+    <span class="market-delivery-note">Nigeria · ₦ NGN</span>
+  </div>
+
+  <div class="market-status" id="market-status" role="status">Connecting to the live CreatorVerse Market catalogue…</div>
+
+  <section class="market-store-layout" aria-label="Shop products and categories">
+    <aside class="market-category-rail">
+      <div class="market-rail-heading">Shop by category</div>
+      <button type="button" class="market-category-link is-active" data-market-kind=""><span>▦</span> All products and services</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>▣</span> Phones & electronics</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>▤</span> Computers & accessories</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>◇</span> Fashion & lifestyle</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>▧</span> Books & learning</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>⌂</span> Home & everyday</button>
+      <button type="button" class="market-category-link" data-market-kind="service"><span>✳</span> Creative services</button>
+      <button type="button" class="market-category-link" data-market-kind="rental"><span>↗</span> Rentals</button>
+      <button type="button" class="market-category-link" data-market-kind="free"><span>＋</span> Free items</button>
+      <div class="market-rail-note"><strong>Have something to sell?</strong><p>Open your own shop and reach the CreatorVerse community.</p><a href="#seller-workspace">Start selling →</a></div>
+    </aside>
+
+    <div class="market-shop-main">
+      <section class="market-campaign" aria-label="CreatorVerse Market introduction">
+        <div class="market-campaign-copy">
+          <span class="market-campaign-kicker">THE MARKETPLACE FOR YOUR NEXT FIND</span>
+          <h1>Find what you need.<br><em>Sell what you create.</em></h1>
+          <p>Explore useful products, discover independent sellers and connect with trusted service providers.</p>
+          <a href="#live-market">Explore the marketplace <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="market-campaign-art">
+          <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1100&q=85" alt="Shopping bags and everyday shopping essentials" loading="eager">
+          <div class="market-campaign-stamp"><strong>One place.</strong><span>More possibilities.</span></div>
+        </div>
+      </section>
+
+      <section class="market-benefit-row" aria-label="Marketplace benefits">
+        <div><span>✓</span><p><strong>Reviewed sellers</strong><small>Seller applications reviewed</small></p></div>
+        <div><span>⌕</span><p><strong>Easy discovery</strong><small>Search and browse listings</small></p></div>
+        <div><span>♡</span><p><strong>Direct enquiries</strong><small>Talk to sellers privately</small></p></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="market-section market-browse-section" id="live-market">
+    <div class="market-heading market-heading-shop">
+      <div><span class="market-eyebrow" style="color:#26704e">THE MARKETPLACE</span><h2>Discover products and services</h2><p>Browse approved listings from CreatorVerse sellers.</p></div>
+      <div class="market-sort-wrap"><label for="market-sort">Sort by</label><select id="market-sort"><option value="newest">Recently added</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></div>
+    </div>
+    <div class="market-filterbar">
+      <label class="market-filter-search"><span>⌕</span><input id="market-institution" type="search" placeholder="Filter by institution or campus" aria-label="Filter by institution or campus"></label>
+      <select id="market-category" aria-label="Filter by category"><option value="">All categories</option></select>
+      <select id="market-kind" aria-label="Filter by listing type"><option value="">All listing types</option><option value="product">Products</option><option value="service">Services</option><option value="rental">Rentals</option><option value="free">Free</option></select>
+      <span id="market-count">Loading listings…</span>
+    </div>
+    <div id="market-listings" class="market-listings market-product-grid">
+      <div class="market-empty">Loading approved listings…</div>
+    </div>
+  </section>
+
+  <section class="market-seller-banner">
+    <div><span class="market-eyebrow">FOR INDEPENDENT SELLERS</span><h2>Your ideas deserve a storefront.</h2><p>Apply to become a seller, publish your listings after approval and manage your shop from CreatorVerse.</p></div>
+    <button class="market-action" type="button" id="seller-open-secondary">Open a seller account <span aria-hidden="true">→</span></button>
+  </section>
+
+  <section class="market-section" id="seller-workspace">
+    <div class="market-heading"><div><span class="market-eyebrow" style="color:#26704e">SELLER CENTRE</span><h2>Your shop workspace</h2></div><p>Manage your seller profile and listings.</p></div>
+    <div id="seller-workspace-content"><div class="market-empty">Sign in to view your seller workspace.</div></div>
+  </section>
+
+  <dialog class="market-dialog" id="seller-dialog" aria-labelledby="seller-title">
+    <form id="seller-form" method="dialog">
+      <button class="market-dialog-close" type="button" id="seller-close" aria-label="Close">×</button>
+      <span class="market-eyebrow" style="color:#26704e">SELL ON CREATORVERSE</span>
+      <h2 id="seller-title">Apply for a seller profile</h2>
+      <p>Your application is reviewed before selling is enabled. Never submit passwords or identity documents in this form.</p>
+      <label>Store or display name<input name="display_name" required minlength="2" maxlength="80" placeholder="e.g. Campus Finds"></label>
+      <label>Seller type<select name="seller_type"><option value="student">Student seller</option><option value="campus_vendor">Campus vendor</option><option value="service_provider">Service provider</option></select></label>
+      <label>Institution<input name="institution" maxlength="120" placeholder="Your institution"></label>
+      <label>Campus / area<input name="campus" maxlength="120" placeholder="Campus or area"></label>
+      <label>Short description<textarea name="bio" maxlength="500" rows="3" placeholder="What do you sell or offer?"></textarea></label>
+      <button class="market-action" type="submit">Submit seller application</button>
+      <div id="seller-feedback" role="status" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <section class="market-trust-footer">
+    <div><strong>CreatorVerse Market</strong><p>A shopping experience built around discovery, independent sellers and trusted community connections.</p></div>
+    <div><strong>Shop with confidence</strong><p>Seller review and listing moderation are active foundations. Secure checkout and order tracking are planned next.</p></div>
+    <div><strong>Need help?</strong><p>Use private seller enquiries while the complete order and payment experience is being built.</p></div>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="layout.js?v=20261121-global-billboard-overlay-1"></script>
+<script src="nav.js?v=20261113-global-cache-fix"></script>
+<script src="config.js"></script>
+<script src="cv-data.js"></script>
+<script src="auth.js"></script>
+<script src="site.js"></script>
+<script src="marketplace.js?v=20261124-market-home-1"></script>
+<script>
+(function(){
+  var kind=document.getElementById('market-kind');
+  var query=document.getElementById('market-query');
+  var buttons=document.querySelectorAll('[data-market-kind]');
+  buttons.forEach(function(button){
+    button.addEventListener('click',function(){
+      if(kind){kind.value=button.getAttribute('data-market-kind')||'';kind.dispatchEvent(new Event('change',{bubbles:true}));}
+      buttons.forEach(function(item){item.classList.toggle('is-active',item===button);});
+      var target=document.getElementById('live-market');
+      if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+  var secondary=document.getElementById('seller-open-secondary');
+  if(secondary)secondary.addEventListener('click',function(){var primary=document.getElementById('seller-open');if(primary)primary.click();});
+  var form=document.getElementById('market-search');
+  if(form)form.addEventListener('submit',function(){var target=document.getElementById('live-market');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});});
+})();
+</script>
+</body>
+</html>
