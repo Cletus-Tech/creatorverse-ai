@@ -2694,7 +2694,6 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
               (v)=>v.startsWith('https://')||v.startsWith('http://'),orElse:()=>'');
             final qty=(r['quantity'] as num?)?.toInt()??1;final price=(r['price_ngn'] as num?)?.toInt();
             final unavailable=r['id']==null||r['status']!='published';
-            final notPurchasable=['service','rental'].contains(r['listing_type'])||(price==null&&r['listing_type']!='free');
             return Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(14)),
               child:Row(children:[
                 ClipRRect(borderRadius:BorderRadius.circular(9),child:SizedBox(width:82,height:82,
