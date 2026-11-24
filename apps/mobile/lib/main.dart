@@ -2946,7 +2946,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
   final db = Supabase.instance.client;
   final name = TextEditingController(), institution = TextEditingController(), campus = TextEditingController(), bio = TextEditingController();
   final accountName = TextEditingController(), accountNumber = TextEditingController(), otherBankName = TextEditingController();
-  String? selectedBank; bool otherBank = false, acceptedSellerRules = false;
+  String? selectedBank; bool otherBank = false, acceptedSellerRules = false, sellerRulesReviewed = false;
   late Future<Map<String, dynamic>> data;
   bool busy = false;
   @override
@@ -2966,6 +2966,26 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     return {'seller': seller, 'listings': List<Map<String,dynamic>>.from(rows)};
   }
   Future<void> refresh() async { final next = load(); setState(() => data = next); await next; }
+  Future<void> reviewSellerRules() async {
+    final accepted = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      backgroundColor: panel,
+      title: const Text('CreatorVerse Seller Rules'),
+      content: const SizedBox(width: 440, child: SingleChildScrollView(child: Text(
+        '1. List only lawful products and services. Counterfeit, stolen, prohibited or misleading items are not allowed.\n\n'
+        '2. Use accurate titles, descriptions, condition, photos, prices and stock quantities. Photos must represent the actual item or service.\n\n'
+        '3. Keep prices, availability and contact details current. Update or remove a listing promptly when it is unavailable.\n\n'
+        '4. Fulfil confirmed orders responsibly. Do not mark an order as shipped or delivered before that event has happened. Add genuine carrier and tracking details when available.\n\n'
+        '5. Buyer payments for marketplace orders go to the official CreatorVerse receiving account. Seller payouts are processed separately to the payout account you provide, after payment reconciliation and any clearly disclosed marketplace charges.\n\n'
+        '6. Keep buyer information private. Do not misuse addresses, phone numbers, payment references or other personal information.\n\n'
+        '7. Cooperate with CreatorVerse on cancellations, returns, refunds and disputes. Do not mislead buyers or move platform orders off-platform to avoid marketplace protections.'
+      ),style:TextStyle(height:1.5))),
+      actions: [
+        TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Close')),
+        FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('I have read the rules')),
+      ],
+    ));
+    if(accepted==true&&mounted)setState(()=>sellerRulesReviewed=true);
+  }
   Future<void> apply() async {
     final bankName = otherBank ? otherBankName.text.trim() : (selectedBank ?? '').trim();
     if (name.text.trim().length < 2) {
@@ -3150,9 +3170,11 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         const SizedBox(height:10),TextField(controller:accountName,decoration:const InputDecoration(labelText:'Account holder name',textCapitalization:TextCapitalization.words)),
         const SizedBox(height:10),TextField(controller:accountNumber,keyboardType:TextInputType.number,maxLength:10,inputFormatters:[FilteringTextInputFormatter.digitsOnly],
           decoration:const InputDecoration(labelText:'10-digit account number')),
-        const SizedBox(height:8),CheckboxListTile(contentPadding:EdgeInsets.zero,value:acceptedSellerRules,
-          onChanged:(v)=>setState(()=>acceptedSellerRules=v??false),
-          title:const Text('I have read and agree to the CreatorVerse Seller Rules and Marketplace Terms.')),
+        const SizedBox(height:8),TextButton.icon(onPressed:reviewSellerRules,icon:const Icon(Icons.menu_book_outlined),
+          label:Text(sellerRulesReviewed?'Seller rules reviewed':'Read Seller Rules and Marketplace Terms')),
+        CheckboxListTile(contentPadding:EdgeInsets.zero,value:acceptedSellerRules,
+          onChanged:sellerRulesReviewed?(v)=>setState(()=>acceptedSellerRules=v??false):null,
+          title:const Text('I agree to follow the CreatorVerse Seller Rules.')),
         const SizedBox(height:16),FilledButton(onPressed:busy?null:apply,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(busy?'Submitting…':'Submit seller application')),
       ]);
     }
