@@ -2467,7 +2467,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       ).eq('id', widget.listing['seller_id']).maybeSingle();
       if (mounted) setState(() => seller = profile);
     } catch (_) {
-      // Listing discovery remains available even if optional seller metadata fails.
+      // The public listing remains readable if optional seller details are unavailable.
     } finally { if (mounted) setState(() => loadingSave = false); }
   }
   Future<void> toggleSaved() async {
@@ -2479,9 +2479,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
         await db.from('marketplace_saved_listings').delete()
           .eq('user_id', user.id).eq('listing_id', widget.listing['id']);
       } else {
-        await db.from('marketplace_saved_listings').insert({
-          'user_id': user.id, 'listing_id': widget.listing['id'],
-        });
+        await db.from('marketplace_saved_listings').insert({'user_id': user.id, 'listing_id': widget.listing['id']});
       }
       if (mounted) setState(() => saved = !saved);
     } catch (e) {
@@ -2508,46 +2506,97 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
     }
     setState(() => busy = true);
     try {
-      final id = await db.rpc('marketplace_start_enquiry', params: {
-        'p_listing_id': widget.listing['id'], 'p_message': body,
-      });
+      final id = await db.rpc('marketplace_start_enquiry', params: {'p_listing_id': widget.listing['id'], 'p_message': body});
       if (!mounted) return;
       material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceEnquiryThreadScreen(enquiryId: id.toString())));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send enquiry: $e')));
     } finally { if (mounted) setState(() => busy = false); }
   }
+  Widget detailRow(IconData icon, String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 9),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, color: emerald, size: 19), const SizedBox(width: 12),
+      Expanded(child: Text(label, style: const TextStyle(color: muted))),
+      const SizedBox(width: 12),
+      Flexible(child: Text(value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+    ]),
+  );
   @override
   Widget build(BuildContext context) {
-    final listing = widget.listing;
-    final images = listing['image_urls'] is List ? listing['image_urls'] as List : const [];
-    final photo = images.isNotEmpty ? images.first.toString() : '';
-    final price = listing['price_ngn'];
-    final location = [listing['campus'], listing['institution'], listing['location_label']]
-      .where((v) => v != null && v.toString().isNotEmpty).join(' · ');
-    return Scaffold(appBar: AppBar(title: const Text('Marketplace listing'), actions: [
-      IconButton(onPressed: loadingSave || busy ? null : toggleSaved,
-        icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border, color: gold)),
-    ]), body: ListView(padding: const EdgeInsets.all(18), children: [
-      if (photo.startsWith('https://')) ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(photo, height: 220, fit: BoxFit.cover)),
-      const SizedBox(height: 14), Text((listing['title'] ?? '').toString(), style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 8), Text(price == null ? 'Price on request' : (price == 0 ? 'Free' : '₦$price'), style: const TextStyle(color: emerald, fontSize: 18, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 12), Text((listing['description'] ?? '').toString(), style: const TextStyle(color: Colors.white70, height: 1.55)),
-      const SizedBox(height: 14), ListTile(leading: const Icon(Icons.location_on_outlined, color: emerald), title: Text(location.isEmpty ? 'Campus listing' : location)),
-      if (seller != null) Card(color: panel, child: ListTile(
-        leading: const CircleAvatar(backgroundColor: Color(0xFF174B3B), child: Icon(Icons.storefront_outlined, color: gold)),
-        title: Text((seller!['display_name'] ?? 'Verified seller').toString()),
-        subtitle: Text([seller!['seller_type'], seller!['campus'], seller!['institution']]
-          .where((v) => v != null && v.toString().isNotEmpty).join(' · '), style: const TextStyle(color: muted)),
-      )),
-      const SizedBox(height: 14),
-      FilledButton.icon(onPressed: busy ? null : startEnquiry,
-        style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(48)),
-        icon: const Icon(Icons.chat_bubble_outline), label: Text(busy ? 'Please wait…' : 'Contact seller')),
-      const SizedBox(height: 8),
-      const Text('Keep your conversation inside CreatorVerse. Never send passwords, verification codes or sensitive financial information to a seller.',
-        style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
-    ]));
+    final l = widget.listing;
+    final images = l['image_urls'] is List ? List<String>.from(l['image_urls'].map((v) => v.toString())) : <String>[];
+    final photos = images.where((v) => v.startsWith('https://')).toList();
+    final price = l['price_ngn'];
+    final location = [l['location_label'], l['campus'], l['institution']]
+      .where((v) => v != null && v.toString().trim().isNotEmpty).join(' · ');
+    final condition = (l['item_condition'] ?? '').toString();
+    final type = (l['listing_type'] ?? 'product').toString();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Product details'), actions: [
+        IconButton(onPressed: loadingSave || busy ? null : toggleSaved,
+          icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border, color: gold)),
+      ]),
+      body: ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+        if (photos.isNotEmpty) SizedBox(height: 300, child: PageView(children: [
+          for (final url in photos) Image.network(url, fit: BoxFit.cover, width: double.infinity,
+            errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.image_not_supported_outlined, size: 48, color: muted))),
+        ])) else Container(height: 230, color: panel, child: const Icon(Icons.photo_outlined, size: 62, color: muted)),
+        Padding(padding: const EdgeInsets.fromLTRB(18, 18, 18, 8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0x2225C58A), borderRadius: BorderRadius.circular(30)),
+              child: Text(type.toUpperCase(), style: const TextStyle(color: emerald, fontSize: 11, fontWeight: FontWeight.w800))),
+            const Spacer(),
+            if (l['negotiable'] == true) const Text('Negotiable', style: TextStyle(color: gold, fontWeight: FontWeight.w700)),
+          ]),
+          const SizedBox(height: 10),
+          Text((l['title'] ?? 'Marketplace listing').toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2)),
+          const SizedBox(height: 9),
+          Text(price == null ? 'Price not specified' : (price == 0 ? 'Free' : '₦$price'),
+            style: const TextStyle(color: emerald, fontSize: 25, fontWeight: FontWeight.w900)),
+          if (location.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: Row(children: [
+            const Icon(Icons.location_on_outlined, color: muted, size: 18), const SizedBox(width: 5),
+            Expanded(child: Text(location, style: const TextStyle(color: muted))),
+          ])),
+        ])),
+        const Divider(height: 28),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('About this item', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 9),
+          Text((l['description'] ?? '').toString().trim().isEmpty ? 'The seller has not added a description yet.' : l['description'].toString(),
+            style: const TextStyle(color: Colors.white70, height: 1.6)),
+          const SizedBox(height: 22),
+          const Text('Product information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5),
+          if (condition.isNotEmpty) detailRow(Icons.check_circle_outline, 'Condition', condition.replaceAll('_', ' ')),
+          if ((l['sku'] ?? '').toString().isNotEmpty) detailRow(Icons.qr_code_2, 'Product code', l['sku'].toString()),
+          if (l['quantity_available'] != null) detailRow(Icons.inventory_2_outlined, 'Availability', '${l['quantity_available']} available'),
+          if (location.isNotEmpty) detailRow(Icons.place_outlined, 'Location', location),
+          if (l['shipping_required'] != null) detailRow(Icons.local_shipping_outlined, 'Delivery', l['shipping_required'] == true ? 'Delivery / pickup to arrange' : 'Pickup or digital fulfilment'),
+          if (condition.isEmpty && (l['sku'] ?? '').toString().isEmpty && l['quantity_available'] == null && location.isEmpty)
+            const Text('The seller has not added extra product specifications.', style: TextStyle(color: muted)),
+        ])),
+        if (seller != null) Padding(padding: const EdgeInsets.all(18), child: Card(color: panel, child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
+          const CircleAvatar(radius: 25, backgroundColor: Color(0xFF174B3B), child: Icon(Icons.storefront_outlined, color: gold)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text((seller!['display_name'] ?? 'Verified seller').toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text([seller!['seller_type'], seller!['campus'], seller!['institution']]
+              .where((v) => v != null && v.toString().isNotEmpty).join(' · '), style: const TextStyle(color: muted, fontSize: 12)),
+            if ((seller!['bio'] ?? '').toString().trim().isNotEmpty) Text(seller!['bio'].toString(), maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
+          ])),
+          const Icon(Icons.verified, color: emerald),
+        ])))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: FilledButton.icon(
+          onPressed: busy ? null : startEnquiry,
+          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(52)),
+          icon: const Icon(Icons.chat_bubble_outline), label: Text(busy ? 'Please wait…' : 'Contact seller'))),
+        const Padding(padding: EdgeInsets.fromLTRB(20, 10, 20, 0), child: Text(
+          'Keep your conversation inside CreatorVerse. Never share passwords or verification codes with a seller.',
+          textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 11, height: 1.5))),
+      ]),
+    );
   }
 }
 
@@ -2573,8 +2622,8 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     ).eq('user_id', user.id).maybeSingle();
     if (seller == null) return {'seller': null, 'listings': <Map<String,dynamic>>[]};
     final rows = await db.from('marketplace_listings').select(
-      'id,title,description,status,price_ngn,created_at'
-    ).eq('seller_id', seller['id']).order('created_at', ascending: false).limit(50);
+      'id,seller_id,category_id,title,description,listing_type,item_condition,price_ngn,negotiable,location_label,institution,campus,image_urls,status,quantity_available,sku,shipping_required,created_at'
+    ).eq('seller_id', seller['id']).order('created_at', ascending: false).limit(100);
     return {'seller': seller, 'listings': List<Map<String,dynamic>>.from(rows)};
   }
   Future<void> refresh() async { final next = load(); setState(() => data = next); await next; }
@@ -2585,85 +2634,155 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     setState(() => busy = true);
     try {
       await db.from('marketplace_sellers').insert({
-        'user_id': db.auth.currentUser!.id,
-        'display_name': name.text.trim(),
-        'seller_type': 'student',
+        'user_id': db.auth.currentUser!.id, 'display_name': name.text.trim(), 'seller_type': 'student',
         'institution': institution.text.trim().isEmpty ? null : institution.text.trim(),
         'campus': campus.text.trim().isEmpty ? null : campus.text.trim(),
         'bio': bio.text.trim().isEmpty ? null : bio.text.trim(),
       });
       await refresh();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seller application submitted. An administrator must verify your profile before listings can be submitted.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seller application submitted. Once verified, your products will publish automatically.')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not submit seller application: $e')));
     } finally { if (mounted) setState(() => busy = false); }
   }
-  Future<void> createListing(Map<String,dynamic> seller) async {
+  Future<void> editListing(Map<String,dynamic> seller, {Map<String,dynamic>? existing}) async {
     final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
-    if (cats.isEmpty || !mounted) return;
-    final title = TextEditingController(), description = TextEditingController(), price = TextEditingController(),
-      campusField = TextEditingController(text: (seller['campus'] ?? '').toString()),
-      institutionField = TextEditingController(text: (seller['institution'] ?? '').toString()),
-      location = TextEditingController();
-    String category = cats.first['id'].toString(), type = 'product';
-    XFile? selectedImage;
-    final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) => AlertDialog(
-      backgroundColor: panel, title: const Text('Create a listing'),
-      content: SizedBox(width: 440, child: SingleChildScrollView(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: title, maxLength: 100, decoration: const InputDecoration(labelText: 'Listing title')),
-        const SizedBox(height: 8), DropdownButtonFormField<String>(value: category, decoration: const InputDecoration(labelText: 'Category'),
-          items: [for (final cat in cats) DropdownMenuItem(value: cat['id'].toString(), child: Text(cat['name'].toString()))],
-          onChanged: (v) => setDialog(() => category = v ?? category)),
-        const SizedBox(height: 8), DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'Listing type'),
-          items: const [DropdownMenuItem(value: 'product',child:Text('Product')),DropdownMenuItem(value:'service',child:Text('Service')),DropdownMenuItem(value:'rental',child:Text('Rental')),DropdownMenuItem(value:'free',child:Text('Free item'))],
-          onChanged: (v) => setDialog(() => type = v ?? type)),
-        const SizedBox(height: 8), TextField(controller: description, minLines: 3, maxLines: 5, maxLength: 3000,
-          decoration: const InputDecoration(labelText: 'Description (at least 10 characters)')),
-        const SizedBox(height: 8), Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-          onPressed: () async { final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 82, maxWidth: 1600); if (picked != null) setDialog(() => selectedImage = picked); },
-          icon: const Icon(Icons.add_photo_alternate_outlined), label: Text(selectedImage == null ? 'Add listing photo' : 'Photo: ${selectedImage!.name}'))),
-        const SizedBox(height: 8), TextField(controller: price, keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Price in naira (leave blank if negotiable / on request)')),
-        const SizedBox(height: 8), TextField(controller: institutionField, decoration: const InputDecoration(labelText: 'Institution')),
-        const SizedBox(height: 8), TextField(controller: campusField, decoration: const InputDecoration(labelText: 'Campus')),
-        const SizedBox(height: 8), TextField(controller: location, decoration: const InputDecoration(labelText: 'Location / pickup point')),
-      ]))),
-      actions: [TextButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx,false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx,true), child: const Text('Submit for review'))],
-    )));
-    final titleText = title.text.trim(), descText = description.text.trim(), priceText = price.text.trim();
-    final institutionText = institutionField.text.trim(), campusText = campusField.text.trim(), locationText = location.text.trim();
-    title.dispose(); description.dispose(); price.dispose(); campusField.dispose(); institutionField.dispose(); location.dispose();
-    if (ok != true) return;
-    if (titleText.length < 4 || descText.length < 10 || (priceText.isNotEmpty && int.tryParse(priceText) == null)) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Check the title, description and price fields.')));
+    if (cats.isEmpty || !mounted) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active product categories are available yet.')));
       return;
     }
+    final title = TextEditingController(text: (existing?['title'] ?? '').toString());
+    final description = TextEditingController(text: (existing?['description'] ?? '').toString());
+    final price = TextEditingController(text: existing?['price_ngn']?.toString() ?? '');
+    final institutionField = TextEditingController(text: (existing?['institution'] ?? seller['institution'] ?? '').toString());
+    final campusField = TextEditingController(text: (existing?['campus'] ?? seller['campus'] ?? '').toString());
+    final location = TextEditingController(text: (existing?['location_label'] ?? '').toString());
+    final sku = TextEditingController(text: (existing?['sku'] ?? '').toString());
+    String category = (existing?['category_id'] ?? cats.first['id']).toString();
+    if (!cats.any((cat) => cat['id'].toString() == category)) category = cats.first['id'].toString();
+    String type = (existing?['listing_type'] ?? 'product').toString();
+    if (!['product','service','rental','free'].contains(type)) type = 'product';
+    String condition = (existing?['item_condition'] ?? '').toString();
+    if (!['','new','like_new','good','fair','not_applicable'].contains(condition)) condition = '';
+    bool negotiable = existing?['negotiable'] == true;
+    bool shipping = existing?['shipping_required'] != false;
+    int quantity = int.tryParse((existing?['quantity_available'] ?? 1).toString()) ?? 1;
+    XFile? selectedImage;
+    String? formError;
+    final oldImages = existing?['image_urls'] is List
+      ? List<String>.from((existing!['image_urls'] as List).map((v) => v.toString())) : <String>[];
+    final ok = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) => AlertDialog(
+      backgroundColor: panel,
+      title: Text(existing == null ? 'Create a product listing' : 'Edit product listing'),
+      content: SizedBox(width: 480, child: SingleChildScrollView(child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: title, maxLength: 100, textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(labelText: 'Product title *', hintText: 'e.g. Samsung Galaxy A54', errorText: formError)),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(value: category, decoration: const InputDecoration(labelText: 'Category'),
+          items: [for (final cat in cats) DropdownMenuItem(value: cat['id'].toString(), child: Text(cat['name'].toString()))],
+          onChanged: (v) => setDialog(() => category = v ?? category)),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'Listing type'),
+          items: const [DropdownMenuItem(value:'product',child:Text('Product')),DropdownMenuItem(value:'service',child:Text('Service')),DropdownMenuItem(value:'rental',child:Text('Rental')),DropdownMenuItem(value:'free',child:Text('Free item'))],
+          onChanged: (v) => setDialog(() => type = v ?? type)),
+        const SizedBox(height: 10),
+        TextField(controller: price, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (₦)', hintText: 'Optional — leave blank if not fixed')),
+        const SizedBox(height: 10),
+        TextField(controller: description, minLines: 3, maxLines: 5, maxLength: 3000,
+          decoration: const InputDecoration(labelText: 'Description (optional)', hintText: 'Tell buyers about your item')),
+        const SizedBox(height: 8),
+        Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+          onPressed: () async {
+            final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 84, maxWidth: 1800);
+            if (picked != null) setDialog(() => selectedImage = picked);
+          },
+          icon: const Icon(Icons.add_photo_alternate_outlined),
+          label: Text(selectedImage == null ? (oldImages.isEmpty ? 'Add product cover photo' : 'Change product cover photo') : 'New cover: ${selectedImage!.name}'))),
+        if (selectedImage == null && oldImages.isNotEmpty) Align(alignment: Alignment.centerLeft, child: Text('Current cover image is saved', style: const TextStyle(color: muted, fontSize: 12))),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(value: condition, decoration: const InputDecoration(labelText: 'Condition (optional)'),
+          items: const [DropdownMenuItem(value:'',child:Text('Not specified')),DropdownMenuItem(value:'new',child:Text('New')),DropdownMenuItem(value:'like_new',child:Text('Like new')),DropdownMenuItem(value:'good',child:Text('Good')),DropdownMenuItem(value:'fair',child:Text('Fair')),DropdownMenuItem(value:'not_applicable',child:Text('Not applicable'))],
+          onChanged: (v) => setDialog(() => condition = v ?? '')),
+        const SizedBox(height: 10),
+        TextField(controller: location, decoration: const InputDecoration(labelText: 'Pickup / location (optional)')),
+        const SizedBox(height: 10),
+        TextField(controller: institutionField, decoration: const InputDecoration(labelText: 'Institution (optional)')),
+        const SizedBox(height: 10),
+        TextField(controller: campusField, decoration: const InputDecoration(labelText: 'Campus (optional)')),
+        const SizedBox(height: 10),
+        TextField(controller: sku, decoration: const InputDecoration(labelText: 'Product code / SKU (optional)')),
+        const SizedBox(height: 10),
+        Row(children: [
+          const Text('Quantity available'), const Spacer(),
+          IconButton(onPressed: quantity > 0 ? () => setDialog(() => quantity--) : null, icon: const Icon(Icons.remove_circle_outline)),
+          Text('$quantity', style: const TextStyle(fontWeight: FontWeight.w800)),
+          IconButton(onPressed: quantity < 9999 ? () => setDialog(() => quantity++) : null, icon: const Icon(Icons.add_circle_outline)),
+        ]),
+        SwitchListTile(contentPadding: EdgeInsets.zero, value: negotiable, activeColor: emerald,
+          title: const Text('Price is negotiable'), onChanged: (v) => setDialog(() => negotiable = v)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, value: shipping, activeColor: emerald,
+          title: const Text('Delivery / shipping required'), onChanged: (v) => setDialog(() => shipping = v)),
+        if (formError != null && formError!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
+          child: Align(alignment: Alignment.centerLeft, child: Text(formError!, style: const TextStyle(color: Colors.redAccent)))),
+      ]))),
+      actions: [
+        TextButton(onPressed: () => material_widgets_ui.Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () {
+          if (title.text.trim().isEmpty) {
+            setDialog(() => formError = 'Product title is required. Please enter a title.');
+            return;
+          }
+          if (price.text.trim().isNotEmpty && (int.tryParse(price.text.trim()) == null || int.parse(price.text.trim()) < 0)) {
+            setDialog(() => formError = 'Enter a valid price in naira, or leave it blank.');
+            return;
+          }
+          setDialog(() => formError = null);
+          material_widgets_ui.Navigator.pop(ctx, true);
+        }, style: FilledButton.styleFrom(backgroundColor: emerald),
+          child: Text(existing == null ? 'Publish listing' : 'Save changes')),
+      ],
+    )));
+    final titleText = title.text.trim(), descriptionText = description.text.trim(), priceText = price.text.trim();
+    final institutionText = institutionField.text.trim(), campusText = campusField.text.trim(), locationText = location.text.trim(), skuText = sku.text.trim();
+    title.dispose(); description.dispose(); price.dispose(); institutionField.dispose(); campusField.dispose(); location.dispose(); sku.dispose();
+    if (ok != true || !mounted) return;
     setState(() => busy = true);
     try {
-      final inserted = await db.from('marketplace_listings').insert({
-        'seller_id': seller['id'], 'category_id': category, 'title': titleText, 'description': descText,
+      final payload = <String,dynamic>{
+        'category_id': category, 'title': titleText,
+        'description': descriptionText.isEmpty ? null : descriptionText,
         'listing_type': type, 'price_ngn': type == 'free' ? 0 : (priceText.isEmpty ? null : int.parse(priceText)),
-        'institution': institutionText.isEmpty ? null : institutionText,
-        'campus': campusText.isEmpty ? null : campusText,
-        'location_label': locationText.isEmpty ? null : locationText,
-        'status': 'draft',
-      }).select('id').single();
+        'item_condition': condition.isEmpty ? null : condition,
+        'negotiable': negotiable, 'institution': institutionText.isEmpty ? null : institutionText,
+        'campus': campusText.isEmpty ? null : campusText, 'location_label': locationText.isEmpty ? null : locationText,
+        'sku': skuText.isEmpty ? null : skuText, 'quantity_available': quantity, 'shipping_required': shipping,
+      };
+      String listingId;
+      if (existing == null) {
+        final row = await db.from('marketplace_listings').insert({
+          ...payload, 'seller_id': seller['id'], 'status': 'draft',
+        }).select('id').single();
+        listingId = row['id'].toString();
+      } else {
+        listingId = existing['id'].toString();
+        await db.from('marketplace_listings').update(payload).eq('id', listingId);
+      }
       if (selectedImage != null) {
         final extension = selectedImage!.name.split('.').last.toLowerCase();
         final safeExtension = ['jpg','jpeg','png','webp','avif'].contains(extension) ? extension : 'jpg';
         final contentType = safeExtension == 'png' ? 'image/png' : safeExtension == 'webp' ? 'image/webp' : safeExtension == 'avif' ? 'image/avif' : 'image/jpeg';
-        final objectPath = '${db.auth.currentUser!.id}/${inserted['id']}/${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+        final objectPath = '${db.auth.currentUser!.id}/$listingId/${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
         await db.storage.from('marketplace-listing-images').uploadBinary(objectPath, await selectedImage!.readAsBytes(),
           fileOptions: FileOptions(contentType: contentType, upsert: false));
-        final publicUrl = db.storage.from('marketplace-listing-images').getPublicUrl(objectPath);
-        await db.from('marketplace_listings').update({'image_urls': [publicUrl]}).eq('id', inserted['id']);
+        final url = db.storage.from('marketplace-listing-images').getPublicUrl(objectPath);
+        await db.from('marketplace_listings').update({'image_urls': [url, ...oldImages.where((v) => v != url).take(7)]}).eq('id', listingId);
       }
-      await db.rpc('marketplace_submit_listing', params: {'p_listing_id': inserted['id']});
       await refresh();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing submitted. It will appear in Marketplace after administrator approval.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(existing == null
+        ? 'Your listing is live in CreatorVerse Market.'
+        : 'Your product changes have been saved.')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not submit listing: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save listing: $e')));
     } finally { if (mounted) setState(() => busy = false); }
   }
   @override
@@ -2678,11 +2797,11 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       return ListView(padding:const EdgeInsets.all(20),children:[
         const Icon(Icons.storefront_outlined,color:emerald,size:46),const SizedBox(height:12),
         const Text('Become a CreatorVerse seller',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
-        const SizedBox(height:8),const Text('Apply to sell products or offer services to the community. An administrator verifies every seller before listings can be submitted.',style:TextStyle(color:muted,height:1.5)),
+        const SizedBox(height:8),const Text('Apply once. After your seller account is verified, your new listings go live automatically without repeated approval.',style:TextStyle(color:muted,height:1.5)),
         const SizedBox(height:18),TextField(controller:name,decoration:const InputDecoration(labelText:'Seller / business display name')),
-        const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution')),
-        const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus')),
-        const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide?')),
+        const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution (optional)')),
+        const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus (optional)')),
+        const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide? (optional)')),
         const SizedBox(height:16),FilledButton(onPressed:busy?null:apply,style:FilledButton.styleFrom(backgroundColor:emerald),child:Text(busy?'Submitting…':'Submit seller application')),
       ]);
     }
@@ -2692,18 +2811,21 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       const SizedBox(height:10),Card(color:panel,child:ListTile(
         leading:Icon(status=='verified'?Icons.verified:Icons.storefront_outlined,color:status=='verified'?emerald:gold),
         title:Text((seller['display_name']??'Seller').toString()),
-        subtitle:Text('Status: ${status.toUpperCase()}\n${status=='verified'?'Your seller profile is approved.':'Your profile is reviewed by the Marketplace team.'}',style:const TextStyle(color:muted,height:1.5)),
+        subtitle:Text('Status: ${status.toUpperCase()}\n${status=='verified'?'Verified — your listings publish automatically.':'Your seller profile is reviewed by the Marketplace team.'}',style:const TextStyle(color:muted,height:1.5)),
       )),
       if(status=='verified') ...[
-        const SizedBox(height:12),FilledButton.icon(onPressed:busy?null:()=>createListing(seller),style:FilledButton.styleFrom(backgroundColor:emerald),
-          icon:const Icon(Icons.add),label:const Text('Create a listing')),
-      ] else const Padding(padding:EdgeInsets.symmetric(vertical:14),child:Text('You can create listings after your seller profile is verified.')),
+        const SizedBox(height:12),FilledButton.icon(onPressed:busy?null:()=>editListing(seller),style:FilledButton.styleFrom(backgroundColor:emerald),
+          icon:const Icon(Icons.add),label:const Text('Add a product')),
+      ] else const Padding(padding:EdgeInsets.symmetric(vertical:14),child:Text('You can publish products after your seller profile is verified.')),
       const SizedBox(height:18),const Text('Your listings',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
-      if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not submitted any listings yet.',style:TextStyle(color:muted))),
-      for(final listing in listings) Card(color:panel,child:ListTile(
-        title:Text((listing['title']??'Untitled listing').toString()),
-        subtitle:Text((listing['status']??'').toString(),style:const TextStyle(color:muted)),
-        trailing:Text(listing['price_ngn']==null?'Ask':'₦${listing['price_ngn']}',style:const TextStyle(color:gold,fontWeight:FontWeight.w700)),
+      if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not added any products yet.',style:TextStyle(color:muted))),
+      for(final item in listings) Card(color:panel,child:ListTile(
+        leading: (item['image_urls'] is List && (item['image_urls'] as List).isNotEmpty)
+          ? ClipRRect(borderRadius:BorderRadius.circular(8),child:Image.network((item['image_urls'] as List).first.toString(),width:54,height:54,fit:BoxFit.cover))
+          : const Icon(Icons.inventory_2_outlined,color:emerald),
+        title:Text((item['title']??'Untitled listing').toString()),
+        subtitle:Text('${item['status']=='published'?'LIVE':'${item['status']}'} · ${item['price_ngn']==null?'Price not set':(item['price_ngn']==0?'Free':'₦${item['price_ngn']}')}',style:const TextStyle(color:muted)),
+        trailing:IconButton(tooltip:'Edit product',onPressed:busy?null:()=>editListing(seller,existing:item),icon:const Icon(Icons.edit_outlined,color:emerald)),
       )),
     ]));
   }));
