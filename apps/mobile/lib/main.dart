@@ -3087,6 +3087,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
       if(status=='verified') ...[
         const SizedBox(height:12),FilledButton.icon(onPressed:busy?null:()=>editListing(seller),style:FilledButton.styleFrom(backgroundColor:emerald),
           icon:const Icon(Icons.add),label:const Text('Add a product')),
+        const SizedBox(height:8),OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,
+          MaterialPageRoute(builder:(_)=>const MarketplaceSellerOrdersScreen())),
+          icon:const Icon(Icons.local_shipping_outlined),label:const Text('Manage customer orders')),
       ] else const Padding(padding:EdgeInsets.symmetric(vertical:14),child:Text('You can publish products after your seller profile is verified.')),
       const SizedBox(height:18),const Text('Your listings',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
       if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not added any products yet.',style:TextStyle(color:muted))),
@@ -3099,6 +3102,99 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         trailing:IconButton(tooltip:'Edit product',onPressed:busy?null:()=>editListing(seller,existing:item),icon:const Icon(Icons.edit_outlined,color:emerald)),
       )),
     ]));
+  }));
+}
+
+
+class MarketplaceSellerOrdersScreen extends StatefulWidget{
+ const MarketplaceSellerOrdersScreen({super.key});
+ @override State<MarketplaceSellerOrdersScreen> createState()=>_MarketplaceSellerOrdersScreenState();
+}
+class _MarketplaceSellerOrdersScreenState extends State<MarketplaceSellerOrdersScreen>{
+ final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> orders;bool busy=false;
+ @override void initState(){super.initState();orders=load();}
+ Future<List<Map<String,dynamic>>> load()async{
+  final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first');
+  final seller=await db.from('marketplace_sellers').select('id').eq('user_id',user.id).single();
+  final sid=seller['id'];
+  final raw=await db.from('marketplace_order_items').select(
+   'order_id,title_snapshot,quantity,unit_price_ngn,line_total_ngn').eq('seller_id',sid);
+  if(raw.isEmpty)return [];
+  final ids=raw.map((r)=>r['order_id'].toString()).toSet().toList();
+  final heads=await db.from('marketplace_orders').select(
+   'id,order_number,status,payment_status,payment_method,total_ngn,recipient_name,recipient_phone,delivery_address,delivery_city,delivery_state,created_at'
+  ).inFilter('id',ids).order('created_at',ascending:false);
+  final fulfil=await db.from('marketplace_seller_fulfilments').select(
+   'order_id,status,carrier,tracking_number,estimated_delivery').eq('seller_id',sid).inFilter('order_id',ids);
+  final byFulfil={for(final f in fulfil)f['order_id'].toString():f};
+  return List<Map<String,dynamic>>.from(heads).map((h)=>({...h,
+   'items':raw.where((r)=>r['order_id'].toString()==h['id'].toString()).toList(),
+   'fulfilment':byFulfil[h['id'].toString()]})).toList();
+ }
+ void refresh()=>setState(()=>orders=load());
+ Future<void> updateStatus(Map<String,dynamic> order)async{
+  String status=(order['fulfilment']?['status']??'processing').toString();
+  final carrier=TextEditingController(text:(order['fulfilment']?['carrier']??'').toString());
+  final tracking=TextEditingController(text:(order['fulfilment']?['tracking_number']??'').toString());
+  final options=['processing','ready_for_dispatch','shipped','delivered'];
+  final result=await showDialog<String>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
+   backgroundColor:panel,title:const Text('Update fulfilment'),
+   content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+    DropdownButtonFormField<String>(value:status,decoration:const InputDecoration(labelText:'Order progress'),
+     items:[for(final v in options)DropdownMenuItem(value:v,child:Text(v.replaceAll('_',' ')))],
+     onChanged:(v)=>setDialog(()=>status=v??status)),
+    const SizedBox(height:10),TextField(controller:carrier,decoration:const InputDecoration(labelText:'Delivery company / carrier (optional)')),
+    const SizedBox(height:10),TextField(controller:tracking,decoration:const InputDecoration(labelText:'Tracking reference (optional)')),
+   ])),
+   actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx),child:const Text('Cancel')),
+    FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,status),child:const Text('Save update'))],
+  )));
+  if(result==null){carrier.dispose();tracking.dispose();return;}
+  setState(()=>busy=true);
+  try{
+   await db.rpc('marketplace_seller_update_fulfilment',params:{
+    'p_order_id':order['id'],'p_status':result,
+    'p_carrier':carrier.text.trim().isEmpty?null:carrier.text.trim(),
+    'p_tracking_number':tracking.text.trim().isEmpty?null:tracking.text.trim(),
+    'p_estimated_delivery':null,
+   });
+   refresh();
+   if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Order fulfilment updated.')));
+  }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update order: $e')));}
+  finally{carrier.dispose();tracking.dispose();if(mounted)setState(()=>busy=false);}
+ }
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Customer orders'),actions:[
+  IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
+  body:FutureBuilder<List<Map<String,dynamic>>>(future:orders,builder:(context,s){
+   if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+   if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Could not load seller orders: ${s.error}',style:const TextStyle(color:muted))));
+   final rows=s.data??[];
+   if(rows.isEmpty)return const Center(child:Text('No customer orders yet.',style:TextStyle(color:muted)));
+   return ListView.separated(padding:const EdgeInsets.all(14),itemCount:rows.length,
+    separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(context,i){
+     final o=rows[i];final f=o['fulfilment'] as Map<String,dynamic>?;
+     final items=o['items'] as List;
+     return Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(15)),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+       Row(children:[Expanded(child:Text(o['order_number'].toString(),style:const TextStyle(fontWeight:FontWeight.w900))),
+        Text('₦${o['total_ngn']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900))]),
+       const SizedBox(height:5),Text('Payment: ${o['payment_status']} · ${o['payment_method']}',style:const TextStyle(color:muted,fontSize:12)),
+       const Divider(height:20),
+       for(final item in items)Padding(padding:const EdgeInsets.only(bottom:6),child:Text(
+        '${item['title_snapshot']}  ·  ${item['quantity']} × ₦${item['unit_price_ngn']}',style:const TextStyle(fontWeight:FontWeight.w600))),
+       const Divider(height:18),
+       Text('Deliver to: ${o['recipient_name']} · ${o['recipient_phone']}',style:const TextStyle(fontWeight:FontWeight.w700)),
+       Text('${o['delivery_address']}, ${o['delivery_city']}, ${o['delivery_state']}',style:const TextStyle(color:muted,fontSize:12)),
+       const SizedBox(height:8),
+       Text('Fulfilment: ${(f?['status']??'awaiting payment').toString().replaceAll('_',' ')}',
+        style:const TextStyle(color:emerald,fontWeight:FontWeight.w800)),
+       if((f?['tracking_number']??'').toString().isNotEmpty)Text('Tracking: ${f?['tracking_number']}',style:const TextStyle(color:muted,fontSize:12)),
+       const SizedBox(height:8),
+       Align(alignment:Alignment.centerRight,child:OutlinedButton.icon(
+        onPressed:busy||o['payment_status']!='confirmed'&&o['payment_method']!='cash_on_delivery'?null:()=>updateStatus(o),
+        icon:const Icon(Icons.local_shipping_outlined),label:const Text('Update fulfilment'))),
+      ]));
+    });
   }));
 }
 
