@@ -145,42 +145,58 @@ using (exists (select 1 from public.marketplace_carts c
 with check (exists (select 1 from public.marketplace_carts c
   where c.id = cart_id and c.user_id = (select auth.uid())));
 
+-- SECURITY DEFINER helpers avoid recursive RLS between orders, items and events.
+create or replace function private.marketplace_user_is_order_participant(p_order_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.marketplace_orders o
+    where o.id = p_order_id and o.buyer_id = p_user_id
+  ) or exists (
+    select 1
+    from public.marketplace_order_items oi
+    join public.marketplace_sellers s on s.id = oi.seller_id
+    where oi.order_id = p_order_id and s.user_id = p_user_id
+  );
+$$;
+
+create or replace function private.marketplace_user_owns_order_item(p_order_id uuid, p_seller_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.marketplace_orders o
+    where o.id = p_order_id and o.buyer_id = p_user_id
+  ) or exists (
+    select 1 from public.marketplace_sellers s
+    where s.id = p_seller_id and s.user_id = p_user_id
+  );
+$$;
+
+revoke all on function private.marketplace_user_is_order_participant(uuid,uuid) from public, anon, authenticated;
+revoke all on function private.marketplace_user_owns_order_item(uuid,uuid,uuid) from public, anon, authenticated;
+
 drop policy if exists "Buyers and participating sellers read marketplace orders" on public.marketplace_orders;
 create policy "Buyers and participating sellers read marketplace orders"
 on public.marketplace_orders for select to authenticated
-using (
-  buyer_id = (select auth.uid())
-  or exists (
-    select 1 from public.marketplace_order_items oi
-    join public.marketplace_sellers s on s.id = oi.seller_id
-    where oi.order_id = id and s.user_id = (select auth.uid())
-  )
-);
+using (private.marketplace_user_is_order_participant(id, (select auth.uid())));
 
 drop policy if exists "Participants read marketplace order items" on public.marketplace_order_items;
 create policy "Participants read marketplace order items"
 on public.marketplace_order_items for select to authenticated
-using (exists (
-  select 1 from public.marketplace_orders o
-  where o.id = order_id and (
-    o.buyer_id = (select auth.uid())
-    or exists (select 1 from public.marketplace_sellers s
-      where s.id = seller_id and s.user_id = (select auth.uid()))
-  )
-));
+using (private.marketplace_user_owns_order_item(order_id, seller_id, (select auth.uid())));
 
 drop policy if exists "Participants read marketplace order events" on public.marketplace_order_events;
 create policy "Participants read marketplace order events"
 on public.marketplace_order_events for select to authenticated
-using (exists (
-  select 1 from public.marketplace_orders o
-  where o.id = order_id and (
-    o.buyer_id = (select auth.uid())
-    or exists (select 1 from public.marketplace_order_items oi
-      join public.marketplace_sellers s on s.id = oi.seller_id
-      where oi.order_id = o.id and s.user_id = (select auth.uid()))
-  )
-));
+using (private.marketplace_user_is_order_participant(order_id, (select auth.uid())));
 
 drop policy if exists "Users read published marketplace reviews" on public.marketplace_reviews;
 create policy "Users read published marketplace reviews"
