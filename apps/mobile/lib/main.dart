@@ -2658,7 +2658,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
       'id,title,price_ngn,listing_type,image_urls,quantity_available,status,seller_id').inFilter('id',ids);
     final map={for(final r in listings)r['id'].toString():Map<String,dynamic>.from(r)};
     return raw.map((r)=>{...(map[r['listing_id'].toString()]??<String,dynamic>{}),
-      'listing_id':r['listing_id'],'quantity':r['quantity']}).toList();
+      'cart_item_id':r['id'],'listing_id':r['listing_id'],'quantity':r['quantity']}).toList();
   }
   void refresh()=>setState(()=>cart=loadCart());
   int subtotal(List<Map<String,dynamic>> rows)=>rows.fold<int>(0,(sum,r)=>
@@ -2666,7 +2666,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
   Future<void> change(Map<String,dynamic> item,int qty) async {
     if(busy)return;setState(()=>busy=true);
     try{
-      if(qty<1){await db.rpc('marketplace_remove_cart_item',params:{'p_cart_item_id':item['id']});}
+      if(qty<1){await db.rpc('marketplace_remove_cart_item',params:{'p_cart_item_id':item['cart_item_id']});}
       else{await db.rpc('marketplace_update_cart_item',params:{'p_cart_item_id':item['id'],'p_quantity':qty});}
       refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Cart update failed: $e')));}
