@@ -2074,109 +2074,331 @@ class MarketplaceScreen extends StatefulWidget {
   @override
   State<MarketplaceScreen> createState() => _MarketplaceScreenState();
 }
+
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final db = Supabase.instance.client;
   final search = TextEditingController();
   late Future<Map<String, dynamic>> catalogue;
   String categoryId = '';
+  String sortBy = 'newest';
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
+
   @override
   void initState() {
-    super.initState(); catalogue = loadCatalogue();
-    _syncChannel=db.channel('cv-marketplace-listings-sync')
-      .onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'marketplace_listings',
-        callback:(_){
+    super.initState();
+    catalogue = loadCatalogue();
+    _syncChannel = db.channel('cv-marketplace-listings-sync')
+      .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public',
+        table: 'marketplace_listings', callback: (_) {
           _syncTimer?.cancel();
-          _syncTimer=Timer(const Duration(milliseconds:500),(){
-            if(mounted)setState(()=>catalogue=loadCatalogue());
+          _syncTimer = Timer(const Duration(milliseconds: 500), () {
+            if (mounted) setState(() => catalogue = loadCatalogue());
           });
         }).subscribe();
   }
+
   @override
   void dispose() {
-    search.dispose();_syncTimer?.cancel();
-    final channel=_syncChannel;if(channel!=null)unawaited(channel.unsubscribe());
+    search.dispose();
+    _syncTimer?.cancel();
+    final channel = _syncChannel;
+    if (channel != null) unawaited(channel.unsubscribe());
     super.dispose();
   }
 
   Future<Map<String, dynamic>> loadCatalogue() async {
-    final cats = await db.from('marketplace_categories').select('id,name').eq('active', true).order('position');
+    final cats = await db.from('marketplace_categories')
+      .select('id,name').eq('active', true).order('position');
     final rows = await db.from('marketplace_listings')
       .select('id,seller_id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
       .eq('status', 'published').order('created_at', ascending: false).limit(80);
-    return {'categories': List<Map<String, dynamic>>.from(cats), 'listings': List<Map<String, dynamic>>.from(rows)};
+    return {'categories': List<Map<String, dynamic>>.from(cats),
+      'listings': List<Map<String, dynamic>>.from(rows)};
   }
 
   void retry() => setState(() => catalogue = loadCatalogue());
+
+  IconData _categoryIcon(String name) {
+    final value = name.toLowerCase();
+    if (value.contains('book')) return Icons.menu_book_outlined;
+    if (value.contains('cloth') || value.contains('fashion')) return Icons.checkroom_outlined;
+    if (value.contains('food')) return Icons.restaurant_outlined;
+    if (value.contains('elect')) return Icons.devices_other_outlined;
+    if (value.contains('service')) return Icons.handyman_outlined;
+    if (value.contains('rent')) return Icons.home_work_outlined;
+    if (value.contains('beauty')) return Icons.spa_outlined;
+    if (value.contains('phone')) return Icons.phone_android_outlined;
+    return Icons.grid_view_rounded;
+  }
+
+  String _priceLabel(dynamic value) {
+    if (value == null) return 'Contact seller';
+    final amount = (value as num).toInt();
+    if (amount == 0) return 'FREE';
+    final grouped = amount.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ',');
+    return '₦$grouped';
+  }
+
+  Future<void> _openSeller() async {
+    await material_widgets_ui.Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen()));
+    if (mounted) retry();
+  }
+
+  Future<void> _openSaved() async {
+    await material_widgets_ui.Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const MarketplaceSavedScreen()));
+  }
+
+  Future<void> _openEnquiries() async {
+    await material_widgets_ui.Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
     future: catalogue,
     builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: emerald));
-      if (snapshot.hasError) {
-        return Center(child: Padding(padding: const EdgeInsets.all(24), child: material_widgets_ui.Column(
-        mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.storefront_outlined, color: emerald, size: 46),
-          const SizedBox(height: 12), const Text('Marketplace is not connected yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8), const Text('The Marketplace service could not be reached. Check your connection and try again; your account and listing data have not been changed.', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
-          const SizedBox(height: 16), OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('Check again')),
-        ])));
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: emerald));
       }
+      if (snapshot.hasError) {
+        return Center(child: Padding(padding: const EdgeInsets.all(24),
+          child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.storefront_outlined, color: emerald, size: 46),
+            const SizedBox(height: 12),
+            const Text('Marketplace is temporarily unavailable',
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            const Text('Check your connection and try again. Your account and listing data have not been changed.',
+              textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(onPressed: retry, icon: const Icon(Icons.refresh),
+              label: const Text('Try again')),
+          ])));
+      }
+
       final categories = snapshot.data?['categories'] as List<Map<String, dynamic>>? ?? [];
       final all = snapshot.data?['listings'] as List<Map<String, dynamic>>? ?? [];
       final term = search.text.trim().toLowerCase();
       final rows = all.where((item) {
-        final matchesCategory = categoryId.isEmpty || item['category_id'] == categoryId;
-        final haystack = [item['title'], item['description'], item['institution'], item['campus'], item['location_label']]
-          .map((v) => (v ?? '').toString().toLowerCase()).join(' ');
+        final matchesCategory = categoryId.isEmpty || item['category_id']?.toString() == categoryId;
+        final haystack = [item['title'], item['description'], item['institution'],
+          item['campus'], item['location_label']]
+          .map((value) => (value ?? '').toString().toLowerCase()).join(' ');
         return matchesCategory && (term.isEmpty || haystack.contains(term));
       }).toList();
-      return material_widgets_ui.Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 10), child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Campus Marketplace', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 5), const Text('Discover approved products and services from the CreatorVerse community.', style: TextStyle(color: muted)),
-          const SizedBox(height: 12), TextField(controller: search, onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search listings or campus')),
-          const SizedBox(height: 10),
-          SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
-            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen())).then((_) => retry()),
-              icon: const Icon(Icons.storefront_outlined), label: const Text('Sell')),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceSavedScreen())),
-              icon: const Icon(Icons.bookmark_border), label: const Text('Saved')),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(onPressed: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen())),
-              icon: const Icon(Icons.chat_bubble_outline), label: const Text('Enquiries')),
-          ])),
-        ])),
-        if (categories.isNotEmpty) SizedBox(height: 48, child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(label: const Text('All'), selected: categoryId.isEmpty, onSelected: (_) => setState(() => categoryId = ''))),
-          for (final cat in categories) Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: ChoiceChip(
-            label: Text((cat['name'] ?? '').toString()), selected: categoryId == cat['id'],
-            onSelected: (_) => setState(() => categoryId = cat['id'].toString()))),
-        ])),
-        Expanded(child: rows.isEmpty ? Center(child: Text(all.isEmpty ? 'No approved listings have been published yet.' : 'No listings match your search.', style: const TextStyle(color: muted)))
-          : RefreshIndicator(color: emerald, onRefresh: () async { retry(); }, child: ListView.builder(
-            padding: const EdgeInsets.all(14), itemCount: rows.length, itemBuilder: (context, index) {
-              final item = rows[index];
-              final images = item['image_urls'] is List ? item['image_urls'] as List : const [];
-              final photo = images.isNotEmpty ? images.first.toString() : '';
-              return Card(color: panel, margin: const EdgeInsets.only(bottom: 12), child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: photo.startsWith('https://') ? ClipRRect(borderRadius: BorderRadius.circular(10),
-                  child: Image.network(photo, width: 68, height: 68, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(width: 68, height: 68, child: Icon(Icons.storefront_outlined, color: emerald))))
-                  : const SizedBox(width: 68, height: 68, child: Icon(Icons.storefront_outlined, color: emerald, size: 32)),
-                title: Text((item['title'] ?? 'Marketplace listing').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('${item['description'] ?? ''}\n${[item['campus'], item['institution']].where((v) => v != null && v.toString().isNotEmpty).join(' · ')}', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted)),
-                trailing: Text(item['price_ngn'] == null ? 'Ask' : (item['price_ngn'] == 0 ? 'FREE' : '₦${item['price_ngn']}'), style: const TextStyle(color: emerald, fontWeight: FontWeight.w800)),
-                onTap: () => material_widgets_ui.Navigator.push(context, MaterialPageRoute(builder: (_) => MarketplaceListingScreen(listing: item))),
-              ));
-            }))),
-      ]);
-    });
+
+      if (sortBy == 'price_low') {
+        rows.sort((a, b) => ((a['price_ngn'] as num?) ?? 999999999)
+          .compareTo((b['price_ngn'] as num?) ?? 999999999));
+      } else if (sortBy == 'price_high') {
+        rows.sort((a, b) => ((b['price_ngn'] as num?) ?? 0)
+          .compareTo((a['price_ngn'] as num?) ?? 0));
+      } else {
+        rows.sort((a, b) => (DateTime.tryParse((b['created_at'] ?? '').toString()) ?? DateTime(2000))
+          .compareTo(DateTime.tryParse((a['created_at'] ?? '').toString()) ?? DateTime(2000)));
+      }
+
+      return RefreshIndicator(
+        color: emerald,
+        onRefresh: () async {
+          final next = loadCatalogue();
+          setState(() => catalogue = next);
+          await next;
+        },
+        child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+            child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: material_widgets_ui.Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('CreatorVerse Market',
+                      style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: -.5)),
+                    const SizedBox(height: 4),
+                    Text('Shop from your campus community',
+                      style: TextStyle(color: muted.withValues(alpha: .95), fontSize: 12)),
+                  ])),
+                IconButton.filledTonal(tooltip: 'Saved items', onPressed: _openSaved,
+                  icon: const Icon(Icons.bookmark_border_rounded)),
+                const SizedBox(width: 6),
+                IconButton.filledTonal(tooltip: 'Your enquiries', onPressed: _openEnquiries,
+                  icon: const Icon(Icons.chat_bubble_outline_rounded)),
+              ]),
+              const SizedBox(height: 16),
+              TextField(controller: search, onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search products, services or campus…',
+                  prefixIcon: const Icon(Icons.search_rounded, color: emerald),
+                  suffixIcon: search.text.isEmpty ? null : IconButton(
+                    tooltip: 'Clear search', onPressed: () { search.clear(); setState(() {}); },
+                    icon: const Icon(Icons.close)),
+                  filled: true, fillColor: panel,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15))),
+              const SizedBox(height: 14),
+              Material(color: const Color(0xFF12382D),
+                borderRadius: BorderRadius.circular(18), clipBehavior: Clip.antiAlias,
+                child: InkWell(onTap: _openSeller, child: Padding(
+                  padding: const EdgeInsets.fromLTRB(17, 16, 12, 16),
+                  child: Row(children: [
+                    Expanded(child: material_widgets_ui.Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Have something to sell?',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 5),
+                        Text('Set up your seller space and reach buyers on campus.',
+                          style: TextStyle(color: Colors.white.withValues(alpha: .78), fontSize: 11, height: 1.4)),
+                        const SizedBox(height: 11),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                          decoration: BoxDecoration(color: emerald, borderRadius: BorderRadius.circular(9)),
+                          child: const Text('Start selling',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800))),
+                      ])),
+                    const SizedBox(width: 8),
+                    Container(width: 76, height: 76,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: .07), shape: BoxShape.circle),
+                      child: const Icon(Icons.storefront_rounded, color: gold, size: 42)),
+                  ]),
+                ))),
+            ]),
+          )),
+          if (categories.isNotEmpty) SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.only(top: 5, bottom: 15),
+            child: SizedBox(height: 92, child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 14), scrollDirection: Axis.horizontal,
+              itemCount: categories.length + 1, separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final isAll = index == 0;
+                final category = isAll ? <String, dynamic>{} : categories[index - 1];
+                final selected = isAll ? categoryId.isEmpty : categoryId == category['id'].toString();
+                final label = isAll ? 'All' : (category['name'] ?? 'Category').toString();
+                return InkWell(borderRadius: BorderRadius.circular(14),
+                  onTap: () => setState(() => categoryId = isAll ? '' : category['id'].toString()),
+                  child: SizedBox(width: 68, child: material_widgets_ui.Column(children: [
+                    AnimatedContainer(duration: const Duration(milliseconds: 180),
+                      width: 58, height: 58,
+                      decoration: BoxDecoration(
+                        color: selected ? emerald.withValues(alpha: .2) : panel,
+                        borderRadius: BorderRadius.circular(17),
+                        border: Border.all(color: selected ? emerald : Colors.white10)),
+                      child: Icon(isAll ? Icons.grid_view_rounded : _categoryIcon(label),
+                        color: selected ? emerald : Colors.white70, size: 25)),
+                    const SizedBox(height: 7),
+                    Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10, fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                        color: selected ? Colors.white : muted)),
+                  ])));
+              },
+            )),
+          )),
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+            child: Row(children: [
+              Expanded(child: material_widgets_ui.Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Discover items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 3),
+                  Text('\${rows.length} \${rows.length == 1 ? 'listing' : 'listings'} available',
+                    style: const TextStyle(color: muted, fontSize: 11)),
+                ])),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white10)),
+                child: DropdownButtonHideUnderline(child: DropdownButton<String>(
+                  value: sortBy, dropdownColor: panel,
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                  icon: const Icon(Icons.tune_rounded, size: 17, color: emerald),
+                  items: const [
+                    DropdownMenuItem(value: 'newest', child: Text('Newest')),
+                    DropdownMenuItem(value: 'price_low', child: Text('Price: low to high')),
+                    DropdownMenuItem(value: 'price_high', child: Text('Price: high to low')),
+                  ],
+                  onChanged: (value) { if (value != null) setState(() => sortBy = value); },
+                ))),
+            ]),
+          )),
+          if (rows.isEmpty) SliverFillRemaining(hasScrollBody: false, child: Center(
+            child: Padding(padding: const EdgeInsets.all(28),
+              child: material_widgets_ui.Column(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.search_off_rounded, color: muted, size: 46),
+                const SizedBox(height: 12),
+                Text(all.isEmpty ? 'No listings have been published yet.' : 'No listings match your search.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: muted, fontWeight: FontWeight.w600)),
+                if (term.isNotEmpty || categoryId.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  TextButton(onPressed: () {
+                    search.clear();
+                    setState(() { categoryId = ''; sortBy = 'newest'; });
+                  }, child: const Text('Clear filters')),
+                ],
+              ])))),
+          if (rows.isNotEmpty) SliverPadding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, crossAxisSpacing: 11, mainAxisSpacing: 11, childAspectRatio: .66),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = rows[index];
+                final images = item['image_urls'] is List ? item['image_urls'] as List : const [];
+                final photo = images.isNotEmpty ? images.first.toString() : '';
+                final location = [item['campus'], item['institution'], item['location_label']]
+                  .where((value) => value != null && value.toString().isNotEmpty)
+                  .map((value) => value.toString()).join(' · ');
+                return Material(color: panel, borderRadius: BorderRadius.circular(15),
+                  clipBehavior: Clip.antiAlias, child: InkWell(
+                    onTap: () => material_widgets_ui.Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => MarketplaceListingScreen(listing: item))),
+                    child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(flex: 6, child: Stack(fit: StackFit.expand, children: [
+                        Container(color: const Color(0xFF172B2C),
+                          child: photo.startsWith('https://')
+                            ? CachedNetworkImage(imageUrl: photo, fit: BoxFit.cover,
+                              placeholder: (_, __) => const Center(
+                                child: CircularProgressIndicator(color: emerald, strokeWidth: 2)),
+                              errorWidget: (_, __, ___) => const Icon(
+                                Icons.image_not_supported_outlined, color: muted, size: 32))
+                            : const Center(child: Icon(Icons.shopping_bag_outlined, color: emerald, size: 38))),
+                        Positioned(top: 8, left: 8, child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          decoration: BoxDecoration(color: ink.withValues(alpha: .88),
+                            borderRadius: BorderRadius.circular(6)),
+                          child: Text((item['listing_type'] ?? 'listing').toString().replaceAll('_', ' ').toUpperCase(),
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: .3)))),
+                      ])),
+                      Expanded(flex: 5, child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                        child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text((item['title'] ?? 'Marketplace listing').toString(),
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, height: 1.25, fontWeight: FontWeight.w700)),
+                          const Spacer(),
+                          Text(_priceLabel(item['price_ngn']), maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: emerald, fontSize: 14, fontWeight: FontWeight.w900)),
+                          if (location.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              const Icon(Icons.location_on_outlined, color: muted, size: 12),
+                              const SizedBox(width: 3),
+                              Expanded(child: Text(location, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: muted, fontSize: 9))),
+                            ]),
+                          ],
+                        ]),
+                      )),
+                    ]),
+                  ));
+              }, childCount: rows.length),
+            ),
+          ),
+        ]),
+      );
+    },
+  );
 }
 
 class MarketplaceFilteredScreen extends StatefulWidget {
