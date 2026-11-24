@@ -3438,11 +3438,15 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     if(!['admin','super_admin'].contains(p['role']))throw StateError('Administrator access is required.');
     final sellers=await db.from('marketplace_sellers').select('id,user_id,display_name,seller_type,institution,campus,bio,status,created_at')
       .eq('status','pending').order('created_at');
+    final sellerIds=List<Map<String,dynamic>>.from(sellers).map((s)=>s['id']).toList();
+    final payoutRows=sellerIds.isEmpty?<Map<String,dynamic>>[]:List<Map<String,dynamic>>.from(
+      await db.from('marketplace_seller_payout_accounts').select('seller_id,bank_name,account_name,account_number').inFilter('seller_id',sellerIds));
+    final payouts={for(final p in payoutRows)p['seller_id'].toString():p};
     final listings=await db.from('marketplace_listings').select('id,title,description,price_ngn,listing_type,created_at,seller_id,marketplace_sellers(display_name,institution,campus),marketplace_categories(name)')
       .eq('status','pending_review').order('created_at');
     final cats=await db.from('marketplace_categories').select('id,name,active,position').order('position');
     final orders=await db.from('marketplace_orders').select('id,order_number,status,payment_status,payment_method,total_ngn,recipient_name,recipient_phone,created_at').order('created_at',ascending:false).limit(100);
-    return {'sellers':List<Map<String,dynamic>>.from(sellers),'listings':List<Map<String,dynamic>>.from(listings),'categories':List<Map<String,dynamic>>.from(cats),'orders':List<Map<String,dynamic>>.from(orders)};
+    return {'sellers':List<Map<String,dynamic>>.from(sellers),'payouts':payouts,'listings':List<Map<String,dynamic>>.from(listings),'categories':List<Map<String,dynamic>>.from(cats),'orders':List<Map<String,dynamic>>.from(orders)};
   }
   Future<void> refresh() async {final next=load();setState(()=>data=next);await next;}
   Future<String?> noteDialog(String title,String hint) async {
@@ -3499,13 +3503,14 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snap){
       if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(snap.hasError)return Center(child:Text('Marketplace moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
-      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];final orders=d['orders'] as List<Map<String,dynamic>>? ?? [];
+      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final payouts=Map<String,dynamic>.from(d['payouts']??const {});final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];final orders=d['orders'] as List<Map<String,dynamic>>? ?? [];
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
         for(final s in sellers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text((s['display_name']??'Seller').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           Text('${s['seller_type']} · ${s['campus']??''} · ${s['institution']??''}',style:const TextStyle(color:muted,fontSize:12)),
+          if(payouts[s['id'].toString()] is Map)Padding(padding:const EdgeInsets.only(top:6),child:Text('Payout account: ${payouts[s['id'].toString()]['bank_name']} · ${payouts[s['id'].toString()]['account_name']} · ${payouts[s['id'].toString()]['account_number']}',style:const TextStyle(color:emerald,fontSize:12,fontWeight:FontWeight.w700))),
           if((s['bio']??'').toString().isNotEmpty)Text(s['bio'].toString(),style:const TextStyle(height:1.4)),
           Row(children:[Expanded(child:OutlinedButton(onPressed:busy?null:()=>reviewSeller(s,'rejected'),child:const Text('Reject'))),
             const SizedBox(width:8),Expanded(child:FilledButton(onPressed:busy?null:()=>reviewSeller(s,'verified'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Verify')))]),
