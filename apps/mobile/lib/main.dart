@@ -2692,8 +2692,9 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
             final r=rows[i];final imgs=r['image_urls'] is List?r['image_urls'] as List:const [];
             final photo=imgs.map((v)=>v.toString().trim()).firstWhere(
               (v)=>v.startsWith('https://')||v.startsWith('http://'),orElse:()=>'');
-            final qty=(r['quantity'] as num?)?.toInt()??1;final price=(r['price_ngn'] as num?)?.toInt()??0;
+            final qty=(r['quantity'] as num?)?.toInt()??1;final price=(r['price_ngn'] as num?)?.toInt();
             final unavailable=r['id']==null||r['status']!='published';
+            final notPurchasable=['service','rental'].contains(r['listing_type'])||(price==null&&r['listing_type']!='free');
             return Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(14)),
               child:Row(children:[
                 ClipRRect(borderRadius:BorderRadius.circular(9),child:SizedBox(width:82,height:82,
@@ -2703,7 +2704,8 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
                 const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
                   Text((r['title']??'Unavailable item').toString(),maxLines:2,overflow:TextOverflow.ellipsis,
                     style:const TextStyle(fontWeight:FontWeight.w800)),
-                  Text(price==0?'FREE':'₦$price',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
+                  Text(price==null?(r['listing_type']=='free'?'FREE':'Price not set'):(price==0?'FREE':'₦$price'),
+                    style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
                   if(unavailable)const Text('Listing unavailable. Remove it to continue.',style:TextStyle(color:Colors.orangeAccent,fontSize:10)),
                   Row(children:[
                     IconButton(visualDensity:VisualDensity.compact,onPressed:busy?null:()=>change(r,qty-1),icon:const Icon(Icons.remove_circle_outline)),
@@ -2723,7 +2725,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
             ]),
             const SizedBox(height:10),
             SizedBox(width:double.infinity,child:FilledButton.icon(
-              onPressed:busy||rows.any((r)=>r['id']==null||r['status']!='published')?null:()=>material_widgets_ui.Navigator.push(
+              onPressed:busy||rows.any((r)=>r['id']==null||r['status']!='published'||['service','rental'].contains(r['listing_type'])||(r['price_ngn']==null&&r['listing_type']!='free'))?null:()=>material_widgets_ui.Navigator.push(
                 context,MaterialPageRoute(builder:(_)=>const MarketplaceCheckoutScreen())),
               style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(52)),
               icon:const Icon(Icons.lock_outline),label:const Text('Proceed to checkout'))),
@@ -3423,7 +3425,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
           Row(children:[Expanded(child:Text(o['order_number'].toString(),style:const TextStyle(fontWeight:FontWeight.w800))),Text('₦${o['total_ngn']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900))]),
           const SizedBox(height:5),Text('${o['recipient_name']} · ${o['recipient_phone']}',style:const TextStyle(color:muted,fontSize:12)),
           Text('Order: ${o['status']} · Payment: ${o['payment_status']} (${o['payment_method']})',style:const TextStyle(color:muted,fontSize:12)),
-          if(o['payment_status']=='pending'&&o['status']!='cancelled')Align(alignment:Alignment.centerRight,child:FilledButton.icon(
+          if(o['payment_status']=='pending'&&o['status']!='cancelled'&&(o['payment_method']!='cash_on_delivery'||o['status']=='delivered'))Align(alignment:Alignment.centerRight,child:FilledButton.icon(
             onPressed:busy?null:()=>confirmMarketplacePayment(o),style:FilledButton.styleFrom(backgroundColor:emerald),
             icon:const Icon(Icons.verified_outlined),label:const Text('Confirm payment received'))),
         ]))),
