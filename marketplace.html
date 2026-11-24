@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="pages.css">
 <link rel="stylesheet" href="responsive.css">
 <link rel="stylesheet" href="creatorverse-design-system.css?v=20261113-1">
-<link rel="stylesheet" href="marketplace.css?v=20261124-market-home-1">
+<link rel="stylesheet" href="marketplace.css?v=20261124-market-home-2">
 <link rel="stylesheet" href="site-shell-base.css?v=20261117-stable-shell-1">
 <link rel="stylesheet" href="site-shell-finish.css?v=20261117-stable-shell-1">
 </head>
@@ -57,14 +57,12 @@
     <aside class="market-category-rail">
       <div class="market-rail-heading">Shop by category</div>
       <button type="button" class="market-category-link is-active" data-market-kind=""><span>▦</span> All products and services</button>
-      <button type="button" class="market-category-link" data-market-kind="product"><span>▣</span> Phones & electronics</button>
-      <button type="button" class="market-category-link" data-market-kind="product"><span>▤</span> Computers & accessories</button>
-      <button type="button" class="market-category-link" data-market-kind="product"><span>◇</span> Fashion & lifestyle</button>
-      <button type="button" class="market-category-link" data-market-kind="product"><span>▧</span> Books & learning</button>
-      <button type="button" class="market-category-link" data-market-kind="product"><span>⌂</span> Home & everyday</button>
-      <button type="button" class="market-category-link" data-market-kind="service"><span>✳</span> Creative services</button>
+      <button type="button" class="market-category-link" data-market-kind="product"><span>▣</span> Products</button>
+      <button type="button" class="market-category-link" data-market-kind="service"><span>✳</span> Services</button>
       <button type="button" class="market-category-link" data-market-kind="rental"><span>↗</span> Rentals</button>
       <button type="button" class="market-category-link" data-market-kind="free"><span>＋</span> Free items</button>
+      <div class="market-rail-heading market-rail-subheading">Product categories</div>
+      <div id="market-category-links"><small class="market-category-loading">Loading categories…</small></div>
       <div class="market-rail-note"><strong>Have something to sell?</strong><p>Open your own shop and reach the CreatorVerse community.</p><a href="#seller-workspace">Start selling →</a></div>
     </aside>
 
@@ -145,7 +143,7 @@
 <script src="cv-data.js"></script>
 <script src="auth.js"></script>
 <script src="site.js"></script>
-<script src="marketplace.js?v=20261124-market-home-1"></script>
+<script src="marketplace.js?v=20261124-market-home-2"></script>
 <script>
 (function(){
   var kind=document.getElementById('market-kind');
@@ -159,6 +157,28 @@
       if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
     });
   });
+  var categorySelect=document.getElementById('market-category');
+  var categoryHost=document.getElementById('market-category-links');
+  function renderCategoryLinks(){
+    if(!categorySelect||!categoryHost)return;
+    var options=Array.from(categorySelect.options).filter(function(option){return option.value;});
+    categoryHost.innerHTML=options.length?options.map(function(option){
+      return '<button type="button" class="market-category-link market-dynamic-category" data-market-category-id="'+option.value.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><span>•</span>'+option.textContent+'</button>';
+    }).join(''):'<small class="market-category-loading">Categories will appear when the catalogue is available.</small>';
+    categoryHost.querySelectorAll('[data-market-category-id]').forEach(function(button){
+      button.addEventListener('click',function(){
+        categorySelect.value=button.getAttribute('data-market-category-id');
+        categorySelect.dispatchEvent(new Event('change',{bubbles:true}));
+        document.querySelectorAll('.market-category-link').forEach(function(item){item.classList.toggle('is-active',item===button);});
+        var target=document.getElementById('live-market');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+  }
+  if(categorySelect&&categoryHost){
+    var categoryObserver=new MutationObserver(renderCategoryLinks);
+    categoryObserver.observe(categorySelect,{childList:true});
+    renderCategoryLinks();
+  }
   var secondary=document.getElementById('seller-open-secondary');
   if(secondary)secondary.addEventListener('click',function(){var primary=document.getElementById('seller-open');if(primary)primary.click();});
   var form=document.getElementById('market-search');
