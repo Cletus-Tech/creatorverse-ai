@@ -3,7 +3,9 @@
 -- photos, condition and location are optional and can be added or changed later.
 
 alter table public.marketplace_listings
-  alter column description drop not null;
+  alter column description drop not null,
+  drop constraint if exists marketplace_listings_title_check,
+  add constraint marketplace_listings_title_check check (char_length(trim(title)) between 1 and 100);
 
 create or replace function public.marketplace_guard_listing()
 returns trigger
