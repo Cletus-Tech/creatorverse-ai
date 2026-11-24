@@ -2156,6 +2156,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     await material_widgets_ui.Navigator.push(context,
       MaterialPageRoute(builder: (_) => const MarketplaceEnquiriesScreen()));
   }
+  Future<void> _openCart() async {
+    await material_widgets_ui.Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const MarketplaceCartScreen()));
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
@@ -2228,7 +2232,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   ])),
                 IconButton.filledTonal(tooltip: 'Saved items', onPressed: _openSaved,
                   icon: const Icon(Icons.bookmark_border_rounded)),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
+                IconButton.filledTonal(tooltip: 'Shopping cart', onPressed: _openCart,
+                  icon: const Icon(Icons.shopping_cart_outlined)),
+                const SizedBox(width: 4),
                 IconButton.filledTonal(tooltip: 'Your enquiries', onPressed: _openEnquiries,
                   icon: const Icon(Icons.chat_bubble_outline_rounded)),
               ]),
@@ -2495,6 +2502,22 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update saved listings: $e')));
     } finally { if (mounted) setState(() => busy = false); }
   }
+  Future<void> addToCart() async {
+    if (busy) return;
+    final type = (widget.listing['listing_type'] ?? 'product').toString();
+    if (type == 'service' || type == 'rental') return;
+    setState(() => busy = true);
+    try {
+      await db.rpc('marketplace_add_to_cart', params: {'p_listing_id': widget.listing['id'], 'p_quantity': 1});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Added to your shopping cart'),
+        action: SnackBarAction(label: 'VIEW CART', onPressed: () => material_widgets_ui.Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const MarketplaceCartScreen())))));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add this item: $e')));
+    } finally { if (mounted) setState(() => busy = false); }
+  }
+
   Future<void> startEnquiry() async {
     final input = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
@@ -2597,16 +2620,255 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
           ])),
           const Icon(Icons.verified, color: emerald),
         ])))),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: FilledButton.icon(
+        if (type != 'service' && type != 'rental') Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+          child: FilledButton.icon(onPressed: busy ? null : addToCart,
+            style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(52)),
+            icon: const Icon(Icons.add_shopping_cart_rounded), label: Text(busy ? 'Please wait…' : 'Add to cart'))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: OutlinedButton.icon(
           onPressed: busy ? null : startEnquiry,
-          style: FilledButton.styleFrom(backgroundColor: emerald, minimumSize: const Size.fromHeight(52)),
-          icon: const Icon(Icons.chat_bubble_outline), label: Text(busy ? 'Please wait…' : 'Contact seller'))),
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50), foregroundColor: gold),
+          icon: const Icon(Icons.chat_bubble_outline), label: const Text('Contact seller'))),
         const Padding(padding: EdgeInsets.fromLTRB(20, 10, 20, 0), child: Text(
           'Keep your conversation inside CreatorVerse. Never share passwords or verification codes with a seller.',
           textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 11, height: 1.5))),
       ]),
     );
   }
+}
+
+
+class MarketplaceCartScreen extends StatefulWidget {
+  const MarketplaceCartScreen({super.key});
+  @override State<MarketplaceCartScreen> createState() => _MarketplaceCartScreenState();
+}
+class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
+  final db = Supabase.instance.client;
+  late Future<List<Map<String,dynamic>>> cart;
+  bool busy = false;
+  @override void initState(){super.initState();cart=loadCart();}
+  Future<List<Map<String,dynamic>>> loadCart() async {
+    final user=db.auth.currentUser;
+    if(user==null)throw StateError('Sign in to access your cart.');
+    final c=await db.from('marketplace_carts').select('id').eq('user_id',user.id).maybeSingle();
+    if(c==null)return [];
+    final raw=await db.from('marketplace_cart_items').select('listing_id,quantity').eq('cart_id',c['id']);
+    if(raw.isEmpty)return [];
+    final ids=raw.map((r)=>r['listing_id'].toString()).toList();
+    final listings=await db.from('marketplace_listings').select(
+      'id,title,price_ngn,listing_type,image_urls,quantity_available,status,seller_id').inFilter('id',ids);
+    final map={for(final r in listings)r['id'].toString():Map<String,dynamic>.from(r)};
+    return raw.map((r)=>{...(map[r['listing_id'].toString()]??<String,dynamic>{}),
+      'listing_id':r['listing_id'],'quantity':r['quantity']}).toList();
+  }
+  void refresh()=>setState(()=>cart=loadCart());
+  int subtotal(List<Map<String,dynamic>> rows)=>rows.fold<int>(0,(sum,r)=>
+    sum+(((r['price_ngn'] as num?)?.toInt()??0)*((r['quantity'] as num?)?.toInt()??1)));
+  Future<void> change(Map<String,dynamic> item,int qty) async {
+    if(busy)return;setState(()=>busy=true);
+    try{
+      if(qty<1){await db.rpc('marketplace_remove_from_cart',params:{'p_listing_id':item['listing_id']});}
+      else{await db.rpc('marketplace_update_cart_quantity',params:{'p_listing_id':item['listing_id'],'p_quantity':qty});}
+      refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Cart update failed: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('Shopping cart'),actions:[IconButton(tooltip:'My orders',
+      onPressed:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(builder:(_)=>const MarketplaceOrdersScreen())),
+      icon:const Icon(Icons.receipt_long_outlined))]),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:cart,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Text('Could not load your cart: ${s.error}',style:const TextStyle(color:muted)));
+      final rows=s.data??[];
+      if(rows.isEmpty)return const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Icon(Icons.shopping_cart_outlined,color:emerald,size:54),SizedBox(height:12),
+        Text('Your cart is empty',style:TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
+        Text('Explore the market and add items you would like to buy.',style:TextStyle(color:muted)),
+      ]));
+      final total=subtotal(rows);
+      return Column(children:[
+        Expanded(child:ListView.separated(padding:const EdgeInsets.all(14),itemCount:rows.length,
+          separatorBuilder:(_,__)=>const SizedBox(height:9),itemBuilder:(context,i){
+            final r=rows[i];final imgs=r['image_urls'] is List?r['image_urls'] as List:const [];
+            final photo=imgs.map((v)=>v.toString().trim()).firstWhere(
+              (v)=>v.startsWith('https://')||v.startsWith('http://'),orElse:()=>'');
+            final qty=(r['quantity'] as num?)?.toInt()??1;final price=(r['price_ngn'] as num?)?.toInt()??0;
+            final unavailable=r['id']==null||r['status']!='published';
+            return Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(14)),
+              child:Row(children:[
+                ClipRRect(borderRadius:BorderRadius.circular(9),child:SizedBox(width:82,height:82,
+                  child:photo.isEmpty?Container(color:ink,child:const Icon(Icons.photo_outlined,color:muted))
+                    :Image.network(photo,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(color:ink,
+                      child:const Icon(Icons.image_not_supported_outlined,color:muted))))),
+                const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                  Text((r['title']??'Unavailable item').toString(),maxLines:2,overflow:TextOverflow.ellipsis,
+                    style:const TextStyle(fontWeight:FontWeight.w800)),
+                  Text(price==0?'FREE':'₦$price',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
+                  if(unavailable)const Text('Listing unavailable. Remove it to continue.',style:TextStyle(color:Colors.orangeAccent,fontSize:10)),
+                  Row(children:[
+                    IconButton(visualDensity:VisualDensity.compact,onPressed:busy?null:()=>change(r,qty-1),icon:const Icon(Icons.remove_circle_outline)),
+                    Text('$qty',style:const TextStyle(fontWeight:FontWeight.w800)),
+                    IconButton(visualDensity:VisualDensity.compact,onPressed:busy||unavailable?null:()=>change(r,qty+1),icon:const Icon(Icons.add_circle_outline)),
+                    const Spacer(),TextButton(onPressed:busy?null:()=>change(r,0),child:const Text('Remove',style:TextStyle(color:Colors.redAccent))),
+                  ])
+                ]))
+              ]));
+          })),
+        Container(padding:const EdgeInsets.fromLTRB(18,14,18,20),decoration:BoxDecoration(color:panel,
+          border:Border(top:BorderSide(color:Colors.white.withValues(alpha:.08)))),
+          child:Column(children:[
+            Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
+              const Text('Subtotal',style:TextStyle(color:muted)),
+              Text('₦$total',style:const TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
+            ]),
+            const SizedBox(height:10),
+            SizedBox(width:double.infinity,child:FilledButton.icon(
+              onPressed:busy||rows.any((r)=>r['id']==null||r['status']!='published')?null:()=>material_widgets_ui.Navigator.push(
+                context,MaterialPageRoute(builder:(_)=>const MarketplaceCheckoutScreen())),
+              style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(52)),
+              icon:const Icon(Icons.lock_outline),label:const Text('Proceed to checkout'))),
+          ]))
+      ]);
+    }));
+}
+
+class MarketplaceCheckoutScreen extends StatefulWidget {
+  const MarketplaceCheckoutScreen({super.key});
+  @override State<MarketplaceCheckoutScreen> createState()=>_MarketplaceCheckoutScreenState();
+}
+class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
+  final db=Supabase.instance.client;
+  final name=TextEditingController(),phone=TextEditingController(),address=TextEditingController(),
+    city=TextEditingController(),stateName=TextEditingController(),note=TextEditingController();
+  String method='bank_transfer';bool submitting=false;
+  @override void dispose(){name.dispose();phone.dispose();address.dispose();city.dispose();stateName.dispose();note.dispose();super.dispose();}
+  Widget field(String label,TextEditingController c,{TextInputType? keyboard,int lines=1})=>
+    Padding(padding:const EdgeInsets.only(bottom:11),child:TextField(controller:c,keyboardType:keyboard,
+      minLines:lines,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true,fillColor:panel)));
+  Future<void> placeOrder() async{
+    if(submitting)return;
+    if(name.text.trim().length<2||phone.text.trim().length<7||address.text.trim().length<5||
+      city.text.trim().length<2||stateName.text.trim().length<2){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Complete your name, phone and delivery address.')));return;
+    }
+    setState(()=>submitting=true);
+    try{
+      final id=await db.rpc('marketplace_place_order',params:{
+        'p_recipient_name':name.text.trim(),'p_recipient_phone':phone.text.trim(),
+        'p_delivery_address':address.text.trim(),'p_delivery_city':city.text.trim(),
+        'p_delivery_state':stateName.text.trim(),'p_delivery_country':'Nigeria',
+        'p_buyer_note':note.text.trim().isEmpty?null:note.text.trim(),'p_payment_method':method,
+      });
+      if(!mounted)return;
+      material_widgets_ui.Navigator.pushReplacement(context,MaterialPageRoute(
+        builder:(_)=>MarketplaceOrderDetailScreen(orderId:id.toString())));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not place order: $e')));}
+    finally{if(mounted)setState(()=>submitting=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Checkout')),
+    body:ListView(padding:const EdgeInsets.all(18),children:[
+      const Text('Delivery information',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
+      const SizedBox(height:12),
+      field('Recipient full name',name,keyboard:TextInputType.name),
+      field('Phone number',phone,keyboard:TextInputType.phone),
+      field('Delivery address',address,lines:2),
+      Row(children:[Expanded(child:field('City / town',city)),const SizedBox(width:9),Expanded(child:field('State',stateName))]),
+      field('Order note (optional)',note,lines:2),
+      const SizedBox(height:4),const Text('Payment method',style:TextStyle(fontSize:19,fontWeight:FontWeight.w900)),
+      RadioListTile<String>(value:'bank_transfer',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
+        title:const Text('Bank transfer'),subtitle:const Text('Awaiting administrator payment confirmation.')),
+      RadioListTile<String>(value:'ussd',groupValue:method,onChanged:(v)=>setState(()=>method=v!),title:const Text('USSD')),
+      RadioListTile<String>(value:'cash_on_delivery',groupValue:method,onChanged:(v)=>setState(()=>method=v!),
+        title:const Text('Cash on delivery')),
+      const Text('CreatorVerse calculates the final item total from current listing prices and stock. Payment is not marked as received until confirmed.',
+        style:TextStyle(color:muted,fontSize:12,height:1.5)),
+      const SizedBox(height:14),SizedBox(width:double.infinity,child:FilledButton.icon(
+        onPressed:submitting?null:placeOrder,style:FilledButton.styleFrom(backgroundColor:emerald,minimumSize:const Size.fromHeight(53)),
+        icon:submitting?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.check_circle_outline),
+        label:Text(submitting?'Placing order…':'Place order'))),
+    ]));
+}
+
+class MarketplaceOrdersScreen extends StatefulWidget{
+  const MarketplaceOrdersScreen({super.key});
+  @override State<MarketplaceOrdersScreen> createState()=>_MarketplaceOrdersScreenState();
+}
+class _MarketplaceOrdersScreenState extends State<MarketplaceOrdersScreen>{
+  final db=Supabase.instance.client;late Future<List<Map<String,dynamic>>> orders;
+  @override void initState(){super.initState();orders=load();}
+  Future<List<Map<String,dynamic>>> load()async{
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in to view orders.');
+    final rows=await db.from('marketplace_orders').select('id,order_number,status,payment_status,total_ngn,created_at')
+      .eq('buyer_id',user.id).order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('My orders')),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:orders,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Text('Could not load orders: ${s.error}',style:const TextStyle(color:muted)));
+      final rows=s.data??[];
+      if(rows.isEmpty)return const Center(child:Text('You have not placed any orders yet.',style:TextStyle(color:muted)));
+      return ListView.separated(padding:const EdgeInsets.all(14),itemCount:rows.length,
+        separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(context,i){final o=rows[i];return Card(color:panel,
+          child:ListTile(title:Text(o['order_number'].toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text('${o['status']} · Payment: ${o['payment_status']}',style:const TextStyle(color:muted)),
+            trailing:Text('₦${o['total_ngn']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
+            onTap:()=>material_widgets_ui.Navigator.push(context,MaterialPageRoute(
+              builder:(_)=>MarketplaceOrderDetailScreen(orderId:o['id'].toString()))),
+          ));});
+    }));
+}
+
+class MarketplaceOrderDetailScreen extends StatefulWidget{
+  final String orderId;
+  const MarketplaceOrderDetailScreen({super.key,required this.orderId});
+  @override State<MarketplaceOrderDetailScreen> createState()=>_MarketplaceOrderDetailScreenState();
+}
+class _MarketplaceOrderDetailScreenState extends State<MarketplaceOrderDetailScreen>{
+  final db=Supabase.instance.client;late Future<Map<String,dynamic>> details;bool cancelling=false;
+  @override void initState(){super.initState();details=load();}
+  Future<Map<String,dynamic>> load()async{
+    final order=await db.from('marketplace_orders').select().eq('id',widget.orderId).single();
+    final items=await db.from('marketplace_order_items').select(
+      'id,title_snapshot,image_snapshot,unit_price_ngn,quantity,line_total_ngn,seller_id').eq('order_id',widget.orderId);
+    final events=await db.from('marketplace_order_events').select('event_type,note,created_at')
+      .eq('order_id',widget.orderId).order('created_at');
+    return {'order':order,'items':items,'events':events};
+  }
+  Future<void> cancelOrder()async{
+    if(cancelling)return;setState(()=>cancelling=true);
+    try{await db.rpc('marketplace_cancel_order',params:{'p_order_id':widget.orderId});
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Order cancelled and stock released.')));setState(()=>details=load());}}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not cancel order: $e')));}
+    finally{if(mounted)setState(()=>cancelling=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Order details')),
+    body:FutureBuilder<Map<String,dynamic>>(future:details,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Text('Could not load order: ${s.error}',style:const TextStyle(color:muted)));
+      final d=s.data!;final o=d['order'] as Map<String,dynamic>;final items=d['items'] as List;final events=d['events'] as List;
+      final canCancel=['pending_payment','processing'].contains(o['status'])&&o['payment_status']=='pending';
+      return ListView(padding:const EdgeInsets.all(18),children:[
+        Text(o['order_number'].toString(),style:const TextStyle(fontSize:21,fontWeight:FontWeight.w900)),
+        const SizedBox(height:7),Text('Order status: ${o['status']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w800)),
+        Text('Payment: ${o['payment_status']} · ${o['payment_method']}',style:const TextStyle(color:muted)),
+        const Divider(height:25),const Text('Items',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+        for(final item in items)ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.inventory_2_outlined,color:emerald),
+          title:Text(item['title_snapshot'].toString()),subtitle:Text('${item['quantity']} × ₦${item['unit_price_ngn']}'),
+          trailing:Text('₦${item['line_total_ngn']}',style:const TextStyle(fontWeight:FontWeight.w800))),
+        const Divider(),ListTile(title:const Text('Subtotal'),trailing:Text('₦${o['subtotal_ngn']}')),
+        ListTile(title:const Text('Delivery'),trailing:Text('₦${o['delivery_fee_ngn']}')),
+        ListTile(title:const Text('Total',style:TextStyle(fontWeight:FontWeight.w900)),
+          trailing:Text('₦${o['total_ngn']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900))),
+        const Divider(),const Text('Order activity',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+        for(final event in events)ListTile(dense:true,leading:const Icon(Icons.check_circle_outline,color:emerald,size:18),
+          title:Text(event['event_type'].toString().replaceAll('_',' ')),subtitle:Text(event['note']??'',style:const TextStyle(color:muted))),
+        if(canCancel)OutlinedButton.icon(onPressed:cancelling?null:cancelOrder,icon:const Icon(Icons.cancel_outlined),
+          label:Text(cancelling?'Cancelling…':'Cancel order')),
+        const Text('Delivery updates and payment confirmation will appear here as the seller and marketplace team process your order.',
+          style:TextStyle(color:muted,fontSize:12,height:1.5)),
+      ]);
+    }));
 }
 
 class MarketplaceSellerScreen extends StatefulWidget {
