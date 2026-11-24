@@ -2111,7 +2111,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final cats = await db.from('marketplace_categories')
       .select('id,name').eq('active', true).order('position');
     final rows = await db.from('marketplace_listings')
-      .select('id,seller_id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at')
+      .select('id,seller_id,category_id,title,description,listing_type,item_condition,price_ngn,negotiable,location_label,institution,campus,image_urls,quantity_available,sku,shipping_required,created_at')
       .eq('status', 'published').order('created_at', ascending: false).limit(80);
     return {'categories': List<Map<String, dynamic>>.from(cats),
       'listings': List<Map<String, dynamic>>.from(rows)};
@@ -2845,7 +2845,7 @@ class _MarketplaceSavedScreenState extends State<MarketplaceSavedScreen> {
     final saved=await db.from('marketplace_saved_listings').select('listing_id,created_at').eq('user_id',user.id).order('created_at',ascending:false);
     if(saved.isEmpty)return [];
     final ids=saved.map((r)=>r['listing_id']).toList();
-    final listings=await db.from('marketplace_listings').select('id,seller_id,title,description,price_ngn,campus,institution,location_label,image_urls').inFilter('id',ids).eq('status','published');
+    final listings=await db.from('marketplace_listings').select('id,seller_id,category_id,title,description,listing_type,item_condition,price_ngn,negotiable,campus,institution,location_label,image_urls,quantity_available,sku,shipping_required').inFilter('id',ids).eq('status','published');
     return List<Map<String,dynamic>>.from(listings);
   }
   Future<void> refresh() async {final next=load();setState(()=>rows=next);await next;}
