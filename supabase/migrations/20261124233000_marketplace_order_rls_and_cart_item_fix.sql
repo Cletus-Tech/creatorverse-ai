@@ -54,3 +54,8 @@ end;
 $$;
 grant execute on function public.marketplace_update_cart_item(uuid,integer) to authenticated;
 grant execute on function public.marketplace_remove_cart_item(uuid) to authenticated;
+
+revoke execute on function public.marketplace_update_cart_item(uuid,integer) from public, anon;
+revoke execute on function public.marketplace_remove_cart_item(uuid) from public, anon;
+grant execute on function public.marketplace_update_cart_item(uuid,integer) to authenticated;
+grant execute on function public.marketplace_remove_cart_item(uuid) to authenticated;
