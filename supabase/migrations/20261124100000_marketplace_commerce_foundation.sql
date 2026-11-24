@@ -211,6 +211,7 @@ declare
   v_cart uuid;
   v_listing public.marketplace_listings%rowtype;
   v_seller_status text;
+  v_in_cart integer := 0;
 begin
   if v_user is null then raise exception 'Sign in to add items to your cart'; end if;
   if p_quantity is null or p_quantity < 1 or p_quantity > 99 then raise exception 'Choose a quantity from 1 to 99'; end if;
@@ -222,6 +223,14 @@ begin
   if v_seller_status <> 'verified' then raise exception 'This seller is not currently verified'; end if;
   if v_listing.listing_type = 'service' then raise exception 'Services must be booked through seller enquiries in this release'; end if;
   if v_listing.listing_type = 'free' then p_quantity := 1; end if;
+  select c.id into v_cart from public.marketplace_carts c where c.user_id = v_user;
+  if v_cart is not null then
+    select coalesce(i.quantity, 0) into v_in_cart
+    from public.marketplace_cart_items i where i.cart_id = v_cart and i.listing_id = p_listing_id;
+  end if;
+  if v_in_cart + p_quantity > v_listing.quantity_available then
+    raise exception 'Only % item(s) are currently available', greatest(v_listing.quantity_available - v_in_cart, 0);
+  end if;
   insert into public.marketplace_carts(user_id) values (v_user)
   on conflict (user_id) do update set updated_at = now()
   returning id into v_cart;
