@@ -3339,7 +3339,8 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     final listings=await db.from('marketplace_listings').select('id,title,description,price_ngn,listing_type,created_at,seller_id,marketplace_sellers(display_name,institution,campus),marketplace_categories(name)')
       .eq('status','pending_review').order('created_at');
     final cats=await db.from('marketplace_categories').select('id,name,active,position').order('position');
-    return {'sellers':List<Map<String,dynamic>>.from(sellers),'listings':List<Map<String,dynamic>>.from(listings),'categories':List<Map<String,dynamic>>.from(cats)};
+    final orders=await db.from('marketplace_orders').select('id,order_number,status,payment_status,payment_method,total_ngn,recipient_name,recipient_phone,created_at').order('created_at',ascending:false).limit(100);
+    return {'sellers':List<Map<String,dynamic>>.from(sellers),'listings':List<Map<String,dynamic>>.from(listings),'categories':List<Map<String,dynamic>>.from(cats),'orders':List<Map<String,dynamic>>.from(orders)};
   }
   Future<void> refresh() async {final next=load();setState(()=>data=next);await next;}
   Future<String?> noteDialog(String title,String hint) async {
@@ -3375,6 +3376,17 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not review listing: $e')));}
     finally{if(mounted)setState(()=>busy=false);}
   }
+  Future<void> confirmMarketplacePayment(Map<String,dynamic> order) async {
+    final note=await noteDialog('Confirm marketplace payment','Optional payment verification note');
+    if(note==null)return;
+    setState(()=>busy=true);
+    try{
+      await db.rpc('marketplace_admin_confirm_order_payment',params:{'p_order_id':order['id'],'p_admin_note':note.isEmpty?null:note});
+      await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Payment confirmed. Seller fulfilment is now enabled.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not confirm payment: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
   Future<void> toggleCategory(Map<String,dynamic> cat) async {
     setState(()=>busy=true);
     try{await db.from('marketplace_categories').update({'active':!(cat['active']==true)}).eq('id',cat['id']);await refresh();}
@@ -3385,7 +3397,7 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
     body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snap){
       if(snap.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
       if(snap.hasError)return Center(child:Text('Marketplace moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
-      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];
+      final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];final orders=d['orders'] as List<Map<String,dynamic>>? ?? [];
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
@@ -3404,6 +3416,16 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
           const SizedBox(height:6),Text((l['description']??'').toString(),maxLines:4,overflow:TextOverflow.ellipsis,style:const TextStyle(height:1.4)),
           Row(children:[Expanded(child:OutlinedButton(onPressed:busy?null:()=>reviewListing(l,'rejected'),child:const Text('Reject'))),
             const SizedBox(width:8),Expanded(child:FilledButton(onPressed:busy?null:()=>reviewListing(l,'published'),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Approve & publish')))]),
+        ]))),
+        const SizedBox(height:20),const Text('Orders & payment review',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(orders.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No marketplace orders yet.',style:TextStyle(color:muted))),
+        for(final o in orders)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Row(children:[Expanded(child:Text(o['order_number'].toString(),style:const TextStyle(fontWeight:FontWeight.w800))),Text('₦${o['total_ngn']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900))]),
+          const SizedBox(height:5),Text('${o['recipient_name']} · ${o['recipient_phone']}',style:const TextStyle(color:muted,fontSize:12)),
+          Text('Order: ${o['status']} · Payment: ${o['payment_status']} (${o['payment_method']})',style:const TextStyle(color:muted,fontSize:12)),
+          if(o['payment_status']=='pending'&&o['status']!='cancelled')Align(alignment:Alignment.centerRight,child:FilledButton.icon(
+            onPressed:busy?null:()=>confirmMarketplacePayment(o),style:FilledButton.styleFrom(backgroundColor:emerald),
+            icon:const Icon(Icons.verified_outlined),label:const Text('Confirm payment received'))),
         ]))),
         const SizedBox(height:20),const Text('Marketplace categories',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         for(final cat in cats)SwitchListTile(value:cat['active']==true,title:Text(cat['name'].toString()),activeColor:emerald,onChanged:busy?null:(_)=>toggleCategory(cat)),
