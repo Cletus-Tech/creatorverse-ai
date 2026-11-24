@@ -2349,7 +2349,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final item = rows[index];
                 final images = item['image_urls'] is List ? item['image_urls'] as List : const [];
-                final photo = images.isNotEmpty ? images.first.toString() : '';
+                final photo = images.isNotEmpty ? images.first.toString().trim() : '';
                 final location = [item['campus'], item['institution'], item['location_label']]
                   .where((value) => value != null && value.toString().isNotEmpty)
                   .map((value) => value.toString()).join(' · ');
@@ -2360,12 +2360,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     child: material_widgets_ui.Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(flex: 6, child: Stack(fit: StackFit.expand, children: [
                         Container(color: const Color(0xFF172B2C),
-                          child: photo.startsWith('https://')
-                            ? CachedNetworkImage(imageUrl: photo, fit: BoxFit.cover,
-                              placeholder: (_, __) => const Center(
-                                child: CircularProgressIndicator(color: emerald, strokeWidth: 2)),
-                              errorWidget: (_, __, ___) => const Icon(
-                                Icons.image_not_supported_outlined, color: muted, size: 32))
+                          child: (photo.startsWith('https://') || photo.startsWith('http://'))
+                            ? Image.network(photo, fit: BoxFit.cover, width: double.infinity,
+                                loadingBuilder: (context, child, progress) => progress == null
+                                  ? child
+                                  : const Center(child: CircularProgressIndicator(color: emerald, strokeWidth: 2)),
+                                errorBuilder: (_, __, ___) => const Center(child: Icon(
+                                  Icons.image_not_supported_outlined, color: muted, size: 32)))
                             : const Center(child: Icon(Icons.shopping_bag_outlined, color: emerald, size: 38))),
                         Positioned(top: 8, left: 8, child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
