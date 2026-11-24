@@ -2349,7 +2349,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final item = rows[index];
                 final images = item['image_urls'] is List ? item['image_urls'] as List : const [];
-                final photo = images.isNotEmpty ? images.first.toString().trim() : '';
+                // Match the detail screen: skip empty or invalid entries and use the first usable public image URL.
+                final photo = images.map((value) => value.toString().trim()).firstWhere(
+                  (value) => value.startsWith('https://') || value.startsWith('http://'),
+                  orElse: () => '',
+                );
                 final location = [item['campus'], item['institution'], item['location_label']]
                   .where((value) => value != null && value.toString().isNotEmpty)
                   .map((value) => value.toString()).join(' · ');
