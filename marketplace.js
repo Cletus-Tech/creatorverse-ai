@@ -18,6 +18,12 @@ function render(){
   var hay=[x.title,x.description,x.institution,x.campus,x.location_label].join(' ').toLowerCase();
   return (!q||hay.indexOf(q)>-1)&&(!institution||safe(x.institution).toLowerCase().indexOf(institution)>-1)&&(!cat||x.category_id===cat)&&(!kind||x.listing_type===kind);
  });
+ var sort=(($('market-sort')||{}).value||'newest');
+ rows.sort(function(a,b){
+  if(sort==='price-low')return (a.price_ngn==null?Number.MAX_SAFE_INTEGER:Number(a.price_ngn))-(b.price_ngn==null?Number.MAX_SAFE_INTEGER:Number(b.price_ngn));
+  if(sort==='price-high')return (b.price_ngn==null?-1:Number(b.price_ngn))-(a.price_ngn==null?-1:Number(a.price_ngn));
+  return new Date(b.created_at||0).getTime()-new Date(a.created_at||0).getTime();
+ });
  $('market-count').textContent=rows.length+' approved listing'+(rows.length===1?'':'s');
  if(!rows.length){host.innerHTML='<div class="market-empty">No approved listings match these filters yet. Try another search or check back soon.</div>';return}
  host.innerHTML=rows.map(function(x){
@@ -118,7 +124,7 @@ function init(){
  $('seller-open')&&$('seller-open').addEventListener('click',openSeller);
  $('seller-close')&&$('seller-close').addEventListener('click',function(){$('seller-dialog').close()});
  $('seller-form')&&$('seller-form').addEventListener('submit',submitSeller);
- ['market-query','market-institution','market-category','market-kind'].forEach(function(id){var el=$(id);if(el)el.addEventListener('input',render);if(el)el.addEventListener('change',render)});
+ ['market-query','market-institution','market-category','market-kind','market-sort'].forEach(function(id){var el=$(id);if(el)el.addEventListener('input',render);if(el)el.addEventListener('change',render)});
  $('market-search')&&$('market-search').addEventListener('submit',function(e){e.preventDefault();render();$('live-market').scrollIntoView({behavior:'smooth',block:'start'})});
  if(window.CV_SB){sb=window.CV_SB;loadCatalogue();loadSellerWorkspace()}
  document.addEventListener('cv-ready',function(){sb=window.CV_SB;loadCatalogue();loadSellerWorkspace()},{once:true});
