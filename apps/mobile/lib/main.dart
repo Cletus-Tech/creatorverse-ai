@@ -2651,7 +2651,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
     if(user==null)throw StateError('Sign in to access your cart.');
     final c=await db.from('marketplace_carts').select('id').eq('user_id',user.id).maybeSingle();
     if(c==null)return [];
-    final raw=await db.from('marketplace_cart_items').select('listing_id,quantity').eq('cart_id',c['id']);
+    final raw=await db.from('marketplace_cart_items').select('id,listing_id,quantity').eq('cart_id',c['id']);
     if(raw.isEmpty)return [];
     final ids=raw.map((r)=>r['listing_id'].toString()).toList();
     final listings=await db.from('marketplace_listings').select(
@@ -2666,8 +2666,8 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
   Future<void> change(Map<String,dynamic> item,int qty) async {
     if(busy)return;setState(()=>busy=true);
     try{
-      if(qty<1){await db.rpc('marketplace_remove_from_cart',params:{'p_listing_id':item['listing_id']});}
-      else{await db.rpc('marketplace_update_cart_quantity',params:{'p_listing_id':item['listing_id'],'p_quantity':qty});}
+      if(qty<1){await db.rpc('marketplace_remove_cart_item',params:{'p_cart_item_id':item['id']});}
+      else{await db.rpc('marketplace_update_cart_item',params:{'p_cart_item_id':item['id'],'p_quantity':qty});}
       refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Cart update failed: $e')));}
     finally{if(mounted)setState(()=>busy=false);}
