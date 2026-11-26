@@ -2667,7 +2667,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
     if(busy)return;setState(()=>busy=true);
     try{
       if(qty<1){await db.rpc('marketplace_remove_cart_item',params:{'p_cart_item_id':item['cart_item_id']});}
-      else{await db.rpc('marketplace_update_cart_item',params:{'p_cart_item_id':item['id'],'p_quantity':qty});}
+      else{await db.rpc('marketplace_update_cart_item',params:{'p_cart_item_id':item['cart_item_id'],'p_quantity':qty});}
       refresh();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Cart update failed: $e')));}
     finally{if(mounted)setState(()=>busy=false);}
@@ -2978,7 +2978,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         '5. Buyer payments for marketplace orders go to the official CreatorVerse receiving account. Seller payouts are processed separately to the payout account you provide, after payment reconciliation and any clearly disclosed marketplace charges.\n\n'
         '6. Keep buyer information private. Do not misuse addresses, phone numbers, payment references or other personal information.\n\n'
         '7. Cooperate with CreatorVerse on cancellations, returns, refunds and disputes. Do not mislead buyers or move platform orders off-platform to avoid marketplace protections.'
-      ),style:TextStyle(height:1.5))),
+      ,style:TextStyle(height:1.5)))),
       actions: [
         TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Close')),
         FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('I have read the rules')),
@@ -3181,9 +3181,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
             'Standard Chartered Bank','Sterling Bank','SunTrust Bank','Titan Trust Bank','Union Bank','United Bank for Africa (UBA)',
             'Unity Bank','Wema Bank','Zenith Bank','Other / not listed'
           ].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),
-          onChanged:(v)=>setState(() {selectedBank=v;otherBank=v=='Other / not listed';}),
+          onChanged:(v)=>setState(() {selectedBank=v;otherBank=v=='Other / not listed';}),),
         if(otherBank)Padding(padding:const EdgeInsets.only(top:10),child:TextField(controller:otherBankName,decoration:const InputDecoration(labelText:'Enter bank name',filled:true))),
-        const SizedBox(height:10),TextField(controller:accountName,decoration:const InputDecoration(labelText:'Account holder name',textCapitalization:TextCapitalization.words)),
+        const SizedBox(height:10),TextField(controller:accountName,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Account holder name')),
         const SizedBox(height:10),TextField(controller:accountNumber,keyboardType:TextInputType.number,maxLength:10,inputFormatters:[FilteringTextInputFormatter.digitsOnly],
           decoration:const InputDecoration(labelText:'10-digit account number')),
         const SizedBox(height:8),TextButton.icon(onPressed:reviewSellerRules,icon:const Icon(Icons.menu_book_outlined),
