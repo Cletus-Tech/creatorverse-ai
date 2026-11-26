@@ -23,6 +23,7 @@ else
     mv "${TEMP_DIR}/flutter" "${SDK_DIR}"
     rm -rf "${TEMP_DIR}" "${ARCHIVE}"
   fi
+  git config --global --add safe.directory "${SDK_DIR}"
   FLUTTER="${SDK_DIR}/bin/flutter"
 fi
 "${FLUTTER}" config --enable-web
