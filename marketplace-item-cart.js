@@ -32,7 +32,7 @@ function add(){
      if(existing.error)throw existing.error;
      if(existing.data&&Number(existing.data.quantity)>=stock){
       b.textContent='View cart';b.disabled=false;b.onclick=function(){location.href='marketplace-commerce.html?view=cart'};
-      if(msg)msg.textContent='This item is already in your cart at the maximum available quantity (1).';
+      if(msg)msg.textContent='This item is already in your cart at the maximum available quantity ('+stock+').';
       return;
      }
     }
