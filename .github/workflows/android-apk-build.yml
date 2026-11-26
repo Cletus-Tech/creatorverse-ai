@@ -1,4 +1,5 @@
 name: CreatorVerse Android APK — ARM64
+# Refresh trigger: build the current main branch after the Marketplace checkout and seller-mode updates.
 
 on:
   push:
