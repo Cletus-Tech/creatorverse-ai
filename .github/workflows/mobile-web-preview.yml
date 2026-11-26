@@ -57,25 +57,41 @@ jobs:
           APP_BASE_HREF: /creatorverse-ai/app/
         run: bash ./vercel-build.sh
 
-      - name: Publish generated Flutter app files to main
+      - name: Publish generated Flutter app files to main (retry safe push)
         run: |
           APP_BUILD_DIR="$(mktemp -d)"
           cp -a dist/app/. "$APP_BUILD_DIR"/
-          git fetch origin main
-          git reset --hard origin/main
-          rm -rf app
-          mkdir -p app
-          cp -a "$APP_BUILD_DIR"/. app/
-          rm -rf "$APP_BUILD_DIR"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app
-          if git diff --cached --quiet; then
-            echo "Flutter app preview is already up to date."
-          else
+
+          # Retry if another workflow updates main between fetch and push.
+          for attempt in 1 2 3; do
+            echo "Publishing app preview (attempt ${attempt}/3)"
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf app
+            mkdir -p app
+            cp -a "$APP_BUILD_DIR"/. app/
+            git add app
+
+            if git diff --cached --quiet; then
+              echo "Flutter app preview is already up to date."
+              rm -rf "$APP_BUILD_DIR"
+              exit 0
+            fi
+
             git commit -m "Publish Flutter app preview"
-            git push origin HEAD:main
-          fi
+            if git push origin HEAD:main; then
+              echo "Flutter app preview published successfully."
+              rm -rf "$APP_BUILD_DIR"
+              exit 0
+            fi
+            echo "main changed during publication; retrying."
+          done
+
+          rm -rf "$APP_BUILD_DIR"
+          echo "Could not publish app preview after 3 attempts."
+          exit 1
 
       - name: Upload combined website and app to GitHub Pages
         uses: actions/upload-pages-artifact@v3
