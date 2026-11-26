@@ -2511,28 +2511,9 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       final user = db.auth.currentUser;
       if (user == null) throw StateError('Sign in to add items to your cart.');
 
-      // Check the signed-in buyer's existing cart before calling the add RPC.
-      // The database remains the final authority for stock and concurrency.
-      final cart = await db.from('marketplace_carts').select('id')
-        .eq('user_id', user.id).maybeSingle();
-      if (cart != null) {
-        final existing = await db.from('marketplace_cart_items').select('id,quantity')
-          .eq('cart_id', cart['id']).eq('listing_id', widget.listing['id']).maybeSingle();
-        final available = (widget.listing['quantity_available'] as num?)?.toInt();
-        final inCart = (existing?['quantity'] as num?)?.toInt() ?? 0;
-        if (existing != null && available != null && inCart >= available) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('This item is already in your cart at its maximum available quantity ($available).'),
-            action: SnackBarAction(label: 'VIEW CART', onPressed: () {
-              material_widgets_ui.Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const MarketplaceCartScreen()));
-            }),
-          ));
-          return;
-        }
-      }
-
+      // Do not query private cart tables directly from this screen. Cart ownership
+      // and stock validation are enforced by the SECURITY DEFINER RPC and RLS.
+      // This avoids client-side table permission/RLS errors before the RPC runs.
       await db.rpc('marketplace_add_to_cart', params: {'p_listing_id': widget.listing['id'], 'p_quantity': 1});
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Added to your shopping cart'),
