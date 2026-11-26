@@ -20,7 +20,8 @@ done
 
 cd "${ROOT_DIR}/apps/mobile"
 bash ./vercel-flutter.sh pub get
-bash ./vercel-flutter.sh build web --release --base-href "/app/"
+APP_BASE_HREF="${APP_BASE_HREF:-/app/}"
+bash ./vercel-flutter.sh build web --release --base-href "${APP_BASE_HREF}"
 
 mkdir -p "${DIST_DIR}/app"
 cp -a build/web/. "${DIST_DIR}/app/"
