@@ -25,23 +25,18 @@ function add(){
     var a=await sb.auth.getSession(),u=a.data&&a.data.session&&a.data.session.user;
     if(!u){location.href='login.html?next='+encodeURIComponent('marketplace-item.html'+location.search);return}
     var id=new URLSearchParams(location.search).get('id');
-    var cart=await sb.from('marketplace_carts').select('id').eq('user_id',u.id).maybeSingle();
-    if(cart.error)throw cart.error;
-    if(cart.data){
-     var existing=await sb.from('marketplace_cart_items').select('id,quantity').eq('cart_id',cart.data.id).eq('listing_id',id).maybeSingle();
-     if(existing.error)throw existing.error;
-     if(existing.data&&Number(existing.data.quantity)>=stock){
-      b.textContent='View cart';b.disabled=false;b.onclick=function(){location.href='marketplace-commerce.html?view=cart'};
-      if(msg)msg.textContent='This item is already in your cart at the maximum available quantity ('+stock+').';
-      return;
-     }
-    }
     var r=await sb.rpc('marketplace_add_to_cart',{p_listing_id:id,p_quantity:1});
     if(r.error)throw r.error;
     b.textContent='View cart';b.disabled=false;b.onclick=function(){location.href='marketplace-commerce.html?view=cart'};
     if(msg)msg.textContent='Added to your cart. Stock is rechecked again at checkout.';
    }catch(e){
-    if(msg)msg.textContent=e.message||'Could not add this item to your cart.';
+    var message=String(e&&e.message||'Could not add this item to your cart.');
+    if(/already in your cart at the maximum available quantity/i.test(message)){
+     b.textContent='View cart';b.disabled=false;b.onclick=function(){location.href='marketplace-commerce.html?view=cart'};
+     if(msg)msg.textContent='This item is already in your cart at the maximum available quantity ('+stock+').';
+     return;
+    }
+    if(msg)msg.textContent=message;
     b.disabled=false;
    }
   };
