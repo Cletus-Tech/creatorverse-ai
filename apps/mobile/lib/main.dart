@@ -2081,6 +2081,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   late Future<Map<String, dynamic>> catalogue;
   String categoryId = '';
   String sortBy = 'newest';
+  bool _sellerRedirectChecked = false;
   RealtimeChannel? _syncChannel;
   Timer? _syncTimer;
 
@@ -2088,6 +2089,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   void initState() {
     super.initState();
     catalogue = loadCatalogue();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openVerifiedSellerWorkspace());
     _syncChannel = db.channel('cv-marketplace-listings-sync')
       .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public',
         table: 'marketplace_listings', callback: (_) {
@@ -2096,6 +2098,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             if (mounted) setState(() => catalogue = loadCatalogue());
           });
         }).subscribe();
+  }
+
+  Future<void> _openVerifiedSellerWorkspace() async {
+    if (_sellerRedirectChecked) return;
+    _sellerRedirectChecked = true;
+    final current = db.auth.currentUser;
+    if (current == null) return;
+    try {
+      final seller = await db.from('marketplace_sellers').select('status')
+        .eq('user_id', current.id).maybeSingle();
+      if (!mounted || seller?['status'] != 'verified') return;
+      await material_widgets_ui.Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const MarketplaceSellerScreen()));
+    } catch (_) {
+      // Keep the buyer catalogue available if seller status cannot be checked.
+    }
   }
 
   @override
@@ -2756,7 +2774,14 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
   bool submitting=false,locationsLoading=true,paymentSettingsLoading=true,customTown=false;
   Map<String,dynamic> locationData={};
   Map<String,dynamic>? paymentSettings;
-  @override void initState(){super.initState();loadLocations();loadPaymentSettings();}
+  @override void initState(){
+    super.initState();
+    final current=db.auth.currentUser;
+    final metadata=current?.userMetadata??const <String,dynamic>{};
+    name.text=(metadata['full_name']??metadata['name']??'').toString();
+    phone.text=(current?.phone??metadata['phone']??metadata['phone_number']??'').toString();
+    loadLocations();loadPaymentSettings();
+  }
   @override void dispose(){name.dispose();phone.dispose();address.dispose();note.dispose();customTownController.dispose();super.dispose();}
   Future<void> loadLocations()async{
     try{final raw=await rootBundle.loadString('assets/data/nigeria_locations.json');
@@ -2787,9 +2812,8 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
   Future<void> placeOrder() async{
     final town=customTown?customTownController.text.trim():(selectedTown??'').trim();
     if(submitting)return;
-    if(name.text.trim().length<2||phone.text.trim().length<7||address.text.trim().length<5||
-      selectedState==null||selectedLga==null||town.length<2){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Complete your name, phone, street address, state, LGA and town / area.')));return;
+    if(name.text.trim().length<2||phone.text.trim().length<7||address.text.trim().length<5){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter your name, phone number and delivery address to continue.')));return;
     }
     if(method=='bank_transfer'&&!bankReady){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Bank transfer is unavailable until the CreatorVerse account is configured.')));return;}
     if(method=='ussd'&&paymentSettings?['ussd_enabled']!=true){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('USSD payment is not currently available.')));return;}
@@ -2797,8 +2821,8 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
     try{
       final id=await db.rpc('marketplace_place_order_v2',params:{
         'p_recipient_name':name.text.trim(),'p_recipient_phone':phone.text.trim(),
-        'p_delivery_address':address.text.trim(),'p_delivery_city':town,
-        'p_delivery_lga':selectedLga,'p_delivery_state':selectedState,
+        'p_delivery_address':address.text.trim(),'p_delivery_city':town.isEmpty?'Not specified':town,
+        'p_delivery_lga':(selectedLga??'Not specified'),'p_delivery_state':(selectedState??'Not specified'),
         'p_delivery_country':'Nigeria',
         'p_buyer_note':note.text.trim().isEmpty?null:note.text.trim(),'p_payment_method':method,
       });
@@ -2823,16 +2847,16 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
         field('Recipient full name',name,keyboard:TextInputType.name),
         field('Phone number',phone,keyboard:TextInputType.phone),
         field('House number, street and delivery directions',address,lines:2),
-        DropdownButtonFormField<String>(value:selectedState,decoration:const InputDecoration(labelText:'State',filled:true),
+        DropdownButtonFormField<String>(value:selectedState,decoration:const InputDecoration(labelText:'State (optional)',filled:true),
           isExpanded:true,items:[for(final v in states)DropdownMenuItem(value:v,child:Text(v))],
           onChanged:(v)=>setState(() {selectedState=v;selectedLga=null;selectedTown=null;customTown=false;customTownController.clear();})),
         const SizedBox(height:11),
-        DropdownButtonFormField<String>(value:selectedLga,decoration:const InputDecoration(labelText:'Local Government Area (LGA)',filled:true),
+        DropdownButtonFormField<String>(value:selectedLga,decoration:const InputDecoration(labelText:'LGA (optional)',filled:true),
           isExpanded:true,items:[for(final v in lgas.keys)DropdownMenuItem(value:v.toString(),child:Text(v.toString()))],
           onChanged:(v)=>setState(() {selectedLga=v;selectedTown=null;customTown=false;customTownController.clear();})),
         const SizedBox(height:11),
         DropdownButtonFormField<String>(value:customTown?'__other__':selectedTown,
-          decoration:const InputDecoration(labelText:'Town / area',filled:true),
+          decoration:const InputDecoration(labelText:'Town / area (optional)',filled:true),
           isExpanded:true,items:[
             for(final v in townOptions)DropdownMenuItem(value:v,child:Text(v)),
             const DropdownMenuItem(value:'__other__',child:Text('My town / area is not listed')),
