@@ -2752,7 +2752,7 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
     try{final raw=await rootBundle.loadString('assets/data/nigeria_locations.json');
       final parsed=jsonDecode(raw) as Map<String,dynamic>;
       if(mounted)setState(()=>locationData=parsed);
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Location directory unavailable: ${e}')));}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Location directory unavailable: $e')));}
     finally{if(mounted)setState(()=>locationsLoading=false);}
   }
   Future<void> loadPaymentSettings()async{
@@ -2795,7 +2795,7 @@ class _MarketplaceCheckoutScreenState extends State<MarketplaceCheckoutScreen>{
       if(!mounted)return;
       material_widgets_ui.Navigator.pushReplacement(context,MaterialPageRoute(
         builder:(_)=>MarketplaceOrderDetailScreen(orderId:id.toString())));
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not place order: ${e}')));}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not place order: $e')));}
     finally{if(mounted)setState(()=>submitting=false);}
   }
   @override Widget build(BuildContext context){
