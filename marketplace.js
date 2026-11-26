@@ -78,6 +78,22 @@ async function submitSeller(e){
  finally{b.disabled=false}
 }
 
+function setMarketplaceSellerMode(enabled){
+ var verified=!!enabled,bar=$('market-role-switch'),button=$('market-switch-mode'),heading=$('market-role-heading'),description=$('market-role-description');
+ document.body.classList.toggle('market-owner-mode',verified);
+ if(bar)bar.hidden=!verified;
+ document.querySelectorAll('[data-market-seller-only]').forEach(function(el){el.hidden=!verified});
+ if(button)button.textContent=verified?'Switch to customer shopping':'Open seller workspace';
+ if(heading)heading.textContent=verified?'Seller dashboard':'Marketplace';
+ if(description)description.textContent=verified?'Manage your listings, customer orders and payout details. Your customer shopping account remains available whenever you need it.':'Browse products and manage your purchases.';
+ if(button&&!button.dataset.bound){button.dataset.bound='1';button.addEventListener('click',function(){
+   var owner=document.body.classList.contains('market-owner-mode');
+   setMarketplaceSellerMode(!owner);
+   if(owner){var shop=$('live-market');if(shop)shop.scrollIntoView({behavior:'smooth',block:'start'});}
+   else{var workspace=$('seller-workspace');if(workspace)workspace.scrollIntoView({behavior:'smooth',block:'start'});}
+ });}
+ if(verified){var workspace=$('seller-workspace');if(workspace)workspace.scrollIntoView({block:'start'});}
+}
 async function loadSellerWorkspace(){
  var host=$('seller-workspace-content');if(!host)return;
  if(!sb){host.textContent='Account services are loading…';return}
@@ -87,6 +103,7 @@ async function loadSellerWorkspace(){
  if(seller.error){host.textContent='Could not load your seller profile: '+seller.error.message;return}
  if(!seller.data){host.innerHTML='<div class="market-empty">You do not have a seller profile yet. Use “Become a seller” to apply.</div>';return}
  var profile=seller.data,editingListing=null;
+ setMarketplaceSellerMode(profile.status==='verified');
  var badge=profile.status==='verified'?'Verified seller':profile.status==='pending'?'Application under review':profile.status==='rejected'?'Application needs attention':'Seller account suspended';
  host.innerHTML='<div class="seller-summary"><div><strong>'+escapeText(profile.display_name)+'</strong><span>'+escapeText(badge)+'</span>'+(profile.review_note?'<p>'+escapeText(profile.review_note)+'</p>':'')+'</div></div><div id="seller-listing-tools"></div><div id="seller-own-listings" class="seller-own-listings">Loading your listings…</div>';
  var tools=$('seller-listing-tools');
