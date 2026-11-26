@@ -57,7 +57,7 @@ async function openSeller(){
  if(!session){location.href='login.html?next='+encodeURIComponent('marketplace.html');return}
  var d=$('seller-dialog');if(d&&d.showModal)d.showModal();
  try{
-  var existing=await sb.from('marketplace_sellers').select('id,display_name,status,review_note').eq('user_id',session.user.id).maybeSingle();
+  var existing=await sb.rpc('marketplace_get_my_seller_profile');
   if(existing.error)throw existing.error;
   if(existing.data){feedback('Your seller application is '+existing.data.status+'.'+(existing.data.review_note?' Review note: '+existing.data.review_note:''));var f=$('seller-form');if(f){f.querySelectorAll('input,select,textarea,button[type=submit]').forEach(function(el){el.disabled=true})}}
  }catch(e){feedback('Seller applications will become available when the Marketplace database migration is applied.')}
@@ -83,8 +83,8 @@ async function loadSellerWorkspace(){
  if(!sb){host.textContent='Account services are loading…';return}
  var auth=await sb.auth.getSession(),current=auth.data&&auth.data.session;
  if(!current){host.innerHTML='<div class="market-empty">Sign in to manage your seller profile and listings. <a href="login.html?next=marketplace.html">Sign in</a></div>';return}
- var seller=await sb.from('marketplace_sellers').select('id,display_name,status,review_note').eq('user_id',current.user.id).maybeSingle();
- if(seller.error){host.textContent='Seller workspace will be available after the Marketplace database is enabled.';return}
+ var seller=await sb.rpc('marketplace_get_my_seller_profile');
+ if(seller.error){host.textContent='Could not load your seller profile: '+seller.error.message;return}
  if(!seller.data){host.innerHTML='<div class="market-empty">You do not have a seller profile yet. Use “Become a seller” to apply.</div>';return}
  var profile=seller.data,editingListing=null;
  var badge=profile.status==='verified'?'Verified seller':profile.status==='pending'?'Application under review':profile.status==='rejected'?'Application needs attention':'Seller account suspended';
