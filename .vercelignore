@@ -1,0 +1,6 @@
+app/
+apps/
+supabase/
+.github/
+dist/
+vercel-build.sh
