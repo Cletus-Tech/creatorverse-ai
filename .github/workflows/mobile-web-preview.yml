@@ -1,4 +1,4 @@
-name: CreatorVerse Flutter Web App Build
+name: CreatorVerse Flutter App Preview
 
 on:
   push:
@@ -10,17 +10,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: creatorverse-mobile-web-preview
   cancel-in-progress: true
 
 jobs:
-  build-and-verify:
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out CreatorVerse
         uses: actions/checkout@v4
@@ -47,13 +52,31 @@ jobs:
         working-directory: apps/mobile
         run: flutter test
 
-      - name: Build combined website and direct Flutter app preview
+      - name: Build website and Flutter app at /app/
+        env:
+          APP_BASE_HREF: /creatorverse-ai/app/
         run: bash ./vercel-build.sh
 
-      - name: Upload combined preview artifact
-        uses: actions/upload-artifact@v4
+      - name: Publish generated Flutter app files to main
+        run: |
+          rm -rf app
+          mkdir -p app
+          cp -a dist/app/. app/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          if git diff --cached --quiet; then
+            echo "Flutter app preview is already up to date."
+          else
+            git commit -m "Publish Flutter app preview"
+            git push
+          fi
+
+      - name: Upload combined website and app to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: creatorverse-combined-web-preview
           path: dist
-          if-no-files-found: error
-          retention-days: 7
+
+      - name: Deploy combined website and app preview
+        id: deployment
+        uses: actions/deploy-pages@v4
