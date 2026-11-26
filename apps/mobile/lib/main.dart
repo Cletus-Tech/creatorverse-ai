@@ -3587,7 +3587,7 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
       title:Text(currently?'Revoke payout account verification':'Verify seller payout account'),
       content:Text(currently?'This account will no longer qualify for new payouts.':'Confirm that the bank, account holder and account number have been checked.'),
       actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),
-        FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text(currently?'Revoke':'Verify'))]));
+        FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:Text(currently?'Revoke':'Verify'))]));
     if(ok!=true)return;
     setState(()=>busy=true);
     try{await db.rpc('marketplace_admin_verify_seller_payout_account',params:{'p_seller_id':account['seller_id'],'p_verified':!currently});await refresh();}
