@@ -201,7 +201,7 @@ begin
   from public.marketplace_order_items
   where order_id=p_order_id and seller_id=p_seller_id;
   if v_gross < 1 then raise exception 'No payable seller items were found for this order'; end if;
-  if p_amount_ngn > v_gross then raise exception 'Payout cannot exceed the seller order value of ₦% ',v_gross; end if;
+  if p_amount_ngn > v_gross then raise exception 'Payout cannot exceed the seller order value'; end if;
 
   insert into public.marketplace_seller_payouts(
     seller_id,order_id,amount_ngn,transfer_reference,admin_note,created_by
@@ -242,7 +242,7 @@ declare
   v_global_status text;
 begin
   if v_user is null then raise exception 'Sign in first'; end if;
-  if p_status not in ('processing','ready_for_dispatch','shipped','delivered') then
+  if p_status is null or p_status not in ('processing','ready_for_dispatch','shipped','delivered') then
     raise exception 'Invalid fulfilment status';
   end if;
   if p_carrier is not null and char_length(p_carrier)>100 then raise exception 'Carrier name is too long'; end if;
@@ -282,11 +282,11 @@ begin
   )
   on conflict(order_id,seller_id) do update set
     status=excluded.status,
-    carrier=coalesce(excluded.carrier,public.marketplace_seller_fulfilments.carrier),
-    tracking_number=coalesce(excluded.tracking_number,public.marketplace_seller_fulfilments.tracking_number),
-    estimated_delivery=coalesce(excluded.estimated_delivery,public.marketplace_seller_fulfilments.estimated_delivery),
-    shipped_at=coalesce(public.marketplace_seller_fulfilments.shipped_at,excluded.shipped_at),
-    delivered_at=coalesce(public.marketplace_seller_fulfilments.delivered_at,excluded.delivered_at),
+    carrier=coalesce(excluded.carrier,marketplace_seller_fulfilments.carrier),
+    tracking_number=coalesce(excluded.tracking_number,marketplace_seller_fulfilments.tracking_number),
+    estimated_delivery=coalesce(excluded.estimated_delivery,marketplace_seller_fulfilments.estimated_delivery),
+    shipped_at=coalesce(marketplace_seller_fulfilments.shipped_at,excluded.shipped_at),
+    delivered_at=coalesce(marketplace_seller_fulfilments.delivered_at,excluded.delivered_at),
     updated_at=now();
 
   select count(distinct seller_id) into v_expected
