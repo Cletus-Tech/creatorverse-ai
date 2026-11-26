@@ -3373,7 +3373,7 @@ class _MarketplaceSellerPayoutScreenState extends State<MarketplaceSellerPayoutS
     appBar:AppBar(title:const Text('Seller payout account'),actions:[IconButton(onPressed:saving?null:refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
-      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(22),child:Text('Payout account unavailable: \${s.error}',style:const TextStyle(color:muted))));
+      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(22),child:Text('Payout account unavailable: ${s.error}',style:const TextStyle(color:muted))));
       final d=s.data??{},a=d['account'] as Map<String,dynamic>?,history=d['history'] as List<Map<String,dynamic>>? ?? [];
       final verified=a?['verified_at']!=null;
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(18),children:[
@@ -3403,8 +3403,8 @@ class _MarketplaceSellerPayoutScreenState extends State<MarketplaceSellerPayoutS
         if(history.isEmpty)const Padding(padding:EdgeInsets.all(12),child:Text('No seller payouts have been recorded yet.',style:TextStyle(color:muted))),
         for(final p in history)Card(color:panel,child:ListTile(
           leading:const Icon(Icons.receipt_long_outlined,color:emerald),
-          title:Text('₦\${p['amount_ngn']}'),
-          subtitle:Text('\${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Marketplace order'} · \${p['transfer_reference']}\\n\${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
+          title:Text('₦${p['amount_ngn']}'),
+          subtitle:Text('${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Marketplace order'} · ${p['transfer_reference']}\\n${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
         )),
       ]));
     }),
@@ -3566,16 +3566,16 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
     final orderMap=<String,Map<String,dynamic>>{
       for(final o in orders)o['id'].toString():Map<String,dynamic>.from(o),
     };
-    final paid=<String>{for(final p in payouts)'\${p['order_id']}|\${p['seller_id']}'};
+    final paid=<String>{for(final p in payouts)'${p['order_id']}|${p['seller_id']}'};
     final groups=<String,Map<String,dynamic>>{};
     for(final item in items){
-      final key='\${item['order_id']}|\${item['seller_id']}';
+      final key='${item['order_id']}|${item['seller_id']}';
       groups.putIfAbsent(key,()=>{'order_id':item['order_id'],'seller_id':item['seller_id'],'gross':0});
       groups[key]!['gross']=(groups[key]!['gross'] as int)+(item['line_total_ngn'] as num).toInt();
     }
     final candidates=groups.values.where((g){
       final account=accountMap[g['seller_id'].toString()];
-      return account!=null&&account['verified_at']!=null&&!paid.contains('\${g['order_id']}|\${g['seller_id']}')&&(g['gross'] as int)>0;
+      return account!=null&&account['verified_at']!=null&&!paid.contains('${g['order_id']}|${g['seller_id']}')&&(g['gross'] as int)>0;
     }).toList();
     return {'accounts':List<Map<String,dynamic>>.from(accounts),'payouts':List<Map<String,dynamic>>.from(payouts),
       'candidates':candidates,'accountMap':accountMap,'orderMap':orderMap};
@@ -3597,9 +3597,9 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
   Future<void> recordPayout(Map<String,dynamic> group,Map<String,dynamic> account,Map<String,dynamic> order)async{
     final reference=TextEditingController(),note=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
-      title:Text('Record payout for \${order['order_number']}'),
+      title:Text('Record payout for ${order['order_number']}'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Text('Full seller settlement: ₦\${group['gross']}',style:const TextStyle(fontWeight:FontWeight.w800,color:emerald)),
+        Text('Full seller settlement: ₦${group['gross']}',style:const TextStyle(fontWeight:FontWeight.w800,color:emerald)),
         const SizedBox(height:10),
         TextField(controller:reference,maxLength:120,decoration:const InputDecoration(labelText:'Bank transfer reference')),
         const SizedBox(height:8),
@@ -3624,7 +3624,7 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Seller payouts'),actions:[IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,s){
       if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
-      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Seller payout management unavailable: \${s.error}',style:const TextStyle(color:muted))));
+      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Seller payout management unavailable: ${s.error}',style:const TextStyle(color:muted))));
       final d=s.data??{},accounts=d['accounts'] as List<Map<String,dynamic>>? ?? [],payouts=d['payouts'] as List<Map<String,dynamic>>? ?? [],candidates=d['candidates'] as List<Map<String,dynamic>>? ?? [];
       final accountMap=Map<String,Map<String,dynamic>>.from(d['accountMap'] as Map),orderMap=Map<String,Map<String,dynamic>>.from(d['orderMap'] as Map);
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
@@ -3633,7 +3633,7 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
         if(accounts.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No payout accounts submitted.',style:TextStyle(color:muted))),
         for(final a in accounts)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text((a['marketplace_sellers'] is Map?a['marketplace_sellers']['display_name']:'Seller').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
-          Text('\${a['bank_name']} · \${a['account_name']} · \${a['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
+          Text('${a['bank_name']} · ${a['account_name']} · ${a['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
           Text(a['verified_at']==null?'Verification pending':'Verified',style:TextStyle(color:a['verified_at']==null?gold:emerald,fontSize:12,fontWeight:FontWeight.w700)),
           Align(alignment:Alignment.centerRight,child:OutlinedButton(onPressed:busy?null:()=>verify(a),child:Text(a['verified_at']==null?'Verify account':'Revoke verification'))),
         ]))),
@@ -3643,9 +3643,9 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
           final account=accountMap[g['seller_id'].toString()]!,order=orderMap[g['order_id'].toString()]!;
           final seller=account['marketplace_sellers'] is Map?account['marketplace_sellers']:{};
           return Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text('\${seller['display_name']??'Seller'} · \${order['order_number']}',style:const TextStyle(fontWeight:FontWeight.w800)),
-            Text('\${account['bank_name']} · \${account['account_name']} · \${account['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
-            const SizedBox(height:6),Text('Full seller payout: ₦\${g['gross']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
+            Text('${seller['display_name']??'Seller'} · ${order['order_number']}',style:const TextStyle(fontWeight:FontWeight.w800)),
+            Text('${account['bank_name']} · ${account['account_name']} · ${account['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
+            const SizedBox(height:6),Text('Full seller payout: ₦${g['gross']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
             Align(alignment:Alignment.centerRight,child:FilledButton(onPressed:busy?null:()=>recordPayout(g,account,order),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Record completed transfer'))),
           ])));
         }),
@@ -3653,8 +3653,8 @@ class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScr
         if(payouts.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller payouts recorded yet.',style:TextStyle(color:muted))),
         for(final p in payouts)Card(color:panel,child:ListTile(
           leading:const Icon(Icons.receipt_long_outlined,color:emerald),
-          title:Text('₦\${p['amount_ngn']} · \${p['transfer_reference']}'),
-          subtitle:Text('\${p['marketplace_sellers'] is Map?p['marketplace_sellers']['display_name']:'Seller'} · \${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Order'}\\n\${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
+          title:Text('₦${p['amount_ngn']} · ${p['transfer_reference']}'),
+          subtitle:Text('${p['marketplace_sellers'] is Map?p['marketplace_sellers']['display_name']:'Seller'} · ${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Order'}\\n${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
         )),
       ]));
     }),
