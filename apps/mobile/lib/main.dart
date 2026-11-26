@@ -2664,16 +2664,11 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
   Future<List<Map<String,dynamic>>> loadCart() async {
     final user=db.auth.currentUser;
     if(user==null)throw StateError('Sign in to access your cart.');
-    final c=await db.from('marketplace_carts').select('id').eq('user_id',user.id).maybeSingle();
-    if(c==null)return [];
-    final raw=await db.from('marketplace_cart_items').select('id,listing_id,quantity').eq('cart_id',c['id']);
-    if(raw.isEmpty)return [];
-    final ids=raw.map((r)=>r['listing_id'].toString()).toList();
-    final listings=await db.from('marketplace_listings').select(
-      'id,title,price_ngn,listing_type,image_urls,quantity_available,status,seller_id').inFilter('id',ids);
-    final map={for(final r in listings)r['id'].toString():Map<String,dynamic>.from(r)};
-    return raw.map((r)=>{...(map[r['listing_id'].toString()]??<String,dynamic>{}),
-      'cart_item_id':r['id'],'listing_id':r['listing_id'],'quantity':r['quantity']}).toList();
+    // Read cart contents through the authenticated SECURITY DEFINER RPC.
+    // The client must not need direct SELECT access to private cart tables.
+    final payload=await db.rpc('marketplace_get_cart');
+    if(payload is! List)return [];
+    return payload.map((row)=>Map<String,dynamic>.from(row as Map)).toList();
   }
   void refresh()=>setState(()=>cart=loadCart());
   int subtotal(List<Map<String,dynamic>> rows)=>rows.fold<int>(0,(sum,r)=>
