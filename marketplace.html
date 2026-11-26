@@ -14,17 +14,24 @@
 <link rel="stylesheet" href="pages.css">
 <link rel="stylesheet" href="responsive.css">
 <link rel="stylesheet" href="creatorverse-design-system.css?v=20261113-1">
-<link rel="stylesheet" href="marketplace.css?v=20261126-marketplace-4">
+<link rel="stylesheet" href="marketplace.css?v=20261127-role-split-1">
 <link rel="stylesheet" href="site-shell-base.css?v=20261117-stable-shell-1">
 <link rel="stylesheet" href="site-shell-finish.css?v=20261117-stable-shell-1">
-</head>
+<style>
+.market-role-switch{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:24px;margin:18px 0;background:#101d2d;color:#fff;border-radius:18px}.market-role-switch h1{margin:6px 0;font-size:clamp(24px,4vw,34px)}.market-role-switch p{margin:0;color:#c7d3df}.market-role-switch .market-eyebrow{color:#8fd3b0}.market-role-switch[hidden]{display:none!important}body.market-owner-mode .market-store-layout,body.market-owner-mode #live-market,body.market-owner-mode [data-market-buyer-only],body.market-owner-mode .market-trust-footer{display:none!important}body.market-owner-mode #seller-workspace{margin-top:12px}body.market-owner-mode #seller-workspace>.market-heading{display:none}body.market-owner-mode #seller-workspace-content{margin-top:12px}@media(max-width:640px){.market-role-switch{align-items:flex-start;flex-direction:column}.market-role-switch .market-action{width:100%}}
+</style></head>
 <body data-page="marketplace">
 <div id="site-header"></div>
 <main class="cv-marketplace page market-home" id="content">
   <section class="market-topline" aria-label="Marketplace information">
     <span>CREATORVERSE MARKET</span>
     <span>Discover. Shop. Create opportunities.</span>
-    <a href="#seller-workspace">Sell on CreatorVerse</a>
+    <a href="#seller-workspace" id="market-topline-sell">Sell on CreatorVerse</a>
+  </section>
+
+  <section id="market-role-switch" class="market-role-switch" hidden aria-live="polite">
+    <div><span class="market-eyebrow">YOUR CREATORVERSE SHOP</span><h1 id="market-role-heading">Seller workspace</h1><p id="market-role-description">Manage your listings, customer orders and payouts from one place.</p></div>
+    <button type="button" class="market-action" id="market-switch-mode">Switch to customer shopping</button>
   </section>
 
   <section class="market-shopbar" aria-label="Shop navigation">
@@ -40,8 +47,8 @@
       <button type="submit">Search</button>
     </form>
     <div class="market-shop-actions">
-      <a href="marketplace-commerce.html?view=cart"><span aria-hidden="true">▣</span><span>Cart</span></a><a href="marketplace-commerce.html?view=orders"><span aria-hidden="true">▤</span><span>My orders</span></a><a href="marketplace-commerce.html?view=seller-orders"><span aria-hidden="true">▣</span><span>Seller orders</span></a><a href="marketplace-commerce.html?view=seller-payout"><span aria-hidden="true">₦</span><span>Payout account</span></a><a href="marketplace-enquiries.html"><span aria-hidden="true">▤</span><span>My enquiries</span></a>
-      <button type="button" id="seller-open"><span aria-hidden="true">＋</span><span>Sell</span></button>
+      <a data-market-buyer-only href="marketplace-commerce.html?view=cart"><span aria-hidden="true">▣</span><span>Cart</span></a><a data-market-buyer-only href="marketplace-commerce.html?view=orders"><span aria-hidden="true">▤</span><span>My orders</span></a><a data-market-seller-only hidden href="marketplace-commerce.html?view=seller-orders"><span aria-hidden="true">▣</span><span>Customer orders</span></a><a data-market-seller-only hidden href="marketplace-commerce.html?view=seller-payout"><span aria-hidden="true">₦</span><span>Payout account</span></a><a data-market-buyer-only href="marketplace-enquiries.html"><span aria-hidden="true">▤</span><span>My enquiries</span></a>
+      <button type="button" id="seller-open" data-market-buyer-only><span aria-hidden="true">＋</span><span>Sell</span></button>
     </div>
   </section>
 
@@ -104,7 +111,7 @@
     </div>
   </section>
 
-  <section class="market-seller-banner">
+  <section class="market-seller-banner" data-market-buyer-only>
     <div><span class="market-eyebrow">FOR INDEPENDENT SELLERS</span><h2>Your ideas deserve a storefront.</h2><p>Apply to become a seller, publish your listings after approval and manage your shop from CreatorVerse.</p></div>
     <button class="market-action" type="button" id="seller-open-secondary">Open a seller account <span aria-hidden="true">→</span></button>
   </section>
