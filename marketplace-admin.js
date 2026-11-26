@@ -17,7 +17,7 @@ function mount(root,sb,user,role){
  function setTab(active){[sellerTab,listingTab,orderTab,payoutTab,categoryTab].forEach(b=>b.classList.toggle('active',b===active))}
  function sellersView(){
   content.textContent='Loading seller applications…';
-  sb.from('marketplace_sellers').select('id,user_id,display_name,seller_type,institution,campus,bio,status,review_note,created_at').order('created_at',{ascending:false}).limit(250).then(function(r){
+  sb.from('marketplace_sellers').select('id,user_id,display_name,seller_type,institution,campus,bio,status,created_at').order('created_at',{ascending:false}).limit(250).then(function(r){
    content.textContent='';if(r.error){content.appendChild(el('div',{class:'note',text:'Could not load seller applications: '+r.error.message}));return}
    sellers=r.data||[];var box=card('Seller applications','Review applicants and control who is allowed to list products and services.');
    var filter=el('select',{},['all','pending','verified','rejected','suspended'].map(v=>el('option',{value:v,text:v==='all'?'All statuses':v.replace('_',' ')})));
