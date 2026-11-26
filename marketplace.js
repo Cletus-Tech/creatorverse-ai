@@ -44,7 +44,7 @@ async function loadCatalogue(){
   if(c.error)throw c.error;categories=c.data||[];fillCategories();
   var r=await sb.from('marketplace_listings').select('id,category_id,title,description,listing_type,price_ngn,location_label,institution,campus,image_urls,created_at').eq('status','published').order('created_at',{ascending:false}).limit(60);
   if(r.error)throw r.error;listings=r.data||[];render();
-  status(listings.length?'Showing approved Marketplace listings. Checkout and order tracking are not enabled yet.':'Marketplace is connected. No approved listings have been published yet.');
+  status(listings.length?'Showing approved listings. Add eligible products to your cart and follow purchases in My orders.':'Marketplace is connected. No approved listings have been published yet.');
  }catch(e){
   console.info('Marketplace catalogue is not available yet:',e.message);
   status('Marketplace preview: the database migration has not been applied or the catalogue is not available yet. You can still explore the planned categories.');

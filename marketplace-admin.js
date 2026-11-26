@@ -9,13 +9,12 @@ function mount(root,sb,user,role){
  var wrap=el('div',{class:'cv-market-admin'});
  wrap.appendChild(el('div',{class:'dash-hero'},[el('div',{},[el('h1',{text:'Marketplace control centre'}),el('p',{text:'Review seller applications, moderate listings and maintain marketplace trust. All actions use the existing CreatorVerse administrator access controls.'})])]));
  var stats=el('div',{class:'cv-market-admin-stats'});wrap.appendChild(stats);
- var tabs=el('div',{class:'cv-market-admin-tabs'}),sellerTab=el('button',{type:'button',class:'active',text:'Seller applications'}),listingTab=el('button',{type:'button',text:'Listing moderation'}),categoryTab=el('button',{type:'button',text:'Categories'});tabs.append(sellerTab,listingTab,categoryTab);wrap.appendChild(tabs);
+ var tabs=el('div',{class:'cv-market-admin-tabs'}),sellerTab=el('button',{type:'button',class:'active',text:'Seller applications'}),listingTab=el('button',{type:'button',text:'Listing moderation'}),orderTab=el('button',{type:'button',text:'Orders & payments'}),payoutTab=el('button',{type:'button',text:'Seller payout accounts'}),categoryTab=el('button',{type:'button',text:'Categories'});tabs.append(sellerTab,listingTab,orderTab,payoutTab,categoryTab);wrap.appendChild(tabs);
  var content=el('div',{class:'cv-market-admin-content'});wrap.appendChild(content);root.appendChild(wrap);
  var sellers=[],listings=[],categories=[];
  function stat(label,value){return el('div',{class:'cv-market-admin-stat'},[el('strong',{text:String(value)}),el('span',{text:label})])}
- function loadStats(){Promise.all([sb.from('marketplace_sellers').select('id,status'),sb.from('marketplace_listings').select('id,status')]).then(function(r){stats.textContent='';if(r[0].error||r[1].error){stats.appendChild(stat('Marketplace database','Not enabled'));return}
- var ss=r[0].data||[],ll=r[1].data||[];stats.append(stat('Pending sellers',ss.filter(x=>x.status==='pending').length));stats.append(stat('Verified sellers',ss.filter(x=>x.status==='verified').length));stats.append(stat('Listings awaiting review',ll.filter(x=>x.status==='pending_review').length));stats.append(stat('Published listings',ll.filter(x=>x.status==='published').length));})}
- function setTab(active){[sellerTab,listingTab,categoryTab].forEach(b=>b.classList.toggle('active',b===active))}
+ function loadStats(){Promise.all([sb.from('marketplace_sellers').select('id,status'),sb.from('marketplace_listings').select('id,status'),sb.from('marketplace_orders').select('id,status,payment_status')]).then(function(r){stats.textContent='';if(r.some(function(x){return x.error})){stats.appendChild(stat('Marketplace database','Unavailable'));return}var ss=r[0].data||[],ll=r[1].data||[],oo=r[2].data||[];stats.append(stat('Pending sellers',ss.filter(function(x){return x.status==='pending'}).length));stats.append(stat('Verified sellers',ss.filter(function(x){return x.status==='verified'}).length));stats.append(stat('Listings awaiting review',ll.filter(function(x){return x.status==='pending_review'}).length));stats.append(stat('Published listings',ll.filter(function(x){return x.status==='published'}).length));stats.append(stat('Orders awaiting payment',oo.filter(function(x){return x.payment_status==='pending'&&x.status!=='cancelled'}).length));stats.append(stat('Open orders',oo.filter(function(x){return !['delivered','cancelled','refunded'].includes(x.status)}).length))})}
+ function setTab(active){[sellerTab,listingTab,orderTab,payoutTab,categoryTab].forEach(b=>b.classList.toggle('active',b===active))}
  function sellersView(){
   content.textContent='Loading seller applications…';
   sb.from('marketplace_sellers').select('id,user_id,display_name,seller_type,institution,campus,bio,status,review_note,created_at').order('created_at',{ascending:false}).limit(250).then(function(r){
@@ -55,6 +54,31 @@ function mount(root,sb,user,role){
    filter.addEventListener('change',draw);search.addEventListener('input',draw);draw();
   })
  }
+ function ordersView(){
+  content.textContent='Loading marketplace orders…';
+  sb.from('marketplace_orders').select('id,order_number,status,payment_method,payment_status,total_ngn,recipient_name,recipient_phone,delivery_address,delivery_city,delivery_lga,delivery_state,buyer_note,created_at').order('created_at',{ascending:false}).limit(200).then(function(r){
+   content.textContent='';if(r.error){content.appendChild(el('div',{class:'note',text:'Could not load orders: '+r.error.message}));return}
+   var box=card('Orders and payment verification','Confirm bank transfers only after checking that funds have arrived in the official CreatorVerse receiving account.'),list=el('div',{class:'cv-market-admin-list'}),filter=el('select',{},['all','pending_payment','processing','ready_for_dispatch','shipped','delivered','cancelled'].map(v=>el('option',{value:v,text:v==='all'?'All order states':v.replace(/_/g,' ')})));
+   box.append(filter,list);content.appendChild(box);
+   function draw(){list.textContent='';var rows=(r.data||[]).filter(o=>filter.value==='all'||o.status===filter.value);if(!rows.length){list.appendChild(el('div',{class:'note',text:'No orders match this filter.'}));return}
+    rows.forEach(function(o){var info=el('div',{},[el('strong',{text:o.order_number+' · ₦'+Number(o.total_ngn).toLocaleString('en-NG')}),el('span',{text:'Order: '+o.status.replace(/_/g,' ')+' · Payment: '+o.payment_status+' · '+o.payment_method.replace(/_/g,' ')}),el('p',{text:'Recipient: '+o.recipient_name+' · '+o.recipient_phone}),el('p',{text:'Delivery: '+[o.delivery_address,o.delivery_city,o.delivery_lga,o.delivery_state].filter(Boolean).join(', ')}),el('small',{text:'Placed '+new Date(o.created_at).toLocaleString()})]),row=el('article',{class:'cv-market-admin-row'}),actions=el('div',{class:'cv-market-admin-actions'});
+     if(o.buyer_note)info.appendChild(el('p',{text:'Buyer note / transfer reference: '+o.buyer_note}));
+     if(o.payment_status==='pending'&&o.status!=='cancelled'&&o.status!=='refunded'&&(o.payment_method!=='cash_on_delivery'||o.status==='delivered')){var note=el('input',{type:'text',maxlength:'500',placeholder:'Verification note (optional)'}),confirm=el('button',{type:'button',class:'btn btn-primary',text:'Confirm payment received'});confirm.addEventListener('click',async function(){if(!window.confirm('Confirm funds have arrived in the official CreatorVerse account?'))return;confirm.disabled=true;var z=await sb.rpc('marketplace_admin_confirm_order_payment',{p_order_id:o.id,p_admin_note:note.value.trim()||null});confirm.disabled=false;if(z.error){alert(z.error.message);return}o.payment_status='confirmed';if(o.status==='pending_payment')o.status='processing';draw();loadStats()});actions.append(note,confirm)}
+     row.append(info,actions);list.appendChild(row)
+    })
+   }
+   filter.addEventListener('change',draw);draw()
+  })
+ }
+ function payoutsView(){
+  content.textContent='Loading seller payout accounts…';
+  sb.from('marketplace_seller_payout_accounts').select('id,bank_name,bank_code,account_name,account_number,verified_at,created_at,marketplace_sellers(display_name,status,institution,campus)').order('created_at',{ascending:false}).limit(250).then(function(r){
+   content.textContent='';if(r.error){content.appendChild(el('div',{class:'note',text:'Could not load payout accounts: '+r.error.message}));return}
+   var box=card('Seller payout accounts','Review the destination bank details sellers have submitted. Account verification and actual transfers must be handled by an authorized Marketplace operator.'),list=el('div',{class:'cv-market-admin-list'});box.appendChild(list);content.appendChild(box);
+   if(!r.data.length){list.appendChild(el('div',{class:'note',text:'No seller payout accounts have been submitted yet.'}));return}
+   r.data.forEach(function(p){var s=p.marketplace_sellers||{},row=el('article',{class:'cv-market-admin-row'}),info=el('div',{},[el('strong',{text:s.display_name||'Seller'}),el('span',{text:[s.institution,s.campus,s.status].filter(Boolean).join(' · ')}),el('p',{text:p.bank_name+' · '+p.account_name+' · '+p.account_number}),el('small',{text:p.verified_at?'Verified '+new Date(p.verified_at).toLocaleString():'Verification not recorded'})]);row.appendChild(info);list.appendChild(row)})
+  })
+ }
  function categoriesView(){
   content.textContent='Loading Marketplace categories…';
   sb.from('marketplace_categories').select('id,name,slug,description,active,position').order('position').then(function(r){
@@ -64,7 +88,7 @@ function mount(root,sb,user,role){
    box.appendChild(rows);content.appendChild(box);
   })
  }
- sellerTab.addEventListener('click',function(){setTab(sellerTab);sellersView()});listingTab.addEventListener('click',function(){setTab(listingTab);listingsView()});categoryTab.addEventListener('click',function(){setTab(categoryTab);categoriesView()});
+ sellerTab.addEventListener('click',function(){setTab(sellerTab);sellersView()});listingTab.addEventListener('click',function(){setTab(listingTab);listingsView()});orderTab.addEventListener('click',function(){setTab(orderTab);ordersView()});payoutTab.addEventListener('click',function(){setTab(payoutTab);payoutsView()});categoryTab.addEventListener('click',function(){setTab(categoryTab);categoriesView()});
  loadStats();sellersView();
 }
 window.CV_MARKETPLACE_ADMIN={mount:mount};
