@@ -1,36 +1,29 @@
-name: CreatorVerse Interactive Mobile Web Preview
+name: CreatorVerse Flutter Web App Build
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'vercel-build.sh'
+      - '.github/workflows/mobile-web-preview.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   actions: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: creatorverse-mobile-web-preview
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build-and-verify:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out CreatorVerse
         uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -50,15 +43,17 @@ jobs:
         working-directory: apps/mobile
         run: flutter analyze
 
-      - name: Build CreatorVerse web preview
+      - name: Run Flutter tests
         working-directory: apps/mobile
-        run: flutter build web --release --base-href "/creatorverse-ai/"
+        run: flutter test
 
-      - name: Upload web preview
-        uses: actions/upload-pages-artifact@v3
+      - name: Build combined website and direct Flutter app preview
+        run: bash ./vercel-build.sh
+
+      - name: Upload combined preview artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: apps/mobile/build/web
-
-      - name: Publish iOS and Android browser preview
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: creatorverse-combined-web-preview
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
