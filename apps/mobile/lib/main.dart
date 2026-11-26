@@ -3208,6 +3208,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         const SizedBox(height:8),OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,
           MaterialPageRoute(builder:(_)=>const MarketplaceSellerOrdersScreen())),
           icon:const Icon(Icons.local_shipping_outlined),label:const Text('Manage customer orders')),
+        const SizedBox(height:8),OutlinedButton.icon(onPressed:()=>material_widgets_ui.Navigator.push(context,
+          MaterialPageRoute(builder:(_)=>const MarketplaceSellerPayoutScreen())),
+          icon:const Icon(Icons.account_balance_outlined),label:const Text('Payout account & history')),
       ] else const Padding(padding:EdgeInsets.symmetric(vertical:14),child:Text('You can publish products after your seller profile is verified.')),
       const SizedBox(height:18),const Text('Your listings',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
       if(listings.isEmpty) const Padding(padding:EdgeInsets.all(12),child:Text('You have not added any products yet.',style:TextStyle(color:muted))),
@@ -3314,6 +3317,98 @@ class _MarketplaceSellerOrdersScreenState extends State<MarketplaceSellerOrdersS
       ]));
     });
   }));
+}
+
+
+class MarketplaceSellerPayoutScreen extends StatefulWidget {
+  const MarketplaceSellerPayoutScreen({super.key});
+  @override State<MarketplaceSellerPayoutScreen> createState()=>_MarketplaceSellerPayoutScreenState();
+}
+class _MarketplaceSellerPayoutScreenState extends State<MarketplaceSellerPayoutScreen> {
+  final db=Supabase.instance.client;
+  final bankName=TextEditingController(),bankCode=TextEditingController();
+  final accountName=TextEditingController(),accountNumber=TextEditingController();
+  late Future<Map<String,dynamic>> data;
+  bool saving=false;
+  @override void initState(){super.initState();data=load();}
+  @override void dispose(){bankName.dispose();bankCode.dispose();accountName.dispose();accountNumber.dispose();super.dispose();}
+  Future<Map<String,dynamic>> load() async {
+    final user=db.auth.currentUser;
+    if(user==null)throw StateError('Sign in first.');
+    final seller=await db.from('marketplace_sellers').select('id,status').eq('user_id',user.id).maybeSingle();
+    if(seller==null)throw StateError('Create a seller profile before adding payout details.');
+    final row=await db.from('marketplace_seller_payout_accounts')
+      .select('id,bank_name,bank_code,account_name,account_number,verified_at,updated_at')
+      .eq('seller_id',seller['id']).maybeSingle();
+    if(row!=null){
+      bankName.text=(row['bank_name']??'').toString();
+      bankCode.text=(row['bank_code']??'').toString();
+      accountName.text=(row['account_name']??'').toString();
+      accountNumber.text=(row['account_number']??'').toString();
+    }
+    final history=await db.from('marketplace_seller_payouts')
+      .select('id,amount_ngn,transfer_reference,paid_at,marketplace_orders(order_number)')
+      .eq('seller_id',seller['id']).order('paid_at',ascending:false).limit(50);
+    return {'seller':seller,'account':row,'history':List<Map<String,dynamic>>.from(history)};
+  }
+  Future<void> refresh() async {final next=load();setState(()=>data=next);await next;}
+  Future<void> save() async {
+    final bank=bankName.text.trim(),holder=accountName.text.trim(),number=accountNumber.text.trim();
+    if(bank.length<2||holder.length<2||!RegExp(r'^[0-9]{10}$').hasMatch(number)){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter your bank name, account holder and valid 10-digit account number.')));
+      return;
+    }
+    setState(()=>saving=true);
+    try{
+      await db.rpc('marketplace_save_seller_payout_account',params:{
+        'p_bank_name':bank,'p_bank_code':bankCode.text.trim().isEmpty?null:bankCode.text.trim(),
+        'p_account_name':holder,'p_account_number':number,
+      });
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Payout account saved. Administrator verification is required before settlement.')));
+      await refresh();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not save payout account: $e')));}
+    finally{if(mounted)setState(()=>saving=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('Seller payout account'),actions:[IconButton(onPressed:saving?null:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(22),child:Text('Payout account unavailable: \${s.error}',style:const TextStyle(color:muted))));
+      final d=s.data??{},a=d['account'] as Map<String,dynamic>?,history=d['history'] as List<Map<String,dynamic>>? ?? [];
+      final verified=a?['verified_at']!=null;
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(18),children:[
+        Card(color:panel,child:ListTile(
+          leading:Icon(verified?Icons.verified:Icons.pending_outlined,color:verified?emerald:gold),
+          title:Text(verified?'Payout account verified':'Verification pending'),
+          subtitle:Text(verified?'Your payout account is approved for seller settlements.':'Save your bank details. An administrator must verify them before a payout can be recorded.',style:const TextStyle(color:muted,height:1.4)),
+        )),
+        const SizedBox(height:16),
+        const Text('Bank account details',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        const SizedBox(height:10),
+        TextField(controller:bankName,decoration:const InputDecoration(labelText:'Bank / financial institution',filled:true)),
+        const SizedBox(height:10),
+        TextField(controller:bankCode,decoration:const InputDecoration(labelText:'Bank code (optional)',filled:true)),
+        const SizedBox(height:10),
+        TextField(controller:accountName,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Account holder name',filled:true)),
+        const SizedBox(height:10),
+        TextField(controller:accountNumber,keyboardType:TextInputType.number,maxLength:10,decoration:const InputDecoration(labelText:'10-digit account number',filled:true)),
+        const SizedBox(height:4),
+        if(verified)const Text('Changing any bank detail automatically removes its verification. The updated account must be reviewed again.',style:TextStyle(color:gold,fontSize:12,height:1.4)),
+        const SizedBox(height:12),
+        FilledButton.icon(onPressed:saving?null:save,style:FilledButton.styleFrom(backgroundColor:emerald),
+          icon:saving?const SizedBox(width:17,height:17,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_outlined),
+          label:Text(saving?'Saving…':'Save payout account')),
+        const SizedBox(height:22),
+        const Text('Payout history',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(history.isEmpty)const Padding(padding:EdgeInsets.all(12),child:Text('No seller payouts have been recorded yet.',style:TextStyle(color:muted))),
+        for(final p in history)Card(color:panel,child:ListTile(
+          leading:const Icon(Icons.receipt_long_outlined,color:emerald),
+          title:Text('₦\${p['amount_ngn']}'),
+          subtitle:Text('\${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Marketplace order'} · \${p['transfer_reference']}\\n\${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
+        )),
+      ]));
+    }),
+  );
 }
 
 class MarketplaceSavedScreen extends StatefulWidget {
@@ -3439,6 +3534,133 @@ class _MarketplaceEnquiryThreadScreenState extends State<MarketplaceEnquiryThrea
   });
 }
 
+
+class MarketplaceAdminPayoutScreen extends StatefulWidget {
+  const MarketplaceAdminPayoutScreen({super.key});
+  @override State<MarketplaceAdminPayoutScreen> createState()=>_MarketplaceAdminPayoutScreenState();
+}
+class _MarketplaceAdminPayoutScreenState extends State<MarketplaceAdminPayoutScreen> {
+  final db=Supabase.instance.client;
+  late Future<Map<String,dynamic>> data;
+  bool busy=false;
+  @override void initState(){super.initState();data=load();}
+  Future<Map<String,dynamic>> load() async {
+    final user=db.auth.currentUser;if(user==null)throw StateError('Sign in first.');
+    final profile=await db.from('profiles').select('role').eq('id',user.id).single();
+    if(!['admin','super_admin'].contains(profile['role']))throw StateError('Administrator access is required.');
+    final accounts=await db.from('marketplace_seller_payout_accounts')
+      .select('id,seller_id,bank_name,bank_code,account_name,account_number,verified_at,marketplace_sellers(display_name,status,institution,campus)')
+      .order('created_at',ascending:false).limit(250);
+    final orders=await db.from('marketplace_orders')
+      .select('id,order_number,status,payment_status')
+      .eq('status','delivered').eq('payment_status','confirmed').order('created_at',ascending:false).limit(200);
+    final payouts=await db.from('marketplace_seller_payouts')
+      .select('id,seller_id,order_id,amount_ngn,transfer_reference,paid_at,marketplace_sellers(display_name),marketplace_orders(order_number)')
+      .order('paid_at',ascending:false).limit(300);
+    final ids=orders.map((o)=>o['id']).toList();
+    final items=ids.isEmpty?<Map<String,dynamic>>[]:List<Map<String,dynamic>>.from(
+      await db.from('marketplace_order_items').select('order_id,seller_id,line_total_ngn').inFilter('order_id',ids));
+    final accountMap=<String,Map<String,dynamic>>{
+      for(final a in accounts)a['seller_id'].toString():Map<String,dynamic>.from(a),
+    };
+    final orderMap=<String,Map<String,dynamic>>{
+      for(final o in orders)o['id'].toString():Map<String,dynamic>.from(o),
+    };
+    final paid=<String>{for(final p in payouts)'\${p['order_id']}|\${p['seller_id']}'};
+    final groups=<String,Map<String,dynamic>>{};
+    for(final item in items){
+      final key='\${item['order_id']}|\${item['seller_id']}';
+      groups.putIfAbsent(key,()=>{'order_id':item['order_id'],'seller_id':item['seller_id'],'gross':0});
+      groups[key]!['gross']=(groups[key]!['gross'] as int)+(item['line_total_ngn'] as num).toInt();
+    }
+    final candidates=groups.values.where((g){
+      final account=accountMap[g['seller_id'].toString()];
+      return account!=null&&account['verified_at']!=null&&!paid.contains('\${g['order_id']}|\${g['seller_id']}')&&(g['gross'] as int)>0;
+    }).toList();
+    return {'accounts':List<Map<String,dynamic>>.from(accounts),'payouts':List<Map<String,dynamic>>.from(payouts),
+      'candidates':candidates,'accountMap':accountMap,'orderMap':orderMap};
+  }
+  Future<void> refresh()async{final next=load();setState(()=>data=next);await next;}
+  Future<void> verify(Map<String,dynamic> account)async{
+    final currently=account['verified_at']!=null;
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
+      title:Text(currently?'Revoke payout account verification':'Verify seller payout account'),
+      content:Text(currently?'This account will no longer qualify for new payouts.':'Confirm that the bank, account holder and account number have been checked.'),
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),
+        FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text(currently?'Revoke':'Verify'))]));
+    if(ok!=true)return;
+    setState(()=>busy=true);
+    try{await db.rpc('marketplace_admin_verify_seller_payout_account',params:{'p_seller_id':account['seller_id'],'p_verified':!currently});await refresh();}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not update verification: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  Future<void> recordPayout(Map<String,dynamic> group,Map<String,dynamic> account,Map<String,dynamic> order)async{
+    final reference=TextEditingController(),note=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:panel,
+      title:Text('Record payout for \${order['order_number']}'),
+      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Text('Full seller settlement: ₦\${group['gross']}',style:const TextStyle(fontWeight:FontWeight.w800,color:emerald)),
+        const SizedBox(height:10),
+        TextField(controller:reference,maxLength:120,decoration:const InputDecoration(labelText:'Bank transfer reference')),
+        const SizedBox(height:8),
+        TextField(controller:note,maxLength:500,maxLines:2,decoration:const InputDecoration(labelText:'Admin note (optional)')),
+      ])),
+      actions:[TextButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,false),child:const Text('Cancel')),
+        FilledButton(onPressed:()=>material_widgets_ui.Navigator.pop(ctx,true),child:const Text('Confirm transfer recorded'))]));
+    if(ok!=true){reference.dispose();note.dispose();return;}
+    if(reference.text.trim().length<2){reference.dispose();note.dispose();if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter the bank transfer reference.')));return;}
+    setState(()=>busy=true);
+    try{
+      await db.rpc('marketplace_admin_record_seller_payout',params:{
+        'p_seller_id':group['seller_id'],'p_order_id':group['order_id'],
+        'p_amount_ngn':group['gross'],'p_transfer_reference':reference.text.trim(),
+        'p_admin_note':note.text.trim().isEmpty?null:note.text.trim(),
+      });
+      reference.dispose();note.dispose();await refresh();
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Seller payout recorded.')));
+    }catch(e){reference.dispose();note.dispose();if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not record payout: $e')));}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Seller payouts'),actions:[IconButton(onPressed:busy?null:refresh,icon:const Icon(Icons.refresh))]),
+    body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,s){
+      if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator(color:emerald));
+      if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text('Seller payout management unavailable: \${s.error}',style:const TextStyle(color:muted))));
+      final d=s.data??{},accounts=d['accounts'] as List<Map<String,dynamic>>? ?? [],payouts=d['payouts'] as List<Map<String,dynamic>>? ?? [],candidates=d['candidates'] as List<Map<String,dynamic>>? ?? [];
+      final accountMap=Map<String,Map<String,dynamic>>.from(d['accountMap'] as Map),orderMap=Map<String,Map<String,dynamic>>.from(d['orderMap'] as Map);
+      return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Text('Verify seller bank accounts before settlement. Payouts can only be recorded after the order is delivered and buyer payment is confirmed.',style:TextStyle(color:muted,height:1.5)),
+        const SizedBox(height:16),const Text('Seller payout accounts',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(accounts.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No payout accounts submitted.',style:TextStyle(color:muted))),
+        for(final a in accounts)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((a['marketplace_sellers'] is Map?a['marketplace_sellers']['display_name']:'Seller').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          Text('\${a['bank_name']} · \${a['account_name']} · \${a['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
+          Text(a['verified_at']==null?'Verification pending':'Verified',style:TextStyle(color:a['verified_at']==null?gold:emerald,fontSize:12,fontWeight:FontWeight.w700)),
+          Align(alignment:Alignment.centerRight,child:OutlinedButton(onPressed:busy?null:()=>verify(a),child:Text(a['verified_at']==null?'Verify account':'Revoke verification'))),
+        ]))),
+        const SizedBox(height:20),const Text('Delivered orders awaiting settlement',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(candidates.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No delivered, payment-confirmed seller orders are awaiting payout.',style:TextStyle(color:muted))),
+        for(final g in candidates)Builder(builder:(context){
+          final account=accountMap[g['seller_id'].toString()]!,order=orderMap[g['order_id'].toString()]!;
+          final seller=account['marketplace_sellers'] is Map?account['marketplace_sellers']:{};
+          return Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('\${seller['display_name']??'Seller'} · \${order['order_number']}',style:const TextStyle(fontWeight:FontWeight.w800)),
+            Text('\${account['bank_name']} · \${account['account_name']} · \${account['account_number']}',style:const TextStyle(color:muted,fontSize:12)),
+            const SizedBox(height:6),Text('Full seller payout: ₦\${g['gross']}',style:const TextStyle(color:emerald,fontWeight:FontWeight.w900)),
+            Align(alignment:Alignment.centerRight,child:FilledButton(onPressed:busy?null:()=>recordPayout(g,account,order),style:FilledButton.styleFrom(backgroundColor:emerald),child:const Text('Record completed transfer'))),
+          ])));
+        }),
+        const SizedBox(height:20),const Text('Payout history',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
+        if(payouts.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller payouts recorded yet.',style:TextStyle(color:muted))),
+        for(final p in payouts)Card(color:panel,child:ListTile(
+          leading:const Icon(Icons.receipt_long_outlined,color:emerald),
+          title:Text('₦\${p['amount_ngn']} · \${p['transfer_reference']}'),
+          subtitle:Text('\${p['marketplace_sellers'] is Map?p['marketplace_sellers']['display_name']:'Seller'} · \${p['marketplace_orders'] is Map?p['marketplace_orders']['order_number']:'Order'}\\n\${p['paid_at']}',style:const TextStyle(color:muted,fontSize:12)),
+        )),
+      ]));
+    }),
+  );
+}
+
 class MarketplaceAdminScreen extends StatefulWidget {
   const MarketplaceAdminScreen({super.key});
   @override State<MarketplaceAdminScreen> createState()=>_MarketplaceAdminScreenState();
@@ -3521,6 +3743,11 @@ class _MarketplaceAdminScreenState extends State<MarketplaceAdminScreen>{
       if(snap.hasError)return Center(child:Text('Marketplace moderation unavailable: ${snap.error}',style:const TextStyle(color:muted)));
       final d=snap.data??{};final sellers=d['sellers'] as List<Map<String,dynamic>>? ?? [];final payouts=Map<String,dynamic>.from(d['payouts']??const {});final listings=d['listings'] as List<Map<String,dynamic>>? ?? [];final cats=d['categories'] as List<Map<String,dynamic>>? ?? [];final orders=d['orders'] as List<Map<String,dynamic>>? ?? [];
       return RefreshIndicator(color:emerald,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(16),children:[
+        const SizedBox(height:8),OutlinedButton.icon(
+          onPressed:busy?null:()=>material_widgets_ui.Navigator.push(context,
+            MaterialPageRoute(builder:(_)=>const MarketplaceAdminPayoutScreen())),
+          icon:const Icon(Icons.account_balance_wallet_outlined),
+          label:const Text('Payout accounts & settlements')),
         const Text('Seller applications',style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
         if(sellers.isEmpty)const Padding(padding:EdgeInsets.all(10),child:Text('No seller applications awaiting review.',style:TextStyle(color:muted))),
         for(final s in sellers)Card(color:panel,child:Padding(padding:const EdgeInsets.all(12),child:material_widgets_ui.Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
