@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="t d">
+<title id="t">CreatorVerse emblem</title><desc id="d">An open book forming a rising path around a human figure, enclosed by a green orbit and crowned with a golden spark.</desc>
+<defs>
+ <linearGradient id="g" x1="25" y1="30" x2="220" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#39c978"/><stop offset=".55" stop-color="#08764e"/><stop offset="1" stop-color="#064c3b"/></linearGradient>
+ <linearGradient id="o" x1="125" y1="50" x2="218" y2="215" gradientUnits="userSpaceOnUse"><stop stop-color="#ffc45f"/><stop offset="1" stop-color="#ed762c"/></linearGradient>
+ <linearGradient id="p" x1="75" y1="130" x2="190" y2="210" gradientUnits="userSpaceOnUse"><stop stop-color="#d7f6df"/><stop offset="1" stop-color="#74d79d"/></linearGradient>
+ <filter id="s" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#064d36" flood-opacity=".22"/></filter>
+</defs>
+<g filter="url(#s)">
+ <path d="M127 211C77 228 31 195 31 137c0-48 34-86 81-91 27-3 49 5 68 21" fill="none" stroke="url(#g)" stroke-width="17" stroke-linecap="round"/>
+ <path d="M48 150c19-10 42-10 78 7 36-17 59-17 82-7v38c-25-12-50-10-82 9-32-19-57-21-78-9v-38Z" fill="url(#g)"/>
+ <path d="M126 157v40" stroke="#e8fff0" stroke-width="5" stroke-linecap="round"/>
+ <path d="M56 145c23-9 43-5 70 10 27-15 48-19 73-10" fill="none" stroke="url(#p)" stroke-width="5" stroke-linecap="round"/>
+ <circle cx="127" cy="91" r="15" fill="url(#o)"/>
+ <path d="M127 111c-13 0-23 10-23 23l-12 20 20-7 15 17 15-17 20 7-12-20c0-13-10-23-23-23Z" fill="#fff"/>
+ <path d="M167 55 192 28l24 27-24 27-25-27Z" fill="url(#o)"/>
+ <path d="M192 15v-9m0 62v-9m-31-4-8 8m70-70 8-8" stroke="#f4a23e" stroke-width="5" stroke-linecap="round"/>
+ <path d="M190 104c22 8 35 24 39 46" fill="none" stroke="url(#o)" stroke-width="8" stroke-linecap="round"/>
+</g></svg>
