@@ -40,7 +40,7 @@
       <button type="submit">Search</button>
     </form>
     <div class="market-shop-actions">
-      <a href="marketplace-commerce.html?view=cart"><span aria-hidden="true">▣</span><span>Cart</span></a><a href="marketplace-commerce.html?view=orders"><span aria-hidden="true">▤</span><span>My orders</span></a><a href="marketplace-commerce.html?view=seller-orders"><span aria-hidden="true">▣</span><span>Seller orders</span></a><a href="marketplace-enquiries.html"><span aria-hidden="true">▤</span><span>My enquiries</span></a>
+      <a href="marketplace-commerce.html?view=cart"><span aria-hidden="true">▣</span><span>Cart</span></a><a href="marketplace-commerce.html?view=orders"><span aria-hidden="true">▤</span><span>My orders</span></a><a href="marketplace-commerce.html?view=seller-orders"><span aria-hidden="true">▣</span><span>Seller orders</span></a><a href="marketplace-commerce.html?view=seller-payout"><span aria-hidden="true">₦</span><span>Payout account</span></a><a href="marketplace-enquiries.html"><span aria-hidden="true">▤</span><span>My enquiries</span></a>
       <button type="button" id="seller-open"><span aria-hidden="true">＋</span><span>Sell</span></button>
     </div>
   </section>
@@ -125,6 +125,9 @@
       <label>Institution<input name="institution" maxlength="120" placeholder="Your institution"></label>
       <label>Campus / area<input name="campus" maxlength="120" placeholder="Campus or area"></label>
       <label>Short description<textarea name="bio" maxlength="500" rows="3" placeholder="What do you sell or offer?"></textarea></label>
+      <label>Bank / financial institution<input name="bank_name" required minlength="2" maxlength="100" placeholder="Your bank name"></label>
+      <label>Account holder name<input name="account_name" required minlength="2" maxlength="100" autocomplete="name"></label>
+      <label>10-digit account number<input name="account_number" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" placeholder="0123456789"></label>
       <button class="market-action" type="submit">Submit seller application</button>
       <div id="seller-feedback" role="status" aria-live="polite"></div>
     </form>
@@ -132,8 +135,8 @@
 
   <section class="market-trust-footer">
     <div><strong>CreatorVerse Market</strong><p>A shopping experience built around discovery, independent sellers and trusted community connections.</p></div>
-    <div><strong>Shop with confidence</strong><p>Seller review and listing moderation are active foundations. Secure checkout and order tracking are planned next.</p></div>
-    <div><strong>Need help?</strong><p>Use private seller enquiries while the complete order and payment experience is being built.</p></div>
+    <div><strong>Shop with confidence</strong><p>Seller review and listing moderation are active foundations. Eligible products now support on-platform checkout, payment confirmation and order tracking.</p></div>
+    <div><strong>Need help?</strong><p>Use private enquiries for services and rentals, or follow eligible product purchases in My orders.</p></div>
   </section>
 </main>
 <div id="site-footer"></div>
@@ -143,7 +146,7 @@
 <script src="cv-data.js"></script>
 <script src="auth.js"></script>
 <script src="site.js"></script>
-<script src="marketplace.js?v=20261124-market-home-2"></script>
+<script src="marketplace.js?v=20261126-marketplace-3"></script>
 <script>
 (function(){
   var kind=document.getElementById('market-kind');
