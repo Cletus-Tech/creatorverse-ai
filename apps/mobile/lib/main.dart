@@ -2958,7 +2958,7 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
   final db = Supabase.instance.client;
   final name = TextEditingController(), institution = TextEditingController(), campus = TextEditingController(), bio = TextEditingController();
   final accountName = TextEditingController(), accountNumber = TextEditingController(), otherBankName = TextEditingController();
-  String? selectedBank; bool otherBank = false, acceptedSellerRules = false, sellerRulesReviewed = false;
+  String? selectedBank; String sellerType='student'; bool otherBank = false, acceptedSellerRules = false, sellerRulesReviewed = false;
   late Future<Map<String, dynamic>> data;
   bool busy = false;
   @override
@@ -3011,8 +3011,9 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
     }
     setState(() => busy = true);
     try {
-      await db.rpc('marketplace_submit_seller_application', params: {
+      await db.rpc('marketplace_submit_seller_application_v2', params: {
         'p_display_name': name.text.trim(),
+        'p_seller_type': sellerType,
         'p_institution': institution.text.trim().isEmpty ? null : institution.text.trim(),
         'p_campus': campus.text.trim().isEmpty ? null : campus.text.trim(),
         'p_bio': bio.text.trim().isEmpty ? null : bio.text.trim(),
@@ -3179,7 +3180,11 @@ class _MarketplaceSellerScreenState extends State<MarketplaceSellerScreen> {
         const Icon(Icons.storefront_outlined,color:emerald,size:46),const SizedBox(height:12),
         const Text('Become a CreatorVerse seller',style:TextStyle(fontSize:22,fontWeight:FontWeight.w800)),
         const SizedBox(height:8),const Text('Apply once. After your seller account is verified, your new listings go live automatically without repeated approval.',style:TextStyle(color:muted,height:1.5)),
-        const SizedBox(height:18),TextField(controller:name,decoration:const InputDecoration(labelText:'Seller / business display name')),
+        const SizedBox(height:18),TextField(controller:name,maxLength:80,decoration:const InputDecoration(labelText:'Seller / business display name')),
+        const SizedBox(height:10),DropdownButtonFormField<String>(value:sellerType,
+          decoration:const InputDecoration(labelText:'Seller type',filled:true),
+          items:const [DropdownMenuItem(value:'student',child:Text('Student seller')),DropdownMenuItem(value:'campus_vendor',child:Text('Campus vendor')),DropdownMenuItem(value:'service_provider',child:Text('Service provider'))],
+          onChanged:(v)=>setState(()=>sellerType=v??'student')),
         const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'Institution (optional)')),
         const SizedBox(height:10),TextField(controller:campus,decoration:const InputDecoration(labelText:'Campus (optional)')),
         const SizedBox(height:10),TextField(controller:bio,maxLines:3,maxLength:500,decoration:const InputDecoration(labelText:'What do you sell or provide? (optional)')),
